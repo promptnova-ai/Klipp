@@ -14,6 +14,7 @@ export default function ProLayout() {
           tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
         }}>
         <Tabs.Screen name="index" options={{ title: 'Solicitudes' }} />
+        <Tabs.Screen name="agenda" options={{ title: 'Agenda' }} />
         <Tabs.Screen name="profile" options={{ title: 'Mi perfil' }} />
       </Tabs>
     </RoleGuard>

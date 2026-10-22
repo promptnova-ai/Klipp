@@ -1,0 +1,145 @@
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+
+import { useAuth } from '@/components/auth-provider';
+import { supabase } from '../../lib/supabase';
+import { formatBusinessDate } from '@/lib/format';
+import { formatDop } from '@/lib/format';
+import type { BookingRequest } from '@/lib/types';
+
+type RequestBooking = {
+  id: string;
+  scheduled_start: string;
+  est_minutes: number;
+  pro_payout_dop: number;
+  service_types: { name: string } | null;
+  pricing_tiers: { label: string } | null;
+  addresses: { sector_id: number; sectors: { name: string } | null } | null;
+};
+
+type IncomingRequest = BookingRequest & { bookings: RequestBooking | null };
+
+export function ProRequestsScreen() {
+  const { session } = useAuth();
+  const [requests, setRequests] = useState<IncomingRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadRequests = useCallback(async () => {
+    if (!session?.user.id) return;
+    setError(null);
+    const { data, error: queryError } = await supabase
+      .from('booking_requests')
+      .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, service_types(name), pricing_tiers(label), addresses(sector_id, sectors(name)))')
+      .eq('pro_id', session.user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false });
+    if (queryError) setError(queryError.message);
+    else setRequests((data ?? []) as unknown as IncomingRequest[]);
+    setLoading(false);
+  }, [session?.user.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadRequests();
+    }, [loadRequests]),
+  );
+
+  async function refresh() {
+    setRefreshing(true);
+    await loadRequests();
+    setRefreshing(false);
+  }
+
+  async function respond(requestId: string, accept: boolean) {
+    setBusyId(requestId);
+    setError(null);
+    const { error: rpcError } = await supabase.rpc('respond_to_request', {
+      p_request_id: requestId,
+      p_accept: accept,
+    });
+    if (rpcError) setError(rpcError.message);
+    else await loadRequests();
+    setBusyId(null);
+  }
+
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.page}
+      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+      <Text style={styles.title}>Solicitudes</Text>
+      <Text style={styles.subtitle}>Nuevas oportunidades para tu agenda.</Text>
+      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {!error && requests.length === 0 && (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No tienes solicitudes pendientes</Text>
+          <Text style={styles.body}>Cuando llegue una solicitud, aparecerá aquí.</Text>
+        </View>
+      )}
+      {requests.map((request) => {
+        const booking = request.bookings;
+        const unavailable = !booking;
+        return (
+          <View key={request.id} style={styles.card}>
+            {unavailable ? (
+              <>
+                <Text style={styles.cardTitle}>Solicitud recibida</Text>
+                <Text style={styles.warning}>
+                  La base de datos no permite leer los detalles de esta reserva antes de aceptarla. No la aceptes sin poder revisar servicio, sector y horario.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
+                <Text style={styles.body}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
+                <Text style={styles.body}>Sector: {booking.addresses?.sectors?.name ?? 'No disponible'}</Text>
+                <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
+                <Text style={styles.payout}>Recibirías {formatDop(booking.pro_payout_dop)}</Text>
+              </>
+            )}
+            <Text style={styles.expiration}>Expira: {formatBusinessDate(request.expires_at)}</Text>
+            <View style={styles.actions}>
+              <ResponseButton disabled={unavailable || busyId === request.id} label={busyId === request.id ? 'Enviando...' : 'Aceptar'} onPress={() => void respond(request.id, true)} />
+              <ResponseButton secondary disabled={busyId === request.id} label="Rechazar" onPress={() => void respond(request.id, false)} />
+            </View>
+          </View>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function ResponseButton({ label, onPress, disabled, secondary = false }: { label: string; onPress: () => void; disabled: boolean; secondary?: boolean }) {
+  return (
+    <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.button, secondary && styles.secondaryButton, disabled && styles.disabled]}>
+      <Text style={[styles.buttonText, secondary && styles.secondaryText]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  page: { padding: 22, paddingTop: 58, paddingBottom: 35, gap: 14, backgroundColor: '#f4f7f5', flexGrow: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
+  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
+  subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
+  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
+  empty: { marginTop: 20, padding: 18, borderRadius: 8, backgroundColor: '#fff', gap: 7 },
+  emptyTitle: { color: '#18332d', fontSize: 16, fontWeight: '700' },
+  card: { padding: 17, borderRadius: 8, backgroundColor: '#fff', gap: 8 },
+  cardTitle: { color: '#18332d', fontSize: 17, fontWeight: '700' },
+  payout: { color: '#125e56', fontSize: 15, fontWeight: '700' },
+  expiration: { color: '#68756f', fontSize: 12, marginTop: 4 },
+  warning: { color: '#8a4d00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: '#fff1dd' },
+  actions: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
+  secondaryButton: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#cbd7d1' },
+  buttonText: { color: '#fff', fontWeight: '700' },
+  secondaryText: { color: '#52615b' },
+  disabled: { opacity: 0.45 },
+  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
+});

@@ -1,5 +1,5 @@
-import { AccountPanel } from '@/components/account-panel';
+import { ProProfileScreen } from '@/components/pro-profile-screen';
 
-export default function ProProfileScreen() {
-  return <AccountPanel roleLabel="Profesional" />;
+export default function ProProfileRoute() {
+  return <ProProfileScreen />;
 }
