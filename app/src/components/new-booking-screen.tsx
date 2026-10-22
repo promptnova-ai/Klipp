@@ -10,6 +10,22 @@ import type { Address, ProCard, PricingTier, Review, ServiceType } from '@/lib/t
 
 type AddressOption = Address & { sectors: { name: string } | null };
 
+function getAvailabilityWindow(date: string, time: string, durationMinutes: number | undefined) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !durationMinutes) return null;
+  const parsedDate = new Date(`${date}T12:00:00.000Z`);
+  if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) return null;
+  const [hours, minutes] = time.split(':').map(Number);
+  const startMinutes = hours * 60 + minutes;
+  const endMinutes = startMinutes + durationMinutes;
+  if (endMinutes >= 24 * 60) return null;
+  const day = parsedDate.getUTCDay();
+  return {
+    weekday: day === 0 ? 7 : day,
+    start: time,
+    end: `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`,
+  };
+}
+
 export function NewBookingScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -65,8 +81,17 @@ export function NewBookingScreen() {
       return;
     }
     const sectorId = selectedAddress.sector_id;
+    const availabilityWindow = getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes);
+    if (!availabilityWindow) {
+      setPros([]);
+      setSelectedProId(null);
+      setLoadingPros(false);
+      return;
+    }
     let active = true;
     async function loadPros() {
+      const window = availabilityWindow;
+      if (!window) return;
       setLoadingPros(true);
       setError(null);
       const { data: sectorLinks, error: linksError } = await supabase.from('pro_sectors').select('pro_id').eq('sector_id', sectorId);
@@ -77,14 +102,26 @@ export function NewBookingScreen() {
         if (proIds.length === 0) {
           if (active) setPros([]);
         } else {
-          const { data, error: prosError } = await supabase
-            .from('pro_cards')
-            .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
-            .in('pro_id', proIds)
-            .order('rating_avg', { ascending: false });
-          if (active && prosError) setError(prosError.message);
+          const [prosResult, availabilityResult] = await Promise.all([
+            supabase
+              .from('pro_cards')
+              .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
+              .in('pro_id', proIds)
+              .order('rating_avg', { ascending: false }),
+            supabase
+              .from('pro_availability')
+              .select('pro_id, start_time, end_time')
+              .in('pro_id', proIds)
+              .eq('weekday', window.weekday),
+          ]);
+          if (active && (prosResult.error || availabilityResult.error)) setError(prosResult.error?.message ?? availabilityResult.error?.message ?? 'No pudimos comprobar disponibilidad.');
           else if (active) {
-            setPros((data ?? []) as ProCard[]);
+            const availableProIds = new Set(
+              (availabilityResult.data ?? [])
+                .filter((slot) => slot.start_time.slice(0, 5) <= window.start && slot.end_time.slice(0, 5) >= window.end)
+                .map((slot) => slot.pro_id),
+            );
+            setPros(((prosResult.data ?? []) as ProCard[]).filter((pro) => availableProIds.has(pro.pro_id)));
             setSelectedProId(null);
           }
         }
@@ -93,7 +130,7 @@ export function NewBookingScreen() {
     }
     void loadPros();
     return () => { active = false; };
-  }, [selectedAddress?.id, selectedAddress?.sector_id]);
+  }, [selectedAddress?.id, selectedAddress?.sector_id, scheduledDate, scheduledTime, selectedTier?.est_minutes]);
 
   async function showProProfile(pro: ProCard) {
     setExpandedProId((current) => current === pro.pro_id ? null : pro.pro_id);
@@ -182,8 +219,9 @@ export function NewBookingScreen() {
           <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => setMode('auto')} />
         </View>
         {mode === 'manual' && !selectedAddress && <Text style={styles.body}>Selecciona una dirección para ver profesionales de ese sector.</Text>}
+        {mode === 'manual' && selectedAddress && !getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes) && <Text style={styles.body}>Elige fecha, hora y tamaño para ver profesionales disponibles durante todo el servicio.</Text>}
         {mode === 'manual' && selectedAddress && loadingPros && <ActivityIndicator color="#16766c" />}
-        {mode === 'manual' && selectedAddress && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en este sector.</Text>}
+        {mode === 'manual' && selectedAddress && getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes) && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados con disponibilidad registrada para todo ese horario en este sector.</Text>}
         {mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
             <Pressable onPress={() => void showProProfile(pro)} style={styles.proSummary}>
