@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus } from '@/lib/types';
@@ -68,8 +70,7 @@ export function ProAgendaScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <Text style={styles.title}>Mi agenda</Text>
-      <Text style={styles.subtitle}>Servicios confirmados y en curso.</Text>
+      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && (
         <View style={styles.empty}>
@@ -96,17 +97,17 @@ export function ProAgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 22, paddingTop: 58, paddingBottom: 35, gap: 14, backgroundColor: '#f4f7f5', flexGrow: 1 },
+  page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
-  card: { padding: 17, borderRadius: 8, backgroundColor: '#fff', gap: 8 },
-  empty: { marginTop: 20, padding: 18, borderRadius: 8, backgroundColor: '#fff', gap: 7 },
-  cardTitle: { color: '#18332d', fontSize: 17, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  payout: { color: '#125e56', fontSize: 15, fontWeight: '700', marginTop: 3 },
-  button: { minHeight: 46, marginTop: 7, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
+  card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
+  empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
+  cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
+  body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700', marginTop: 3 },
+  button: { minHeight: 46, marginTop: 7, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.5 },
-  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
+  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
 });

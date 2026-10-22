@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { sectorCenterToEwkt } from '@/lib/geo';
 import type { Address, Sector } from '@/lib/types';
@@ -92,7 +94,7 @@ export function ClientAddressesScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Mis direcciones</Text>
+      <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda los sectores donde solicitas servicios." />
       {addresses.length === 0 && <Text style={styles.body}>Todavía no has guardado una dirección.</Text>}
       {addresses.map((address) => (
         <View key={address.id} style={styles.addressCard}>
@@ -130,25 +132,25 @@ export function ClientAddressesScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 22, paddingTop: 58, paddingBottom: 36, gap: 14, backgroundColor: '#f4f7f5', flexGrow: 1 },
+  page: { paddingBottom: 36, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  addressCard: { padding: 16, borderRadius: 8, backgroundColor: '#fff', gap: 5 },
-  cardTitle: { color: '#18332d', fontSize: 16, fontWeight: '700' },
-  form: { marginTop: 8, padding: 17, borderRadius: 8, backgroundColor: '#fff', gap: 10 },
-  sectionTitle: { color: '#18332d', fontSize: 18, fontWeight: '700', marginBottom: 3 },
-  label: { color: '#263b34', fontSize: 13, fontWeight: '700', marginTop: 3 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 7, paddingHorizontal: 12, color: '#18332d', backgroundColor: '#fff', fontSize: 15 },
+  addressCard: { padding: 16, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 5 },
+  cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  form: { marginTop: 8, padding: 17, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
+  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700', marginBottom: 3 },
+  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 3 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
   multiline: { minHeight: 78, paddingVertical: 10, textAlignVertical: 'top' },
   sectorList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sectorChoice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  selectedChoice: { borderColor: '#16766c', backgroundColor: '#e7f1ed' },
-  choiceText: { color: '#52615b', fontSize: 13, fontWeight: '600' },
-  selectedText: { color: '#125e56' },
-  button: { minHeight: 48, marginTop: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
+  selectedChoice: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
+  selectedText: { color: KlippColors.blueDark },
+  button: { minHeight: 48, marginTop: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
   buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.55 },
-  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
-  success: { color: '#126e64', fontSize: 14 },
+  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
+  success: { color: '#067647', fontSize: 14 },
 });

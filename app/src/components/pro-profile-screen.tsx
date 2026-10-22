@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, Sector, VerificationStatus } from '@/lib/types';
 
@@ -154,7 +156,7 @@ export function ProProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>Mi perfil profesional</Text>
+      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
       <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
         <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
         {proProfile.verification_status !== 'approved' && (
@@ -231,27 +233,27 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 22, paddingTop: 58, paddingBottom: 40, gap: 16, backgroundColor: '#f4f7f5' },
+  page: { paddingBottom: 40, gap: 16, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 27, fontWeight: '700' },
-  section: { padding: 17, borderRadius: 8, backgroundColor: '#fff', gap: 11 },
-  sectionTitle: { color: '#18332d', fontSize: 18, fontWeight: '700' },
-  statusBanner: { padding: 16, borderRadius: 8, backgroundColor: '#fff1dd', gap: 5 },
-  statusApproved: { backgroundColor: '#e3f1e9' },
-  statusTitle: { color: '#18332d', fontSize: 15, fontWeight: '700' },
-  label: { color: '#263b34', fontSize: 13, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 7, paddingHorizontal: 12, color: '#18332d', backgroundColor: '#fff', fontSize: 15 },
+  title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
+  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 11 },
+  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  statusBanner: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.goldLight, gap: 5 },
+  statusApproved: { backgroundColor: '#E6F8F0' },
+  statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
+  body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
   multiline: { minHeight: 92, paddingVertical: 10, textAlignVertical: 'top' },
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
   choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  choiceSelected: { borderColor: '#16766c', backgroundColor: '#e7f1ed' },
-  choiceText: { color: '#52615b', fontSize: 13, fontWeight: '600' },
-  choiceTextSelected: { color: '#125e56' },
+  choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
+  choiceTextSelected: { color: KlippColors.blueDark },
   timeRow: { flexDirection: 'row', gap: 12 },
   timeField: { flex: 1, gap: 6 },
-  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: '#16766c' },
+  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.blue },
   actionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   buttonDisabled: { opacity: 0.55 },
   slotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#e7eeea' },
@@ -259,6 +261,6 @@ const styles = StyleSheet.create({
   removeButton: { padding: 8 },
   removeText: { color: '#a32f27', fontSize: 13, fontWeight: '600' },
   empty: { color: '#68756f', fontSize: 14, paddingVertical: 6 },
-  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
-  success: { color: '#126e64', fontSize: 14 },
+  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
+  success: { color: '#067647', fontSize: 14 },
 });

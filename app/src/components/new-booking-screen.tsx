@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
 import type { Address, ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
@@ -188,7 +190,7 @@ export function NewBookingScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹  Volver</Text></Pressable>
-      <Text style={styles.title}>Nueva reserva</Text>
+      <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
       {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
@@ -268,45 +270,45 @@ function ModeOption({ label, selected, onPress }: { label: string; selected: boo
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 22, paddingTop: 42, paddingBottom: 38, gap: 14, backgroundColor: '#f4f7f5' },
+  page: { paddingBottom: 38, gap: 14, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   back: { alignSelf: 'flex-start', paddingVertical: 6 },
-  backText: { color: '#125e56', fontSize: 15, fontWeight: '700' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  section: { padding: 16, borderRadius: 8, backgroundColor: '#fff', gap: 10 },
-  sectionTitle: { color: '#18332d', fontSize: 16, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  label: { color: '#263b34', fontSize: 13, fontWeight: '700', marginTop: 2 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 7, paddingHorizontal: 12, color: '#18332d', backgroundColor: '#fff', fontSize: 15 },
-  choice: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: '#d5dfda', borderRadius: 6, backgroundColor: '#fff' },
-  choiceSelected: { borderColor: '#16766c', backgroundColor: '#e7f1ed' },
-  choiceText: { color: '#52615b', fontSize: 14, fontWeight: '600' },
-  choiceTextSelected: { color: '#125e56' },
+  backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
+  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
+  section: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 10 },
+  sectionTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 2 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  choice: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 6, backgroundColor: KlippColors.white },
+  choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  choiceText: { color: KlippColors.muted, fontSize: 14, fontWeight: '600' },
+  choiceTextSelected: { color: KlippColors.blueDark },
   empty: { color: '#68756f', fontSize: 14, padding: 14, borderRadius: 7, backgroundColor: '#fff' },
   emptyInline: { gap: 6 },
   modeOptions: { flexDirection: 'row', gap: 8 },
-  modeOption: { flex: 1, minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: '#d5dfda', borderRadius: 6, backgroundColor: '#fff' },
-  proCard: { padding: 12, borderWidth: 1, borderColor: '#d5dfda', borderRadius: 7, gap: 10 },
-  proCardSelected: { borderColor: '#16766c' },
+  modeOption: { flex: 1, minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 6, backgroundColor: KlippColors.white },
+  proCard: { padding: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 7, backgroundColor: KlippColors.white, gap: 10 },
+  proCardSelected: { borderColor: KlippColors.blue },
   proSummary: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#e7f1ed' },
   avatarFallback: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e7f1ed' },
   avatarInitial: { color: '#125e56', fontSize: 20, fontWeight: '700' },
   proMain: { flex: 1, gap: 2 },
   proName: { color: '#18332d', fontSize: 15, fontWeight: '700' },
-  rating: { color: '#8a5b00', fontSize: 13, fontWeight: '700' },
-  profileLink: { color: '#125e56', fontSize: 12, fontWeight: '700' },
+  rating: { color: '#A46D00', fontSize: 13, fontWeight: '700' },
+  profileLink: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   profileDetails: { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e6ede9', gap: 8 },
   reviewHeading: { color: '#263b34', fontSize: 13, fontWeight: '700', marginTop: 4 },
   reviewText: { color: '#52615b', fontSize: 13, lineHeight: 19 },
-  selectPro: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 6, backgroundColor: '#e7f1ed' },
-  selectProText: { color: '#125e56', fontSize: 14, fontWeight: '700' },
-  priceLine: { color: '#18332d', fontSize: 17, fontWeight: '700' },
-  submit: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
+  selectPro: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 6, backgroundColor: '#EEF4FF' },
+  selectProText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
+  priceLine: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
+  submit: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.55 },
-  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
-  successBanner: { padding: 14, borderRadius: 7, backgroundColor: '#e3f1e9', gap: 7 },
-  successTitle: { color: '#125e56', fontSize: 14, lineHeight: 20, fontWeight: '700' },
-  successLink: { color: '#125e56', fontSize: 14, fontWeight: '700' },
+  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
+  successBanner: { padding: 14, borderRadius: 7, backgroundColor: '#E6F8F0', gap: 7 },
+  successTitle: { color: '#067647', fontSize: 14, lineHeight: 20, fontWeight: '700' },
+  successLink: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
 });

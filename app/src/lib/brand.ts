@@ -1,0 +1,16 @@
+export const KlippColors = {
+  navy: '#0F172A',
+  navyDeep: '#0B0F19',
+  slate: '#1E293B',
+  blue: '#0052FF',
+  blueDark: '#003ECC',
+  teal: '#00D68F',
+  tealDark: '#00B8A9',
+  gold: '#FFB800',
+  goldLight: '#FFF4D6',
+  canvas: '#F8FAFC',
+  white: '#FFFFFF',
+  muted: '#64748B',
+  border: '#E2E8F0',
+  danger: '#B42318',
+} as const;

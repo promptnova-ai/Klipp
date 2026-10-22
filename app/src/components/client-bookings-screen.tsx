@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
@@ -118,7 +120,7 @@ export function ClientBookingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <Text style={styles.title}>Mis reservas</Text>
+      <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.cardTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
@@ -160,30 +162,29 @@ export function ClientBookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 22, paddingTop: 58, paddingBottom: 35, gap: 14, backgroundColor: '#f4f7f5', flexGrow: 1 },
+  page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   empty: { marginTop: 20, padding: 18, borderRadius: 8, backgroundColor: '#fff', gap: 7 },
-  card: { padding: 17, borderRadius: 8, backgroundColor: '#fff', gap: 8 },
+  card: { padding: 17, borderRadius: 8, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
   cardHeader: { gap: 5 },
-  cardTitle: { color: '#18332d', fontSize: 17, fontWeight: '700' },
-  status: { color: '#126e64', fontSize: 13, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  price: { color: '#18332d', fontSize: 16, fontWeight: '700', marginTop: 3 },
-  payment: { padding: 12, borderRadius: 6, backgroundColor: '#fff1dd', gap: 4 },
-  paymentTitle: { color: '#8a4d00', fontSize: 14, fontWeight: '700' },
-  button: { minHeight: 46, marginTop: 5, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
+  cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
+  status: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  price: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 3 },
+  payment: { padding: 12, borderRadius: 6, backgroundColor: KlippColors.goldLight, gap: 4 },
+  paymentTitle: { color: '#8A5B00', fontSize: 14, fontWeight: '700' },
+  button: { minHeight: 46, marginTop: 5, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.55 },
   reviewForm: { marginTop: 10, paddingTop: 13, borderTopWidth: 1, borderTopColor: '#e6ede9', gap: 9 },
-  reviewTitle: { color: '#18332d', fontSize: 15, fontWeight: '700' },
+  reviewTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   ratingRow: { flexDirection: 'row', gap: 8 },
   star: { paddingVertical: 2, paddingHorizontal: 3 },
-  starText: { color: '#a46d00', fontSize: 28 },
-  commentInput: { minHeight: 70, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 7, padding: 10, color: '#18332d', textAlignVertical: 'top' },
-  reviewButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
-  reviewDone: { color: '#52615b', fontSize: 13, lineHeight: 20, marginTop: 8 },
-  paymentNotice: { color: '#8a4d00' },
-  notice: { color: '#126e64', fontSize: 14 },
-  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
+  starText: { color: '#A46D00', fontSize: 28 },
+  commentInput: { minHeight: 70, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, padding: 10, color: KlippColors.navy, textAlignVertical: 'top' },
+  reviewButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  reviewDone: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, marginTop: 8 },
+  notice: { color: '#067647', fontSize: 14 },
+  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
 });

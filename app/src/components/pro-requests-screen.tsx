@@ -3,6 +3,8 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate } from '@/lib/format';
 import { formatDop } from '@/lib/format';
@@ -72,8 +74,7 @@ export function ProRequestsScreen() {
     <ScrollView
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <Text style={styles.title}>Solicitudes</Text>
-      <Text style={styles.subtitle}>Nuevas oportunidades para tu agenda.</Text>
+      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Nuevas oportunidades para tu agenda." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && requests.length === 0 && (
         <View style={styles.empty}>
@@ -123,23 +124,23 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 22, paddingTop: 58, paddingBottom: 35, gap: 14, backgroundColor: '#f4f7f5', flexGrow: 1 },
+  page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
   body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  empty: { marginTop: 20, padding: 18, borderRadius: 8, backgroundColor: '#fff', gap: 7 },
-  emptyTitle: { color: '#18332d', fontSize: 16, fontWeight: '700' },
-  card: { padding: 17, borderRadius: 8, backgroundColor: '#fff', gap: 8 },
-  cardTitle: { color: '#18332d', fontSize: 17, fontWeight: '700' },
-  payout: { color: '#125e56', fontSize: 15, fontWeight: '700' },
-  expiration: { color: '#68756f', fontSize: 12, marginTop: 4 },
-  warning: { color: '#8a4d00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: '#fff1dd' },
+  empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
+  emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
+  cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
+  payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
+  expiration: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
+  warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
   actions: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: '#16766c' },
-  secondaryButton: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#cbd7d1' },
+  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  secondaryButton: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#CBD5E1' },
   buttonText: { color: '#fff', fontWeight: '700' },
-  secondaryText: { color: '#52615b' },
+  secondaryText: { color: KlippColors.muted },
   disabled: { opacity: 0.45 },
-  error: { color: '#a32f27', fontSize: 14, lineHeight: 20 },
+  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
 });
