@@ -1,8 +1,12 @@
 import * as Device from 'expo-device';
+import { Redirect } from 'expo-router';
 import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { AnimatedIcon } from '@/components/animated-icon';
+import { AccountPanel } from '@/components/account-panel';
+import { useAuth } from '@/components/auth-provider';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -29,6 +33,38 @@ function getDevMenuHint() {
 }
 
 export default function HomeScreen() {
+  const { session, profile, loading, profileError, refreshProfile } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={authStyles.centered}>
+        <ActivityIndicator color="#16766c" />
+        <Text style={authStyles.message}>Cargando tu cuenta...</Text>
+      </View>
+    );
+  }
+
+  if (!session) return <Redirect href="/(auth)/login" />;
+
+  if (profileError || !profile) {
+    return (
+      <View style={authStyles.centered}>
+        <Text style={authStyles.title}>No pudimos cargar tu perfil</Text>
+        <Text style={authStyles.message}>{profileError ?? 'Intenta de nuevo en unos segundos.'}</Text>
+        <Text accessibilityRole="button" onPress={() => void refreshProfile()} style={authStyles.retry}>
+          Reintentar
+        </Text>
+      </View>
+    );
+  }
+
+  if (profile.role === 'client') return <Redirect href="/(client)" />;
+  if (profile.role === 'pro') return <Redirect href="/(pro)" />;
+
+  return <AccountPanel roleLabel="Administrador" />;
+
+  /* Original starter screen retained below until the client and pro home screens are built. */
+  /*
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -59,6 +95,7 @@ export default function HomeScreen() {
       </SafeAreaView>
     </ThemedView>
   );
+  */
 }
 
 const styles = StyleSheet.create({
@@ -95,4 +132,18 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.four,
     borderRadius: Spacing.four,
   },
+});
+
+const authStyles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    padding: 28,
+    backgroundColor: '#f4f7f5',
+  },
+  message: { color: '#52615b', fontSize: 15, textAlign: 'center' },
+  title: { color: '#18332d', fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  retry: { color: '#126e64', fontSize: 16, fontWeight: '700', padding: 12 },
 });
