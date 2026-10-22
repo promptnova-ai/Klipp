@@ -6,6 +6,7 @@ export type ZoneName =
   | 'santo_domingo_norte'
   | 'santo_domingo_oeste';
 export type VerificationStatus = 'pending' | 'approved' | 'rejected';
+export type GeoPoint = { type: 'Point'; coordinates: [number, number] };
 export type AssignmentMode = 'manual' | 'auto';
 export type BookingStatus =
   | 'requested'
@@ -36,7 +37,7 @@ export interface Sector {
   id: number;
   name: string;
   zone: ZoneName;
-  center: string;
+  center: string | GeoPoint;
   active: boolean;
 }
 

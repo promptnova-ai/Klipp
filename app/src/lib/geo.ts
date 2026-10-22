@@ -1,7 +1,19 @@
-export function sectorCenterToEwkt(value: string): string | null {
+export function sectorCenterToEwkt(value: unknown): string | null {
+  if (typeof value === 'object' && value !== null && 'type' in value && 'coordinates' in value) {
+    const point = value as { type: unknown; coordinates: unknown };
+    if (point.type === 'Point' && Array.isArray(point.coordinates) && point.coordinates.length >= 2) {
+      const [longitude, latitude] = point.coordinates;
+      if (typeof longitude === 'number' && typeof latitude === 'number') {
+        return coordinatesToEwkt(longitude, latitude);
+      }
+    }
+    return null;
+  }
+  if (typeof value !== 'string') return null;
+
   const trimmed = value.trim();
   const pointMatch = trimmed.match(/^(?:SRID=4326;)?POINT\s*\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)$/i);
-  if (pointMatch) return `SRID=4326;POINT(${pointMatch[1]} ${pointMatch[2]})`;
+  if (pointMatch) return coordinatesToEwkt(Number(pointMatch[1]), Number(pointMatch[2]));
 
   const hex = trimmed.replace(/^\\x/i, '').replace(/^0x/i, '');
   if (!/^[0-9a-f]+$/i.test(hex) || hex.length % 2 !== 0) return null;
@@ -26,6 +38,10 @@ export function sectorCenterToEwkt(value: string): string | null {
 
   const longitude = view.getFloat64(offset, littleEndian);
   const latitude = view.getFloat64(offset + 8, littleEndian);
+  return coordinatesToEwkt(longitude, latitude);
+}
+
+function coordinatesToEwkt(longitude: number, latitude: number) {
   if (!Number.isFinite(longitude) || !Number.isFinite(latitude)) return null;
   if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) return null;
   return `SRID=4326;POINT(${longitude} ${latitude})`;
