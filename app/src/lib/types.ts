@@ -36,6 +36,7 @@ export interface Sector {
   id: number;
   name: string;
   zone: ZoneName;
+  center: string;
   active: boolean;
 }
 

@@ -1,8 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 
 export default function ClientHomeScreen() {
+  const router = useRouter();
   const { profile } = useAuth();
 
   return (
@@ -15,13 +17,13 @@ export default function ClientHomeScreen() {
         <Text style={styles.eyebrow}>LIMPIEZA A DOMICILIO</Text>
         <Text style={styles.title}>Tu hogar, en buenas manos.</Text>
         <Text style={styles.greeting}>
-          Hola{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}. Próximamente podrás
-          reservar tu servicio desde aquí.
+          Hola{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}. Encuentra una ayuda
+          confiable para tu hogar en Santo Domingo.
         </Text>
-        <View style={styles.note}>
-          <Text style={styles.noteTitle}>Estamos preparando Klipp</Text>
-          <Text style={styles.noteText}>Tus servicios y reservas estarán en esta pantalla.</Text>
-        </View>
+        <Pressable accessibilityRole="button" onPress={() => router.push('/(client)/new-booking')} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
+          <Text style={styles.primaryButtonText}>Reservar un servicio</Text>
+        </Pressable>
+        <Text style={styles.noteText}>Precios claros, profesionales verificados y atención en tu sector.</Text>
       </View>
     </View>
   );
@@ -43,7 +45,8 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#16766c', fontSize: 11, fontWeight: '800' },
   title: { color: '#18332d', fontSize: 32, lineHeight: 38, fontWeight: '700' },
   greeting: { color: '#52615b', fontSize: 16, lineHeight: 24 },
-  note: { marginTop: 14, padding: 18, borderRadius: 8, backgroundColor: '#e7f1ed', gap: 6 },
-  noteTitle: { color: '#18332d', fontSize: 16, fontWeight: '700' },
-  noteText: { color: '#52615b', fontSize: 14, lineHeight: 20 },
+  primaryButton: { minHeight: 54, marginTop: 10, borderRadius: 7, backgroundColor: '#16766c', alignItems: 'center', justifyContent: 'center' },
+  primaryButtonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  pressed: { opacity: 0.82 },
+  noteText: { color: '#52615b', fontSize: 14, lineHeight: 21, marginTop: 5 },
 });
