@@ -11,6 +11,7 @@ type AuthContextValue = {
   profile: Profile | null;
   loading: boolean;
   profileError: string | null;
+  authError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<boolean>;
   signOut: () => Promise<void>;
@@ -24,12 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
+      if (nextSession) setAuthError(null);
       setProfileError(null);
       setLoading(Boolean(nextSession));
       if (!nextSession) setProfile(null);
@@ -45,6 +48,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       mounted = false;
       data.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    let mounted = true;
+    const handledAuthCodes = new Set<string>();
+    async function handleAuthUrl(url: string) {
+      const code = Linking.parse(url).queryParams?.code;
+      if (typeof code !== 'string' || handledAuthCodes.has(code)) return;
+      handledAuthCodes.add(code);
+
+      try {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error && mounted) setAuthError(error.message);
+      } catch (cause) {
+        if (mounted) {
+          setAuthError(cause instanceof Error ? cause.message : 'No pudimos confirmar tu cuenta.');
+        }
+      }
+    }
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      void handleAuthUrl(url);
+    });
+    void Linking.getInitialURL()
+      .then((url) => {
+        if (url) return handleAuthUrl(url);
+      })
+      .catch((cause: unknown) => {
+        if (mounted) {
+          setAuthError(cause instanceof Error ? cause.message : 'No pudimos confirmar tu cuenta.');
+        }
+      });
+
+    return () => {
+      mounted = false;
+      subscription.remove();
     };
   }, []);
 
@@ -78,11 +120,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session]);
 
   async function signIn(email: string, password: string) {
+    setAuthError(null);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   }
 
   async function signUp(email: string, password: string, fullName: string, role: UserRole) {
+    setAuthError(null);
     const emailRedirectTo =
       Platform.OS === 'web' && typeof window !== 'undefined'
         ? window.location.origin
@@ -116,7 +160,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ session, profile, loading, profileError, signIn, signUp, signOut, refreshProfile }}>
+      value={{
+        session,
+        profile,
+        loading,
+        profileError,
+        authError,
+        signIn,
+        signUp,
+        signOut,
+        refreshProfile,
+      }}>
       {children}
     </AuthContext.Provider>
   );

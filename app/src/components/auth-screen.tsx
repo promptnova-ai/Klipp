@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -22,7 +22,7 @@ type AuthScreenProps = { mode: 'login' | 'register' };
 export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const router = useRouter();
-  const { signIn, signUp } = useAuth();
+  const { session, signIn, signUp, authError } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,6 +30,10 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session) router.replace('/');
+  }, [router, session]);
 
   async function handleSubmit() {
     setError(null);
@@ -129,6 +133,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             />
 
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+            {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
             {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
             <Pressable
