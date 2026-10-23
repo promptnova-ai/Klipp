@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -11,6 +12,43 @@ import { formatDop } from '@/lib/format';
 import type { Address, ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
 
 type AddressOption = Address & { sectors: { name: string } | null };
+type BookingDateOption = { key: string; weekday: string; day: string; month: string };
+
+function getBusinessDateKey(date: Date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Santo_Domingo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) => parts.find((item) => item.type === type)?.value ?? '';
+  return `${part('year')}-${part('month')}-${part('day')}`;
+}
+
+function getDateOptions(): BookingDateOption[] {
+  const today = new Date(`${getBusinessDateKey(new Date())}T12:00:00.000Z`);
+  return Array.from({ length: 14 }, (_, index) => {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() + index);
+    const key = date.toISOString().slice(0, 10);
+    return {
+      key,
+      weekday: new Intl.DateTimeFormat('es-DO', { weekday: 'short', timeZone: 'UTC' }).format(date).replace('.', ''),
+      day: new Intl.DateTimeFormat('es-DO', { day: '2-digit', timeZone: 'UTC' }).format(date),
+      month: new Intl.DateTimeFormat('es-DO', { month: 'short', timeZone: 'UTC' }).format(date).replace('.', ''),
+    };
+  });
+}
+
+function formatSlotTime(value: string) {
+  const [hours, minutes] = value.split(':').map(Number);
+  return new Date(Date.UTC(2000, 0, 1, hours, minutes)).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'UTC',
+  });
+}
 
 function getAvailabilityWindow(date: string, time: string, durationMinutes: number | undefined) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !durationMinutes) return null;
@@ -30,6 +68,7 @@ function getAvailabilityWindow(date: string, time: string, durationMinutes: numb
 
 export function NewBookingScreen() {
   const router = useRouter();
+  const { serviceId: serviceIdParam, tierId: tierIdParam } = useLocalSearchParams<{ serviceId?: string; tierId?: string }>();
   const { session } = useAuth();
   const [services, setServices] = useState<ServiceType[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
@@ -39,6 +78,8 @@ export function NewBookingScreen() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [mode, setMode] = useState<'manual' | 'auto'>('manual');
   const [pros, setPros] = useState<ProCard[]>([]);
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
@@ -49,6 +90,11 @@ export function NewBookingScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const dateOptions = useMemo(getDateOptions, []);
+  const slotOptions = useMemo(
+    () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
+    [],
+  );
 
   useEffect(() => {
     async function loadOptions() {
@@ -63,18 +109,68 @@ export function NewBookingScreen() {
       else {
         const serviceRows = (serviceResult.data ?? []) as ServiceType[];
         setServices(serviceRows);
-        setTiers((tierResult.data ?? []) as PricingTier[]);
+        const tierRows = (tierResult.data ?? []) as PricingTier[];
+        setTiers(tierRows);
         setAddresses((addressResult.data ?? []) as unknown as AddressOption[]);
-        setSelectedServiceId(serviceRows[0]?.id ?? null);
+        const requestedServiceId = Number(serviceIdParam);
+        const initialServiceId = serviceRows.some((service) => service.id === requestedServiceId)
+          ? requestedServiceId
+          : serviceRows[0]?.id ?? null;
+        const requestedTierId = Number(tierIdParam);
+        const initialTier = tierRows.find((tier) => tier.id === requestedTierId && tier.service_type_id === initialServiceId);
+        setSelectedServiceId(initialServiceId);
+        setSelectedTierId(initialTier?.id ?? null);
       }
       setLoading(false);
     }
     void loadOptions();
-  }, [session?.user.id]);
+  }, [session?.user.id, serviceIdParam, tierIdParam]);
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
   const selectedAddress = addresses.find((address) => address.id === selectedAddressId) ?? null;
+
+  useEffect(() => {
+    if (!selectedAddress || !selectedTier || !scheduledDate) {
+      setAvailableSlots([]);
+      setScheduledTime('');
+      setLoadingSlots(false);
+      return;
+    }
+
+    let active = true;
+    setLoadingSlots(true);
+    setError(null);
+    setScheduledTime('');
+    void Promise.resolve(
+      supabase.rpc('get_available_booking_slots', {
+        p_address_id: selectedAddress.id,
+        p_pricing_tier_id: selectedTier.id,
+        p_date: scheduledDate,
+        p_mode: mode,
+      }),
+    )
+      .then(({ data, error: slotsError }) => {
+        if (!active) return;
+        if (slotsError) {
+          setError(slotsError.message);
+          setAvailableSlots([]);
+        } else {
+          setAvailableSlots(((data ?? []) as { slot_time: string }[]).map((slot) => slot.slot_time.slice(0, 5)));
+        }
+        setLoadingSlots(false);
+      })
+      .catch((cause: unknown) => {
+        if (!active) return;
+        setError(cause instanceof Error ? cause.message : 'No pudimos consultar los horarios disponibles.');
+        setAvailableSlots([]);
+        setLoadingSlots(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedAddress?.id, selectedTier?.id, scheduledDate, mode]);
 
   useEffect(() => {
     if (!selectedAddress) {
@@ -132,7 +228,7 @@ export function NewBookingScreen() {
     }
     void loadPros();
     return () => { active = false; };
-  }, [selectedAddress?.id, selectedAddress?.sector_id, scheduledDate, scheduledTime, selectedTier?.est_minutes]);
+  }, [selectedAddress?.id, selectedAddress?.sector_id, scheduledDate, scheduledTime, selectedTier?.est_minutes, mode]);
 
   async function showProProfile(pro: ProCard) {
     setExpandedProId((current) => current === pro.pro_id ? null : pro.pro_id);
@@ -189,9 +285,9 @@ export function NewBookingScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.back}><Text style={styles.backText}>‹  Volver</Text></Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
-      {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
+      {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
@@ -210,10 +306,53 @@ export function NewBookingScreen() {
         ))}
       </Section>
       <Section title="4. Fecha y hora">
-        <Text style={styles.label}>Fecha (AAAA-MM-DD)</Text>
-        <TextInput onChangeText={setScheduledDate} placeholder="2026-12-31" placeholderTextColor="#85918b" style={styles.input} value={scheduledDate} />
-        <Text style={styles.label}>Hora (hora de Santo Domingo)</Text>
-        <TextInput onChangeText={setScheduledTime} placeholder="09:00" placeholderTextColor="#85918b" style={styles.input} value={scheduledTime} />
+        <Text style={styles.label}>Elige el día</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateList}>
+          {dateOptions.map((option) => {
+            const selected = scheduledDate === option.key;
+            return (
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                key={option.key}
+                onPress={() => setScheduledDate(option.key)}
+                style={({ pressed }) => [styles.dateOption, selected && styles.dateOptionSelected, pressed && styles.choicePressed]}>
+                <Text style={[styles.dateWeekday, selected && styles.dateTextSelected]}>{option.weekday}</Text>
+                <Text style={[styles.dateDay, selected && styles.dateTextSelected]}>{option.day}</Text>
+                <Text style={[styles.dateMonth, selected && styles.dateTextSelected]}>{option.month}</Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <View style={styles.slotHeading}>
+          <Text style={styles.label}>Horarios disponibles</Text>
+          {scheduledDate && !loadingSlots && availableSlots.length > 0 && <Text style={styles.slotCount}>{availableSlots.length} horarios</Text>}
+        </View>
+        {!selectedAddress || !selectedTier || !scheduledDate ? (
+          <Text style={styles.body}>Selecciona tamaño, dirección y día para consultar los horarios disponibles.</Text>
+        ) : loadingSlots ? (
+          <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Buscando horarios disponibles...</Text></View>
+        ) : availableSlots.length === 0 ? (
+          <View style={styles.noSlots}><Text style={styles.noSlotsTitle}>No hay horarios disponibles</Text><Text style={styles.body}>Prueba otro día o cambia la dirección seleccionada.</Text></View>
+        ) : (
+          <View style={styles.slotGrid}>
+            {slotOptions.map((slot) => {
+              const available = availableSlots.includes(slot);
+              const selected = scheduledTime === slot;
+              return (
+                <Pressable
+                  accessibilityRole="radio"
+                  accessibilityState={{ disabled: !available, selected }}
+                  disabled={!available}
+                  key={slot}
+                  onPress={() => setScheduledTime(slot)}
+                  style={({ pressed }) => [styles.slotOption, selected && styles.slotOptionSelected, !available && styles.slotUnavailable, pressed && available && styles.choicePressed]}>
+                  <Text style={[styles.slotText, selected && styles.slotTextSelected, !available && styles.slotTextUnavailable]}>{formatSlotTime(slot)}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
       </Section>
       <Section title="5. Profesional">
         <View style={styles.modeOptions}>
@@ -226,7 +365,7 @@ export function NewBookingScreen() {
         {mode === 'manual' && selectedAddress && getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes) && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados con disponibilidad registrada para todo ese horario en este sector.</Text>}
         {mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
-            <Pressable onPress={() => void showProProfile(pro)} style={styles.proSummary}>
+            <Pressable onPress={() => void showProProfile(pro)} style={({ pressed }) => [styles.proSummary, pressed && styles.choicePressed]}>
               {pro.avatar_url ? <Image source={{ uri: pro.avatar_url }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{pro.full_name?.[0] ?? 'K'}</Text></View>}
               <View style={styles.proMain}>
                 <Text style={styles.proName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
@@ -240,7 +379,7 @@ export function NewBookingScreen() {
                 <Text style={styles.body}>{pro.bio || 'Este profesional aún no ha añadido una biografía.'}</Text>
                 <Text style={styles.reviewHeading}>Reseñas recientes</Text>
                 {proReviews.length === 0 ? <Text style={styles.body}>Todavía no hay reseñas.</Text> : proReviews.map((review) => <Text key={review.id} style={styles.reviewText}>★ {review.rating} {review.comment || ''}</Text>)}
-                <Pressable accessibilityRole="button" onPress={() => setSelectedProId(pro.pro_id)} style={styles.selectPro}><Text style={styles.selectProText}>{selectedProId === pro.pro_id ? 'Profesional seleccionado' : 'Elegir este profesional'}</Text></Pressable>
+                <Pressable accessibilityRole="button" onPress={() => setSelectedProId(pro.pro_id)} style={({ pressed }) => [styles.selectPro, pressed && styles.choicePressed]}><Text style={styles.selectProText}>{selectedProId === pro.pro_id ? 'Profesional seleccionado' : 'Elegir este profesional'}</Text></Pressable>
               </View>
             )}
           </View>
@@ -248,7 +387,26 @@ export function NewBookingScreen() {
         {mode === 'auto' && <Text style={styles.body}>Buscaremos un profesional disponible en el sector de tu dirección. La asignación automática se conectará más adelante.</Text>}
       </Section>
 
-      {selectedTier && <View style={styles.totalCard}><View><Text style={styles.totalLabel}>TOTAL DEL SERVICIO</Text><Text style={styles.totalHint}>Precio cerrado, sin sorpresas</Text></View><Text style={styles.priceLine}>{formatDop(selectedTier.price_dop)}</Text></View>}
+      {selectedTier && selectedAddress && scheduledDate && scheduledTime && (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeading}>
+            <View>
+              <Text style={styles.totalLabel}>RESUMEN DE TU RESERVA</Text>
+              <Text style={styles.summaryTitle}>{services.find((service) => service.id === selectedTier.service_type_id)?.name ?? 'Servicio'}</Text>
+            </View>
+            <View style={styles.summaryIcon}>
+              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#047857" size={18} />
+            </View>
+          </View>
+          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Tamaño</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>
+          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Fecha y hora</Text><Text style={styles.summaryValue}>{scheduledDate} · {formatSlotTime(scheduledTime)}</Text></View>
+          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Dirección</Text><Text numberOfLines={2} style={styles.summaryValue}>{selectedAddress.label || selectedAddress.street || selectedAddress.sectors?.name || 'Dirección seleccionada'}</Text></View>
+          {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
+          {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>Profesional disponible</Text></View>}
+          <View style={styles.summaryDivider} />
+          <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedTier.price_dop)}</Text></View>
+        </View>
+      )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
       <Pressable accessibilityRole="button" disabled={saving} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, saving && styles.disabled, pressed && !saving && styles.buttonPressed]}>
         {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Solicitar servicio</Text>}
@@ -274,20 +432,39 @@ function Choice({ selected, label, secondary, onPress }: { selected: boolean; la
 }
 
 function ModeOption({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  return <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={[styles.modeOption, selected && styles.choiceSelected]}><Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text></Pressable>;
+  return <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [styles.modeOption, selected && styles.choiceSelected, pressed && styles.choicePressed]}><Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text></Pressable>;
 }
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
+  pressed: { opacity: 0.88 },
   backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   section: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   sectionTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700', marginBottom: 2 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
-  input: { minHeight: 50, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, paddingHorizontal: 14, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  dateList: { gap: 8, paddingVertical: 2 },
+  dateOption: { width: 62, minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 3, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, backgroundColor: KlippColors.white },
+  dateOptionSelected: { borderColor: KlippColors.navy, backgroundColor: KlippColors.navy },
+  dateWeekday: { color: KlippColors.muted, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
+  dateDay: { color: KlippColors.navy, fontSize: 19, fontWeight: '700' },
+  dateMonth: { color: KlippColors.muted, fontSize: 10, textTransform: 'capitalize' },
+  dateTextSelected: { color: KlippColors.white },
+  slotHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 },
+  slotCount: { color: '#047857', fontSize: 12, fontWeight: '700' },
+  slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slotOption: { width: '31%', minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white },
+  slotOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  slotUnavailable: { borderColor: '#F1F5F9', backgroundColor: '#F8FAFC' },
+  slotText: { color: KlippColors.slate, fontSize: 12, fontWeight: '600' },
+  slotTextSelected: { color: KlippColors.blueDark },
+  slotTextUnavailable: { color: '#A8B2C0' },
+  slotsLoading: { minHeight: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
+  noSlots: { padding: 14, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 4 },
+  noSlotsTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
   choice: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
   choiceSelected: { borderColor: '#B8CBFF', backgroundColor: '#F4F7FF' },
   choicePressed: { opacity: 0.9 },
@@ -321,6 +498,16 @@ const styles = StyleSheet.create({
   totalLabel: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
   totalHint: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
   priceLine: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
+  summaryCard: { marginHorizontal: 20, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  summaryTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
+  summaryIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECFDF5' },
+  summaryRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  summaryLabel: { color: KlippColors.muted, fontSize: 12 },
+  summaryValue: { flex: 1, color: KlippColors.slate, fontSize: 12, fontWeight: '600', textAlign: 'right' },
+  summaryDivider: { height: 1, backgroundColor: KlippColors.border },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  priceLabel: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
   submit: { minHeight: 54, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 7 }, shadowRadius: 14, elevation: 3 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.55 },

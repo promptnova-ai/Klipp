@@ -1,21 +1,150 @@
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
+import { formatDop } from '@/lib/format';
+import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
+import { supabase } from '../../../lib/supabase';
+
+type CatalogService = ServiceType & { tiers: PricingTier[] };
+type SearchablePro = Pick<ProCard, 'pro_id' | 'full_name' | 'bio'>;
+
+function getCategory(service: ServiceType) {
+  const description = `${service.code} ${service.name}`.toLocaleLowerCase();
+  if (description.includes('barber')) return 'Barbería';
+  if (description.includes('estet') || description.includes('belleza') || description.includes('uña')) return 'Estética';
+  if (description.includes('limpieza') || description.includes('clean')) return 'Limpieza';
+  return 'Otros';
+}
+
+function ServiceSkeleton() {
+  const opacity = useMemo(() => new Animated.Value(0.45), []);
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.85, duration: 650, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.45, duration: 650, useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
+
+  return (
+    <View style={styles.skeletonCard}>
+      <Animated.View style={[styles.skeletonIcon, { opacity }]} />
+      <View style={styles.skeletonCopy}>
+        <Animated.View style={[styles.skeletonLine, styles.skeletonTitle, { opacity }]} />
+        <Animated.View style={[styles.skeletonLine, { opacity }]} />
+        <Animated.View style={[styles.skeletonLine, styles.skeletonShort, { opacity }]} />
+      </View>
+    </View>
+  );
+}
 
 export default function ClientHomeScreen() {
   const router = useRouter();
   const { profile } = useAuth();
-  const firstName = profile?.full_name?.trim().split(/\s+/)[0];
+  const [services, setServices] = useState<CatalogService[]>([]);
+  const [pros, setPros] = useState<SearchablePro[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [search, setSearch] = useState('');
+  const [selectedService, setSelectedService] = useState<CatalogService | null>(null);
+  const [selectedDetailTierId, setSelectedDetailTierId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  function openBooking() {
-    router.push('/(client)/new-booking');
+  async function loadCatalog() {
+    setLoading(true);
+    setLoadError(null);
+    const [serviceResult, tierResult, proResult] = await Promise.all([
+      supabase.from('service_types').select('id, code, name, description, active').eq('active', true).order('name'),
+      supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
+      supabase.from('pro_cards').select('pro_id, full_name, bio').order('full_name'),
+    ]);
+    const error = serviceResult.error ?? tierResult.error ?? proResult.error;
+    if (error) {
+      setLoadError(error.message);
+      setLoading(false);
+      return;
+    }
+    const tiers = (tierResult.data ?? []) as PricingTier[];
+    setServices(
+      ((serviceResult.data ?? []) as ServiceType[]).map((service) => ({
+        ...service,
+        tiers: tiers.filter((tier) => tier.service_type_id === service.id),
+      })),
+    );
+    setPros((proResult.data ?? []) as SearchablePro[]);
+    setLoading(false);
   }
 
+  useEffect(() => {
+    void loadCatalog();
+  }, []);
+
+  const categories = useMemo(
+    () => ['Todos', ...new Set(services.map(getCategory))],
+    [services],
+  );
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const visibleServices = services.filter((service) => {
+    const matchesCategory = selectedCategory === 'Todos' || getCategory(service) === selectedCategory;
+    const matchesSearch =
+      !normalizedSearch ||
+      `${service.name} ${service.description ?? ''} ${service.tiers.map((tier) => tier.label).join(' ')}`
+        .toLocaleLowerCase()
+        .includes(normalizedSearch);
+    return matchesCategory && matchesSearch;
+  });
+  const visiblePros = normalizedSearch
+    ? pros.filter(
+        (pro) =>
+          (selectedCategory === 'Todos' || selectedCategory === 'Limpieza') &&
+          `${pro.full_name ?? ''} ${pro.bio ?? ''}`.toLocaleLowerCase().includes(normalizedSearch),
+      )
+    : [];
+
+  function openBooking(service: CatalogService, tier?: PricingTier) {
+    setSelectedService(null);
+    router.push({
+      pathname: '/(client)/new-booking',
+      params: {
+        serviceId: String(service.id),
+        ...(tier ? { tierId: String(tier.id) } : {}),
+      },
+    });
+  }
+
+  function showServiceDetails(service: CatalogService) {
+    setSelectedService(service);
+    setSelectedDetailTierId(service.tiers[0]?.id ?? null);
+  }
+
+  function clearFilters() {
+    setSearch('');
+    setSelectedCategory('Todos');
+  }
+
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0];
+  const featuredService = services[0];
+  const selectedDetailTier = selectedService?.tiers.find((tier) => tier.id === selectedDetailTierId);
+
   return (
-    <ScrollView contentContainerStyle={styles.page} showsVerticalScrollIndicator={false}>
+    <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
@@ -41,68 +170,141 @@ export default function ClientHomeScreen() {
       </View>
 
       <View style={styles.searchBar}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Buscar un servicio de limpieza"
-          onPress={openBooking}
-          style={({ pressed }) => [styles.searchAction, pressed && styles.pressed]}>
-          <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.muted} size={20} />
-          <View style={styles.searchCopy}>
-            <Text style={styles.searchTitle}>Buscar un servicio</Text>
-            <Text style={styles.searchSubtitle}>Limpieza para tu hogar</Text>
-          </View>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ver opciones de servicio"
-          onPress={openBooking}
-          style={({ pressed }) => [styles.filterButton, pressed && styles.pressed]}>
-          <SymbolView name={{ ios: 'slider.horizontal.3', android: 'tune', web: 'tune' }} tintColor={KlippColors.navy} size={19} />
-        </Pressable>
+        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.muted} size={20} />
+        <TextInput
+          accessibilityLabel="Buscar servicios o profesionales"
+          autoCapitalize="none"
+          onChangeText={setSearch}
+          placeholder="Buscar limpieza, profesionales..."
+          placeholderTextColor={KlippColors.muted}
+          returnKeyType="search"
+          style={styles.searchInput}
+          value={search}
+        />
+        {!!search && (
+          <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setSearch('')} style={styles.clearSearch}>
+            <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor={KlippColors.muted} size={18} />
+          </Pressable>
+        )}
       </View>
 
-      <View style={styles.hero}>
-        <View style={styles.heroAccent} />
-        <View style={styles.heroTopline}>
+      {!search && (
+        <View style={styles.hero}>
+          <View style={styles.heroAccent} />
           <View style={styles.heroBadge}>
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
             <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
           </View>
+          <Text style={styles.heroTitle}>Tu hogar,{'\n'}en buenas manos.</Text>
+          <Text style={styles.heroText}>Profesionales verificados para que disfrutes más de tu tiempo.</Text>
+          {featuredService && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => showServiceDetails(featuredService)}
+              style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}>
+              <Text style={styles.primaryButtonText}>Explorar servicios</Text>
+              <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.navy} size={17} />
+            </Pressable>
+          )}
         </View>
-        <Text style={styles.heroTitle}>Tu hogar,{'\n'}en buenas manos.</Text>
-        <Text style={styles.heroText}>Profesionales verificados para que disfrutes más de tu tiempo.</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={openBooking}
-          style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}>
-          <Text style={styles.primaryButtonText}>Reservar limpieza</Text>
-          <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.navy} size={17} />
-        </Pressable>
-      </View>
+      )}
 
-      <View style={styles.sectionHeading}>
+      <View style={styles.catalogHeader}>
         <View>
-          <Text style={styles.sectionEyebrow}>HECHO PARA TU HOGAR</Text>
-          <Text style={styles.sectionTitle}>Una buena limpieza, fácil</Text>
+          <Text style={styles.sectionEyebrow}>CATÁLOGO KLIPP</Text>
+          <Text style={styles.sectionTitle}>Servicios para ti</Text>
         </View>
         <View style={styles.serviceIcon}>
           <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={21} />
         </View>
       </View>
 
-      <Pressable
-        accessibilityRole="button"
-        onPress={openBooking}
-        style={({ pressed }) => [styles.serviceCard, pressed && styles.cardPressed]}>
-        <View style={styles.serviceCardIcon}>
-          <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={23} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
+        {categories.map((category) => {
+          const selected = selectedCategory === category;
+          return (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ selected }}
+              key={category}
+              onPress={() => setSelectedCategory(category)}
+              style={({ pressed }) => [styles.categoryPill, selected && styles.categorySelected, pressed && styles.pressed]}>
+              <Text style={[styles.categoryText, selected && styles.categoryTextSelected]}>{category}</Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {loading ? (
+        <View style={styles.serviceList}><ServiceSkeleton /><ServiceSkeleton /></View>
+      ) : loadError ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text>
+          <Text style={styles.emptyText}>{loadError}</Text>
+          <Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}>
+            <Text style={styles.clearButtonText}>Intentar de nuevo</Text>
+          </Pressable>
         </View>
-        <View style={styles.serviceCopy}>
-          <Text style={styles.serviceTitle}>Limpieza del hogar</Text>
-          <Text style={styles.serviceDescription}>Elige el tamaño, tu horario y quién te ayudará.</Text>
-          <Text style={styles.serviceLink}>Explorar opciones  <Text style={styles.linkArrow}>›</Text></Text>
+      ) : visibleServices.length === 0 && visiblePros.length === 0 ? (
+        <View style={styles.emptyState}>
+          <View style={styles.emptyIcon}>
+            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.blueDark} size={25} />
+          </View>
+          <Text style={styles.emptyTitle}>No encontramos resultados</Text>
+          <Text style={styles.emptyText}>
+            {selectedCategory !== 'Todos'
+              ? 'No encontramos servicios en esta categoría. Prueba otra búsqueda o limpia los filtros.'
+              : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}
+          </Text>
+          <Pressable accessibilityRole="button" onPress={clearFilters} style={styles.clearButton}>
+            <Text style={styles.clearButtonText}>Limpiar filtros</Text>
+          </Pressable>
         </View>
-      </Pressable>
+      ) : (
+        <View style={styles.serviceList}>
+          {visibleServices.map((service) => {
+            const lowestTier = service.tiers[0];
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={service.id}
+                onPress={() => showServiceDetails(service)}
+                style={({ pressed }) => [styles.serviceCard, pressed && styles.cardPressed]}>
+                <View style={styles.serviceCardIcon}>
+                  <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={23} />
+                </View>
+                <View style={styles.serviceCopy}>
+                  <View style={styles.serviceCardTop}>
+                    <Text style={styles.serviceTitle}>{service.name}</Text>
+                    <View style={styles.categoryTag}><Text style={styles.categoryTagText}>{getCategory(service)}</Text></View>
+                  </View>
+                  <Text style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
+                  <View style={styles.serviceMeta}>
+                    {lowestTier && <Text style={styles.servicePrice}>Desde {formatDop(lowestTier.price_dop)}</Text>}
+                    {lowestTier && <Text style={styles.metaDot}>·</Text>}
+                    {lowestTier && <Text style={styles.serviceDuration}>{lowestTier.est_minutes} min en adelante</Text>}
+                  </View>
+                  <Text style={styles.serviceLink}>Ver detalles  <Text style={styles.linkArrow}>›</Text></Text>
+                </View>
+              </Pressable>
+            );
+          })}
+          {visiblePros.length > 0 && (
+            <View style={styles.proResults}>
+              <Text style={styles.proResultsTitle}>Profesionales</Text>
+              {visiblePros.map((pro) => (
+                <View key={pro.pro_id} style={styles.proResult}>
+                  <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
+                  <View style={styles.proResultCopy}>
+                    <Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
+                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional de limpieza verificado'}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       <View style={styles.trustRow}>
         <View style={styles.trustIcon}>
@@ -113,12 +315,68 @@ export default function ClientHomeScreen() {
           <Text style={styles.trustText}>Profesionales verificados en tu sector.</Text>
         </View>
       </View>
+
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setSelectedService(null)}
+        transparent
+        visible={!!selectedService}>
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Cerrar detalles" onPress={() => setSelectedService(null)} style={styles.modalBackdrop} />
+          {selectedService && (
+            <View style={styles.detailSheet}>
+              <View style={styles.sheetHandle} />
+              <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.detailIllustration}>
+                  <View style={styles.detailIllustrationIcon}>
+                    <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={34} />
+                  </View>
+                  <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
+                </View>
+                <Text style={styles.detailTitle}>{selectedService.name}</Text>
+                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar limpio y cuidado.'}</Text>
+                <View style={styles.benefitList}>
+                  {['Profesionales verificados', 'Precio cerrado según el tamaño', 'Reserva en el horario que prefieras'].map((benefit) => (
+                    <View key={benefit} style={styles.benefit}>
+                      <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#047857" size={18} />
+                      <Text style={styles.benefitText}>{benefit}</Text>
+                    </View>
+                  ))}
+                </View>
+                <Text style={styles.tierHeading}>Elige el tamaño de tu hogar</Text>
+                {selectedService.tiers.map((tier) => (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: tier.id === selectedDetailTierId }}
+                    key={tier.id}
+                    onPress={() => setSelectedDetailTierId(tier.id)}
+                    style={({ pressed }) => [styles.tierCard, tier.id === selectedDetailTierId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    <View style={styles.tierCopy}>
+                      <Text style={styles.tierTitle}>{tier.label}</Text>
+                      <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
+                    </View>
+                    <Text style={styles.tierPrice}>{formatDop(tier.price_dop)}</Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!selectedDetailTier}
+                  onPress={() => selectedDetailTier && openBooking(selectedService, selectedDetailTier)}
+                  style={({ pressed }) => [styles.bookButton, pressed && styles.buttonPressed, !selectedDetailTier && styles.disabled]}>
+                  <Text style={styles.bookButtonText}>Reservar cita</Text>
+                  <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.white} size={17} />
+                </Pressable>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 58, paddingBottom: 32, gap: 24, backgroundColor: KlippColors.canvas },
+  page: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 58, paddingBottom: 32, gap: 22, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
@@ -131,37 +389,89 @@ const styles = StyleSheet.create({
   greeting: { color: KlippColors.navy, fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5 },
   wave: { color: KlippColors.gold, fontSize: 20 },
   greetingSubtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  searchBar: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, paddingLeft: 16, paddingRight: 9, borderRadius: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
-  searchAction: { flex: 1, minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  searchCopy: { flex: 1, gap: 3 },
-  searchTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '600' },
-  searchSubtitle: { color: KlippColors.muted, fontSize: 12 },
-  filterButton: { width: 44, height: 44, borderRadius: 13, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' },
+  searchBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  searchInput: { flex: 1, height: 52, color: KlippColors.navy, fontSize: 14 },
+  clearSearch: { padding: 5 },
   hero: { overflow: 'hidden', padding: 22, borderRadius: 24, backgroundColor: KlippColors.navy, gap: 13 },
   heroAccent: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#14294B', right: -75, top: -85 },
-  heroTopline: { flexDirection: 'row', alignItems: 'center' },
-  heroBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: '#1B2A42' },
+  heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: '#1B2A42' },
   heroBadgeText: { color: '#D4E1F4', fontSize: 9, fontWeight: '700', letterSpacing: 0.7 },
   heroTitle: { color: KlippColors.white, fontSize: 30, lineHeight: 35, fontWeight: '700', letterSpacing: -0.6, marginTop: 4 },
   heroText: { maxWidth: 290, color: '#CBD5E1', fontSize: 14, lineHeight: 21 },
-  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, borderRadius: 13, backgroundColor: KlippColors.teal, shadowColor: '#000', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 4 }, shadowRadius: 8, elevation: 2 },
+  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, borderRadius: 13, backgroundColor: KlippColors.teal },
   primaryButtonText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
-  sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   sectionEyebrow: { color: KlippColors.blueDark, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
   sectionTitle: { color: KlippColors.navy, fontSize: 19, fontWeight: '700', marginTop: 5 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
-  serviceCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 15, padding: 18, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  categories: { gap: 9, paddingVertical: 1 },
+  categoryPill: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  categorySelected: { borderColor: KlippColors.navy, backgroundColor: KlippColors.navy },
+  categoryText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
+  categoryTextSelected: { color: KlippColors.white },
+  serviceList: { gap: 14 },
+  serviceCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
-  serviceCopy: { flex: 1, gap: 6 },
-  serviceTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  serviceCopy: { flex: 1, gap: 7 },
+  serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  serviceTitle: { flex: 1, color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: '#F1F5F9' },
+  categoryTagText: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
   serviceDescription: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
-  serviceLink: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', marginTop: 4 },
+  serviceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
+  servicePrice: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  metaDot: { color: KlippColors.muted },
+  serviceDuration: { color: KlippColors.muted, fontSize: 12 },
+  serviceLink: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', marginTop: 2 },
   linkArrow: { fontSize: 18 },
+  proResults: { padding: 16, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12 },
+  proResultsTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  proResult: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  proAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
+  proAvatarText: { color: KlippColors.blueDark, fontSize: 16, fontWeight: '700' },
+  proResultCopy: { flex: 1, gap: 3 },
+  proResultName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  proResultBio: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
+  emptyState: { alignItems: 'center', padding: 22, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
+  emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  emptyText: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  clearButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 2, borderRadius: 12, backgroundColor: '#EEF4FF' },
+  clearButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  skeletonCard: { flexDirection: 'row', gap: 14, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  skeletonIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#E2E8F0' },
+  skeletonCopy: { flex: 1, gap: 10, paddingVertical: 2 },
+  skeletonLine: { width: '90%', height: 10, borderRadius: 5, backgroundColor: '#E2E8F0' },
+  skeletonTitle: { width: '55%', height: 13 },
+  skeletonShort: { width: '40%' },
   trustRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 16, backgroundColor: '#ECFDF5' },
   trustIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' },
   trustCopy: { flex: 1, gap: 3 },
   trustTitle: { color: '#065F46', fontSize: 14, fontWeight: '700' },
   trustText: { color: '#047857', fontSize: 12, lineHeight: 18 },
+  modalRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.42)' },
+  modalBackdrop: { ...StyleSheet.absoluteFill },
+  detailSheet: { maxHeight: '92%', paddingTop: 10, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: KlippColors.canvas },
+  sheetHandle: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1', marginBottom: 8 },
+  sheetContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 14 },
+  detailIllustration: { minHeight: 132, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 20, backgroundColor: '#EEF4FF' },
+  detailIllustrationIcon: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.white },
+  detailCategory: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  detailTitle: { color: KlippColors.navy, fontSize: 23, fontWeight: '700' },
+  detailDescription: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  benefitList: { gap: 10, paddingVertical: 3 },
+  benefit: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  benefitText: { color: KlippColors.slate, fontSize: 13, fontWeight: '500' },
+  tierHeading: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
+  tierCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  tierCardSelected: { borderColor: '#B8CBFF', backgroundColor: '#F4F7FF' },
+  tierCopy: { gap: 4 },
+  tierTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  tierMeta: { color: KlippColors.muted, fontSize: 12 },
+  tierPrice: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '800' },
+  bookButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 14, backgroundColor: KlippColors.blue },
+  bookButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
+  disabled: { opacity: 0.5 },
   pressed: { opacity: 0.9 },
   buttonPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   cardPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
