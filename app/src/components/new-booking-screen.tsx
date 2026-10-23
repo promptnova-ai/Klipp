@@ -199,7 +199,7 @@ export function NewBookingScreen() {
       </Section>
       <Section title="2. Tamaño de la vivienda">
         {visibleTiers.length === 0 ? <Text style={styles.body}>No hay tamaños configurados para este servicio.</Text> : visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={`${tier.label} · ${formatDop(tier.price_dop)}`} onPress={() => setSelectedTierId(tier.id)} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => setSelectedTierId(tier.id)} />
         ))}
       </Section>
       <Section title="3. Dirección">
@@ -248,9 +248,9 @@ export function NewBookingScreen() {
         {mode === 'auto' && <Text style={styles.body}>Buscaremos un profesional disponible en el sector de tu dirección. La asignación automática se conectará más adelante.</Text>}
       </Section>
 
-      {selectedTier && <Text style={styles.priceLine}>Total del servicio: {formatDop(selectedTier.price_dop)}</Text>}
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-      <Pressable accessibilityRole="button" disabled={saving} onPress={() => void createBooking()} style={[styles.submit, saving && styles.disabled]}>
+      {selectedTier && <View style={styles.totalCard}><View><Text style={styles.totalLabel}>TOTAL DEL SERVICIO</Text><Text style={styles.totalHint}>Precio cerrado, sin sorpresas</Text></View><Text style={styles.priceLine}>{formatDop(selectedTier.price_dop)}</Text></View>}
+      {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
+      <Pressable accessibilityRole="button" disabled={saving} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, saving && styles.disabled, pressed && !saving && styles.buttonPressed]}>
         {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Solicitar servicio</Text>}
       </Pressable>
     </ScrollView>
@@ -261,8 +261,16 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
 }
 
-function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
-  return <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={[styles.choice, selected && styles.choiceSelected]}><Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text></Pressable>;
+function Choice({ selected, label, secondary, onPress }: { selected: boolean; label: string; secondary?: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={({ pressed }) => [styles.choice, selected && styles.choiceSelected, pressed && styles.choicePressed]}>
+      <View style={styles.choiceCopy}>
+        <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text>
+        {secondary && <Text style={styles.choiceSecondary}>{secondary}</Text>}
+      </View>
+      <View style={[styles.radio, selected && styles.radioSelected]}>{selected && <View style={styles.radioDot} />}</View>
+    </Pressable>
+  );
 }
 
 function ModeOption({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
@@ -270,45 +278,56 @@ function ModeOption({ label, selected, onPress }: { label: string; selected: boo
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 38, gap: 14, backgroundColor: KlippColors.canvas },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  back: { alignSelf: 'flex-start', paddingVertical: 6 },
+  page: { paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
+  back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
   backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  section: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 10 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  section: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  sectionTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700', marginBottom: 2 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 2 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
-  choice: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 6, backgroundColor: KlippColors.white },
-  choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
-  choiceText: { color: KlippColors.muted, fontSize: 14, fontWeight: '600' },
+  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
+  input: { minHeight: 50, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, paddingHorizontal: 14, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  choice: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
+  choiceSelected: { borderColor: '#B8CBFF', backgroundColor: '#F4F7FF' },
+  choicePressed: { opacity: 0.9 },
+  choiceCopy: { flex: 1, gap: 3 },
+  choiceText: { color: KlippColors.slate, fontSize: 14, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.blueDark },
-  empty: { color: '#68756f', fontSize: 14, padding: 14, borderRadius: 7, backgroundColor: '#fff' },
+  choiceSecondary: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
+  radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center' },
+  radioSelected: { borderColor: KlippColors.blue },
+  radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: KlippColors.blue },
+  empty: { color: KlippColors.muted, fontSize: 14, padding: 16, marginHorizontal: 20, borderRadius: 16, backgroundColor: KlippColors.white },
   emptyInline: { gap: 6 },
-  modeOptions: { flexDirection: 'row', gap: 8 },
-  modeOption: { flex: 1, minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 6, backgroundColor: KlippColors.white },
-  proCard: { padding: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 7, backgroundColor: KlippColors.white, gap: 10 },
-  proCardSelected: { borderColor: KlippColors.blue },
+  modeOptions: { flexDirection: 'row', gap: 9 },
+  modeOption: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
+  proCard: { padding: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
+  proCardSelected: { borderColor: '#B8CBFF', backgroundColor: '#F8FAFF' },
   proSummary: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#e7f1ed' },
-  avatarFallback: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e7f1ed' },
-  avatarInitial: { color: '#125e56', fontSize: 20, fontWeight: '700' },
+  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#EEF4FF' },
+  avatarFallback: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
+  avatarInitial: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '700' },
   proMain: { flex: 1, gap: 2 },
-  proName: { color: '#18332d', fontSize: 15, fontWeight: '700' },
-  rating: { color: '#A46D00', fontSize: 13, fontWeight: '700' },
+  proName: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  rating: { color: '#946200', fontSize: 13, fontWeight: '700' },
   profileLink: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
-  profileDetails: { paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e6ede9', gap: 8 },
-  reviewHeading: { color: '#263b34', fontSize: 13, fontWeight: '700', marginTop: 4 },
-  reviewText: { color: '#52615b', fontSize: 13, lineHeight: 19 },
-  selectPro: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 6, backgroundColor: '#EEF4FF' },
+  profileDetails: { paddingTop: 12, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 9 },
+  reviewHeading: { color: KlippColors.navy, fontSize: 13, fontWeight: '700', marginTop: 4 },
+  reviewText: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
+  selectPro: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
   selectProText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
-  priceLine: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
-  submit: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  totalCard: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 16, borderRadius: 18, backgroundColor: '#EEF4FF' },
+  totalLabel: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
+  totalHint: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
+  priceLine: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
+  submit: { minHeight: 54, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 7 }, shadowRadius: 14, elevation: 3 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.55 },
+  buttonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+  horizontalMargin: { marginHorizontal: 20 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
-  successBanner: { padding: 14, borderRadius: 7, backgroundColor: '#E6F8F0', gap: 7 },
+  successBanner: { padding: 16, marginHorizontal: 20, borderRadius: 16, backgroundColor: '#ECFDF5', gap: 7 },
   successTitle: { color: '#067647', fontSize: 14, lineHeight: 20, fontWeight: '700' },
   successLink: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
 });

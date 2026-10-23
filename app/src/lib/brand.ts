@@ -8,9 +8,9 @@ export const KlippColors = {
   tealDark: '#00B8A9',
   gold: '#FFB800',
   goldLight: '#FFF4D6',
-  canvas: '#F8FAFC',
+  canvas: '#FAFAFC',
   white: '#FFFFFF',
   muted: '#64748B',
-  border: '#E2E8F0',
+  border: '#F1F5F9',
   danger: '#B42318',
 } as const;

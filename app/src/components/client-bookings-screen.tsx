@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
@@ -129,19 +130,55 @@ export function ClientBookingsScreen() {
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
         const canReview = ['completed', 'confirmed'].includes(booking.status) && !!booking.pro_id && !review;
+        const statusLabel = searching ? 'Buscando profesional' : statusLabels[booking.status];
+        const statusPillTone = ['completed', 'confirmed'].includes(booking.status)
+          ? styles.statusPillSuccess
+          : ['cancelled', 'disputed', 'expired'].includes(booking.status)
+            ? styles.statusPillNeutral
+            : styles.statusPillActive;
+        const statusTextTone = ['completed', 'confirmed'].includes(booking.status)
+          ? styles.statusTextSuccess
+          : ['cancelled', 'disputed', 'expired'].includes(booking.status)
+            ? styles.statusTextNeutral
+            : styles.statusTextActive;
+        const statusDotTone = ['completed', 'confirmed'].includes(booking.status)
+          ? styles.statusDotSuccess
+          : ['cancelled', 'disputed', 'expired'].includes(booking.status)
+            ? styles.statusDotNeutral
+            : styles.statusDotActive;
         return (
           <View key={booking.id} style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
-              <Text style={styles.status}>{searching ? 'Buscando profesional' : statusLabels[booking.status]}</Text>
+              <View style={styles.serviceHeading}>
+                <View style={styles.serviceIcon}>
+                  <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={19} />
+                </View>
+                <View style={styles.serviceHeadingCopy}>
+                  <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
+                  <Text style={styles.tier}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
+                </View>
+              </View>
+              <View style={[styles.statusPill, statusPillTone]}>
+                <View style={[styles.statusDot, statusDotTone]} />
+                <Text style={[styles.status, statusTextTone]}>{statusLabel}</Text>
+              </View>
             </View>
-            <Text style={styles.body}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
-            <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
-            <Text style={styles.body}>Dirección: {booking.addresses?.label || booking.addresses?.street || booking.addresses?.sectors?.name || 'No disponible'}</Text>
-            {!!booking.addresses?.references_text && <Text style={styles.body}>Referencias: {booking.addresses.references_text}</Text>}
-            <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
+            <View style={styles.cardDivider} />
+            <View style={styles.detailRow}>
+              <SymbolView name={{ ios: 'calendar', android: 'event', web: 'event' }} tintColor={KlippColors.muted} size={17} />
+              <Text style={styles.body}>{formatBusinessDate(booking.scheduled_start)}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.muted} size={17} />
+              <Text style={styles.body}>{booking.addresses?.label || booking.addresses?.street || booking.addresses?.sectors?.name || 'Dirección no disponible'}</Text>
+            </View>
+            {!!booking.addresses?.references_text && <Text style={styles.reference}>{booking.addresses.references_text}</Text>}
+            {pro && <View style={styles.proChip}><View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View><Text style={styles.proText}>Con {pro.full_name ?? 'Profesional Klipp'}</Text></View>}
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Total</Text>
+              <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
+            </View>
             {booking.status === 'awaiting_payment' && <View style={styles.payment}><Text style={styles.paymentTitle}>Pago pendiente</Text><Text style={styles.body}>La integración de pagos estará disponible más adelante.</Text></View>}
-            {pro && <Text style={styles.body}>Profesional: {pro.full_name ?? 'Profesional Klipp'}</Text>}
             {booking.status === 'completed' && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void confirmService(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Confirmando...' : 'Confirmar servicio'}</Text></Pressable>}
             {canReview && (
               <View style={styles.reviewForm}>
@@ -162,29 +199,53 @@ export function ClientBookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  empty: { marginTop: 20, padding: 18, borderRadius: 8, backgroundColor: '#fff', gap: 7 },
-  card: { padding: 17, borderRadius: 8, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  cardHeader: { gap: 5 },
-  cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
-  status: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  page: { paddingBottom: 35, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
+  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
+  empty: { marginTop: 4, marginHorizontal: 20, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
+  card: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  cardHeader: { gap: 12 },
+  serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
+  serviceHeadingCopy: { flex: 1, gap: 3 },
+  cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  tier: { color: KlippColors.muted, fontSize: 13 },
+  statusPill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  statusPillActive: { backgroundColor: '#EEF4FF' },
+  statusPillSuccess: { backgroundColor: '#ECFDF5' },
+  statusPillNeutral: { backgroundColor: '#F1F5F9' },
+  statusTextActive: { color: KlippColors.blueDark },
+  statusTextSuccess: { color: '#047857' },
+  statusTextNeutral: { color: KlippColors.muted },
+  statusDotActive: { backgroundColor: KlippColors.blueDark },
+  statusDotSuccess: { backgroundColor: '#047857' },
+  statusDotNeutral: { backgroundColor: KlippColors.muted },
+  status: { fontSize: 11, fontWeight: '700' },
+  cardDivider: { height: 1, backgroundColor: KlippColors.border },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  price: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 3 },
-  payment: { padding: 12, borderRadius: 6, backgroundColor: KlippColors.goldLight, gap: 4 },
+  reference: { color: KlippColors.muted, fontSize: 12, lineHeight: 18, marginLeft: 26 },
+  proChip: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  proAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
+  proAvatarText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  proText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 13, backgroundColor: '#F4F7FF' },
+  priceLabel: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
+  price: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '800' },
+  payment: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.goldLight, gap: 4 },
   paymentTitle: { color: '#8A5B00', fontSize: 14, fontWeight: '700' },
-  button: { minHeight: 46, marginTop: 5, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  button: { minHeight: 48, marginTop: 2, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.55 },
-  reviewForm: { marginTop: 10, paddingTop: 13, borderTopWidth: 1, borderTopColor: '#e6ede9', gap: 9 },
+  reviewForm: { marginTop: 3, paddingTop: 15, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 10 },
   reviewTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   ratingRow: { flexDirection: 'row', gap: 8 },
   star: { paddingVertical: 2, paddingHorizontal: 3 },
   starText: { color: '#A46D00', fontSize: 28 },
-  commentInput: { minHeight: 70, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, padding: 10, color: KlippColors.navy, textAlignVertical: 'top' },
-  reviewButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
-  reviewDone: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, marginTop: 8 },
+  commentInput: { minHeight: 74, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, padding: 12, color: KlippColors.navy, textAlignVertical: 'top' },
+  reviewButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
+  reviewDone: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, marginTop: 4 },
   notice: { color: '#067647', fontSize: 14 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
 });
