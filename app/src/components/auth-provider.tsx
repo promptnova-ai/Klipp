@@ -1,5 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import * as Linking from 'expo-linking';
+import { Platform } from 'react-native';
 
 import { supabase } from '../../lib/supabase';
 import type { Profile, UserRole } from '@/lib/types';
@@ -81,10 +83,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signUp(email: string, password: string, fullName: string, role: UserRole) {
+    const emailRedirectTo =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.location.origin
+        : Linking.createURL('/');
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { role, full_name: fullName } },
+      options: { data: { role, full_name: fullName }, emailRedirectTo },
     });
     if (error) throw error;
     return Boolean(data.session);
