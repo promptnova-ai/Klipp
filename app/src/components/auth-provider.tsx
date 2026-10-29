@@ -14,7 +14,7 @@ type AuthContextValue = {
   profileError: string | null;
   authError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role: UserRole) => Promise<boolean>;
+  signUp: (email: string, password: string, fullName: string, role: UserRole, metadata?: Record<string, unknown>) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -126,7 +126,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
-  async function signUp(email: string, password: string, fullName: string, role: UserRole) {
+  async function signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    role: UserRole,
+    metadata: Record<string, unknown> = {},
+  ) {
     setAuthError(null);
     const emailRedirectTo =
       Platform.OS === 'web' && typeof window !== 'undefined'
@@ -135,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { role, full_name: fullName }, emailRedirectTo },
+      options: { data: { ...metadata, role, full_name: fullName }, emailRedirectTo },
     });
     if (error) throw error;
     return Boolean(data.session);

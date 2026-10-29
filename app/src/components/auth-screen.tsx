@@ -100,7 +100,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                       accessibilityRole="radio"
                       accessibilityState={{ selected: role === value }}
                       key={value}
-                      onPress={() => setRole(value)}
+                      onPress={() => value === 'pro' ? router.push('/(auth)/pro-register') : setRole(value)}
                       style={[styles.roleOption, role === value && styles.roleOptionSelected]}>
                       <Text style={[styles.roleText, role === value && styles.roleTextSelected]}>{label}</Text>
                     </Pressable>

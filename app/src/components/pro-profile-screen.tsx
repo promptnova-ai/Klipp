@@ -15,8 +15,45 @@ type ProfessionalService = {
   est_minutes: number;
 };
 
+type RegistrationDraft = {
+  phone: string;
+  bio: string;
+  years_experience: number | null;
+  services: ProfessionalService[];
+  coverage: { latitude: number; longitude: number; radius_km: number } | null;
+  availability: { weekday: number; start_time: string; end_time: string }[];
+};
+
 const weekdayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const serviceRadiiKm = [5, 10, 15, 20, 30, 50];
+
+function getRegistrationDraft(value: unknown): RegistrationDraft | null {
+  if (!value || typeof value !== 'object') return null;
+  const draft = value as Partial<RegistrationDraft>;
+  return {
+    phone: typeof draft.phone === 'string' ? draft.phone : '',
+    bio: typeof draft.bio === 'string' ? draft.bio : '',
+    years_experience: typeof draft.years_experience === 'number' ? draft.years_experience : null,
+    services: Array.isArray(draft.services) ? draft.services.filter((service) =>
+      Number.isInteger(service.service_type_id)
+      && Number.isFinite(service.base_price_dop)
+      && Number.isInteger(service.est_minutes),
+    ) : [],
+    coverage: draft.coverage
+      && Number.isFinite(draft.coverage.latitude)
+      && Number.isFinite(draft.coverage.longitude)
+      && Number.isFinite(draft.coverage.radius_km)
+      ? draft.coverage
+      : null,
+    availability: Array.isArray(draft.availability) ? draft.availability.filter((slot) =>
+      Number.isInteger(slot.weekday)
+      && slot.weekday >= 1
+      && slot.weekday <= 7
+      && typeof slot.start_time === 'string'
+      && typeof slot.end_time === 'string',
+    ) : [],
+  };
+}
 
 function verificationLabel(status: VerificationStatus) {
   if (status === 'approved') return 'Verificado';
@@ -34,6 +71,7 @@ export function ProProfileScreen() {
   const [proProfile, setProProfile] = useState<ProProfile | null>(null);
   const [coverageCenter, setCoverageCenter] = useState<CoverageCoordinate | null>(null);
   const [coverageRadiusKm, setCoverageRadiusKm] = useState(10);
+  const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('');
   const [transportType, setTransportType] = useState('');
@@ -65,27 +103,39 @@ export function ProProfileScreen() {
       return;
     }
     const savedProfile = profileResult.data as ProProfile;
+    const registrationDraft = getRegistrationDraft(session?.user.user_metadata?.pro_onboarding);
     setProProfile(savedProfile);
-    setBio(savedProfile.bio ?? '');
-    setYears(savedProfile.years_experience?.toString() ?? '');
+    setPhone(typeof session?.user.user_metadata?.phone === 'string' ? session.user.user_metadata.phone : '');
+    setBio(savedProfile.bio ?? registrationDraft?.bio ?? '');
+    setYears(savedProfile.years_experience?.toString() ?? registrationDraft?.years_experience?.toString() ?? '');
     setTransportType(savedProfile.transport_type ?? '');
     setCoverageCenter(
       typeof savedProfile.service_area_latitude === 'number' && typeof savedProfile.service_area_longitude === 'number'
         ? { latitude: savedProfile.service_area_latitude, longitude: savedProfile.service_area_longitude }
-        : null,
+        : registrationDraft?.coverage
+          ? { latitude: registrationDraft.coverage.latitude, longitude: registrationDraft.coverage.longitude }
+          : null,
     );
     setCoverageRadiusKm(
       typeof savedProfile.service_area_radius_m === 'number'
         ? savedProfile.service_area_radius_m / 1000
-        : 10,
+        : registrationDraft?.coverage?.radius_km ?? 10,
     );
-    setAvailability((availabilityResult.data ?? []) as ProAvailability[]);
+    const savedAvailability = (availabilityResult.data ?? []) as ProAvailability[];
+    setAvailability(savedAvailability.length
+      ? savedAvailability
+      : (registrationDraft?.availability ?? []).map((slot) => ({
+          ...slot,
+          id: -slot.weekday,
+          pro_id: userId,
+        })));
     const services = (catalogResult.data ?? []) as ServiceType[];
     const offered = (offeredResult.data ?? []) as ProfessionalService[];
+    const configuredServices = offered.length ? offered : registrationDraft?.services ?? [];
     setCatalog(services);
-    setSelectedServices(offered.map((service) => service.service_type_id));
-    setServicePrices(Object.fromEntries(offered.map((service) => [service.service_type_id, String(service.base_price_dop)])));
-    setServiceDurations(Object.fromEntries(offered.map((service) => [service.service_type_id, String(service.est_minutes)])));
+    setSelectedServices(configuredServices.map((service) => service.service_type_id));
+    setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
+    setServiceDurations(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.est_minutes)])));
     setLoading(false);
   }, [userId]);
 
@@ -129,6 +179,14 @@ export function ProProfileScreen() {
       setError(updateError.message);
       setSaving(false);
       return;
+    }
+    if (phone.trim()) {
+      const { error: phoneError } = await supabase.from('profiles').update({ phone: phone.trim() }).eq('id', userId);
+      if (phoneError) {
+        setError(`El perfil se guardó, pero no se pudo guardar el teléfono: ${phoneError.message}`);
+        setSaving(false);
+        return;
+      }
     }
 
     if (coverageCenter) {
@@ -177,6 +235,23 @@ export function ProProfileScreen() {
           setSaving(false);
           return;
         }
+      }
+      const draftAvailability = availability.filter((slot) => slot.id < 0);
+      if (draftAvailability.length) {
+        const { error: availabilityError } = await supabase.from('pro_availability').insert(
+          draftAvailability.map(({ weekday: day, start_time, end_time }) => ({
+            pro_id: userId,
+            weekday: day,
+            start_time,
+            end_time,
+          })),
+        );
+        if (availabilityError) {
+          setError(`El perfil se guardó, pero no se pudieron guardar los horarios iniciales: ${availabilityError.message}`);
+          setSaving(false);
+          return;
+        }
+        setAvailability((current) => current.filter((slot) => slot.id >= 0));
       }
       setNotice('Perfil, área de trabajo y servicios actualizados.');
     }
@@ -269,6 +344,8 @@ export function ProProfileScreen() {
       </View>
 
       <Section title="Sobre ti">
+        <Text style={styles.label}>Teléfono de contacto</Text>
+        <TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="809 555 0123" style={styles.input} value={phone} />
         <Text style={styles.label}>Biografía</Text>
         <TextInput multiline onChangeText={setBio} placeholder="Cuéntales a tus clientes sobre tu experiencia" style={[styles.input, styles.multiline]} value={bio} />
         <Text style={styles.label}>Años de experiencia</Text>
