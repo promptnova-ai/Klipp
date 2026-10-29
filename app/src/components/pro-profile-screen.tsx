@@ -19,6 +19,7 @@ type RegistrationDraft = {
   phone: string;
   bio: string;
   years_experience: number | null;
+  transport_type?: string | null;
   services: ProfessionalService[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: { weekday: number; start_time: string; end_time: string }[];
@@ -34,6 +35,7 @@ function getRegistrationDraft(value: unknown): RegistrationDraft | null {
     phone: typeof draft.phone === 'string' ? draft.phone : '',
     bio: typeof draft.bio === 'string' ? draft.bio : '',
     years_experience: typeof draft.years_experience === 'number' ? draft.years_experience : null,
+    transport_type: typeof draft.transport_type === 'string' ? draft.transport_type : null,
     services: Array.isArray(draft.services) ? draft.services.filter((service) =>
       Number.isInteger(service.service_type_id)
       && Number.isFinite(service.base_price_dop)
@@ -62,10 +64,11 @@ function verificationLabel(status: VerificationStatus) {
 }
 
 export function ProProfileScreen() {
-  const { session } = useAuth();
+  const { session, signOut } = useAuth();
   const userId = session?.user.id;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [proProfile, setProProfile] = useState<ProProfile | null>(null);
@@ -108,7 +111,7 @@ export function ProProfileScreen() {
     setPhone(typeof session?.user.user_metadata?.phone === 'string' ? session.user.user_metadata.phone : '');
     setBio(savedProfile.bio ?? registrationDraft?.bio ?? '');
     setYears(savedProfile.years_experience?.toString() ?? registrationDraft?.years_experience?.toString() ?? '');
-    setTransportType(savedProfile.transport_type ?? '');
+    setTransportType(savedProfile.transport_type ?? registrationDraft?.transport_type ?? '');
     setCoverageCenter(
       typeof savedProfile.service_area_latitude === 'number' && typeof savedProfile.service_area_longitude === 'number'
         ? { latitude: savedProfile.service_area_latitude, longitude: savedProfile.service_area_longitude }
@@ -319,6 +322,17 @@ export function ProProfileScreen() {
     else setAvailability((current) => current.filter((slot) => slot.id !== id));
   }
 
+  async function handleSignOut() {
+    setSigningOut(true);
+    setError(null);
+    try {
+      await signOut();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos cerrar tu sesión. Inténtalo de nuevo.');
+      setSigningOut(false);
+    }
+  }
+
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando perfil...</Text></View>;
   }
@@ -342,6 +356,14 @@ export function ProProfileScreen() {
           <Text style={styles.body}>Debes completar la verificación antes de recibir solicitudes.</Text>
         )}
       </View>
+      <Pressable
+        accessibilityRole="button"
+        disabled={signingOut}
+        onPress={() => void handleSignOut()}
+        style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutPressed, signingOut && styles.buttonDisabled]}>
+        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
+      </Pressable>
+      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
 
       <Section title="Sobre ti">
         <Text style={styles.label}>Teléfono de contacto</Text>
@@ -470,6 +492,9 @@ const styles = StyleSheet.create({
   section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   statusBanner: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.goldLight, gap: 5 },
+  signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, backgroundColor: '#FFF7F7' },
+  signOutPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
+  signOutText: { color: KlippColors.danger, fontSize: 14, fontWeight: '700' },
   statusApproved: { backgroundColor: '#E6F8F0' },
   statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },

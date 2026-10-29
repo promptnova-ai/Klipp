@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
@@ -27,6 +27,7 @@ type ProOnboardingDraft = {
   phone: string;
   bio: string;
   years_experience: number | null;
+  transport_type: string | null;
   services: { service_type_id: number; base_price_dop: number; est_minutes: number }[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: AvailabilityDraft[];
@@ -40,6 +41,8 @@ const steps = [
 ];
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
+const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
+const districtNationalTestLocation: CoverageCoordinate = { latitude: 18.479, longitude: -69.941 };
 
 export function ProRegistrationScreen() {
   const router = useRouter();
@@ -49,11 +52,14 @@ export function ProRegistrationScreen() {
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('');
+  const [transportType, setTransportType] = useState('');
+  const [otherTransportType, setOtherTransportType] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
@@ -72,30 +78,52 @@ export function ProRegistrationScreen() {
     [progress],
   );
 
-  useEffect(() => {
-    let active = true;
-    void supabase
+  const fetchCatalog = useCallback(async () => {
+    const { data, error: queryError } = await supabase
       .from('service_types')
       .select('id, code, name, description, active, category_id')
       .eq('active', true)
-      .order('name')
-      .then(({ data, error: catalogError }) => {
-        if (!active) return;
-        if (catalogError) setError(`No pudimos cargar el catálogo de servicios: ${catalogError.message}`);
-        else setCatalog((data ?? []) as ServiceType[]);
-        setServicesLoading(false);
+      .order('name');
+    if (queryError) throw queryError;
+    return (data ?? []) as ServiceType[];
+  }, []);
+
+  function retryCatalog() {
+    setServicesLoading(true);
+    setCatalogError(null);
+    void fetchCatalog()
+      .then(setCatalog)
+      .catch((cause: unknown) => setCatalogError(
+        cause instanceof Error ? cause.message : 'No pudimos cargar las especialidades.',
+      ))
+      .finally(() => setServicesLoading(false));
+  }
+
+  useEffect(() => {
+    let active = true;
+    void fetchCatalog()
+      .then((services) => {
+        if (active) setCatalog(services);
+      })
+      .catch((cause: unknown) => {
+        if (active) setCatalogError(
+          cause instanceof Error ? cause.message : 'No pudimos cargar las especialidades.',
+        );
+      })
+      .finally(() => {
+        if (active) setServicesLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [fetchCatalog]);
 
   function animateToStep(nextStep: number) {
     setError(null);
     setNotice(null);
-    Animated.timing(transition, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => {
+    Animated.timing(transition, { toValue: 0, duration: 100, useNativeDriver: Platform.OS !== 'web' }).start(() => {
       setStep(nextStep);
       transition.setValue(0);
       Animated.parallel([
-        Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: true }),
+        Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: Platform.OS !== 'web' }),
         Animated.timing(progress, { toValue: nextStep, duration: 350, useNativeDriver: false }),
       ]).start();
     });
@@ -106,6 +134,7 @@ export function ProRegistrationScreen() {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
       if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
       if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
+      if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
     if (step === 1) {
       if (servicesLoading) return 'Espera un momento mientras cargamos las especialidades.';
@@ -176,6 +205,11 @@ export function ProRegistrationScreen() {
     }
   }
 
+  function useDistrictNationalTestLocation() {
+    setCenter(districtNationalTestLocation);
+    setError(null);
+  }
+
   async function createProfessionalAccount() {
     const validationError = validateStep();
     if (validationError) {
@@ -190,6 +224,9 @@ export function ProRegistrationScreen() {
       phone: phone.trim(),
       bio: bio.trim(),
       years_experience: years.trim() ? Number(years) : null,
+      transport_type: transportType === 'Otro'
+        ? otherTransportType.trim()
+        : transportType || null,
       services: selectedServices.map((service_type_id) => ({
         service_type_id,
         base_price_dop: Number(serviceDrafts[service_type_id]?.price),
@@ -247,10 +284,12 @@ export function ProRegistrationScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Animated.View
-            style={[
-              styles.stepContent,
-              { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
-            ]}>
+            style={Platform.OS === 'web'
+              ? styles.stepContent
+              : [
+                  styles.stepContent,
+                  { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
+                ]}>
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
               <Text style={styles.title}>{currentStep.title}</Text>
@@ -277,6 +316,31 @@ export function ProRegistrationScreen() {
                 <Field label="Una breve presentación">
                   <TextInput multiline onChangeText={setBio} placeholder="Cuéntales a tus futuros clientes qué te hace especial..." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
                 </Field>
+                <View style={styles.transportSection}>
+                  <Text style={styles.label}>¿Cómo te trasladas al domicilio?</Text>
+                  <Text style={styles.helper}>Ayuda a tus clientes a saber cómo llegarás a su servicio.</Text>
+                  <View style={styles.chips}>
+                    {transportOptions.map((option) => (
+                      <Chip
+                        key={option}
+                        label={option}
+                        selected={transportType === option}
+                        onPress={() => setTransportType(option)}
+                      />
+                    ))}
+                  </View>
+                  {transportType === 'Otro' && (
+                    <TextInput
+                      accessibilityLabel="Especifica tu medio de transporte"
+                      maxLength={50}
+                      onChangeText={setOtherTransportType}
+                      placeholder="Especifica tu medio de transporte"
+                      placeholderTextColor={KlippColors.muted}
+                      style={styles.input}
+                      value={otherTransportType}
+                    />
+                  )}
+                </View>
               </View>
             )}
 
@@ -284,6 +348,23 @@ export function ProRegistrationScreen() {
               <View style={styles.serviceList}>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
+                ) : catalogError ? (
+                  <View style={styles.catalogErrorCard}>
+                    <Text style={styles.catalogErrorTitle}>No pudimos cargar las especialidades</Text>
+                    <Text style={styles.helper}>{catalogError}</Text>
+                    <Text style={styles.helper}>Si el problema continúa, verifica que el catálogo público esté habilitado en Supabase.</Text>
+                    <Pressable accessibilityRole="button" onPress={retryCatalog} style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+                      <Text style={styles.retryButtonText}>Reintentar</Text>
+                    </Pressable>
+                  </View>
+                ) : catalog.length === 0 ? (
+                  <View style={styles.catalogErrorCard}>
+                    <Text style={styles.catalogErrorTitle}>Aún no hay especialidades disponibles</Text>
+                    <Text style={styles.helper}>Intenta cargar el catálogo nuevamente.</Text>
+                    <Pressable accessibilityRole="button" onPress={retryCatalog} style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
+                      <Text style={styles.retryButtonText}>Actualizar catálogo</Text>
+                    </Pressable>
+                  </View>
                 ) : catalog.map((service) => {
                   const selected = selectedServices.includes(service.id);
                   const draft = serviceDrafts[service.id] ?? { price: '', minutes: '60' };
@@ -324,6 +405,9 @@ export function ProRegistrationScreen() {
                 </View>
                 <Pressable accessibilityRole="button" disabled={locating} onPress={() => void useCurrentLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
+                </Pressable>
+                <Pressable accessibilityRole="button" onPress={useDistrictNationalTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
+                  <Text style={styles.testLocationButtonText}>Usar ubicación de prueba · Piantini, Distrito Nacional</Text>
                 </Pressable>
                 {center ? (
                   <CoverageRadiusPicker center={center} onChange={setCenter} radiusMeters={radiusKm * 1000} />
@@ -445,12 +529,17 @@ const styles = StyleSheet.create({
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   input: { minHeight: 49, paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 12, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
   multiline: { minHeight: 104, paddingTop: 12, textAlignVertical: 'top' },
+  transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
   experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#EEF4FF' },
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '700' },
   serviceList: { gap: 12 },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
+  catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
+  catalogErrorTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  retryButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
+  retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   serviceCard: { padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.03, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
   serviceCardSelected: { borderColor: '#9AB9FF', backgroundColor: '#FBFDFF' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
@@ -470,6 +559,8 @@ const styles = StyleSheet.create({
   cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   locationButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  testLocationButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 12, backgroundColor: KlippColors.white },
+  testLocationButtonText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   noLocation: { minHeight: 118, alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 5 },
   noLocationTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

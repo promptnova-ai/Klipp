@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { TrackingMap } from '@/components/tracking-map';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -36,6 +35,7 @@ const statusLabels: Record<BookingStatus, string> = {
 };
 
 export function ClientBookingsScreen() {
+  const router = useRouter();
   const { session } = useAuth();
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
   const [pros, setPros] = useState<Record<string, ProCard>>({});
@@ -367,12 +367,6 @@ export function ClientBookingsScreen() {
             {booking.status === 'en_route' && (
               <View style={styles.trackingPanel}>
                 <Text style={styles.etaBadge}>{eta === null ? 'Buscando ubicación en vivo...' : `Llega en ~${eta} min`}</Text>
-                {livePoint && hasDestination && (
-                  <TrackingMap
-                    clientCoordinate={{ latitude: booking.client_lat!, longitude: booking.client_lng! }}
-                    proCoordinate={livePoint}
-                  />
-                )}
                 {pro && <View style={styles.trackingPro}>
                   <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
                   <View style={styles.serviceHeadingCopy}>
@@ -380,6 +374,9 @@ export function ClientBookingsScreen() {
                     <Text style={styles.tier}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.transport_type || 'En camino'}</Text>
                   </View>
                 </View>}
+                <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/tracking', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.followButton, pressed && styles.buttonPressed]}>
+                  <Text style={styles.followButtonText}>Ver seguimiento en vivo</Text>
+                </Pressable>
                 <View style={styles.contactActions}>
                   {proPhones[booking.id] && <Pressable accessibilityRole="button" onPress={() => void callProfessional(booking.id)} style={({ pressed }) => [styles.contactButton, pressed && styles.buttonPressed]}>
                     <Text style={styles.contactButtonText}>Llamar</Text>
@@ -481,6 +478,8 @@ const styles = StyleSheet.create({
   queueBanner: { padding: 14, borderRadius: 14, backgroundColor: '#F4F7FF', gap: 5 },
   queueTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700', lineHeight: 20 },
   trackingPanel: { gap: 12 },
+  followButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
+  followButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   etaBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: '#ECFDF5', color: '#047857', fontSize: 14, fontWeight: '800' },
   trackingPro: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14 },
   contactActions: { flexDirection: 'row', gap: 9 },
