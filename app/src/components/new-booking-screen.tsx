@@ -339,7 +339,7 @@ export function NewBookingScreen() {
     setSaving(true);
     setError(null);
     setSuccess(null);
-    const { error: rpcError } = selectedOffer
+    const { data: bookingId, error: rpcError } = selectedOffer
       ? await supabase.rpc('create_booking_at_location', {
           p_pro_service_id: selectedOffer.id,
           p_lat: coordinate.latitude,
@@ -359,8 +359,21 @@ export function NewBookingScreen() {
           p_pro_id: mode === 'manual' ? selectedProId : null,
         });
     if (rpcError) setError(rpcError.message);
+    else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
     else {
-      setSuccess(mode === 'auto' ? 'Buscando profesional. Tu solicitud se creó correctamente.' : 'Solicitud enviada al profesional. Te avisaremos cuando responda.');
+      if (!selectedOffer && mode === 'auto') {
+        const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', {
+          body: { bookingId },
+        });
+        if (assignmentError) {
+          setError('La reserva se creó, pero no pudimos iniciar la búsqueda automática. Puedes verla en Mis reservas.');
+          setSuccess('Solicitud creada.');
+        } else {
+          setSuccess('Buscando profesional. Sigue el estado en Mis reservas.');
+        }
+      } else {
+        setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
+      }
     }
     setSaving(false);
   }
