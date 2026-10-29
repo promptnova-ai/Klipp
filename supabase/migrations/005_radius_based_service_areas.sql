@@ -20,10 +20,10 @@ alter table public.pro_profiles
 
 create index pro_service_area_location_idx
   on public.pro_profiles using gist (
-    extensions.st_setsrid(
+    (extensions.st_setsrid(
       extensions.st_makepoint(service_area_longitude, service_area_latitude),
       4326
-    )::extensions.geography
+    )::extensions.geography)
   )
   where service_area_latitude is not null;
 
