@@ -53,6 +53,7 @@ export interface ProProfile {
   rating_avg: number;
   rating_count: number;
   jobs_completed: number;
+  transport_type?: string | null;
   created_at: string;
 }
 
@@ -66,6 +67,7 @@ export interface ProCard {
   rating_avg: number;
   rating_count: number;
   jobs_completed: number;
+  transport_type?: string | null;
 }
 
 export interface ProSector {
@@ -87,6 +89,7 @@ export interface ServiceType {
   name: string;
   description: string | null;
   active: boolean;
+  category_id?: number | null;
 }
 
 export interface PricingTier {
@@ -115,8 +118,13 @@ export interface Booking {
   client_id: string;
   pro_id: string | null;
   service_type_id: number;
-  pricing_tier_id: number;
+  pricing_tier_id: number | null;
+  pro_service_id: string | null;
   address_id: string;
+  client_lat: number | null;
+  client_lng: number | null;
+  address_text: string | null;
+  landmark_notes: string | null;
   assignment_mode: AssignmentMode;
   status: BookingStatus;
   scheduled_start: string;

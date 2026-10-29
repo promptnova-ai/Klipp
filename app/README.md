@@ -2,6 +2,12 @@
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
+## Klipp location and booking setup
+
+Apply `supabase/migrations/004_location_services_and_tracking.sql` after the existing migrations before testing the multi-industry catalog, GPS checkout, messaging, or live tracking.
+
+For native maps, set `GOOGLE_MAPS_ANDROID_API_KEY` in the build environment. Set `GOOGLE_MAPS_IOS_API_KEY` only if using Google Maps instead of the default Apple map on iOS. Restrict each key to the app's package/bundle identifier and required Maps SDK. Native permission and background-location changes require a new development or production build; live location is shared only while a booking is `en_route`.
+
 ## Get started
 
 1. Install dependencies

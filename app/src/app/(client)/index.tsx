@@ -18,10 +18,24 @@ import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
 
-type CatalogService = ServiceType & { tiers: PricingTier[] };
+type CatalogService = ServiceType & {
+  tiers: PricingTier[];
+  category_name: string | null;
+  offers: ServiceOffer[];
+};
 type SearchablePro = Pick<ProCard, 'pro_id' | 'full_name' | 'bio'>;
+type ServiceOffer = {
+  id: string;
+  pro_id: string;
+  service_type_id: number;
+  base_price_dop: number;
+  est_minutes: number;
+  pro?: SearchablePro;
+};
+type CatalogCategory = { id: number; name: string };
 
-function getCategory(service: ServiceType) {
+function getCategory(service: ServiceType & { category_name?: string | null }) {
+  if (service.category_name) return service.category_name;
   const description = `${service.code} ${service.name}`.toLocaleLowerCase();
   if (description.includes('barber')) return 'Barbería';
   if (description.includes('estet') || description.includes('belleza') || description.includes('uña')) return 'Estética';
@@ -60,35 +74,51 @@ export default function ClientHomeScreen() {
   const { profile } = useAuth();
   const [services, setServices] = useState<CatalogService[]>([]);
   const [pros, setPros] = useState<SearchablePro[]>([]);
+  const [categoriesData, setCategoriesData] = useState<CatalogCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState<CatalogService | null>(null);
   const [selectedDetailTierId, setSelectedDetailTierId] = useState<number | null>(null);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   async function loadCatalog() {
     setLoading(true);
     setLoadError(null);
-    const [serviceResult, tierResult, proResult] = await Promise.all([
-      supabase.from('service_types').select('id, code, name, description, active').eq('active', true).order('name'),
+    const [serviceResult, tierResult, proResult, categoryResult, offerResult] = await Promise.all([
+      supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
       supabase.from('pro_cards').select('pro_id, full_name, bio').order('full_name'),
+      supabase.from('service_categories').select('id, name').eq('active', true).order('id'),
+      supabase.from('pro_services').select('id, pro_id, service_type_id, base_price_dop, est_minutes').eq('active', true),
     ]);
-    const error = serviceResult.error ?? tierResult.error ?? proResult.error;
+    const error = serviceResult.error ?? tierResult.error ?? proResult.error ?? categoryResult.error ?? offerResult.error;
     if (error) {
       setLoadError(error.message);
       setLoading(false);
       return;
     }
     const tiers = (tierResult.data ?? []) as PricingTier[];
+    const professionals = (proResult.data ?? []) as SearchablePro[];
+    const offers = (offerResult.data ?? []) as ServiceOffer[];
+    const offeredServices = offers.flatMap((offer) => {
+      const pro = professionals.find((professional) => professional.pro_id === offer.pro_id);
+      return pro ? [{ ...offer, pro }] : [];
+    });
+    const serviceRows = (serviceResult.data ?? []) as (ServiceType & {
+      service_categories: { name: string } | { name: string }[] | null;
+    })[];
     setServices(
-      ((serviceResult.data ?? []) as ServiceType[]).map((service) => ({
+      serviceRows.map((service) => ({
         ...service,
+        category_name: (Array.isArray(service.service_categories) ? service.service_categories[0]?.name : service.service_categories?.name) ?? null,
         tiers: tiers.filter((tier) => tier.service_type_id === service.id),
+        offers: offeredServices.filter((offer) => offer.service_type_id === service.id),
       })),
     );
-    setPros((proResult.data ?? []) as SearchablePro[]);
+    setPros(professionals);
+    setCategoriesData((categoryResult.data ?? []) as CatalogCategory[]);
     setLoading(false);
   }
 
@@ -97,41 +127,44 @@ export default function ClientHomeScreen() {
   }, []);
 
   const categories = useMemo(
-    () => ['Todos', ...new Set(services.map(getCategory))],
-    [services],
+    () => ['Todos', ...categoriesData.map((category) => category.name)],
+    [categoriesData],
   );
   const normalizedSearch = search.trim().toLocaleLowerCase();
   const visibleServices = services.filter((service) => {
     const matchesCategory = selectedCategory === 'Todos' || getCategory(service) === selectedCategory;
     const matchesSearch =
       !normalizedSearch ||
-      `${service.name} ${service.description ?? ''} ${service.tiers.map((tier) => tier.label).join(' ')}`
+      `${service.name} ${service.description ?? ''} ${service.tiers.map((tier) => tier.label).join(' ')} ${service.offers.map((offer) => offer.pro?.full_name ?? '').join(' ')}`
         .toLocaleLowerCase()
         .includes(normalizedSearch);
     return matchesCategory && matchesSearch;
   });
+  const matchingProIds = new Set(
+    services
+      .filter((service) => selectedCategory === 'Todos' || getCategory(service) === selectedCategory)
+      .flatMap((service) => service.offers.map((offer) => offer.pro_id)),
+  );
   const visiblePros = normalizedSearch
-    ? pros.filter(
-        (pro) =>
-          (selectedCategory === 'Todos' || selectedCategory === 'Limpieza') &&
-          `${pro.full_name ?? ''} ${pro.bio ?? ''}`.toLocaleLowerCase().includes(normalizedSearch),
-      )
+    ? pros.filter((pro) => matchingProIds.has(pro.pro_id) && `${pro.full_name ?? ''} ${pro.bio ?? ''}`.toLocaleLowerCase().includes(normalizedSearch))
     : [];
 
-  function openBooking(service: CatalogService, tier?: PricingTier) {
+  function openBooking(service: CatalogService, tier?: PricingTier, offer?: ServiceOffer) {
     setSelectedService(null);
     router.push({
       pathname: '/(client)/new-booking',
       params: {
         serviceId: String(service.id),
         ...(tier ? { tierId: String(tier.id) } : {}),
+        ...(offer ? { offerId: offer.id } : {}),
       },
     });
   }
 
   function showServiceDetails(service: CatalogService) {
     setSelectedService(service);
-    setSelectedDetailTierId(service.tiers[0]?.id ?? null);
+    setSelectedDetailTierId(service.offers.length > 0 ? null : service.tiers[0]?.id ?? null);
+    setSelectedOfferId(service.offers[0]?.id ?? null);
   }
 
   function clearFilters() {
@@ -142,6 +175,7 @@ export default function ClientHomeScreen() {
   const firstName = profile?.full_name?.trim().split(/\s+/)[0];
   const featuredService = services[0];
   const selectedDetailTier = selectedService?.tiers.find((tier) => tier.id === selectedDetailTierId);
+  const selectedDetailOffer = selectedService?.offers.find((offer) => offer.id === selectedOfferId);
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -263,7 +297,11 @@ export default function ClientHomeScreen() {
       ) : (
         <View style={styles.serviceList}>
           {visibleServices.map((service) => {
-            const lowestTier = service.tiers[0];
+            const priceOptions = [
+              ...service.offers.map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })),
+              ...service.tiers.map((tier) => ({ price: tier.price_dop, duration: tier.est_minutes })),
+            ].sort((left, right) => left.price - right.price);
+            const lowestOption = priceOptions[0];
             return (
               <Pressable
                 accessibilityRole="button"
@@ -280,9 +318,9 @@ export default function ClientHomeScreen() {
                   </View>
                   <Text style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
                   <View style={styles.serviceMeta}>
-                    {lowestTier && <Text style={styles.servicePrice}>Desde {formatDop(lowestTier.price_dop)}</Text>}
-                    {lowestTier && <Text style={styles.metaDot}>·</Text>}
-                    {lowestTier && <Text style={styles.serviceDuration}>{lowestTier.est_minutes} min en adelante</Text>}
+                    {lowestOption && <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text>}
+                    {lowestOption && <Text style={styles.metaDot}>·</Text>}
+                    {lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}
                   </View>
                   <Text style={styles.serviceLink}>Ver detalles  <Text style={styles.linkArrow}>›</Text></Text>
                 </View>
@@ -343,14 +381,29 @@ export default function ClientHomeScreen() {
                     </View>
                   ))}
                 </View>
-                <Text style={styles.tierHeading}>Elige el tamaño de tu hogar</Text>
+                {selectedService.offers.length > 0 && <Text style={styles.tierHeading}>Profesionales y precios</Text>}
+                {selectedService.offers.map((offer) => (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: offer.id === selectedOfferId }}
+                    key={offer.id}
+                    onPress={() => { setSelectedOfferId(offer.id); setSelectedDetailTierId(null); }}
+                    style={({ pressed }) => [styles.tierCard, offer.id === selectedOfferId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    <View style={styles.tierCopy}>
+                      <Text style={styles.tierTitle}>{offer.pro?.full_name ?? 'Profesional Klipp'}</Text>
+                      <Text style={styles.tierMeta}>{offer.est_minutes} min · precio base</Text>
+                    </View>
+                    <Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
+                  </Pressable>
+                ))}
+                {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige el tamaño de tu hogar</Text>}
                 {selectedService.tiers.map((tier) => (
                   <Pressable
                     accessibilityRole="radio"
                     accessibilityState={{ selected: tier.id === selectedDetailTierId }}
                     key={tier.id}
-                    onPress={() => setSelectedDetailTierId(tier.id)}
-                    style={({ pressed }) => [styles.tierCard, tier.id === selectedDetailTierId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    onPress={() => { setSelectedDetailTierId(tier.id); setSelectedOfferId(null); }}
+                    style={({ pressed }) => [styles.tierCard, !selectedDetailOffer && tier.id === selectedDetailTierId && styles.tierCardSelected, pressed && styles.pressed]}>
                     <View style={styles.tierCopy}>
                       <Text style={styles.tierTitle}>{tier.label}</Text>
                       <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
@@ -360,9 +413,12 @@ export default function ClientHomeScreen() {
                 ))}
                 <Pressable
                   accessibilityRole="button"
-                  disabled={!selectedDetailTier}
-                  onPress={() => selectedDetailTier && openBooking(selectedService, selectedDetailTier)}
-                  style={({ pressed }) => [styles.bookButton, pressed && styles.buttonPressed, !selectedDetailTier && styles.disabled]}>
+                  disabled={!selectedDetailOffer && !selectedDetailTier}
+                  onPress={() => {
+                    if (selectedDetailOffer) openBooking(selectedService, undefined, selectedDetailOffer);
+                    else if (selectedDetailTier) openBooking(selectedService, selectedDetailTier);
+                  }}
+                  style={({ pressed }) => [styles.bookButton, pressed && styles.buttonPressed, !selectedDetailOffer && !selectedDetailTier && styles.disabled]}>
                   <Text style={styles.bookButtonText}>Reservar cita</Text>
                   <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.white} size={17} />
                 </Pressable>

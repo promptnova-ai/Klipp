@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 import { supabase } from '../../lib/supabase';
 import type { Profile, UserRole } from '@/lib/types';
+import { updateActiveProTrackingBookings } from '@/lib/pro-location-task';
 
 type AuthContextValue = {
   session: Session | null;
@@ -143,6 +144,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    if (Platform.OS !== 'web') {
+      try {
+        await updateActiveProTrackingBookings([]);
+      } catch (cause) {
+        setAuthError(cause instanceof Error ? cause.message : 'No pudimos detener el seguimiento de ubicación.');
+      }
+    }
   }
 
   async function refreshProfile() {

@@ -1,10 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { TrackingMap } from '@/components/tracking-map';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -15,6 +17,9 @@ type ClientBooking = Booking & {
   pricing_tiers: { label: string } | null;
   addresses: { label: string | null; street: string | null; references_text: string | null; sectors: { name: string } | null } | null;
 };
+type LocationPoint = { latitude: number; longitude: number };
+type QueueInfo = { previous_stops: number; previous_service_in_progress: boolean; departure_window: string };
+type BookingMessage = { id: number; booking_id: string; sender_id: string; body: string; created_at: string };
 
 const statusLabels: Record<BookingStatus, string> = {
   requested: 'Solicitud enviada',
@@ -37,6 +42,13 @@ export function ClientBookingsScreen() {
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
+  const [tracking, setTracking] = useState<Record<string, LocationPoint>>({});
+  const [queueInfo, setQueueInfo] = useState<Record<string, QueueInfo>>({});
+  const [proPhones, setProPhones] = useState<Record<string, string>>({});
+  const [messages, setMessages] = useState<Record<string, BookingMessage[]>>({});
+  const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
+  const [openChatId, setOpenChatId] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -48,7 +60,7 @@ export function ClientBookingsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, address_id, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text, sectors(name))')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text, sectors(name))')
       .eq('client_id', session.user.id)
       .order('scheduled_start', { ascending: false });
     if (queryError) {
@@ -63,7 +75,7 @@ export function ClientBookingsScreen() {
       const proIds = [...new Set(bookingRows.flatMap((booking) => booking.pro_id ? [booking.pro_id] : []))];
       const [reviewResult, proResult] = await Promise.all([
         supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
-        proIds.length ? supabase.from('pro_cards').select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed').in('pro_id', proIds) : Promise.resolve({ data: [], error: null }),
+        proIds.length ? supabase.from('pro_cards').select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type').in('pro_id', proIds) : Promise.resolve({ data: [], error: null }),
       ]);
       if (reviewResult.error || proResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? 'No pudimos cargar los detalles.');
       else {
@@ -74,10 +86,121 @@ export function ClientBookingsScreen() {
       setReviews({});
       setPros({});
     }
+    const scheduledBookings = bookingRows.filter((booking) => booking.status === 'scheduled' && booking.pro_id);
+    const queueResults = await Promise.all(scheduledBookings.map(async (booking) => {
+      const { data, error: queueError } = await supabase.rpc('get_booking_queue_info', { p_booking_id: booking.id });
+      if (queueError) return { bookingId: booking.id, error: queueError.message };
+      const first = (data ?? [])[0] as QueueInfo | undefined;
+      return { bookingId: booking.id, info: first };
+    }));
+    const queueErrors = queueResults.flatMap((result) => 'error' in result ? [result.error] : []);
+    const firstQueueError = queueErrors[0];
+    if (firstQueueError) setError(firstQueueError);
+    setQueueInfo(Object.fromEntries(queueResults.flatMap((result) =>
+      'info' in result && result.info ? [[result.bookingId, result.info]] : [],
+    )));
+    const enRouteBookings = bookingRows.filter((booking) => booking.status === 'en_route');
+    const phoneResults = await Promise.all(enRouteBookings.map(async (booking) => {
+      const { data, error: phoneError } = await supabase.rpc('get_tracking_pro_phone', { p_booking_id: booking.id });
+      if (phoneError) return { bookingId: booking.id, error: phoneError.message };
+      const contact = (data ?? [])[0] as { phone: string | null } | undefined;
+      return { bookingId: booking.id, phone: contact?.phone };
+    }));
+    const firstPhoneError = phoneResults.find((result) => 'error' in result)?.error;
+    if (firstPhoneError) setError(firstPhoneError);
+    setProPhones(Object.fromEntries(phoneResults.flatMap((result) =>
+      'phone' in result && result.phone ? [[result.bookingId, result.phone]] : [],
+    )));
     setLoading(false);
   }, [session?.user.id]);
 
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
+
+  useEffect(() => {
+    if (!session?.user.id) return;
+    const channel = supabase
+      .channel(`client-bookings:${session.user.id}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'bookings',
+        filter: `client_id=eq.${session.user.id}`,
+      }, () => { void loadBookings(); })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [session?.user.id, loadBookings]);
+
+  useEffect(() => {
+    const activeBookings = bookings.filter((booking) => booking.status === 'en_route');
+    if (activeBookings.length === 0) {
+      setTracking({});
+      return;
+    }
+    const channels = activeBookings.map((booking) => {
+      const channel = supabase
+        .channel(`tracking:${booking.id}`)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'pro_locations',
+          filter: `booking_id=eq.${booking.id}`,
+        }, (payload) => {
+          if (payload.eventType === 'DELETE') {
+            setTracking((current) => {
+              const next = { ...current };
+              delete next[booking.id];
+              return next;
+            });
+            return;
+          }
+          const row = payload.new as { latitude?: number; longitude?: number };
+          if (typeof row.latitude === 'number' && typeof row.longitude === 'number') {
+            setTracking((current) => ({ ...current, [booking.id]: { latitude: row.latitude!, longitude: row.longitude! } }));
+          }
+        })
+        .subscribe();
+      void supabase
+        .from('pro_locations')
+        .select('latitude, longitude')
+        .eq('booking_id', booking.id)
+        .maybeSingle()
+        .then(({ data, error: locationError }) => {
+          if (locationError) setError(locationError.message);
+          else if (typeof data?.latitude === 'number' && typeof data.longitude === 'number') {
+            setTracking((current) => ({ ...current, [booking.id]: { latitude: data.latitude, longitude: data.longitude } }));
+          }
+        });
+      return channel;
+    });
+    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
+  }, [bookings]);
+
+  useEffect(() => {
+    const activeBookings = bookings.filter((booking) => booking.status === 'en_route');
+    const channels = activeBookings.map((booking) => supabase
+      .channel(`booking-messages:${booking.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `booking_id=eq.${booking.id}`,
+      }, (payload) => {
+        const message = payload.new as BookingMessage;
+        setMessages((current) => {
+          const currentMessages = current[booking.id] ?? [];
+          if (currentMessages.some((item) => item.id === message.id)) return current;
+          return { ...current, [booking.id]: [...currentMessages, message].slice(-20) };
+        });
+      })
+      .subscribe());
+    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
+  }, [bookings]);
+
+  useEffect(() => {
+    if (!bookings.some((booking) => booking.status === 'in_progress')) return;
+    const interval = setInterval(() => setCurrentTime(Date.now()), 30_000);
+    return () => clearInterval(interval);
+  }, [bookings]);
 
   async function refresh() {
     setRefreshing(true);
@@ -117,6 +240,55 @@ export function ClientBookingsScreen() {
     setBusyId(null);
   }
 
+  async function callProfessional(bookingId: string) {
+    const phone = proPhones[bookingId]?.replace(/[^\d+]/g, '');
+    if (!phone || !/^\+?\d{7,15}$/.test(phone)) {
+      setError('Este profesional no tiene un teléfono disponible para llamadas.');
+      return;
+    }
+    try {
+      await Linking.openURL(`tel:${phone}`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos abrir la aplicación de llamadas.');
+    }
+  }
+
+  async function toggleChat(bookingId: string) {
+    if (openChatId === bookingId) {
+      setOpenChatId(null);
+      return;
+    }
+    setOpenChatId(bookingId);
+    const { data, error: messagesError } = await supabase
+      .from('messages')
+      .select('id, booking_id, sender_id, body, created_at')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: true })
+      .limit(20);
+    if (messagesError) setError(messagesError.message);
+    else setMessages((current) => ({ ...current, [bookingId]: (data ?? []) as BookingMessage[] }));
+  }
+
+  async function sendMessage(bookingId: string) {
+    if (!session?.user.id) return;
+    const body = messageDrafts[bookingId]?.trim();
+    if (!body) return;
+    const { data, error: sendError } = await supabase
+      .from('messages')
+      .insert({ booking_id: bookingId, sender_id: session.user.id, body })
+      .select('id, booking_id, sender_id, body, created_at')
+      .single();
+    if (sendError) setError(sendError.message);
+    else {
+      setMessageDrafts((current) => ({ ...current, [bookingId]: '' }));
+      setMessages((current) => {
+        const currentMessages = current[bookingId] ?? [];
+        if (currentMessages.some((item) => item.id === data.id)) return current;
+        return { ...current, [bookingId]: [...currentMessages, data as BookingMessage].slice(-20) };
+      });
+    }
+  }
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
   return (
@@ -131,6 +303,14 @@ export function ClientBookingsScreen() {
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
         const canReview = ['completed', 'confirmed'].includes(booking.status) && !!booking.pro_id && !review;
         const statusLabel = searching ? 'Buscando profesional' : statusLabels[booking.status];
+        const livePoint = tracking[booking.id];
+        const hasDestination = typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number';
+        const queue = queueInfo[booking.id];
+        const eta = livePoint && hasDestination
+          ? Math.max(1, Math.round(distanceInKm(livePoint, { latitude: booking.client_lat!, longitude: booking.client_lng! }) / 25 * 60))
+          : null;
+        const startedAt = booking.started_at ? new Date(booking.started_at).getTime() : null;
+        const elapsedMinutes = startedAt ? Math.max(0, Math.floor((currentTime - startedAt) / 60_000)) : 0;
         const statusPillTone = ['completed', 'confirmed'].includes(booking.status)
           ? styles.statusPillSuccess
           : ['cancelled', 'disputed', 'expired'].includes(booking.status)
@@ -155,7 +335,7 @@ export function ClientBookingsScreen() {
                 </View>
                 <View style={styles.serviceHeadingCopy}>
                   <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
-                  <Text style={styles.tier}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
+                  <Text style={styles.tier}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
                 </View>
               </View>
               <View style={[styles.statusPill, statusPillTone]}>
@@ -170,10 +350,73 @@ export function ClientBookingsScreen() {
             </View>
             <View style={styles.detailRow}>
               <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.muted} size={17} />
-              <Text style={styles.body}>{booking.addresses?.label || booking.addresses?.street || booking.addresses?.sectors?.name || 'Dirección no disponible'}</Text>
+              <Text style={styles.body}>{booking.address_text || booking.addresses?.label || booking.addresses?.street || booking.addresses?.sectors?.name || 'Dirección no disponible'}</Text>
             </View>
-            {!!booking.addresses?.references_text && <Text style={styles.reference}>{booking.addresses.references_text}</Text>}
+            {!!(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.reference}>{booking.landmark_notes || booking.addresses?.references_text}</Text>}
             {pro && <View style={styles.proChip}><View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View><Text style={styles.proText}>Con {pro.full_name ?? 'Profesional Klipp'}</Text></View>}
+            {booking.status === 'scheduled' && queue && (
+              <View style={styles.queueBanner}>
+                <Text style={styles.queueTitle}>
+                  {queue.previous_service_in_progress
+                    ? 'El profesional está completando un servicio previo'
+                    : `El profesional se está preparando (${queue.previous_stops} paradas previas)`}
+                </Text>
+                <Text style={styles.body}>Salida estimada: {new Date(queue.departure_window).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Santo_Domingo' })}</Text>
+              </View>
+            )}
+            {booking.status === 'en_route' && (
+              <View style={styles.trackingPanel}>
+                <Text style={styles.etaBadge}>{eta === null ? 'Buscando ubicación en vivo...' : `Llega en ~${eta} min`}</Text>
+                {livePoint && hasDestination && (
+                  <TrackingMap
+                    clientCoordinate={{ latitude: booking.client_lat!, longitude: booking.client_lng! }}
+                    proCoordinate={livePoint}
+                  />
+                )}
+                {pro && <View style={styles.trackingPro}>
+                  <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
+                  <View style={styles.serviceHeadingCopy}>
+                    <Text style={styles.cardTitle}>{pro.full_name ?? 'Profesional Klipp'}</Text>
+                    <Text style={styles.tier}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.transport_type || 'En camino'}</Text>
+                  </View>
+                </View>}
+                <View style={styles.contactActions}>
+                  {proPhones[booking.id] && <Pressable accessibilityRole="button" onPress={() => void callProfessional(booking.id)} style={({ pressed }) => [styles.contactButton, pressed && styles.buttonPressed]}>
+                    <Text style={styles.contactButtonText}>Llamar</Text>
+                  </Pressable>}
+                  <Pressable accessibilityRole="button" onPress={() => void toggleChat(booking.id)} style={({ pressed }) => [styles.contactButton, styles.messageButton, pressed && styles.buttonPressed]}>
+                    <Text style={styles.contactButtonText}>{openChatId === booking.id ? 'Cerrar chat' : 'Mensaje'}</Text>
+                  </Pressable>
+                </View>
+                {openChatId === booking.id && (
+                  <View style={styles.chatPanel}>
+                    {(messages[booking.id] ?? []).map((message) => (
+                      <View key={message.id} style={[styles.chatMessage, message.sender_id === session?.user.id && styles.chatMessageOwn]}>
+                        <Text style={styles.chatMessageText}>{message.body}</Text>
+                      </View>
+                    ))}
+                    <TextInput
+                      accessibilityLabel="Escribe un mensaje al profesional"
+                      maxLength={2000}
+                      onChangeText={(value) => setMessageDrafts((current) => ({ ...current, [booking.id]: value }))}
+                      placeholder="Escribe un mensaje..."
+                      placeholderTextColor={KlippColors.muted}
+                      style={styles.messageInput}
+                      value={messageDrafts[booking.id] ?? ''}
+                    />
+                    <Pressable accessibilityRole="button" onPress={() => void sendMessage(booking.id)} style={({ pressed }) => [styles.sendMessageButton, pressed && styles.buttonPressed]}>
+                      <Text style={styles.sendMessageText}>Enviar mensaje</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+            )}
+            {booking.status === 'in_progress' && (
+              <View style={styles.queueBanner}>
+                <Text style={styles.queueTitle}>Servicio en curso</Text>
+                <Text style={styles.body}>Tiempo transcurrido: {Math.floor(elapsedMinutes / 60)} h {elapsedMinutes % 60} min</Text>
+              </View>
+            )}
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>Total</Text>
               <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
@@ -196,6 +439,15 @@ export function ClientBookingsScreen() {
       })}
     </ScrollView>
   );
+}
+
+function distanceInKm(from: LocationPoint, to: LocationPoint) {
+  const radians = (degrees: number) => degrees * Math.PI / 180;
+  const deltaLatitude = radians(to.latitude - from.latitude);
+  const deltaLongitude = radians(to.longitude - from.longitude);
+  const value = Math.sin(deltaLatitude / 2) ** 2
+    + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude)) * Math.sin(deltaLongitude / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
 }
 
 const styles = StyleSheet.create({
@@ -226,6 +478,23 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   reference: { color: KlippColors.muted, fontSize: 12, lineHeight: 18, marginLeft: 26 },
+  queueBanner: { padding: 14, borderRadius: 14, backgroundColor: '#F4F7FF', gap: 5 },
+  queueTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700', lineHeight: 20 },
+  trackingPanel: { gap: 12 },
+  etaBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: '#ECFDF5', color: '#047857', fontSize: 14, fontWeight: '800' },
+  trackingPro: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14 },
+  contactActions: { flexDirection: 'row', gap: 9 },
+  contactButton: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
+  messageButton: { backgroundColor: KlippColors.navy },
+  buttonPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
+  contactButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
+  chatPanel: { padding: 12, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 8 },
+  chatMessage: { alignSelf: 'flex-start', maxWidth: '85%', padding: 9, borderRadius: 12, backgroundColor: KlippColors.white },
+  chatMessageOwn: { alignSelf: 'flex-end', backgroundColor: '#EAF2FF' },
+  chatMessageText: { color: KlippColors.slate, fontSize: 13, lineHeight: 18 },
+  messageInput: { minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 13 },
+  sendMessageButton: { minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
+  sendMessageText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
   proChip: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   proAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
   proAvatarText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },

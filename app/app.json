@@ -26,6 +26,16 @@
     "plugins": [
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Klipp usa tu ubicación para encontrar profesionales cercanos y compartirla durante un servicio en camino.",
+          "locationAlwaysAndWhenInUsePermission": "Klipp comparte tu ubicación en segundo plano solo mientras estás en camino a un servicio reservado.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",

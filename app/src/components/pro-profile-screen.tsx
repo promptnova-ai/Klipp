@@ -5,7 +5,13 @@ import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
-import type { ProAvailability, ProProfile, Sector, VerificationStatus } from '@/lib/types';
+import type { ProAvailability, ProProfile, Sector, ServiceType, VerificationStatus } from '@/lib/types';
+
+type ProfessionalService = {
+  service_type_id: number;
+  base_price_dop: number;
+  est_minutes: number;
+};
 
 const weekdayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
@@ -27,8 +33,13 @@ export function ProProfileScreen() {
   const [selectedSectorIds, setSelectedSectorIds] = useState<number[]>([]);
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('');
+  const [transportType, setTransportType] = useState('');
   const [baseSectorId, setBaseSectorId] = useState<number | null>(null);
   const [availability, setAvailability] = useState<ProAvailability[]>([]);
+  const [catalog, setCatalog] = useState<ServiceType[]>([]);
+  const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [servicePrices, setServicePrices] = useState<Record<number, string>>({});
+  const [serviceDurations, setServiceDurations] = useState<Record<number, string>>({});
   const [weekday, setWeekday] = useState(1);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('12:00');
@@ -38,15 +49,17 @@ export function ProProfileScreen() {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    const [profileResult, sectorsResult, linksResult, availabilityResult] = await Promise.all([
+    const [profileResult, sectorsResult, linksResult, availabilityResult, catalogResult, offeredResult] = await Promise.all([
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
       supabase.from('sectors').select('id, name, zone, active').eq('active', true).order('name'),
       supabase.from('pro_sectors').select('sector_id').eq('pro_id', userId),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
+      supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
+      supabase.from('pro_services').select('service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
     ]);
-    if (profileResult.error || sectorsResult.error || linksResult.error || availabilityResult.error) {
+    if (profileResult.error || sectorsResult.error || linksResult.error || availabilityResult.error || catalogResult.error || offeredResult.error) {
       setError(
-        profileResult.error?.message ?? sectorsResult.error?.message ?? linksResult.error?.message ?? availabilityResult.error?.message ?? 'No pudimos cargar tu perfil.',
+        profileResult.error?.message ?? sectorsResult.error?.message ?? linksResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? 'No pudimos cargar tu perfil.',
       );
       setLoading(false);
       return;
@@ -55,10 +68,17 @@ export function ProProfileScreen() {
     setProProfile(savedProfile);
     setBio(savedProfile.bio ?? '');
     setYears(savedProfile.years_experience?.toString() ?? '');
+    setTransportType(savedProfile.transport_type ?? '');
     setBaseSectorId(savedProfile.base_sector_id);
     setSectors((sectorsResult.data ?? []) as Sector[]);
     setSelectedSectorIds((linksResult.data ?? []).map((link) => link.sector_id));
     setAvailability((availabilityResult.data ?? []) as ProAvailability[]);
+    const services = (catalogResult.data ?? []) as ServiceType[];
+    const offered = (offeredResult.data ?? []) as ProfessionalService[];
+    setCatalog(services);
+    setSelectedServices(offered.map((service) => service.service_type_id));
+    setServicePrices(Object.fromEntries(offered.map((service) => [service.service_type_id, String(service.base_price_dop)])));
+    setServiceDurations(Object.fromEntries(offered.map((service) => [service.service_type_id, String(service.est_minutes)])));
     setLoading(false);
   }
 
@@ -73,13 +93,22 @@ export function ProProfileScreen() {
       setError('Los años de experiencia deben ser un número entero igual o mayor que cero.');
       return;
     }
+    const invalidService = selectedServices.find((serviceId) => {
+      const price = Number(servicePrices[serviceId]);
+      const duration = Number(serviceDurations[serviceId]);
+      return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
+    });
+    if (invalidService !== undefined) {
+      setError('Cada servicio elegido necesita un precio mayor que cero y una duración válida en minutos.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
     setNotice(null);
     const { error: updateError } = await supabase
       .from('pro_profiles')
-      .update({ bio: bio.trim() || null, years_experience: parsedYears, base_sector_id: baseSectorId })
+      .update({ bio: bio.trim() || null, years_experience: parsedYears, base_sector_id: baseSectorId, transport_type: transportType.trim() || null })
       .eq('user_id', userId);
     if (updateError) {
       setError(updateError.message);
@@ -101,8 +130,44 @@ export function ProProfileScreen() {
       sectorError = removeError?.message ?? null;
     }
     if (sectorError) setError(`El perfil se guardó, pero no se pudieron actualizar los sectores: ${sectorError}`);
-    else setNotice('Perfil actualizado.');
-    setProProfile({ ...proProfile, bio: bio.trim() || null, years_experience: parsedYears, base_sector_id: baseSectorId });
+    else {
+      const offeredResult = await supabase.from('pro_services').select('id, service_type_id').eq('pro_id', userId);
+      if (offeredResult.error) {
+        setError(`El perfil se guardó, pero no se pudieron consultar tus servicios: ${offeredResult.error.message}`);
+        setSaving(false);
+        return;
+      }
+      const offeredRows = (offeredResult.data ?? []) as { id: string; service_type_id: number }[];
+      const selectedIds = new Set(selectedServices);
+      const toRemove = offeredRows.filter((service) => !selectedIds.has(service.service_type_id)).map((service) => service.id);
+      if (toRemove.length) {
+        const { error: removeServicesError } = await supabase.from('pro_services').update({ active: false }).eq('pro_id', userId).in('id', toRemove);
+        if (removeServicesError) {
+          setError(`El perfil se guardó, pero no se pudieron desactivar servicios: ${removeServicesError.message}`);
+          setSaving(false);
+          return;
+        }
+      }
+      if (selectedServices.length) {
+        const { error: serviceError } = await supabase.from('pro_services').upsert(
+          selectedServices.map((service_type_id) => ({
+            pro_id: userId,
+            service_type_id,
+            base_price_dop: Number(servicePrices[service_type_id]),
+            est_minutes: Number(serviceDurations[service_type_id]),
+            active: true,
+          })),
+          { onConflict: 'pro_id,service_type_id' },
+        );
+        if (serviceError) {
+          setError(`El perfil se guardó, pero no se pudieron guardar tus servicios: ${serviceError.message}`);
+          setSaving(false);
+          return;
+        }
+      }
+      setNotice('Perfil y servicios actualizados.');
+    }
+    setProProfile({ ...proProfile, bio: bio.trim() || null, years_experience: parsedYears, base_sector_id: baseSectorId, transport_type: transportType.trim() || null });
     setSaving(false);
   }
 
@@ -110,6 +175,15 @@ export function ProProfileScreen() {
     setSelectedSectorIds((current) =>
       current.includes(sectorId) ? current.filter((id) => id !== sectorId) : [...current, sectorId],
     );
+  }
+
+  function toggleService(serviceId: number) {
+    setSelectedServices((current) => {
+      if (current.includes(serviceId)) return current.filter((id) => id !== serviceId);
+      setServicePrices((prices) => ({ ...prices, [serviceId]: prices[serviceId] ?? '' }));
+      setServiceDurations((durations) => ({ ...durations, [serviceId]: durations[serviceId] ?? '60' }));
+      return [...current, serviceId];
+    });
   }
 
   async function addAvailability() {
@@ -169,6 +243,8 @@ export function ProProfileScreen() {
         <TextInput multiline onChangeText={setBio} placeholder="Cuéntales a tus clientes sobre tu experiencia" style={[styles.input, styles.multiline]} value={bio} />
         <Text style={styles.label}>Años de experiencia</Text>
         <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 5" style={styles.input} value={years} />
+        <Text style={styles.label}>Tipo de transporte</Text>
+        <TextInput maxLength={50} onChangeText={setTransportType} placeholder="Ej. Motor, automóvil o transporte público" style={styles.input} value={transportType} />
         <Text style={styles.label}>Sector base</Text>
         <View style={styles.choiceList}>
           {sectors.map((sector) => (
@@ -181,6 +257,43 @@ export function ProProfileScreen() {
             <Choice key={sector.id} selected={selectedSectorIds.includes(sector.id)} label={sector.name} onPress={() => toggleSector(sector.id)} />
           ))}
         </View>
+      </Section>
+
+      <Section title="Servicios y tarifas">
+        <Text style={styles.body}>Elige las especialidades que ofreces y define tu precio base en pesos dominicanos.</Text>
+        {catalog.map((service) => {
+          const selected = selectedServices.includes(service.id);
+          const category = (service as ServiceType & { service_categories?: { name: string } | null }).service_categories?.name;
+          return (
+            <View key={service.id} style={styles.serviceEditor}>
+              <Choice selected={selected} label={`${service.name}${category ? ` · ${category}` : ''}`} onPress={() => toggleService(service.id)} />
+              {selected && (
+                <View style={styles.serviceFields}>
+                  <View style={styles.priceField}>
+                    <Text style={styles.label}>Precio base (RD$)</Text>
+                    <TextInput
+                      keyboardType="decimal-pad"
+                      onChangeText={(value) => setServicePrices((current) => ({ ...current, [service.id]: value }))}
+                      placeholder="1500"
+                      style={styles.input}
+                      value={servicePrices[service.id] ?? ''}
+                    />
+                  </View>
+                  <View style={styles.durationField}>
+                    <Text style={styles.label}>Duración (min)</Text>
+                    <TextInput
+                      keyboardType="number-pad"
+                      onChangeText={(value) => setServiceDurations((current) => ({ ...current, [service.id]: value }))}
+                      placeholder="60"
+                      style={styles.input}
+                      value={serviceDurations[service.id] ?? ''}
+                    />
+                  </View>
+                </View>
+              )}
+            </View>
+          );
+        })}
       </Section>
 
       <Section title="Disponibilidad semanal">
@@ -236,7 +349,7 @@ const styles = StyleSheet.create({
   page: { paddingBottom: 40, gap: 16, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
-  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 11 },
+  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   statusBanner: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.goldLight, gap: 5 },
   statusApproved: { backgroundColor: '#E6F8F0' },
@@ -251,6 +364,10 @@ const styles = StyleSheet.create({
   choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.blueDark },
+  serviceEditor: { gap: 9 },
+  serviceFields: { flexDirection: 'row', gap: 12, paddingHorizontal: 5 },
+  priceField: { flex: 1 },
+  durationField: { flex: 1 },
   timeRow: { flexDirection: 'row', gap: 12 },
   timeField: { flex: 1, gap: 6 },
   actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.blue },

@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 
 import { AuthProvider } from '@/components/auth-provider';
+import '@/lib/pro-location-task';
 
 export default function RootLayout() {
   return (

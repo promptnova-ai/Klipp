@@ -1,17 +1,31 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as Location from 'expo-location';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { LocationPicker } from '@/components/location-picker';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
-import type { Address, ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
+import type { ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
 
-type AddressOption = Address & { sectors: { name: string } | null };
+type BookingCoordinate = { latitude: number; longitude: number };
+type ServiceOffer = {
+  id: string;
+  pro_id: string;
+  service_type_id: number;
+  base_price_dop: number;
+  est_minutes: number;
+  pro_name: string | null;
+  avatar_url: string | null;
+  rating_avg: number;
+  rating_count: number;
+  bio: string | null;
+};
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
 
 function getBusinessDateKey(date: Date) {
@@ -50,33 +64,22 @@ function formatSlotTime(value: string) {
   });
 }
 
-function getAvailabilityWindow(date: string, time: string, durationMinutes: number | undefined) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !durationMinutes) return null;
-  const parsedDate = new Date(`${date}T12:00:00.000Z`);
-  if (Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) return null;
-  const [hours, minutes] = time.split(':').map(Number);
-  const startMinutes = hours * 60 + minutes;
-  const endMinutes = startMinutes + durationMinutes;
-  if (endMinutes >= 24 * 60) return null;
-  const day = parsedDate.getUTCDay();
-  return {
-    weekday: day === 0 ? 7 : day,
-    start: time,
-    end: `${String(Math.floor(endMinutes / 60)).padStart(2, '0')}:${String(endMinutes % 60).padStart(2, '0')}`,
-  };
-}
-
 export function NewBookingScreen() {
   const router = useRouter();
-  const { serviceId: serviceIdParam, tierId: tierIdParam } = useLocalSearchParams<{ serviceId?: string; tierId?: string }>();
+  const { serviceId: serviceIdParam, tierId: tierIdParam, offerId: offerIdParam } = useLocalSearchParams<{ serviceId?: string; tierId?: string; offerId?: string }>();
   const { session } = useAuth();
   const [services, setServices] = useState<ServiceType[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
-  const [addresses, setAddresses] = useState<AddressOption[]>([]);
+  const [offers, setOffers] = useState<ServiceOffer[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [scheduledDate, setScheduledDate] = useState('');
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
+  const [addressText, setAddressText] = useState('');
+  const [landmarkNotes, setLandmarkNotes] = useState('');
+  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [scheduledDate, setScheduledDate] = useState(() => getDateOptions()[0]?.key ?? '');
   const [scheduledTime, setScheduledTime] = useState('');
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -95,43 +98,114 @@ export function NewBookingScreen() {
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
     [],
   );
+  const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) ?? null;
+
+  async function requestCurrentLocation() {
+    setLocationLoading(true);
+    setLocationError(null);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        setLocationError('Necesitamos permiso de ubicación para mostrar tu punto de servicio.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setCoordinate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } catch (cause) {
+      setLocationError(cause instanceof Error ? cause.message : 'No pudimos obtener tu ubicación actual.');
+    } finally {
+      setLocationLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void requestCurrentLocation();
+  }, []);
+
+  useEffect(() => {
+    if (!coordinate) return;
+    let active = true;
+    void Location.reverseGeocodeAsync(coordinate)
+      .then((places) => {
+        if (!active) return;
+        const place = places[0];
+        if (!place) {
+          setAddressText(`${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}`);
+          return;
+        }
+        const street = [place.street, place.streetNumber].filter(Boolean).join(' ');
+        setAddressText([street, place.district || place.subregion, place.city || place.region].filter(Boolean).join(', '));
+      })
+      .catch((cause: unknown) => {
+        if (active) setLocationError(cause instanceof Error ? cause.message : 'No pudimos encontrar la dirección de este punto.');
+      });
+    return () => { active = false; };
+  }, [coordinate]);
 
   useEffect(() => {
     async function loadOptions() {
       if (!session?.user.id) return;
-      const [serviceResult, tierResult, addressResult] = await Promise.all([
-        supabase.from('service_types').select('id, code, name, description, active').eq('active', true).order('name'),
+      const [serviceResult, tierResult, offerResult] = await Promise.all([
+        supabase.from('service_types').select('id, code, name, description, active, category_id').eq('active', true).order('name'),
         supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
-        supabase.from('addresses').select('id, client_id, label, street, references_text, sector_id, location, created_at, sectors(name)').eq('client_id', session.user.id).order('created_at', { ascending: false }),
+        supabase.from('pro_services').select('id, pro_id, service_type_id, base_price_dop, est_minutes').eq('active', true),
       ]);
-      const loadError = serviceResult.error ?? tierResult.error ?? addressResult.error;
+      const loadError = serviceResult.error ?? tierResult.error ?? offerResult.error;
       if (loadError) setError(loadError.message);
       else {
         const serviceRows = (serviceResult.data ?? []) as ServiceType[];
+        const offerRows = (offerResult.data ?? []) as Omit<ServiceOffer, 'pro_name' | 'avatar_url' | 'rating_avg' | 'rating_count' | 'bio'>[];
+        const proIds = [...new Set(offerRows.map((offer) => offer.pro_id))];
+        const { data: proRows, error: proError } = proIds.length
+          ? await supabase
+              .from('pro_cards')
+              .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
+              .in('pro_id', proIds)
+          : { data: [], error: null };
+        if (proError) {
+          setError(proError.message);
+          setLoading(false);
+          return;
+        }
+        const professionalRows = (proRows ?? []) as ProCard[];
         setServices(serviceRows);
         const tierRows = (tierResult.data ?? []) as PricingTier[];
         setTiers(tierRows);
-        setAddresses((addressResult.data ?? []) as unknown as AddressOption[]);
+        setOffers(offerRows.flatMap((offer) => {
+          const pro = professionalRows.find((item) => item.pro_id === offer.pro_id);
+          if (!pro) return [];
+          return [{
+            ...offer,
+            pro_name: pro.full_name,
+            avatar_url: pro.avatar_url,
+            rating_avg: pro.rating_avg,
+            rating_count: pro.rating_count,
+            bio: pro.bio,
+          }];
+        }));
         const requestedServiceId = Number(serviceIdParam);
         const initialServiceId = serviceRows.some((service) => service.id === requestedServiceId)
           ? requestedServiceId
           : serviceRows[0]?.id ?? null;
         const requestedTierId = Number(tierIdParam);
         const initialTier = tierRows.find((tier) => tier.id === requestedTierId && tier.service_type_id === initialServiceId);
+        const initialOffer = offerRows.find((offer) => offer.id === offerIdParam && offer.service_type_id === initialServiceId);
         setSelectedServiceId(initialServiceId);
         setSelectedTierId(initialTier?.id ?? null);
+        setSelectedOfferId(initialOffer?.id ?? null);
       }
       setLoading(false);
     }
     void loadOptions();
-  }, [session?.user.id, serviceIdParam, tierIdParam]);
+  }, [session?.user.id, serviceIdParam, tierIdParam, offerIdParam]);
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
-  const selectedAddress = addresses.find((address) => address.id === selectedAddressId) ?? null;
+  const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
+  const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
 
   useEffect(() => {
-    if (!selectedAddress || !selectedTier || !scheduledDate) {
+    if (!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate) {
       setAvailableSlots([]);
       setScheduledTime('');
       setLoadingSlots(false);
@@ -142,14 +216,21 @@ export function NewBookingScreen() {
     setLoadingSlots(true);
     setError(null);
     setScheduledTime('');
-    void Promise.resolve(
-      supabase.rpc('get_available_booking_slots', {
-        p_address_id: selectedAddress.id,
-        p_pricing_tier_id: selectedTier.id,
-        p_date: scheduledDate,
-        p_mode: mode,
-      }),
-    )
+    const result = selectedOffer
+      ? supabase.rpc('get_available_service_slots', {
+          p_pro_service_id: selectedOffer.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_date: scheduledDate,
+        })
+      : supabase.rpc('get_available_booking_slots_at_location', {
+          p_pricing_tier_id: selectedTier?.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_date: scheduledDate,
+          p_mode: mode,
+        });
+    void Promise.resolve(result)
       .then(({ data, error: slotsError }) => {
         if (!active) return;
         if (slotsError) {
@@ -170,65 +251,57 @@ export function NewBookingScreen() {
     return () => {
       active = false;
     };
-  }, [selectedAddress?.id, selectedTier?.id, scheduledDate, mode]);
+  }, [coordinate?.latitude, coordinate?.longitude, selectedTier?.id, selectedOffer?.id, scheduledDate, mode]);
 
   useEffect(() => {
-    if (!selectedAddress) {
+    if (!coordinate || !scheduledTime || !selectedDuration) {
       setPros([]);
       setSelectedProId(null);
       return;
     }
-    const sectorId = selectedAddress.sector_id;
-    const availabilityWindow = getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes);
-    if (!availabilityWindow) {
-      setPros([]);
-      setSelectedProId(null);
-      setLoadingPros(false);
-      return;
-    }
+    const currentCoordinate = coordinate;
     let active = true;
     async function loadPros() {
-      const window = availabilityWindow;
-      if (!window) return;
       setLoadingPros(true);
       setError(null);
-      const { data: sectorLinks, error: linksError } = await supabase.from('pro_sectors').select('pro_id').eq('sector_id', sectorId);
-      if (linksError) {
-        if (active) setError(linksError.message);
-      } else {
-        const proIds = [...new Set((sectorLinks ?? []).map((link) => link.pro_id))];
-        if (proIds.length === 0) {
-          if (active) setPros([]);
+      if (selectedOffer) {
+        const { data, error: proError } = await supabase
+          .from('pro_cards')
+          .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
+          .eq('pro_id', selectedOffer.pro_id)
+          .maybeSingle();
+        if (active && proError) setError(proError.message);
+        if (active && data) {
+          setPros([data as ProCard]);
+          setSelectedProId(selectedOffer.pro_id);
+        }
+      } else if (mode === 'manual') {
+        const scheduledStart = getScheduledStart();
+        if (!scheduledStart) {
+          setPros([]);
+          setSelectedProId(null);
         } else {
-          const [prosResult, availabilityResult] = await Promise.all([
-            supabase
-              .from('pro_cards')
-              .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
-              .in('pro_id', proIds)
-              .order('rating_avg', { ascending: false }),
-            supabase
-              .from('pro_availability')
-              .select('pro_id, start_time, end_time')
-              .in('pro_id', proIds)
-              .eq('weekday', window.weekday),
-          ]);
-          if (active && (prosResult.error || availabilityResult.error)) setError(prosResult.error?.message ?? availabilityResult.error?.message ?? 'No pudimos comprobar disponibilidad.');
+          const { data, error: prosError } = await supabase.rpc('get_available_pros_at_location', {
+            p_lat: currentCoordinate.latitude,
+            p_lng: currentCoordinate.longitude,
+            p_scheduled_start: scheduledStart,
+            p_est_minutes: selectedDuration,
+          });
+          if (active && prosError) setError(prosError.message);
           else if (active) {
-            const availableProIds = new Set(
-              (availabilityResult.data ?? [])
-                .filter((slot) => slot.start_time.slice(0, 5) <= window.start && slot.end_time.slice(0, 5) >= window.end)
-                .map((slot) => slot.pro_id),
-            );
-            setPros(((prosResult.data ?? []) as ProCard[]).filter((pro) => availableProIds.has(pro.pro_id)));
+            setPros((data ?? []) as ProCard[]);
             setSelectedProId(null);
           }
         }
+      } else {
+        setPros([]);
+        setSelectedProId(null);
       }
       if (active) setLoadingPros(false);
     }
     void loadPros();
     return () => { active = false; };
-  }, [selectedAddress?.id, selectedAddress?.sector_id, scheduledDate, scheduledTime, selectedTier?.est_minutes, mode]);
+  }, [coordinate?.latitude, coordinate?.longitude, scheduledDate, scheduledTime, selectedDuration, selectedOffer?.id, mode]);
 
   async function showProProfile(pro: ProCard) {
     setExpandedProId((current) => current === pro.pro_id ? null : pro.pro_id);
@@ -250,8 +323,8 @@ export function NewBookingScreen() {
   }
 
   async function createBooking() {
-    if (!selectedTier || !selectedAddress || !session?.user.id) {
-      setError('Selecciona el servicio, tamaño y dirección.');
+    if ((!selectedTier && !selectedOffer) || !coordinate || !session?.user.id) {
+      setError('Selecciona el servicio y permite confirmar tu ubicación.');
       return;
     }
     const scheduledStart = getScheduledStart();
@@ -259,21 +332,32 @@ export function NewBookingScreen() {
       setError('Elige una fecha y hora futura válidas.');
       return;
     }
-    if (mode === 'manual' && !selectedProId) {
+    if (!selectedOffer && mode === 'manual' && !selectedProId) {
       setError('Selecciona un profesional disponible para continuar.');
       return;
     }
     setSaving(true);
     setError(null);
     setSuccess(null);
-    const { error: rpcError } = await supabase.rpc('create_booking', {
-      p_pricing_tier_id: selectedTier.id,
-      p_address_id: selectedAddress.id,
-      p_scheduled_start: scheduledStart,
-      p_mode: mode,
-      p_pro_id: mode === 'manual' ? selectedProId : null,
-      p_notes: null,
-    });
+    const { error: rpcError } = selectedOffer
+      ? await supabase.rpc('create_booking_at_location', {
+          p_pro_service_id: selectedOffer.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        })
+      : await supabase.rpc('create_tier_booking_at_location', {
+          p_pricing_tier_id: selectedTier!.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+          p_mode: mode,
+          p_pro_id: mode === 'manual' ? selectedProId : null,
+        });
     if (rpcError) setError(rpcError.message);
     else {
       setSuccess(mode === 'auto' ? 'Buscando profesional. Tu solicitud se creó correctamente.' : 'Solicitud enviada al profesional. Te avisaremos cuando responda.');
@@ -291,19 +375,61 @@ export function NewBookingScreen() {
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
-        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { setSelectedServiceId(service.id); setSelectedTierId(null); }} />)}
+        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
       </Section>
-      <Section title="2. Tamaño de la vivienda">
-        {visibleTiers.length === 0 ? <Text style={styles.body}>No hay tamaños configurados para este servicio.</Text> : visibleTiers.map((tier) => (
+      {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
+        {visibleTiers.map((tier) => (
           <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => setSelectedTierId(tier.id)} />
         ))}
-      </Section>
-      <Section title="3. Dirección">
-        {addresses.length === 0 ? (
-          <View style={styles.emptyInline}><Text style={styles.body}>Primero guarda una dirección con sector y referencias.</Text><Pressable onPress={() => router.push('/(client)/addresses')}><Text style={styles.successLink}>Añadir dirección</Text></Pressable></View>
-        ) : addresses.map((address) => (
-          <Choice key={address.id} selected={selectedAddressId === address.id} label={`${address.label || address.sectors?.name || 'Dirección'} · ${address.sectors?.name ?? 'Sector'}`} onPress={() => setSelectedAddressId(address.id)} />
-        ))}
+      </Section>}
+      {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
+        {offers.filter((offer) => offer.service_type_id === selectedServiceId).length === 0
+          ? <Text style={styles.body}>Aún no hay profesionales con este servicio disponible.</Text>
+          : offers.filter((offer) => offer.service_type_id === selectedServiceId).map((offer) => (
+            <Choice
+              key={offer.id}
+              selected={selectedOfferId === offer.id}
+              label={offer.pro_name ?? 'Profesional Klipp'}
+              secondary={`${formatDop(offer.base_price_dop)} · ${offer.est_minutes} min`}
+              onPress={() => { setSelectedOfferId(offer.id); setMode('manual'); }}
+            />
+          ))}
+      </Section>}
+      <Section title="3. Ubicación del servicio">
+        {locationLoading ? (
+          <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Obteniendo tu ubicación...</Text></View>
+        ) : coordinate ? (
+          <>
+            <LocationPicker coordinate={coordinate} onChange={setCoordinate} />
+            <Text style={styles.label}>Dirección aproximada</Text>
+            <TextInput
+              accessibilityLabel="Dirección aproximada"
+              onChangeText={setAddressText}
+              placeholder="Calle, sector y ciudad"
+              placeholderTextColor={KlippColors.muted}
+              style={styles.addressInput}
+              value={addressText}
+            />
+            <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.adjustLocation, pressed && styles.pressed]}>
+              <Text style={styles.adjustLocationText}>Actualizar a mi ubicación actual</Text>
+            </Pressable>
+            <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
+            <TextInput
+              accessibilityLabel="Indicaciones / Punto de referencia"
+              multiline
+              onChangeText={setLandmarkNotes}
+              placeholder="Apto 4B, frente al colmado, portón blanco"
+              placeholderTextColor={KlippColors.muted}
+              style={styles.notesInput}
+              value={landmarkNotes}
+            />
+          </>
+        ) : (
+          <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.retryLocation, pressed && styles.pressed]}>
+            <Text style={styles.adjustLocationText}>Compartir ubicación para continuar</Text>
+          </Pressable>
+        )}
+        {locationError && <Text accessibilityRole="alert" style={styles.error}>{locationError}</Text>}
       </Section>
       <Section title="4. Fecha y hora">
         <Text style={styles.label}>Elige el día</Text>
@@ -328,12 +454,12 @@ export function NewBookingScreen() {
           <Text style={styles.label}>Horarios disponibles</Text>
           {scheduledDate && !loadingSlots && availableSlots.length > 0 && <Text style={styles.slotCount}>{availableSlots.length} horarios</Text>}
         </View>
-        {!selectedAddress || !selectedTier || !scheduledDate ? (
-          <Text style={styles.body}>Selecciona tamaño, dirección y día para consultar los horarios disponibles.</Text>
+        {!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate ? (
+          <Text style={styles.body}>Selecciona un servicio, ubicación y día para consultar horarios disponibles.</Text>
         ) : loadingSlots ? (
           <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Buscando horarios disponibles...</Text></View>
         ) : availableSlots.length === 0 ? (
-          <View style={styles.noSlots}><Text style={styles.noSlotsTitle}>No hay horarios disponibles</Text><Text style={styles.body}>Prueba otro día o cambia la dirección seleccionada.</Text></View>
+          <View style={styles.noSlots}><Text style={styles.noSlotsTitle}>No hay horarios disponibles</Text><Text style={styles.body}>Prueba otro día o ajusta el punto del mapa.</Text></View>
         ) : (
           <View style={styles.slotGrid}>
             {slotOptions.map((slot) => {
@@ -355,15 +481,16 @@ export function NewBookingScreen() {
         )}
       </Section>
       <Section title="5. Profesional">
-        <View style={styles.modeOptions}>
+        {!selectedOffer && <View style={styles.modeOptions}>
           <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => setMode('manual')} />
           <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => setMode('auto')} />
-        </View>
-        {mode === 'manual' && !selectedAddress && <Text style={styles.body}>Selecciona una dirección para ver profesionales de ese sector.</Text>}
-        {mode === 'manual' && selectedAddress && !getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes) && <Text style={styles.body}>Elige fecha, hora y tamaño para ver profesionales disponibles durante todo el servicio.</Text>}
-        {mode === 'manual' && selectedAddress && loadingPros && <ActivityIndicator color="#16766c" />}
-        {mode === 'manual' && selectedAddress && getAvailabilityWindow(scheduledDate, scheduledTime, selectedTier?.est_minutes) && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados con disponibilidad registrada para todo ese horario en este sector.</Text>}
-        {mode === 'manual' && pros.map((pro) => (
+        </View>}
+        {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
+        {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
+        {!selectedOffer && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para ver profesionales disponibles en tu zona.</Text>}
+        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
+        {!selectedOffer && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
+        {!selectedOffer && mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
             <Pressable onPress={() => void showProProfile(pro)} style={({ pressed }) => [styles.proSummary, pressed && styles.choicePressed]}>
               {pro.avatar_url ? <Image source={{ uri: pro.avatar_url }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{pro.full_name?.[0] ?? 'K'}</Text></View>}
@@ -384,31 +511,34 @@ export function NewBookingScreen() {
             )}
           </View>
         ))}
-        {mode === 'auto' && <Text style={styles.body}>Buscaremos un profesional disponible en el sector de tu dirección. La asignación automática se conectará más adelante.</Text>}
+        {!selectedOffer && mode === 'auto' && <Text style={styles.body}>Buscaremos un profesional disponible para este servicio y horario en tu zona.</Text>}
       </Section>
 
-      {selectedTier && selectedAddress && scheduledDate && scheduledTime && (
+      {(selectedTier || selectedOffer) && coordinate && scheduledDate && scheduledTime && (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeading}>
             <View>
               <Text style={styles.totalLabel}>RESUMEN DE TU RESERVA</Text>
-              <Text style={styles.summaryTitle}>{services.find((service) => service.id === selectedTier.service_type_id)?.name ?? 'Servicio'}</Text>
+              <Text style={styles.summaryTitle}>{services.find((service) => service.id === selectedServiceId)?.name ?? 'Servicio'}</Text>
             </View>
             <View style={styles.summaryIcon}>
               <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#047857" size={18} />
             </View>
           </View>
-          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Tamaño</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>
+          {selectedTier && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Tamaño</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>}
+          {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Duración</Text><Text style={styles.summaryValue}>{selectedOffer.est_minutes} min</Text></View>}
           <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Fecha y hora</Text><Text style={styles.summaryValue}>{scheduledDate} · {formatSlotTime(scheduledTime)}</Text></View>
-          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Dirección</Text><Text numberOfLines={2} style={styles.summaryValue}>{selectedAddress.label || selectedAddress.street || selectedAddress.sectors?.name || 'Dirección seleccionada'}</Text></View>
+          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Dirección</Text><Text numberOfLines={2} style={styles.summaryValue}>{addressText || 'Ubicación seleccionada'}</Text></View>
+          {landmarkNotes.trim().length > 0 && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Referencia</Text><Text numberOfLines={2} style={styles.summaryValue}>{landmarkNotes}</Text></View>}
+          {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{selectedOffer.pro_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>Profesional disponible</Text></View>}
           <View style={styles.summaryDivider} />
-          <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedTier.price_dop)}</Text></View>
+          <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
-      <Pressable accessibilityRole="button" disabled={saving} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, saving && styles.disabled, pressed && !saving && styles.buttonPressed]}>
+      <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
         {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Solicitar servicio</Text>}
       </Pressable>
     </ScrollView>
@@ -445,6 +575,11 @@ const styles = StyleSheet.create({
   section: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   sectionTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700', marginBottom: 2 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
+  notesInput: { minHeight: 84, paddingHorizontal: 13, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, textAlignVertical: 'top', backgroundColor: KlippColors.white },
+  adjustLocation: { alignSelf: 'flex-start', paddingVertical: 7 },
+  retryLocation: { minHeight: 46, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: '#F8FAFC' },
+  adjustLocationText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
   dateList: { gap: 8, paddingVertical: 2 },
   dateOption: { width: 62, minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 3, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, backgroundColor: KlippColors.white },

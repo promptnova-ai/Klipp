@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import * as Location from 'expo-location';
+import { ActivityIndicator, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -7,6 +8,7 @@ import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
+import { getProLocationTaskError, updateActiveProTrackingBookings } from '@/lib/pro-location-task';
 import type { Booking, BookingStatus } from '@/lib/types';
 
 type AgendaBooking = Booking & {
@@ -14,6 +16,7 @@ type AgendaBooking = Booking & {
   pricing_tiers: { label: string } | null;
   addresses: { label: string | null; references_text: string | null; sectors: { name: string } | null } | null;
 };
+type AgendaMessage = { id: number; booking_id: string; sender_id: string; body: string; created_at: string };
 
 const nextStep: Partial<Record<BookingStatus, { status: BookingStatus; label: string }>> = {
   scheduled: { status: 'en_route', label: 'Marcar en camino' },
@@ -29,13 +32,20 @@ export function ProAgendaScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chatBookingId, setChatBookingId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<AgendaMessage[]>([]);
+  const [messageDraft, setMessageDraft] = useState('');
+  const activeTripKey = bookings
+    .filter((booking) => booking.status === 'en_route')
+    .map((booking) => booking.id)
+    .join(',');
 
   const loadBookings = useCallback(async () => {
     if (!session?.user.id) return;
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, address_id, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, references_text, sectors(name))')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, references_text, sectors(name))')
       .eq('pro_id', session.user.id)
       .in('status', ['scheduled', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_start');
@@ -45,6 +55,106 @@ export function ProAgendaScreen() {
   }, [session?.user.id]);
 
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
+
+  useEffect(() => {
+    if (loading) return;
+    const activeTripIds = activeTripKey ? activeTripKey.split(',') : [];
+    let active = true;
+    const subscriptions: Location.LocationSubscription[] = [];
+
+    async function startLocationUpdates() {
+      try {
+        if (activeTripIds.length === 0) {
+          if (Platform.OS !== 'web') {
+            await updateActiveProTrackingBookings([]);
+          }
+          return;
+        }
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) {
+          if (active) setError('Permite el acceso a tu ubicación para compartirla mientras estás en camino.');
+          return;
+        }
+        if (Platform.OS !== 'web') {
+          const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
+          if (backgroundPermission.granted) {
+            try {
+              await updateActiveProTrackingBookings(activeTripIds);
+              const taskError = await getProLocationTaskError();
+              if (taskError && active) setError(taskError);
+              return;
+            } catch (cause) {
+              if (active) setError(cause instanceof Error ? cause.message : 'No pudimos iniciar el seguimiento en segundo plano.');
+            }
+          } else if (active) {
+            setError('La ubicación en segundo plano no está permitida; el seguimiento funcionará mientras la app esté abierta.');
+          }
+        }
+        for (const bookingId of activeTripIds) {
+          let subscription: Location.LocationSubscription | null = null;
+          subscription = await Location.watchPositionAsync({
+            accuracy: Location.Accuracy.High,
+            distanceInterval: 10,
+            timeInterval: 5000,
+          }, async ({ coords }) => {
+            const { data: published, error: publishError } = await supabase.rpc('publish_pro_location', {
+              p_booking_id: bookingId,
+              p_latitude: coords.latitude,
+              p_longitude: coords.longitude,
+            });
+            if (publishError && active) setError(publishError.message);
+            if (published === false) {
+              subscription?.remove();
+              if (active) await loadBookings();
+            }
+          });
+          if (active) subscriptions.push(subscription);
+          else subscription.remove();
+        }
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'No pudimos iniciar el seguimiento de ubicación.');
+      }
+    }
+
+    void startLocationUpdates();
+    return () => {
+      active = false;
+      subscriptions.forEach((subscription) => subscription.remove());
+    };
+  }, [activeTripKey, loading]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void getProLocationTaskError().then((taskError) => {
+          if (taskError) setError(taskError);
+        }).catch((cause: unknown) => {
+          setError(cause instanceof Error ? cause.message : 'No pudimos revisar el estado del seguimiento de ubicación.');
+        });
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    const channels = bookings
+      .filter((booking) => booking.status === 'en_route')
+      .map((booking) => supabase
+        .channel(`pro-booking-messages:${booking.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `booking_id=eq.${booking.id}`,
+        }, (payload) => {
+          const message = payload.new as AgendaMessage;
+          if (chatBookingId === booking.id) {
+            setChatMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message].slice(-20));
+          }
+        })
+        .subscribe());
+    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
+  }, [bookings, chatBookingId]);
 
   async function refresh() {
     setRefreshing(true);
@@ -62,8 +172,43 @@ export function ProAgendaScreen() {
       p_new_status: step.status,
     });
     if (rpcError) setError(rpcError.message);
-    else await loadBookings();
+    else {
+      setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: step.status } : item));
+      await loadBookings();
+    }
     setBusyId(null);
+  }
+
+  async function toggleChat(bookingId: string) {
+    if (chatBookingId === bookingId) {
+      setChatBookingId(null);
+      return;
+    }
+    setChatBookingId(bookingId);
+    const { data, error: messagesError } = await supabase
+      .from('messages')
+      .select('id, booking_id, sender_id, body, created_at')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: true })
+      .limit(20);
+    if (messagesError) setError(messagesError.message);
+    else setChatMessages((data ?? []) as AgendaMessage[]);
+  }
+
+  async function sendMessage(bookingId: string) {
+    if (!session?.user.id) return;
+    const body = messageDraft.trim();
+    if (!body) return;
+    const { data, error: sendError } = await supabase
+      .from('messages')
+      .insert({ booking_id: bookingId, sender_id: session.user.id, body })
+      .select('id, booking_id, sender_id, body, created_at')
+      .single();
+    if (sendError) setError(sendError.message);
+    else {
+      setMessageDraft('');
+      setChatMessages((current) => current.some((item) => item.id === data.id) ? current : [...current, data as AgendaMessage].slice(-20));
+    }
   }
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando agenda...</Text></View>;
@@ -83,10 +228,40 @@ export function ProAgendaScreen() {
         return (
           <View key={booking.id} style={styles.card}>
             <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
-            <Text style={styles.body}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
+            <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
             <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
             <Text style={styles.body}>Sector: {booking.addresses?.sectors?.name ?? 'No disponible'}</Text>
-            {booking.addresses?.references_text && <Text style={styles.body}>Referencia: {booking.addresses.references_text}</Text>}
+            {booking.address_text && <Text style={styles.body}>Dirección: {booking.address_text}</Text>}
+            {(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.body}>Referencia: {booking.landmark_notes || booking.addresses?.references_text}</Text>}
+            {booking.status === 'en_route' && <Text style={styles.locationNotice}>Compartiendo ubicación en vivo con el cliente.</Text>}
+            {booking.status === 'en_route' && (
+              <>
+                <Pressable accessibilityRole="button" onPress={() => void toggleChat(booking.id)} style={({ pressed }) => [styles.chatButton, pressed && styles.disabled]}>
+                  <Text style={styles.chatButtonText}>{chatBookingId === booking.id ? 'Cerrar chat con cliente' : 'Mensaje del cliente'}</Text>
+                </Pressable>
+                {chatBookingId === booking.id && (
+                  <View style={styles.chatPanel}>
+                    {chatMessages.map((message) => (
+                      <View key={message.id} style={[styles.chatMessage, message.sender_id === session?.user.id && styles.chatMessageOwn]}>
+                        <Text style={styles.chatMessageText}>{message.body}</Text>
+                      </View>
+                    ))}
+                    <TextInput
+                      accessibilityLabel="Escribe un mensaje al cliente"
+                      maxLength={2000}
+                      onChangeText={setMessageDraft}
+                      placeholder="Escribe un mensaje..."
+                      placeholderTextColor={KlippColors.muted}
+                      style={styles.messageInput}
+                      value={messageDraft}
+                    />
+                    <Pressable accessibilityRole="button" onPress={() => void sendMessage(booking.id)} style={({ pressed }) => [styles.chatButton, pressed && styles.disabled]}>
+                      <Text style={styles.chatButtonText}>Enviar mensaje</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </>
+            )}
             <Text style={styles.payout}>Pago al profesional: {formatDop(booking.pro_payout_dop)}</Text>
             {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void advance(booking)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text></Pressable>}
           </View>
@@ -106,6 +281,14 @@ const styles = StyleSheet.create({
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700', marginTop: 3 },
+  locationNotice: { color: '#047857', fontSize: 13, fontWeight: '700' },
+  chatButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
+  chatButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
+  chatPanel: { padding: 12, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 8 },
+  chatMessage: { alignSelf: 'flex-start', maxWidth: '85%', padding: 9, borderRadius: 12, backgroundColor: KlippColors.white },
+  chatMessageOwn: { alignSelf: 'flex-end', backgroundColor: '#EAF2FF' },
+  chatMessageText: { color: KlippColors.slate, fontSize: 13, lineHeight: 18 },
+  messageInput: { minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 13 },
   button: { minHeight: 46, marginTop: 7, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.5 },
