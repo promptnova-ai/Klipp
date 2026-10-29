@@ -314,7 +314,7 @@ as $$
   with location_sector as (
     select public.closest_active_sector(p_lat, p_lng) as sector_id
   ),
-  window as (
+  booking_window as (
     select p_scheduled_start at time zone 'America/Santo_Domingo' as local_start,
            (p_scheduled_start + make_interval(mins => p_est_minutes))
              at time zone 'America/Santo_Domingo' as local_end
@@ -322,7 +322,7 @@ as $$
   select pc.pro_id, pc.full_name, pc.avatar_url, pc.bio, pc.years_experience,
          pc.base_sector_id, pc.rating_avg, pc.rating_count, pc.jobs_completed
   from location_sector ls
-  cross join window w
+  cross join booking_window w
   join public.pro_sectors ps on ps.sector_id = ls.sector_id
   join public.pro_profiles pp on pp.user_id = ps.pro_id
   join public.pro_cards pc on pc.pro_id = pp.user_id

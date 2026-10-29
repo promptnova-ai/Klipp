@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
-import type { ProAvailability, ProProfile, Sector, ServiceType, VerificationStatus } from '@/lib/types';
+import type { ProAvailability, ProProfile, ServiceType, VerificationStatus } from '@/lib/types';
 
 type ProfessionalService = {
   service_type_id: number;
@@ -14,6 +16,7 @@ type ProfessionalService = {
 };
 
 const weekdayLabels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const serviceRadiiKm = [5, 10, 15, 20, 30, 50];
 
 function verificationLabel(status: VerificationStatus) {
   if (status === 'approved') return 'Verificado';
@@ -29,12 +32,11 @@ export function ProProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [proProfile, setProProfile] = useState<ProProfile | null>(null);
-  const [sectors, setSectors] = useState<Sector[]>([]);
-  const [selectedSectorIds, setSelectedSectorIds] = useState<number[]>([]);
+  const [coverageCenter, setCoverageCenter] = useState<CoverageCoordinate | null>(null);
+  const [coverageRadiusKm, setCoverageRadiusKm] = useState(10);
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('');
   const [transportType, setTransportType] = useState('');
-  const [baseSectorId, setBaseSectorId] = useState<number | null>(null);
   const [availability, setAvailability] = useState<ProAvailability[]>([]);
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
@@ -45,21 +47,19 @@ export function ProProfileScreen() {
   const [endTime, setEndTime] = useState('12:00');
   const [addingAvailability, setAddingAvailability] = useState(false);
 
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    const [profileResult, sectorsResult, linksResult, availabilityResult, catalogResult, offeredResult] = await Promise.all([
+    const [profileResult, availabilityResult, catalogResult, offeredResult] = await Promise.all([
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
-      supabase.from('sectors').select('id, name, zone, active').eq('active', true).order('name'),
-      supabase.from('pro_sectors').select('sector_id').eq('pro_id', userId),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pro_services').select('service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
     ]);
-    if (profileResult.error || sectorsResult.error || linksResult.error || availabilityResult.error || catalogResult.error || offeredResult.error) {
+    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error) {
       setError(
-        profileResult.error?.message ?? sectorsResult.error?.message ?? linksResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? 'No pudimos cargar tu perfil.',
+        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? 'No pudimos cargar tu perfil.',
       );
       setLoading(false);
       return;
@@ -69,9 +69,16 @@ export function ProProfileScreen() {
     setBio(savedProfile.bio ?? '');
     setYears(savedProfile.years_experience?.toString() ?? '');
     setTransportType(savedProfile.transport_type ?? '');
-    setBaseSectorId(savedProfile.base_sector_id);
-    setSectors((sectorsResult.data ?? []) as Sector[]);
-    setSelectedSectorIds((linksResult.data ?? []).map((link) => link.sector_id));
+    setCoverageCenter(
+      typeof savedProfile.service_area_latitude === 'number' && typeof savedProfile.service_area_longitude === 'number'
+        ? { latitude: savedProfile.service_area_latitude, longitude: savedProfile.service_area_longitude }
+        : null,
+    );
+    setCoverageRadiusKm(
+      typeof savedProfile.service_area_radius_m === 'number'
+        ? savedProfile.service_area_radius_m / 1000
+        : 10,
+    );
     setAvailability((availabilityResult.data ?? []) as ProAvailability[]);
     const services = (catalogResult.data ?? []) as ServiceType[];
     const offered = (offeredResult.data ?? []) as ProfessionalService[];
@@ -80,11 +87,11 @@ export function ProProfileScreen() {
     setServicePrices(Object.fromEntries(offered.map((service) => [service.service_type_id, String(service.base_price_dop)])));
     setServiceDurations(Object.fromEntries(offered.map((service) => [service.service_type_id, String(service.est_minutes)])));
     setLoading(false);
-  }
+  }, [userId]);
 
   useEffect(() => {
-    void loadProfile();
-  }, [userId]);
+    void Promise.resolve().then(loadProfile);
+  }, [loadProfile]);
 
   async function saveProfile() {
     if (!userId || !proProfile) return;
@@ -102,13 +109,21 @@ export function ProProfileScreen() {
       setError('Cada servicio elegido necesita un precio mayor que cero y una duración válida en minutos.');
       return;
     }
+    if (selectedServices.length > 0 && !coverageCenter) {
+      setError('Define el centro y el radio de tu área de trabajo antes de publicar tus servicios.');
+      return;
+    }
+    if (!Number.isInteger(coverageRadiusKm) || coverageRadiusKm < 1 || coverageRadiusKm > 100) {
+      setError('El radio de cobertura debe estar entre 1 y 100 kilómetros.');
+      return;
+    }
 
     setSaving(true);
     setError(null);
     setNotice(null);
     const { error: updateError } = await supabase
       .from('pro_profiles')
-      .update({ bio: bio.trim() || null, years_experience: parsedYears, base_sector_id: baseSectorId, transport_type: transportType.trim() || null })
+      .update({ bio: bio.trim() || null, years_experience: parsedYears, transport_type: transportType.trim() || null })
       .eq('user_id', userId);
     if (updateError) {
       setError(updateError.message);
@@ -116,21 +131,19 @@ export function ProProfileScreen() {
       return;
     }
 
-    const currentIds = new Set(selectedSectorIds);
-    const savedIds = new Set((await supabase.from('pro_sectors').select('sector_id').eq('pro_id', userId)).data?.map((link) => link.sector_id) ?? []);
-    const toAdd = [...currentIds].filter((id) => !savedIds.has(id));
-    const toRemove = [...savedIds].filter((id) => !currentIds.has(id));
-    let sectorError: string | null = null;
-    if (toAdd.length) {
-      const { error: addError } = await supabase.from('pro_sectors').insert(toAdd.map((sector_id) => ({ pro_id: userId, sector_id })));
-      sectorError = addError?.message ?? null;
+    if (coverageCenter) {
+      const { error: areaError } = await supabase.rpc('save_pro_service_area', {
+        p_latitude: coverageCenter.latitude,
+        p_longitude: coverageCenter.longitude,
+        p_radius_m: coverageRadiusKm * 1000,
+      });
+      if (areaError) {
+        setError(`El perfil se guardó, pero no se pudo guardar el área de trabajo: ${areaError.message}`);
+        setSaving(false);
+        return;
+      }
     }
-    if (!sectorError && toRemove.length) {
-      const { error: removeError } = await supabase.from('pro_sectors').delete().eq('pro_id', userId).in('sector_id', toRemove);
-      sectorError = removeError?.message ?? null;
-    }
-    if (sectorError) setError(`El perfil se guardó, pero no se pudieron actualizar los sectores: ${sectorError}`);
-    else {
+    {
       const offeredResult = await supabase.from('pro_services').select('id, service_type_id').eq('pro_id', userId);
       if (offeredResult.error) {
         setError(`El perfil se guardó, pero no se pudieron consultar tus servicios: ${offeredResult.error.message}`);
@@ -165,16 +178,33 @@ export function ProProfileScreen() {
           return;
         }
       }
-      setNotice('Perfil y servicios actualizados.');
+      setNotice('Perfil, área de trabajo y servicios actualizados.');
     }
-    setProProfile({ ...proProfile, bio: bio.trim() || null, years_experience: parsedYears, base_sector_id: baseSectorId, transport_type: transportType.trim() || null });
+    setProProfile({
+      ...proProfile,
+      bio: bio.trim() || null,
+      years_experience: parsedYears,
+      transport_type: transportType.trim() || null,
+      service_area_latitude: coverageCenter?.latitude ?? null,
+      service_area_longitude: coverageCenter?.longitude ?? null,
+      service_area_radius_m: coverageCenter ? coverageRadiusKm * 1000 : null,
+    });
     setSaving(false);
   }
 
-  function toggleSector(sectorId: number) {
-    setSelectedSectorIds((current) =>
-      current.includes(sectorId) ? current.filter((id) => id !== sectorId) : [...current, sectorId],
-    );
+  async function setCoverageFromCurrentLocation() {
+    setError(null);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        setError('Permite el acceso a la ubicación para establecer el centro de tu área de trabajo.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setCoverageCenter({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos obtener tu ubicación actual.');
+    }
   }
 
   function toggleService(serviceId: number) {
@@ -245,18 +275,29 @@ export function ProProfileScreen() {
         <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 5" style={styles.input} value={years} />
         <Text style={styles.label}>Tipo de transporte</Text>
         <TextInput maxLength={50} onChangeText={setTransportType} placeholder="Ej. Motor, automóvil o transporte público" style={styles.input} value={transportType} />
-        <Text style={styles.label}>Sector base</Text>
-        <View style={styles.choiceList}>
-          {sectors.map((sector) => (
-            <Choice key={sector.id} selected={baseSectorId === sector.id} label={sector.name} onPress={() => setBaseSectorId(sector.id)} />
-          ))}
-        </View>
-        <Text style={styles.label}>Sectores donde trabajas</Text>
-        <View style={styles.choiceList}>
-          {sectors.map((sector) => (
-            <Choice key={sector.id} selected={selectedSectorIds.includes(sector.id)} label={sector.name} onPress={() => toggleSector(sector.id)} />
-          ))}
-        </View>
+        <Text style={styles.label}>Área de trabajo</Text>
+        <Text style={styles.body}>Elige el centro de tu zona y hasta dónde puedes desplazarte. Los clientes verán tu perfil cuando estén dentro de esta cobertura.</Text>
+        <Pressable accessibilityRole="button" onPress={() => void setCoverageFromCurrentLocation()} style={styles.locationButton}>
+          <Text style={styles.locationButtonText}>Usar mi ubicación actual</Text>
+        </Pressable>
+        {coverageCenter ? (
+          <>
+            <CoverageRadiusPicker center={coverageCenter} onChange={setCoverageCenter} radiusMeters={coverageRadiusKm * 1000} />
+            <Text style={styles.label}>Radio de cobertura</Text>
+            <View style={styles.choiceList}>
+              {serviceRadiiKm.map((radius) => (
+                <Choice
+                  key={radius}
+                  selected={coverageRadiusKm === radius}
+                  label={`${radius} km`}
+                  onPress={() => setCoverageRadiusKm(radius)}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <Text style={styles.empty}>Aún no has configurado el centro de tu área de trabajo.</Text>
+        )}
       </Section>
 
       <Section title="Servicios y tarifas">
@@ -359,6 +400,8 @@ const styles = StyleSheet.create({
   input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
   multiline: { minHeight: 92, paddingVertical: 10, textAlignVertical: 'top' },
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
+  locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
   choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },

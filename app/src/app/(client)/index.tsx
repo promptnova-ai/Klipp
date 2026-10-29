@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import * as Location from 'expo-location';
 import {
   Animated,
   Modal,
@@ -33,6 +34,17 @@ type ServiceOffer = {
   pro?: SearchablePro;
 };
 type CatalogCategory = { id: number; name: string };
+type NearbyOffer = ServiceOffer & {
+  pro_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  years_experience: number | null;
+  rating_avg: number;
+  rating_count: number;
+  jobs_completed: number;
+  distance_m: number;
+};
+type HomeCoordinate = { latitude: number; longitude: number };
 
 function getCategory(service: ServiceType & { category_name?: string | null }) {
   if (service.category_name) return service.category_name;
@@ -75,6 +87,10 @@ export default function ClientHomeScreen() {
   const [services, setServices] = useState<CatalogService[]>([]);
   const [pros, setPros] = useState<SearchablePro[]>([]);
   const [categoriesData, setCategoriesData] = useState<CatalogCategory[]>([]);
+  const [serviceIds, setServiceIds] = useState<number[]>([]);
+  const [coordinate, setCoordinate] = useState<HomeCoordinate | null>(null);
+  const [locationLabel, setLocationLabel] = useState('Activa tu ubicación');
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [search, setSearch] = useState('');
   const [selectedService, setSelectedService] = useState<CatalogService | null>(null);
@@ -86,26 +102,18 @@ export default function ClientHomeScreen() {
   async function loadCatalog() {
     setLoading(true);
     setLoadError(null);
-    const [serviceResult, tierResult, proResult, categoryResult, offerResult] = await Promise.all([
+    const [serviceResult, tierResult, categoryResult] = await Promise.all([
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
-      supabase.from('pro_cards').select('pro_id, full_name, bio').order('full_name'),
       supabase.from('service_categories').select('id, name').eq('active', true).order('id'),
-      supabase.from('pro_services').select('id, pro_id, service_type_id, base_price_dop, est_minutes').eq('active', true),
     ]);
-    const error = serviceResult.error ?? tierResult.error ?? proResult.error ?? categoryResult.error ?? offerResult.error;
+    const error = serviceResult.error ?? tierResult.error ?? categoryResult.error;
     if (error) {
       setLoadError(error.message);
       setLoading(false);
       return;
     }
     const tiers = (tierResult.data ?? []) as PricingTier[];
-    const professionals = (proResult.data ?? []) as SearchablePro[];
-    const offers = (offerResult.data ?? []) as ServiceOffer[];
-    const offeredServices = offers.flatMap((offer) => {
-      const pro = professionals.find((professional) => professional.pro_id === offer.pro_id);
-      return pro ? [{ ...offer, pro }] : [];
-    });
     const serviceRows = (serviceResult.data ?? []) as (ServiceType & {
       service_categories: { name: string } | { name: string }[] | null;
     })[];
@@ -114,17 +122,84 @@ export default function ClientHomeScreen() {
         ...service,
         category_name: (Array.isArray(service.service_categories) ? service.service_categories[0]?.name : service.service_categories?.name) ?? null,
         tiers: tiers.filter((tier) => tier.service_type_id === service.id),
-        offers: offeredServices.filter((offer) => offer.service_type_id === service.id),
+        offers: [],
       })),
     );
-    setPros(professionals);
+    setServiceIds(serviceRows.map((service) => service.id));
+    setPros([]);
     setCategoriesData((categoryResult.data ?? []) as CatalogCategory[]);
     setLoading(false);
   }
 
   useEffect(() => {
-    void loadCatalog();
+    void Promise.resolve().then(loadCatalog);
   }, []);
+
+  async function requestLocation() {
+    setLocationError(null);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        setLocationError('Permite el acceso a tu ubicación para mostrar profesionales que trabajan cerca de ti.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setCoordinate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } catch (cause) {
+      setLocationError(cause instanceof Error ? cause.message : 'No pudimos obtener tu ubicación.');
+    }
+  }
+
+  useEffect(() => {
+    void Promise.resolve().then(requestLocation);
+  }, []);
+
+  useEffect(() => {
+    if (!coordinate) return;
+    let active = true;
+    void Location.reverseGeocodeAsync(coordinate)
+      .then((places) => {
+        if (!active) return;
+        const place = places[0];
+        setLocationLabel(place ? [place.district || place.subregion, place.city || place.region].filter(Boolean).join(', ') || 'Ubicación actual' : 'Ubicación actual');
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setLocationLabel('Ubicación actual');
+          setLocationError(cause instanceof Error ? cause.message : 'No pudimos encontrar el nombre de tu ubicación.');
+        }
+      });
+    void Promise.all(serviceIds.map((serviceId) => supabase.rpc('get_nearby_service_offers', {
+      p_service_type_id: serviceId,
+      p_latitude: coordinate.latitude,
+      p_longitude: coordinate.longitude,
+    }))).then((results) => {
+      if (!active) return;
+      const failed = results.find((result) => result.error);
+      if (failed?.error) {
+        setLoadError(failed.error.message);
+        return;
+      }
+      const nearby = results.flatMap((result) => (result.data ?? []) as NearbyOffer[]);
+      const nearbyPros = new Map<string, SearchablePro>();
+      const enrichedOffers: ServiceOffer[] = nearby.map((offer) => {
+        nearbyPros.set(offer.pro_id, { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio });
+        return {
+          ...offer,
+          pro: { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio },
+        };
+      });
+      setServices((current) => current.map((service) => ({
+        ...service,
+        offers: enrichedOffers.filter((offer) => offer.service_type_id === service.id),
+      })));
+      setPros([...nearbyPros.values()]);
+      setLoadError(null);
+    }).catch((cause: unknown) => {
+      if (active) setLoadError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
+    });
+    return () => { active = false; };
+  }, [coordinate, serviceIds]);
 
   const categories = useMemo(
     () => ['Todos', ...categoriesData.map((category) => category.name)],
@@ -187,13 +262,14 @@ export default function ClientHomeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ver mis direcciones"
-          onPress={() => router.push('/(client)/addresses')}
+          onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()}
           style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
           <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.blueDark} size={17} />
           <View>
-            <Text style={styles.locationLabel}>TU ZONA</Text>
-            <Text style={styles.locationText}>Santo Domingo</Text>
+            <Text style={styles.locationLabel}>TU UBICACIÓN</Text>
+            <Text style={styles.locationText}>{locationLabel}</Text>
           </View>
+          {locationError && <Text accessibilityRole="alert" style={styles.locationError}>{locationError}</Text>}
           <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor={KlippColors.muted} size={14} />
         </Pressable>
       </View>
@@ -350,7 +426,7 @@ export default function ClientHomeScreen() {
         </View>
         <View style={styles.trustCopy}>
           <Text style={styles.trustTitle}>Tu tranquilidad es primero</Text>
-          <Text style={styles.trustText}>Profesionales verificados en tu sector.</Text>
+          <Text style={styles.trustText}>Profesionales verificados cerca de ti.</Text>
         </View>
       </View>
 
@@ -441,6 +517,7 @@ const styles = StyleSheet.create({
   locationButton: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 6 },
   locationLabel: { color: KlippColors.muted, fontSize: 9, fontWeight: '700', letterSpacing: 0.8 },
   locationText: { color: KlippColors.navy, fontSize: 13, fontWeight: '600', marginTop: 2 },
+  locationError: { color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
   greetingBlock: { gap: 5, marginTop: 2 },
   greeting: { color: KlippColors.navy, fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5 },
   wave: { color: KlippColors.gold, fontSize: 20 },

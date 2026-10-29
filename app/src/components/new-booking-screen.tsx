@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
@@ -25,6 +25,9 @@ type ServiceOffer = {
   rating_avg: number;
   rating_count: number;
   bio: string | null;
+  years_experience?: number | null;
+  jobs_completed?: number;
+  distance_m?: number;
 };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
 
@@ -69,6 +72,7 @@ export function NewBookingScreen() {
   const { serviceId: serviceIdParam, tierId: tierIdParam, offerId: offerIdParam } = useLocalSearchParams<{ serviceId?: string; tierId?: string; offerId?: string }>();
   const { session } = useAuth();
   const [services, setServices] = useState<ServiceType[]>([]);
+  const [serviceIds, setServiceIds] = useState<number[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [offers, setOffers] = useState<ServiceOffer[]>([]);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
@@ -93,14 +97,34 @@ export function NewBookingScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const dateOptions = useMemo(getDateOptions, []);
+  const dateOptions = useMemo(() => getDateOptions(), []);
   const slotOptions = useMemo(
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
     [],
   );
   const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) ?? null;
+  const getScheduledStart = useCallback(() => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) return null;
+    const value = new Date(`${scheduledDate}T${scheduledTime}:00-04:00`);
+    return Number.isNaN(value.getTime()) || value.getTime() <= Date.now() ? null : value.toISOString();
+  }, [scheduledDate, scheduledTime]);
 
-  async function requestCurrentLocation() {
+  const resetAppointmentSelection = useCallback(() => {
+    setError(null);
+    setAvailableSlots([]);
+    setScheduledTime('');
+    setLoadingSlots(false);
+    setPros([]);
+    setSelectedProId(null);
+    setLoadingPros(false);
+  }, []);
+
+  const updateCoordinate = useCallback((nextCoordinate: BookingCoordinate) => {
+    resetAppointmentSelection();
+    setCoordinate(nextCoordinate);
+  }, [resetAppointmentSelection]);
+
+  const requestCurrentLocation = useCallback(async () => {
     setLocationLoading(true);
     setLocationError(null);
     try {
@@ -110,17 +134,17 @@ export function NewBookingScreen() {
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-      setCoordinate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+      updateCoordinate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
     } catch (cause) {
       setLocationError(cause instanceof Error ? cause.message : 'No pudimos obtener tu ubicación actual.');
     } finally {
       setLocationLoading(false);
     }
-  }
+  }, [updateCoordinate]);
 
   useEffect(() => {
-    void requestCurrentLocation();
-  }, []);
+    void Promise.resolve().then(requestCurrentLocation);
+  }, [requestCurrentLocation]);
 
   useEffect(() => {
     if (!coordinate) return;
@@ -145,59 +169,62 @@ export function NewBookingScreen() {
   useEffect(() => {
     async function loadOptions() {
       if (!session?.user.id) return;
-      const [serviceResult, tierResult, offerResult] = await Promise.all([
+      const [serviceResult, tierResult] = await Promise.all([
         supabase.from('service_types').select('id, code, name, description, active, category_id').eq('active', true).order('name'),
         supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
-        supabase.from('pro_services').select('id, pro_id, service_type_id, base_price_dop, est_minutes').eq('active', true),
       ]);
-      const loadError = serviceResult.error ?? tierResult.error ?? offerResult.error;
+      const loadError = serviceResult.error ?? tierResult.error;
       if (loadError) setError(loadError.message);
       else {
         const serviceRows = (serviceResult.data ?? []) as ServiceType[];
-        const offerRows = (offerResult.data ?? []) as Omit<ServiceOffer, 'pro_name' | 'avatar_url' | 'rating_avg' | 'rating_count' | 'bio'>[];
-        const proIds = [...new Set(offerRows.map((offer) => offer.pro_id))];
-        const { data: proRows, error: proError } = proIds.length
-          ? await supabase
-              .from('pro_cards')
-              .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
-              .in('pro_id', proIds)
-          : { data: [], error: null };
-        if (proError) {
-          setError(proError.message);
-          setLoading(false);
-          return;
-        }
-        const professionalRows = (proRows ?? []) as ProCard[];
         setServices(serviceRows);
+        setServiceIds(serviceRows.map((service) => service.id));
         const tierRows = (tierResult.data ?? []) as PricingTier[];
         setTiers(tierRows);
-        setOffers(offerRows.flatMap((offer) => {
-          const pro = professionalRows.find((item) => item.pro_id === offer.pro_id);
-          if (!pro) return [];
-          return [{
-            ...offer,
-            pro_name: pro.full_name,
-            avatar_url: pro.avatar_url,
-            rating_avg: pro.rating_avg,
-            rating_count: pro.rating_count,
-            bio: pro.bio,
-          }];
-        }));
         const requestedServiceId = Number(serviceIdParam);
         const initialServiceId = serviceRows.some((service) => service.id === requestedServiceId)
           ? requestedServiceId
           : serviceRows[0]?.id ?? null;
         const requestedTierId = Number(tierIdParam);
         const initialTier = tierRows.find((tier) => tier.id === requestedTierId && tier.service_type_id === initialServiceId);
-        const initialOffer = offerRows.find((offer) => offer.id === offerIdParam && offer.service_type_id === initialServiceId);
         setSelectedServiceId(initialServiceId);
         setSelectedTierId(initialTier?.id ?? null);
-        setSelectedOfferId(initialOffer?.id ?? null);
+        setSelectedOfferId(null);
       }
       setLoading(false);
     }
     void loadOptions();
   }, [session?.user.id, serviceIdParam, tierIdParam, offerIdParam]);
+
+  useEffect(() => {
+    if (!coordinate || serviceIds.length === 0) {
+      return;
+    }
+    let active = true;
+    void Promise.all(serviceIds.map((serviceId) => supabase.rpc('get_nearby_service_offers', {
+      p_service_type_id: serviceId,
+      p_latitude: coordinate.latitude,
+      p_longitude: coordinate.longitude,
+    }))).then((results) => {
+      if (!active) return;
+      const failed = results.find((result) => result.error);
+      if (failed?.error) {
+        setError(failed.error.message);
+        setOffers([]);
+        return;
+      }
+      const nearby = results.flatMap((result) => (result.data ?? []) as (ServiceOffer & {
+        years_experience: number | null;
+        jobs_completed: number;
+        distance_m: number;
+      })[]);
+      setOffers(nearby);
+      if (offerIdParam && nearby.some((offer) => offer.id === offerIdParam)) setSelectedOfferId(offerIdParam);
+    }).catch((cause: unknown) => {
+      if (active) setError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
+    });
+    return () => { active = false; };
+  }, [coordinate, serviceIds, offerIdParam]);
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
@@ -206,16 +233,13 @@ export function NewBookingScreen() {
 
   useEffect(() => {
     if (!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate) {
-      setAvailableSlots([]);
-      setScheduledTime('');
-      setLoadingSlots(false);
       return;
     }
 
     let active = true;
-    setLoadingSlots(true);
-    setError(null);
-    setScheduledTime('');
+    void Promise.resolve().then(() => {
+      if (active) setLoadingSlots(true);
+    });
     const result = selectedOffer
       ? supabase.rpc('get_available_service_slots', {
           p_pro_service_id: selectedOffer.id,
@@ -251,28 +275,28 @@ export function NewBookingScreen() {
     return () => {
       active = false;
     };
-  }, [coordinate?.latitude, coordinate?.longitude, selectedTier?.id, selectedOffer?.id, scheduledDate, mode]);
+  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode]);
 
   useEffect(() => {
-    if (!coordinate || !scheduledTime || !selectedDuration) {
-      setPros([]);
-      setSelectedProId(null);
-      return;
-    }
+    if (!coordinate || !scheduledTime || !selectedDuration) return;
     const currentCoordinate = coordinate;
     let active = true;
     async function loadPros() {
       setLoadingPros(true);
       setError(null);
       if (selectedOffer) {
-        const { data, error: proError } = await supabase
-          .from('pro_cards')
-          .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed')
-          .eq('pro_id', selectedOffer.pro_id)
-          .maybeSingle();
-        if (active && proError) setError(proError.message);
-        if (active && data) {
-          setPros([data as ProCard]);
+        if (active) {
+          setPros([{
+            pro_id: selectedOffer.pro_id,
+            full_name: selectedOffer.pro_name,
+            avatar_url: selectedOffer.avatar_url,
+            bio: selectedOffer.bio,
+            years_experience: selectedOffer.years_experience ?? null,
+            base_sector_id: null,
+            rating_avg: selectedOffer.rating_avg,
+            rating_count: selectedOffer.rating_count,
+            jobs_completed: selectedOffer.jobs_completed ?? 0,
+          }]);
           setSelectedProId(selectedOffer.pro_id);
         }
       } else if (mode === 'manual') {
@@ -286,6 +310,7 @@ export function NewBookingScreen() {
             p_lng: currentCoordinate.longitude,
             p_scheduled_start: scheduledStart,
             p_est_minutes: selectedDuration,
+            p_service_type_id: selectedTier?.service_type_id,
           });
           if (active && prosError) setError(prosError.message);
           else if (active) {
@@ -301,7 +326,7 @@ export function NewBookingScreen() {
     }
     void loadPros();
     return () => { active = false; };
-  }, [coordinate?.latitude, coordinate?.longitude, scheduledDate, scheduledTime, selectedDuration, selectedOffer?.id, mode]);
+  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, mode, getScheduledStart]);
 
   async function showProProfile(pro: ProCard) {
     setExpandedProId((current) => current === pro.pro_id ? null : pro.pro_id);
@@ -314,12 +339,6 @@ export function NewBookingScreen() {
       .limit(3);
     if (reviewError) setError(reviewError.message);
     else setProReviews((data ?? []) as Review[]);
-  }
-
-  function getScheduledStart() {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) return null;
-    const value = new Date(`${scheduledDate}T${scheduledTime}:00-04:00`);
-    return Number.isNaN(value.getTime()) || value.getTime() <= Date.now() ? null : value.toISOString();
   }
 
   async function createBooking() {
@@ -388,11 +407,11 @@ export function NewBookingScreen() {
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
-        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
+        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
       </Section>
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => setSelectedTierId(tier.id)} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
@@ -404,7 +423,7 @@ export function NewBookingScreen() {
               selected={selectedOfferId === offer.id}
               label={offer.pro_name ?? 'Profesional Klipp'}
               secondary={`${formatDop(offer.base_price_dop)} · ${offer.est_minutes} min`}
-              onPress={() => { setSelectedOfferId(offer.id); setMode('manual'); }}
+              onPress={() => { resetAppointmentSelection(); setSelectedOfferId(offer.id); setMode('manual'); }}
             />
           ))}
       </Section>}
@@ -413,12 +432,12 @@ export function NewBookingScreen() {
           <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Obteniendo tu ubicación...</Text></View>
         ) : coordinate ? (
           <>
-            <LocationPicker coordinate={coordinate} onChange={setCoordinate} />
+            <LocationPicker coordinate={coordinate} onChange={updateCoordinate} />
             <Text style={styles.label}>Dirección aproximada</Text>
             <TextInput
               accessibilityLabel="Dirección aproximada"
               onChangeText={setAddressText}
-              placeholder="Calle, sector y ciudad"
+              placeholder="Calle, barrio y ciudad"
               placeholderTextColor={KlippColors.muted}
               style={styles.addressInput}
               value={addressText}
@@ -454,7 +473,7 @@ export function NewBookingScreen() {
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
                 key={option.key}
-                onPress={() => setScheduledDate(option.key)}
+                onPress={() => { resetAppointmentSelection(); setScheduledDate(option.key); }}
                 style={({ pressed }) => [styles.dateOption, selected && styles.dateOptionSelected, pressed && styles.choicePressed]}>
                 <Text style={[styles.dateWeekday, selected && styles.dateTextSelected]}>{option.weekday}</Text>
                 <Text style={[styles.dateDay, selected && styles.dateTextSelected]}>{option.day}</Text>
@@ -495,8 +514,8 @@ export function NewBookingScreen() {
       </Section>
       <Section title="5. Profesional">
         {!selectedOffer && <View style={styles.modeOptions}>
-          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => setMode('manual')} />
-          <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => setMode('auto')} />
+          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
+          <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}

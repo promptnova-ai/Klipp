@@ -14,7 +14,7 @@ import type { Booking, BookingStatus } from '@/lib/types';
 type AgendaBooking = Booking & {
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
-  addresses: { label: string | null; references_text: string | null; sectors: { name: string } | null } | null;
+  addresses: { label: string | null; street: string | null; references_text: string | null } | null;
 };
 type AgendaMessage = { id: number; booking_id: string; sender_id: string; body: string; created_at: string };
 
@@ -45,7 +45,7 @@ export function ProAgendaScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, references_text, sectors(name))')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('pro_id', session.user.id)
       .in('status', ['scheduled', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_start');
@@ -230,8 +230,7 @@ export function ProAgendaScreen() {
             <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
             <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
             <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
-            <Text style={styles.body}>Sector: {booking.addresses?.sectors?.name ?? 'No disponible'}</Text>
-            {booking.address_text && <Text style={styles.body}>Dirección: {booking.address_text}</Text>}
+            <Text style={styles.body}>Ubicación: {booking.address_text || booking.addresses?.label || booking.addresses?.street || 'No disponible'}</Text>
             {(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.body}>Referencia: {booking.landmark_notes || booking.addresses?.references_text}</Text>}
             {booking.status === 'en_route' && <Text style={styles.locationNotice}>Compartiendo ubicación en vivo con el cliente.</Text>}
             {booking.status === 'en_route' && (

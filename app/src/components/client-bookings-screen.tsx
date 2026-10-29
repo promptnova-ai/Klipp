@@ -15,7 +15,7 @@ import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
 type ClientBooking = Booking & {
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
-  addresses: { label: string | null; street: string | null; references_text: string | null; sectors: { name: string } | null } | null;
+  addresses: { label: string | null; street: string | null; references_text: string | null } | null;
 };
 type LocationPoint = { latitude: number; longitude: number };
 type QueueInfo = { previous_stops: number; previous_service_in_progress: boolean; departure_window: string };
@@ -60,7 +60,7 @@ export function ClientBookingsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text, sectors(name))')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('client_id', session.user.id)
       .order('scheduled_start', { ascending: false });
     if (queryError) {
@@ -350,7 +350,7 @@ export function ClientBookingsScreen() {
             </View>
             <View style={styles.detailRow}>
               <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.muted} size={17} />
-              <Text style={styles.body}>{booking.address_text || booking.addresses?.label || booking.addresses?.street || booking.addresses?.sectors?.name || 'Dirección no disponible'}</Text>
+              <Text style={styles.body}>{booking.address_text || booking.addresses?.label || booking.addresses?.street || 'Dirección no disponible'}</Text>
             </View>
             {!!(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.reference}>{booking.landmark_notes || booking.addresses?.references_text}</Text>}
             {pro && <View style={styles.proChip}><View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View><Text style={styles.proText}>Con {pro.full_name ?? 'Profesional Klipp'}</Text></View>}

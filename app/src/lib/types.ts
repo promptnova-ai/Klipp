@@ -54,6 +54,9 @@ export interface ProProfile {
   rating_count: number;
   jobs_completed: number;
   transport_type?: string | null;
+  service_area_latitude?: number | null;
+  service_area_longitude?: number | null;
+  service_area_radius_m?: number | null;
   created_at: string;
 }
 
@@ -108,7 +111,7 @@ export interface Address {
   label: string | null;
   street: string | null;
   references_text: string | null;
-  sector_id: number;
+  sector_id: number | null;
   location: string;
   created_at: string;
 }

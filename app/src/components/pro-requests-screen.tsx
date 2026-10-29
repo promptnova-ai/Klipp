@@ -6,8 +6,7 @@ import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
-import { formatBusinessDate } from '@/lib/format';
-import { formatDop } from '@/lib/format';
+import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { BookingRequest } from '@/lib/types';
 
 type RequestBooking = {
@@ -15,9 +14,10 @@ type RequestBooking = {
   scheduled_start: string;
   est_minutes: number;
   pro_payout_dop: number;
+  address_text: string | null;
+  landmark_notes: string | null;
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
-  addresses: { sector_id: number; sectors: { name: string } | null } | null;
 };
 
 type IncomingRequest = BookingRequest & { bookings: RequestBooking | null };
@@ -35,14 +35,14 @@ export function ProRequestsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('booking_requests')
-      .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, service_types(name), pricing_tiers(label), addresses(sector_id, sectors(name)))')
+      .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(name), pricing_tiers(label))')
       .eq('pro_id', session.user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
     if (queryError) setError(queryError.message);
     else setRequests((data ?? []) as unknown as IncomingRequest[]);
     setLoading(false);
-  }, [session?.user.id]);
+  }, [session]);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,14 +91,15 @@ export function ProRequestsScreen() {
               <>
                 <Text style={styles.cardTitle}>Solicitud recibida</Text>
                 <Text style={styles.warning}>
-                  La base de datos no permite leer los detalles de esta reserva antes de aceptarla. No la aceptes sin poder revisar servicio, sector y horario.
+                  La base de datos no permite leer los detalles de esta reserva antes de aceptarla. No la aceptes sin poder revisar servicio, ubicación y horario.
                 </Text>
               </>
             ) : (
               <>
                 <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
                 <Text style={styles.body}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
-                <Text style={styles.body}>Sector: {booking.addresses?.sectors?.name ?? 'No disponible'}</Text>
+                <Text style={styles.body}>Ubicación: {booking.address_text ?? 'No disponible'}</Text>
+                {!!booking.landmark_notes && <Text style={styles.body}>Referencia: {booking.landmark_notes}</Text>}
                 <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
                 <Text style={styles.payout}>Recibirías {formatDop(booking.pro_payout_dop)}</Text>
               </>
