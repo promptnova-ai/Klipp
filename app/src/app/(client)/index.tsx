@@ -55,6 +55,30 @@ function getCategory(service: ServiceType & { category_name?: string | null }) {
   return 'Otros';
 }
 
+function getCategoryGlyph(category: string) {
+  const value = category.toLocaleLowerCase();
+  if (value.includes('todos')) return '✦';
+  if (value.includes('limpieza')) return '✧';
+  if (value.includes('belleza') || value.includes('estét') || value.includes('barber')) return '✂';
+  if (value.includes('plomer') || value.includes('agua')) return '◉';
+  if (value.includes('electric')) return 'ϟ';
+  if (value.includes('jard')) return '❋';
+  if (value.includes('hogar') || value.includes('casa')) return '⌂';
+  return '✳';
+}
+
+function getServiceSymbol(service: Pick<ServiceType, 'name' | 'code'> & { category_name?: string | null }) {
+  const value = (service.category_name ?? '') + ' ' + service.name + ' ' + service.code;
+  const normalized = value.toLocaleLowerCase();
+  if (normalized.includes('limpieza') || normalized.includes('clean')) return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
+  if (normalized.includes('barber') || normalized.includes('belleza') || normalized.includes('estét') || normalized.includes('uña')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' };
+  if (normalized.includes('plomer') || normalized.includes('agua')) return { ios: 'drop.fill', android: 'water_drop', web: 'water_drop' };
+  if (normalized.includes('electric')) return { ios: 'bolt.fill', android: 'bolt', web: 'bolt' };
+  if (normalized.includes('jard')) return { ios: 'leaf.fill', android: 'yard', web: 'yard' };
+  if (normalized.includes('repar') || normalized.includes('manten')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' };
+  return { ios: 'house.fill', android: 'home', web: 'home' };
+}
+
 function ServiceSkeleton() {
   const opacity = useMemo(() => new Animated.Value(0.45), []);
 
@@ -254,118 +278,95 @@ export default function ClientHomeScreen() {
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
           <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-          <Text style={styles.brand}>klipp</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ver mis direcciones"
-          onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()}
-          style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
-          <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.blueDark} size={17} />
           <View>
-            <Text style={styles.locationLabel}>TU UBICACIÓN</Text>
-            <Text style={styles.locationText}>{locationLabel}</Text>
+            <Text style={styles.brand}>klipp</Text>
+            <Text style={styles.brandCaption}>SERVICIOS A DOMICILIO</Text>
           </View>
-          {locationError && <Text accessibilityRole="alert" style={styles.locationError}>{locationError}</Text>}
-          <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor={KlippColors.muted} size={14} />
+        </View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Seleccionar ubicación" onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
+          <View style={styles.locationPin}>
+            <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor="#315BFF" size={17} />
+          </View>
+          <View style={styles.locationCopy}>
+            <Text style={styles.locationLabel}>SERVICIO EN</Text>
+            <Text numberOfLines={1} style={styles.locationText}>{locationLabel}</Text>
+          </View>
+          <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor="#64748B" size={14} />
         </Pressable>
       </View>
-
       <View style={styles.greetingBlock}>
-        <Text style={styles.greeting}>¡Hola{firstName ? `, ${firstName}` : ''}! <Text style={styles.wave}>✦</Text></Text>
-        <Text style={styles.greetingSubtitle}>Un hogar cuidado se siente diferente.</Text>
+        <Text style={styles.greeting}>Hola{firstName ? ', ' + firstName : ''} <Text style={styles.wave}>✦</Text></Text>
+        <Text style={styles.greetingSubtitle}>¿Qué necesitas resolver hoy?</Text>
       </View>
-
       <View style={styles.searchBar}>
-        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.muted} size={20} />
-        <TextInput
-          accessibilityLabel="Buscar servicios o profesionales"
-          autoCapitalize="none"
-          onChangeText={setSearch}
-          placeholder="Buscar limpieza, profesionales..."
-          placeholderTextColor={KlippColors.muted}
-          returnKeyType="search"
-          style={styles.searchInput}
-          value={search}
-        />
-        {!!search && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setSearch('')} style={styles.clearSearch}>
-            <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor={KlippColors.muted} size={18} />
-          </Pressable>
-        )}
+        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor="#64748B" size={20} />
+        <TextInput accessibilityLabel="Buscar servicios o profesionales" autoCapitalize="none" onChangeText={setSearch} placeholder="Ej. limpieza, plomería, belleza..." placeholderTextColor="#8792A5" returnKeyType="search" style={styles.searchInput} value={search} />
+        {!!search && <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setSearch('')} style={styles.clearSearch}><SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor="#8792A5" size={18} /></Pressable>}
       </View>
-
+      {!coordinate && !search && (
+        <Pressable accessibilityRole="button" onPress={() => void requestLocation()} style={({ pressed }) => [styles.locationPrompt, pressed && styles.pressed]}>
+          <View style={styles.locationPromptIcon}><SymbolView name={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} tintColor="#315BFF" size={19} /></View>
+          <View style={styles.locationPromptCopy}>
+            <Text style={styles.locationPromptTitle}>Encuentra profesionales cerca de ti</Text>
+            <Text style={styles.locationPromptBody}>Indica dónde necesitas el servicio para consultar disponibilidad y precios.</Text>
+          </View>
+          <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#315BFF" size={18} />
+        </Pressable>
+      )}
+      {locationError && <Text accessibilityRole="alert" style={styles.locationError}>{locationError}</Text>}
       {!search && (
         <View style={styles.hero}>
-          <View style={styles.heroAccent} />
+          <View style={styles.heroDecorOne} />
+          <View style={styles.heroDecorTwo} />
           <View style={styles.heroBadge}>
-            <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
-            <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
+            <SymbolView name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }} tintColor="#C7D4FF" size={14} />
+            <Text style={styles.heroBadgeText}>TU DÍA, MÁS FÁCIL</Text>
           </View>
-          <Text style={styles.heroTitle}>Tu hogar,{'\n'}en buenas manos.</Text>
-          <Text style={styles.heroText}>Encuentra profesionales de confianza y reserva en pocos pasos.</Text>
-          {featuredService && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => showServiceDetails(featuredService)}
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}>
-              <Text style={styles.primaryButtonText}>Explorar servicios</Text>
-              <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.navy} size={17} />
+          <Text style={styles.heroTitle}>Tu hogar en buenas manos.</Text>
+          <Text style={styles.heroText}>Servicios confiables, profesionales verificados y reservas sin complicaciones.</Text>
+          <View style={styles.heroFooter}>
+            <Pressable accessibilityRole="button" onPress={() => featuredService && showServiceDetails(featuredService)} style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}>
+              <Text style={styles.primaryButtonText}>Descubrir servicios</Text>
+              <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor="#2348D9" size={16} />
             </Pressable>
-          )}
+            <View style={styles.heroTrust}>
+              <SymbolView name={{ ios: 'shield.lefthalf.filled', android: 'verified_user', web: 'verified_user' }} tintColor="#D6E0FF" size={15} />
+              <Text style={styles.heroTrustText}>Confiables</Text>
+            </View>
+          </View>
         </View>
       )}
-
-      <View style={styles.catalogHeader}>
-        <View>
-          <Text style={styles.sectionEyebrow}>CATÁLOGO KLIPP</Text>
-          <Text style={styles.sectionTitle}>Servicios para ti</Text>
-        </View>
-        <View style={styles.serviceIcon}>
-          <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={21} />
-        </View>
+      <View style={styles.sectionHeadingRow}>
+        <View><Text style={styles.sectionEyebrow}>EXPLORA POR CATEGORÍA</Text><Text style={styles.sectionTitle}>¿Qué estás buscando?</Text></View>
+        {selectedCategory !== 'Todos' && <Pressable accessibilityRole="button" onPress={() => setSelectedCategory('Todos')} style={styles.resetCategory}><Text style={styles.resetCategoryText}>Ver todas</Text></Pressable>}
       </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryTiles}>
         {categories.map((category) => {
           const selected = selectedCategory === category;
+          const serviceCount = category === 'Todos' ? services.length : services.filter((service) => getCategory(service) === category).length;
           return (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              key={category}
-              onPress={() => setSelectedCategory(category)}
-              style={({ pressed }) => [styles.categoryPill, selected && styles.categorySelected, pressed && styles.pressed]}>
-              <Text style={[styles.categoryText, selected && styles.categoryTextSelected]}>{category}</Text>
+            <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category} onPress={() => setSelectedCategory(category)} style={({ pressed }) => [styles.categoryTile, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
+              <View style={[styles.categoryIcon, selected && styles.categoryIconSelected]}><Text style={styles.categoryGlyph}>{getCategoryGlyph(category)}</Text></View>
+              <Text numberOfLines={1} style={[styles.categoryTileTitle, selected && styles.categoryTileTitleSelected]}>{category}</Text>
+              <Text style={[styles.categoryTileCount, selected && styles.categoryTileCountSelected]}>{serviceCount} {serviceCount === 1 ? 'servicio' : 'servicios'}</Text>
             </Pressable>
           );
         })}
       </ScrollView>
-
+      <View style={styles.sectionHeadingRow}>
+        <View><Text style={styles.sectionEyebrow}>{coordinate ? 'DISPONIBLES PARA TU ZONA' : 'CATÁLOGO KLIPP'}</Text><Text style={styles.sectionTitle}>Servicios para ti</Text></View>
+        <View style={styles.catalogCount}><Text style={styles.catalogCountText}>{visibleServices.length}</Text></View>
+      </View>
       {loading ? (
         <View style={styles.serviceList}><ServiceSkeleton /><ServiceSkeleton /></View>
       ) : loadError ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text>
-          <Text style={styles.emptyText}>{loadError}</Text>
-          <Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Intentar de nuevo</Text>
-          </Pressable>
-        </View>
+        <View style={styles.emptyState}><Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text><Text style={styles.emptyText}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}><Text style={styles.clearButtonText}>Intentar de nuevo</Text></Pressable></View>
       ) : visibleServices.length === 0 && visiblePros.length === 0 ? (
         <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.blueDark} size={25} />
-          </View>
+          <View style={styles.emptyIcon}><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor="#315BFF" size={25} /></View>
           <Text style={styles.emptyTitle}>No encontramos resultados</Text>
-          <Text style={styles.emptyText}>
-            {selectedCategory !== 'Todos'
-              ? 'No encontramos servicios en esta categoría. Prueba otra búsqueda o limpia los filtros.'
-              : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}
-          </Text>
-          <Pressable accessibilityRole="button" onPress={clearFilters} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Limpiar filtros</Text>
-          </Pressable>
+          <Text style={styles.emptyText}>{selectedCategory !== 'Todos' ? 'No encontramos servicios en esta categoría. Prueba otra o limpia los filtros.' : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}</Text>
+          <Pressable accessibilityRole="button" onPress={clearFilters} style={styles.clearButton}><Text style={styles.clearButtonText}>Limpiar filtros</Text></Pressable>
         </View>
       ) : (
         <View style={styles.serviceList}>
@@ -376,124 +377,68 @@ export default function ClientHomeScreen() {
             ].sort((left, right) => left.price - right.price);
             const lowestOption = priceOptions[0];
             return (
-              <Pressable
-                accessibilityRole="button"
-                key={service.id}
-                onPress={() => showServiceDetails(service)}
-                style={({ pressed }) => [styles.serviceCard, pressed && styles.cardPressed]}>
-                <View style={styles.serviceCardIcon}>
-                  <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={23} />
+              <Pressable accessibilityRole="button" key={service.id} onPress={() => showServiceDetails(service)} style={({ pressed }) => [styles.serviceCard, pressed && styles.cardPressed]}>
+                <View style={styles.serviceCardVisual}>
+                  <View style={styles.serviceCardIcon}><SymbolView name={getServiceSymbol(service)} tintColor="#315BFF" size={25} /></View>
+                  <View style={styles.serviceVisualCaption}><Text style={styles.serviceVisualCaptionText}>{getCategory(service)}</Text></View>
                 </View>
                 <View style={styles.serviceCopy}>
-                  <View style={styles.serviceCardTop}>
-                    <Text style={styles.serviceTitle}>{service.name}</Text>
-                    <View style={styles.categoryTag}><Text style={styles.categoryTagText}>{getCategory(service)}</Text></View>
+                  <View style={styles.serviceCardTop}><Text style={styles.serviceTitle}>{service.name}</Text><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#98A3B5" size={16} /></View>
+                  <Text numberOfLines={2} style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
+                  <View style={styles.serviceFooter}>
+                    {lowestOption ? <View><Text style={styles.priceCaption}>DESDE</Text><Text style={styles.servicePrice}>{formatDop(lowestOption.price)}</Text></View> : <Text style={styles.servicePrice}>Consultar disponibilidad</Text>}
+                    {lowestOption && <View style={styles.durationPill}><SymbolView name={{ ios: 'clock', android: 'schedule', web: 'schedule' }} tintColor="#64748B" size={12} /><Text style={styles.serviceDuration}>{lowestOption.duration} min</Text></View>}
                   </View>
-                  <Text style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
-                  <View style={styles.serviceMeta}>
-                    {lowestOption && <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text>}
-                    {lowestOption && <Text style={styles.metaDot}>·</Text>}
-                    {lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}
-                  </View>
-                  <Text style={styles.serviceLink}>Ver detalles  <Text style={styles.linkArrow}>›</Text></Text>
                 </View>
               </Pressable>
             );
           })}
           {visiblePros.length > 0 && (
             <View style={styles.proResults}>
-              <Text style={styles.proResultsTitle}>Profesionales</Text>
+              <View style={styles.sectionHeadingRow}><View><Text style={styles.sectionEyebrow}>COINCIDENCIAS</Text><Text style={styles.proResultsTitle}>Profesionales</Text></View><Text style={styles.catalogCountText}>{visiblePros.length}</Text></View>
               {visiblePros.map((pro) => (
                 <View key={pro.pro_id} style={styles.proResult}>
                   <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.proResultCopy}>
-                    <Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional de limpieza verificado'}</Text>
-                  </View>
+                  <View style={styles.proResultCopy}><Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text><Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional verificado de Klipp'}</Text></View>
                 </View>
               ))}
             </View>
           )}
         </View>
       )}
-
       <View style={styles.trustRow}>
-        <View style={styles.trustIcon}>
-          <SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor="#047857" size={19} />
-        </View>
-        <View style={styles.trustCopy}>
-          <Text style={styles.trustTitle}>Tu tranquilidad es primero</Text>
-          <Text style={styles.trustText}>Profesionales verificados cerca de ti.</Text>
-        </View>
+        <View style={styles.trustIcon}><SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor="#0F987A" size={20} /></View>
+        <View style={styles.trustCopy}><Text style={styles.trustTitle}>Reserva con tranquilidad</Text><Text style={styles.trustText}>Consulta profesionales, precios y horarios antes de confirmar.</Text></View>
       </View>
-
-      <Modal
-        animationType="slide"
-        onRequestClose={() => setSelectedService(null)}
-        transparent
-        visible={!!selectedService}>
+      <Modal animationType="slide" onRequestClose={() => setSelectedService(null)} transparent visible={!!selectedService}>
         <View style={styles.modalRoot}>
           <Pressable accessibilityRole="button" accessibilityLabel="Cerrar detalles" onPress={() => setSelectedService(null)} style={styles.modalBackdrop} />
           {selectedService && (
             <View style={styles.detailSheet}>
               <View style={styles.sheetHandle} />
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.detailIllustration}>
-                  <View style={styles.detailIllustrationIcon}>
-                    <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={34} />
-                  </View>
-                  <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
-                </View>
+                <View style={styles.detailIllustration}><View style={styles.detailIllustrationIcon}><SymbolView name={getServiceSymbol(selectedService)} tintColor="#315BFF" size={34} /></View><Text style={styles.detailCategory}>{getCategory(selectedService)}</Text></View>
                 <Text style={styles.detailTitle}>{selectedService.name}</Text>
-                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar limpio y cuidado.'}</Text>
+                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar cuidado.'}</Text>
                 <View style={styles.benefitList}>
-                  {['Profesionales verificados', 'Precio cerrado según el tamaño', 'Reserva en el horario que prefieras'].map((benefit) => (
-                    <View key={benefit} style={styles.benefit}>
-                      <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#047857" size={18} />
-                      <Text style={styles.benefitText}>{benefit}</Text>
-                    </View>
+                  {['Profesionales verificados', 'Precio claro antes de reservar', 'Elige el horario que prefieras'].map((benefit) => (
+                    <View key={benefit} style={styles.benefit}><SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#0F987A" size={18} /><Text style={styles.benefitText}>{benefit}</Text></View>
                   ))}
                 </View>
                 {selectedService.offers.length > 0 && <Text style={styles.tierHeading}>Profesionales y precios</Text>}
                 {selectedService.offers.map((offer) => (
-                  <Pressable
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: offer.id === selectedOfferId }}
-                    key={offer.id}
-                    onPress={() => { setSelectedOfferId(offer.id); setSelectedDetailTierId(null); }}
-                    style={({ pressed }) => [styles.tierCard, offer.id === selectedOfferId && styles.tierCardSelected, pressed && styles.pressed]}>
-                    <View style={styles.tierCopy}>
-                      <Text style={styles.tierTitle}>{offer.pro?.full_name ?? 'Profesional Klipp'}</Text>
-                      <Text style={styles.tierMeta}>{offer.est_minutes} min · precio base</Text>
-                    </View>
-                    <Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: offer.id === selectedOfferId }} key={offer.id} onPress={() => { setSelectedOfferId(offer.id); setSelectedDetailTierId(null); }} style={({ pressed }) => [styles.tierCard, offer.id === selectedOfferId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    <View style={styles.tierCopy}><Text style={styles.tierTitle}>{offer.pro?.full_name ?? 'Profesional Klipp'}</Text><Text style={styles.tierMeta}>{offer.est_minutes} min · servicio a domicilio</Text></View><Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
                   </Pressable>
                 ))}
                 {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige el tamaño de tu hogar</Text>}
                 {selectedService.tiers.map((tier) => (
-                  <Pressable
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: tier.id === selectedDetailTierId }}
-                    key={tier.id}
-                    onPress={() => { setSelectedDetailTierId(tier.id); setSelectedOfferId(null); }}
-                    style={({ pressed }) => [styles.tierCard, !selectedDetailOffer && tier.id === selectedDetailTierId && styles.tierCardSelected, pressed && styles.pressed]}>
-                    <View style={styles.tierCopy}>
-                      <Text style={styles.tierTitle}>{tier.label}</Text>
-                      <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
-                    </View>
-                    <Text style={styles.tierPrice}>{formatDop(tier.price_dop)}</Text>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: tier.id === selectedDetailTierId }} key={tier.id} onPress={() => { setSelectedDetailTierId(tier.id); setSelectedOfferId(null); }} style={({ pressed }) => [styles.tierCard, !selectedDetailOffer && tier.id === selectedDetailTierId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    <View style={styles.tierCopy}><Text style={styles.tierTitle}>{tier.label}</Text><Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text></View><Text style={styles.tierPrice}>{formatDop(tier.price_dop)}</Text>
                   </Pressable>
                 ))}
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={!selectedDetailOffer && !selectedDetailTier}
-                  onPress={() => {
-                    if (selectedDetailOffer) openBooking(selectedService, undefined, selectedDetailOffer);
-                    else if (selectedDetailTier) openBooking(selectedService, selectedDetailTier);
-                  }}
-                  style={({ pressed }) => [styles.bookButton, pressed && styles.buttonPressed, !selectedDetailOffer && !selectedDetailTier && styles.disabled]}>
-                  <Text style={styles.bookButtonText}>Reservar cita</Text>
-                  <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.white} size={17} />
+                <Pressable accessibilityRole="button" disabled={!selectedDetailOffer && !selectedDetailTier} onPress={() => { if (selectedDetailOffer) openBooking(selectedService, undefined, selectedDetailOffer); else if (selectedDetailTier) openBooking(selectedService, selectedDetailTier); }} style={({ pressed }) => [styles.bookButton, pressed && styles.buttonPressed, !selectedDetailOffer && !selectedDetailTier && styles.disabled]}>
+                  <Text style={styles.bookButtonText}>Continuar con la reserva</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} />
                 </Pressable>
               </ScrollView>
             </View>
