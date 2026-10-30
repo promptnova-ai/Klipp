@@ -11,7 +11,7 @@ Phase 2 moves the permission model from foundation to enforcement for the admini
 - Catalog category, service, and pricing changes require `catalog.manage`.
 - Reading operational settings requires `settings.operational`.
 - Commission and request-expiry changes are treated as critical and restricted to the platform owner.
-- The owner receives staff listing, template assignment, per-user allow/deny overrides, and staff access revocation RPCs. Each staff-management action is written to `admin_audit_log`.
+- The owner receives staff listing, template assignment, per-user allow/deny overrides, staff access revocation, and audit-log listing RPCs. Each staff-management action is written to `admin_audit_log`.
 - Newly promoted administrators receive the empty `custom` template by default. Demoted administrators have staff assignments and overrides removed.
 - Direct access to the owner/RBAC tables remains revoked; staff access is mediated through security-definer RPCs.
 
