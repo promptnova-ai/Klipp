@@ -90,6 +90,8 @@ Install that build on physical iOS and Android devices, sign in, open **Avisos**
 
 - Booking status transitions: client and professional receive role-specific notices.
 - Payment events: failed payments warn both parties not to proceed until confirmation; refunds notify the client; released payouts notify the professional.
+- New review: the professional receives a notice.
+- Support issue resolved: the person who reported it receives a notice.
 - New booking request: assigned professional receives a notice. For manual selection, a decline or timeout also notifies the client so they can choose another professional. Automatic dispatch declines stay quiet while Klipp tries the next candidate.
 - New chat message: the other booking participant receives a notice. Message contents are not copied into push previews.
 - Scheduled service reminders: the dispatcher generates 24-hour and one-hour reminders for both booking participants, with deduplication keys.
