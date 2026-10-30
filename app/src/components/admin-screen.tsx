@@ -82,7 +82,7 @@ export function AdminScreen() {
 
       const permissionCodes = [
         'accounts.read', 'accounts.manage_clients', 'verification.review',
-        'catalog.manage', 'settings.operational',
+        'catalog.manage',
       ];
       const permissionResults = owner
         ? permissionCodes.map(() => ({ data: true, error: null }))
@@ -94,7 +94,7 @@ export function AdminScreen() {
 
       const canReadAccounts = owner || granted.includes('accounts.read');
       const canCatalog = owner || granted.includes('catalog.manage');
-      const canReadSettings = owner || granted.includes('settings.operational');
+      const canReadSettings = owner;
 
       const [accountResult, settingsResult, serviceResult, categoryResult, tierResult] = await Promise.all([
         canReadAccounts ? supabase.rpc('admin_list_accounts') : Promise.resolve({ data: [], error: null }),
@@ -157,6 +157,8 @@ export function AdminScreen() {
     () => accounts.filter((account) => account.role === 'pro' && account.verification_status !== 'approved'),
     [accounts],
   );
+  const canManageAccounts = isSuperAdmin || permissions.includes('accounts.manage_clients');
+  const canReviewProfessionals = isSuperAdmin || permissions.includes('verification.review');
   const visibleSections = sections.filter((item) => {
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
@@ -164,6 +166,12 @@ export function AdminScreen() {
     if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage');
     return false;
   });
+  useEffect(() => {
+    if (visibleSections.length > 0 && !visibleSections.some((item) => item.key === section)) {
+      setSection(visibleSections[0].key);
+    }
+  }, [visibleSections, section]);
+
   const filteredAccounts = useMemo(() => {
     const normalized = search.trim().toLocaleLowerCase();
     return normalized
@@ -329,6 +337,7 @@ export function AdminScreen() {
         ))}
       </View>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {visibleSections.length === 0 && <Text style={styles.empty}>Tu cuenta no tiene permisos para acceder a las secciones de administración.</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
       {section === 'staff' && isSuperAdmin && (
@@ -432,8 +441,8 @@ export function AdminScreen() {
                 value={reviewNotes[account.user_id] ?? ''}
               />
               <View style={styles.actions}>
-                <ActionButton disabled={busyKey === `review:${account.user_id}` || !account.id_document_path} label="Aprobar" onPress={() => void reviewProfessional(account, 'approved')} />
-                <ActionButton disabled={busyKey === `review:${account.user_id}`} label="Rechazar" onPress={() => void reviewProfessional(account, 'rejected')} secondary />
+                <ActionButton disabled={!canReviewProfessionals || busyKey === `review:${account.user_id}` || !account.id_document_path} label="Aprobar" onPress={() => void reviewProfessional(account, 'approved')} />
+                <ActionButton disabled={!canReviewProfessionals || busyKey === `review:${account.user_id}`} label="Rechazar" onPress={() => void reviewProfessional(account, 'rejected')} secondary />
               </View>
             </View>
           ))}
@@ -456,7 +465,7 @@ export function AdminScreen() {
                     key={role}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: account.role === role, disabled: account.user_id === profile?.id }}
-                    disabled={account.user_id === profile?.id || busyKey === `role:${account.user_id}`}
+                    disabled={account.user_id === profile?.id || (!canManageAccounts && role !== 'admin') || busyKey === `role:${account.user_id}`}
                     onPress={() => void changeRole(account, role)}
                     style={[styles.roleOption, account.role === role && styles.roleOptionSelected, account.user_id === profile?.id && styles.disabled]}>
                     <Text style={[styles.roleText, account.role === role && styles.roleTextSelected]}>{role}</Text>
