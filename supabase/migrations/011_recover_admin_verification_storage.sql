@@ -38,6 +38,33 @@ BEGIN
     missing_items := array_append(missing_items, 'public.service_types.category_id');
   END IF;
 
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'bookings'
+      AND column_name IN ('price_dop','commission_pct','commission_dop','pro_payout_dop')
+    GROUP BY table_name HAVING count(*) = 4
+  ) THEN
+    missing_items := array_append(missing_items, 'required bookings pricing/commission columns');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'booking_requests'
+      AND column_name = 'expires_at'
+  ) THEN
+    missing_items := array_append(missing_items, 'public.booking_requests.expires_at');
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'pricing_tiers'
+      AND column_name IN ('id','label','price_dop','est_minutes')
+    GROUP BY table_name HAVING count(*) = 4
+  ) THEN
+    missing_items := array_append(missing_items, 'required pricing_tiers columns');
+  END IF;
+
   IF cardinality(missing_items) > 0 THEN
     RAISE EXCEPTION 'Klipp recovery migration 011 aborted; missing prerequisites: %',
       array_to_string(missing_items, ', ');
