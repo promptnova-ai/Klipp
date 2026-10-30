@@ -19,6 +19,7 @@ import { useAuth } from '@/components/auth-provider';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
 import type { ServiceType } from '@/lib/types';
+import { getCatalogServiceName, isCatalogServiceVisible } from '@/lib/service-catalog';
 import { supabase } from '../../lib/supabase';
 
 type ProServiceDraft = { price: string; minutes: string };
