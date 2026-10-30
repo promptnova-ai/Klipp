@@ -46,6 +46,40 @@ const sections: { key: AdminSection; title: string }[] = [
   { key: 'staff', title: 'Equipo y permisos' },
 ];
 
+const permissionLabels: Record<string, string> = {
+  'accounts.read': 'Consultar cuentas',
+  'accounts.manage_clients': 'Gestionar clientes',
+  'professionals.manage': 'Gestionar profesionales',
+  'verification.review': 'Revisar verificaciones',
+  'bookings.read': 'Consultar reservas',
+  'bookings.manage': 'Gestionar reservas',
+  'support.manage': 'Atender incidencias',
+  'catalog.manage': 'Gestionar servicios y tarifas',
+  'finance.read': 'Consultar finanzas',
+  'finance.reconcile': 'Conciliar pagos',
+  'settings.operational': 'Consultar ajustes operativos',
+  'staff.manage': 'Gestionar empleados',
+  'audit.read': 'Consultar actividad',
+};
+
+const permissionGroups: { title: string; codes: string[] }[] = [
+  { title: 'Clientes y profesionales', codes: ['accounts.read', 'accounts.manage_clients', 'professionals.manage', 'verification.review'] },
+  { title: 'Operación diaria', codes: ['bookings.read', 'bookings.manage', 'support.manage', 'catalog.manage'] },
+  { title: 'Finanzas', codes: ['finance.read', 'finance.reconcile'] },
+  { title: 'Administración', codes: ['settings.operational', 'staff.manage', 'audit.read'] },
+];
+
+const templateHighlights: Record<string, string> = {
+  support: 'Atención al cliente y consulta básica de cuentas.',
+  operations: 'Gestión operativa y revisión de profesionales.',
+  finance: 'Visibilidad financiera y conciliación.',
+  custom: 'Empieza sin permisos y concede solo los necesarios.',
+};
+
+function permissionLabel(code: string) {
+  return permissionLabels[code] ?? code;
+}
+
 export function AdminScreen() {
   const { profile, session, signOut } = useAuth();
   const [section, setSection] = useState<AdminSection>('verification');
@@ -339,7 +373,7 @@ export function AdminScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="ADMINISTRACIÓN" title="Panel de control" subtitle="Gestiona verificaciones, cuentas y parámetros de Klipp." />
+      <BrandScreenHeader eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
       <View style={styles.sectionTabs}>
         {visibleSections.map((item) => (
           <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: activeSection === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, activeSection === item.key && styles.sectionTabSelected]}>
@@ -353,25 +387,39 @@ export function AdminScreen() {
 
       {activeSection === 'staff' && isSuperAdmin && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Centro de control del propietario</Text>
-          <Text style={styles.body}>Solo tú puedes administrar empleados y permisos. Los cambios se aplican en el servidor y quedan registrados.</Text>
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Niveles de acceso</Text>
+          <View style={styles.heroCard}>
+            <Text style={styles.eyebrow}>ÁREA EXCLUSIVA DEL PROPIETARIO</Text>
+            <Text style={styles.heroTitle}>Equipo y permisos</Text>
+            <Text style={styles.body}>Controla quién puede acceder a cada área de Klipp. Los cambios se aplican al instante y quedan registrados en el historial.</Text>
+            <View style={styles.summaryGrid}>
+              <View style={styles.summaryItem}><Text style={styles.summaryValue}>{staffRows.filter((row) => !row.is_owner).length}</Text><Text style={styles.summaryLabel}>Empleados activos</Text></View>
+              <View style={styles.summaryItem}><Text style={styles.summaryValue}>{staffTemplates.length}</Text><Text style={styles.summaryLabel}>Perfiles disponibles</Text></View>
+              <View style={styles.summaryItem}><Text style={styles.summaryValue}>{auditEntries.length}</Text><Text style={styles.summaryLabel}>Eventos recientes</Text></View>
+            </View>
+          </View>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Perfiles de acceso</Text>
+            <Text style={styles.body}>Elige un punto de partida según las tareas del puesto. Puedes ajustar cada permiso después.</Text>
+          </View>
+          <View style={styles.templateGrid}>
             {staffTemplates.map((template) => (
-              <View key={template.template_key} style={styles.tierCard}>
-                <Text style={styles.label}>{template.name}</Text>
-                <Text style={styles.body}>{template.description}</Text>
-                <Text style={styles.body}>{template.permissions.length ? template.permissions.join(' · ') : 'Sin permisos predeterminados'}</Text>
+              <View key={template.template_key} style={styles.templateCard}>
+                <Text style={styles.templateName}>{template.name}</Text>
+                <Text style={styles.body}>{templateHighlights[template.template_key] ?? template.description}</Text>
+                <Text style={styles.templateMeta}>{template.permissions.length} permisos incluidos</Text>
+                <Text style={styles.permissionSummary}>{template.permissions.length ? template.permissions.map(permissionLabel).join(' · ') : 'Sin accesos por defecto'}</Text>
               </View>
             ))}
           </View>
-          <Text style={styles.sectionTitle}>Administradores y empleados</Text>
-          <Text style={styles.body}>Para incorporar a alguien, primero debe registrarse en Klipp y después debes asignarle el rol de administrador desde Cuentas y roles.</Text>
+          <View style={styles.sectionHeading}>
+            <Text style={styles.sectionTitle}>Personal con acceso interno</Text>
+            <Text style={styles.body}>Primero crea la cuenta mediante el registro habitual. Después cambia su rol a Administrador en “Cuentas y roles” y asígnale aquí el perfil adecuado.</Text>
+          </View>
           {staffRows.filter((staff) => !staff.is_owner).map((staff) => (
             <View key={staff.user_id} style={styles.card}>
               <Text style={styles.cardTitle}>{staff.full_name || staff.email || 'Empleado'}</Text>
               <Text style={styles.body}>{staff.email || 'Sin correo'}</Text>
-              <Text style={styles.label}>Plantilla de acceso</Text>
+              <View style={styles.employeeHeader}><View style={styles.employeeIdentity}><Text style={styles.label}>Perfil actual</Text><Text style={styles.body}>{staff.template_key === 'custom' ? 'Acceso personalizado' : staffTemplates.find((item) => item.template_key === staff.template_key)?.name ?? staff.template_key}</Text></View><View style={styles.statusPill}><Text style={styles.statusText}>ACTIVO</Text></View></View>
               <View style={styles.actions}>
                 {staffTemplates.map((template) => (
                   <Pressable key={template.template_key}
@@ -384,12 +432,13 @@ export function AdminScreen() {
                   </Pressable>
                 ))}
               </View>
-              <Text style={styles.label}>Permisos personalizados</Text>
+              <Text style={styles.label}>Permisos de este empleado</Text><Text style={styles.body}>“Habilitar” concede el acceso. “Denegar” lo bloquea aunque la plantilla lo incluya. “Restablecer” vuelve al permiso de la plantilla.</Text>
               {staff.permissions.map((permission) => (
                 <View key={permission.code} style={styles.permissionRow}>
                   <View style={styles.permissionCopy}>
-                    <Text style={styles.body}>{permission.description}{permission.sensitive ? ' · Sensible' : ''}</Text>
-                    <Text style={styles.permissionCode}>{permission.code} · {permission.overridden ? 'Personalizado' : 'Plantilla'}</Text>
+                    <Text style={styles.permissionName}>{permissionLabel(permission.code)}</Text>
+                    <Text style={styles.body}>{permission.description}{permission.sensitive ? ' · Requiere especial cuidado' : ''}</Text>
+                    <Text style={styles.permissionCode}>{permission.overridden ? 'AJUSTE INDIVIDUAL' : 'HEREDADO DEL PERFIL'}</Text>
                   </View>
                   <View style={styles.permissionActions}>
                     <Pressable accessibilityRole="button" onPress={() => void setStaffPermission(staff.user_id, permission.code, true)}
@@ -405,7 +454,7 @@ export function AdminScreen() {
                     <Pressable accessibilityRole="button" onPress={() => void setStaffPermission(staff.user_id, permission.code, null)}
                       disabled={!permission.overridden || busyKey === `staff-permission:${staff.user_id}:${permission.code}`}
                       style={[styles.permissionReset, !permission.overridden && styles.disabled]}>
-                      <Text style={styles.permissionCode}>Reset</Text>
+                      <Text style={styles.permissionCode}>Restablecer</Text>
                     </Pressable>
                   </View>
                 </View>
@@ -414,14 +463,12 @@ export function AdminScreen() {
             </View>
           ))}
           {staffRows.filter((staff) => !staff.is_owner).length === 0 && <Text style={styles.empty}>Aún no hay empleados con rol de administrador.</Text>}
-          <Text style={styles.sectionTitle}>Registro de actividad</Text>
-          <Text style={styles.body}>Últimas 100 acciones administrativas. Solo visible para el propietario.</Text>
+          <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Historial de seguridad</Text><Text style={styles.body}>Últimos 100 cambios administrativos. Revisa quién hizo cada cambio y cuándo.</Text></View>
           {auditEntries.length === 0 ? <Text style={styles.empty}>Todavía no hay acciones registradas.</Text> : auditEntries.map((entry) => (
             <View key={entry.id} style={styles.auditRow}>
-              <Text style={styles.label}>{entry.action}</Text>
+              <Text style={styles.auditAction}>{entry.action.replaceAll('_', ' ')}</Text>
               <Text style={styles.body}>{entry.actor_email || 'Actor desconocido'}{entry.target_email ? ` → ${entry.target_email}` : ''}</Text>
               <Text style={styles.permissionCode}>{new Date(entry.created_at).toLocaleString()}</Text>
-              <Text style={styles.permissionCode}>{JSON.stringify(entry.details)}</Text>
             </View>
           ))}
         </View>
@@ -577,6 +624,25 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  heroCard: { padding: 19, gap: 12, borderRadius: 18, backgroundColor: KlippColors.navy },
+  eyebrow: { color: '#B8D2FF', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  heroTitle: { color: KlippColors.white, fontSize: 23, fontWeight: '800' },
+  summaryGrid: { flexDirection: 'row', gap: 8, marginTop: 5 },
+  summaryItem: { flex: 1, padding: 10, borderRadius: 11, backgroundColor: '#FFFFFF18', gap: 3 },
+  summaryValue: { color: KlippColors.white, fontSize: 22, fontWeight: '800' },
+  summaryLabel: { color: '#D6E2F2', fontSize: 10, fontWeight: '600' },
+  sectionHeading: { gap: 4, marginTop: 5 },
+  templateGrid: { gap: 9 },
+  templateCard: { padding: 14, gap: 7, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 13, backgroundColor: KlippColors.white },
+  templateName: { color: KlippColors.navy, fontSize: 16, fontWeight: '800' },
+  templateMeta: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
+  permissionSummary: { color: KlippColors.slate, fontSize: 12, lineHeight: 18 },
+  employeeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  employeeIdentity: { flex: 1, gap: 3 },
+  statusPill: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20, backgroundColor: '#E8F7EE' },
+  statusText: { color: '#067647', fontSize: 10, fontWeight: '800' },
+  permissionName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  auditAction: { color: KlippColors.navy, fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
   sectionTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sectionTab: { minHeight: 40, paddingHorizontal: 13, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   sectionTabSelected: { backgroundColor: KlippColors.navy, borderColor: KlippColors.navy },
