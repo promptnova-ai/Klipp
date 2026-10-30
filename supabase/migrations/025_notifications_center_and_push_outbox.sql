@@ -270,17 +270,30 @@ as $$
 declare
   v_booking public.bookings%rowtype;
 begin
-  if new.status <> 'pending' then return new; end if;
   select * into v_booking from public.bookings where id = new.booking_id;
   if not found then return new; end if;
 
-  perform public.create_klipp_notification(
-    new.pro_id, new.booking_id, 'booking_request', 'Nueva solicitud de servicio',
-    'Tienes una solicitud nueva. Revisa los detalles y responde antes de que expire.',
-    jsonb_build_object('bookingId', new.booking_id, 'requestId', new.id, 'target', 'pro'),
-    'booking-request:' || new.id::text || ':pending',
-    'booking_updates'
-  );
+  if new.status = 'pending' then
+    perform public.create_klipp_notification(
+      new.pro_id, new.booking_id, 'booking_request', 'Nueva solicitud de servicio',
+      'Tienes una solicitud nueva. Revisa los detalles y responde antes de que expire.',
+      jsonb_build_object('bookingId', new.booking_id, 'requestId', new.id, 'target', 'pro'),
+      'booking-request:' || new.id::text || ':pending',
+      'booking_updates'
+    );
+  elsif new.status in ('rejected', 'expired') and v_booking.assignment_mode = 'manual' then
+    perform public.create_klipp_notification(
+      v_booking.client_id, new.booking_id, 'booking_request_update',
+      case when new.status = 'rejected' then 'El profesional no puede aceptar el servicio' else 'La solicitud ha expirado' end,
+      case when new.status = 'rejected'
+        then 'El profesional seleccionado no está disponible. Puedes elegir otro profesional o buscar una alternativa.'
+        else 'El profesional no respondió a tiempo. Puedes volver a intentarlo con otro profesional.'
+      end,
+      jsonb_build_object('bookingId', new.booking_id, 'requestId', new.id, 'target', 'client', 'requestStatus', new.status),
+      'booking-request:' || new.id::text || ':' || new.status::text || ':client',
+      'booking_updates'
+    );
+  end if;
   return new;
 end;
 $$;
@@ -288,7 +301,7 @@ revoke all on function public.notify_klipp_booking_request() from public, anon, 
 
 drop trigger if exists booking_request_create_notification on public.booking_requests;
 create trigger booking_request_create_notification
-  after insert on public.booking_requests
+  after insert or update of status on public.booking_requests
   for each row execute function public.notify_klipp_booking_request();
 
 create or replace function public.notify_klipp_chat_message()
