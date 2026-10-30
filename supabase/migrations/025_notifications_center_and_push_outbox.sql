@@ -165,6 +165,7 @@ end;
 $$;
 revoke all on function public.create_klipp_notification(uuid, uuid, text, text, text, jsonb, text, text)
   from public, anon, authenticated;
+grant execute on function public.create_klipp_notification(uuid, uuid, text, text, text, jsonb, text, text) to service_role;
 
 create or replace function public.notify_klipp_booking_status()
 returns trigger
