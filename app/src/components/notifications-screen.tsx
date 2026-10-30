@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
@@ -7,6 +7,7 @@ import { SymbolView } from 'expo-symbols';
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
+import { registerPushDeviceAsync } from '@/lib/push-notifications';
 
 type EventPreference = { in_app_enabled: boolean; push_enabled: boolean };
 type PreferenceMap = Record<'booking_updates' | 'chat_messages', EventPreference>;
@@ -42,6 +43,8 @@ export function NotificationsScreen() {
   });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushRegistered, setPushRegistered] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
@@ -133,6 +136,20 @@ export function NotificationsScreen() {
     }
   }
 
+  async function registerPushDevice() {
+    if (!session?.user.id) return;
+    setPushBusy(true);
+    setError(null);
+    try {
+      const token = await registerPushDeviceAsync(session.user.id);
+      setPushRegistered(Boolean(token));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos activar las notificaciones push.');
+    } finally {
+      setPushBusy(false);
+    }
+  }
+
   async function markAllRead() {
     if (!session?.user.id || unreadCount === 0) return;
     setBusy(true);
@@ -218,7 +235,17 @@ export function NotificationsScreen() {
           ))}
         </View>
 
-
+        {Platform.OS !== 'web' && (
+          <View style={styles.pushCard}>
+            <View style={styles.pushCopy}>
+              <Text style={styles.preferencesTitle}>Notificaciones en tu dispositivo</Text>
+              <Text style={styles.preferencesHint}>Activa los avisos push para recibir actualizaciones aunque Klipp esté cerrado.</Text>
+            </View>
+            <Pressable accessibilityRole="button" disabled={pushBusy} onPress={() => void registerPushDevice()} style={({ pressed }) => [styles.pushButton, pressed && styles.pressed]}>
+              <Text style={styles.pushButtonText}>{pushBusy ? 'Activando…' : pushRegistered ? 'Actualizar este dispositivo' : 'Activar notificaciones push'}</Text>
+            </Pressable>
+          </View>
+        )}
 
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {loading ? (
@@ -266,6 +293,10 @@ const styles = StyleSheet.create({
   markAllButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#EAF2FF' },
   markAllText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   preferencesCard: { padding: 15, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, gap: 9 },
+  pushCard: { padding: 15, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, gap: 12 },
+  pushCopy: { gap: 4 },
+  pushButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.blue, paddingHorizontal: 14 },
+  pushButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   preferencesTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
   preferencesHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   preferenceRow: { paddingTop: 8, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 6 },
