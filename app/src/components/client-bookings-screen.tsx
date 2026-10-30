@@ -291,9 +291,30 @@ export function ClientBookingsScreen() {
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
+  const activeCount = bookings.filter((booking) => !['completed', 'confirmed', 'cancelled', 'disputed', 'expired'].includes(booking.status)).length;
+  const liveCount = bookings.filter((booking) => ['en_route', 'arrived', 'in_progress'].includes(booking.status)).length;
+
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
+      <View style={styles.bookingsHero}>
+        <View style={styles.bookingsHeroTop}>
+          <View style={styles.bookingsHeroCopy}>
+            <Text style={styles.bookingsHeroEyebrow}>TU EXPERIENCIA KLIPP</Text>
+            <Text style={styles.bookingsHeroTitle}>Tus servicios, siempre a mano.</Text>
+            <Text style={styles.bookingsHeroBody}>Consulta cada reserva, habla con tu profesional y sigue el progreso.</Text>
+          </View>
+          <View style={styles.bookingsHeroIcon}><SymbolView name={{ ios: 'calendar.badge.clock', android: 'event_available', web: 'event_available' }} tintColor="#FFFFFF" size={24} /></View>
+        </View>
+        <View style={styles.bookingsMetrics}>
+          <View style={styles.bookingsMetric}><Text style={styles.bookingsMetricValue}>{activeCount}</Text><Text style={styles.bookingsMetricLabel}>Activas</Text></View>
+          <View style={styles.bookingsMetricDivider} />
+          <View style={styles.bookingsMetric}><Text style={styles.bookingsMetricValue}>{liveCount}</Text><Text style={styles.bookingsMetricLabel}>En progreso</Text></View>
+          <View style={styles.bookingsMetricDivider} />
+          <View style={styles.bookingsMetric}><Text style={styles.bookingsMetricValue}>{bookings.length}</Text><Text style={styles.bookingsMetricLabel}>En total</Text></View>
+        </View>
+      </View>
+      <View style={styles.listHeading}><View><Text style={styles.listEyebrow}>ACTIVIDAD DE TU CUENTA</Text><Text style={styles.listTitle}>Próximos servicios e historial</Text></View><View style={styles.listCount}><Text style={styles.listCountText}>{bookings.length}</Text></View></View>
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.cardTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
@@ -516,4 +537,21 @@ const styles = StyleSheet.create({
   reviewDone: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, marginTop: 4 },
   notice: { color: '#067647', fontSize: 14 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
+  bookingsHero: { marginHorizontal: 20, padding: 20, borderRadius: 23, backgroundColor: '#1C3479', gap: 17, shadowColor: '#1C3479', shadowOpacity: 0.18, shadowOffset: { width: 0, height: 10 }, shadowRadius: 19, elevation: 5 },
+  bookingsHeroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  bookingsHeroCopy: { flex: 1, gap: 6 },
+  bookingsHeroEyebrow: { color: '#C1D0FF', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  bookingsHeroTitle: { color: '#FFFFFF', fontSize: 22, lineHeight: 27, fontWeight: '900', letterSpacing: -0.5 },
+  bookingsHeroBody: { color: '#DAE3FF', fontSize: 11, lineHeight: 17 },
+  bookingsHeroIcon: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#FFFFFF20' },
+  bookingsMetrics: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 13, borderTopWidth: 1, borderTopColor: '#FFFFFF28' },
+  bookingsMetric: { flex: 1, gap: 2 },
+  bookingsMetricValue: { color: '#FFFFFF', fontSize: 19, fontWeight: '900' },
+  bookingsMetricLabel: { color: '#D4DFFF', fontSize: 9, fontWeight: '700' },
+  bookingsMetricDivider: { width: 1, height: 27, marginHorizontal: 8, backgroundColor: '#FFFFFF30' },
+  listHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginHorizontal: 20, gap: 8, marginTop: 2 },
+  listEyebrow: { color: '#315BFF', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  listTitle: { color: '#15213B', fontSize: 17, fontWeight: '900', marginTop: 4, letterSpacing: -0.4 },
+  listCount: { minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: '#EEF2FF' },
+  listCountText: { color: '#315BFF', fontSize: 11, fontWeight: '900' },
 });
