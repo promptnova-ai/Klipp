@@ -1,6 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import * as Linking from 'expo-linking';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -41,7 +40,6 @@ export function ClientTrackingScreen() {
   const { session } = useAuth();
   const [booking, setBooking] = useState<TrackingBooking | null>(null);
   const [professional, setProfessional] = useState<ProCard | null>(null);
-  const [professionalPhone, setProfessionalPhone] = useState<string | null>(null);
   const [professionalCoordinate, setProfessionalCoordinate] = useState<Coordinate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,22 +68,12 @@ export function ClientTrackingScreen() {
     const bookingRow = data as unknown as TrackingBooking;
     setBooking(bookingRow);
     if (bookingRow.pro_id) {
-      const [proResult, phoneResult] = await Promise.all([
-        supabase.from('pro_cards')
-          .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type')
-          .eq('pro_id', bookingRow.pro_id)
-          .maybeSingle(),
-        bookingRow.status === 'en_route'
-          ? supabase.rpc('get_tracking_pro_phone', { p_booking_id: bookingRow.id })
-          : Promise.resolve({ data: [], error: null }),
-      ]);
-      if (proResult.error || phoneResult.error) {
-        setError(proResult.error?.message ?? phoneResult.error?.message ?? 'No pudimos cargar los datos del profesional.');
-      } else {
-        setProfessional(proResult.data as ProCard | null);
-        const contact = (phoneResult.data ?? [])[0] as { phone: string | null } | undefined;
-        setProfessionalPhone(contact?.phone ?? null);
-      }
+      const { data: proData, error: proError } = await supabase.from('pro_cards')
+        .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type')
+        .eq('pro_id', bookingRow.pro_id)
+        .maybeSingle();
+      if (proError) setError(proError.message);
+      else setProfessional(proData as ProCard | null);
     }
 
     if (bookingRow.status === 'en_route') {
@@ -145,19 +133,6 @@ export function ClientTrackingScreen() {
     return () => { void supabase.removeChannel(channel); };
   }, [booking?.id, booking?.status]);
 
-  async function callProfessional() {
-    const phone = professionalPhone?.replace(/[^\d+]/g, '');
-    if (!phone || !/^\+?\d{7,15}$/.test(phone)) {
-      setError('Este profesional no tiene un teléfono disponible para llamadas.');
-      return;
-    }
-    try {
-      await Linking.openURL(`tel:${phone}`);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No pudimos abrir la aplicación de llamadas.');
-    }
-  }
-
   const destination = booking && typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number'
     ? { latitude: booking.client_lat, longitude: booking.client_lng }
     : null;
@@ -207,9 +182,9 @@ export function ClientTrackingScreen() {
                     <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
                     <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
                   </View>
-                  {professionalPhone && <Pressable accessibilityRole="button" onPress={() => void callProfessional()} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
-                    <Text style={styles.callButtonText}>Llamar</Text>
-                  </Pressable>}
+                  <Pressable accessibilityRole="button" onPress={() => router.push('/(client)/bookings')} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
+                    <Text style={styles.callButtonText}>Contactar por el chat de Klipp</Text>
+                  </Pressable>
                 </View>
                 <View style={styles.destinationCard}>
                   <Text style={styles.destinationLabel}>DESTINO</Text>
