@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -49,13 +49,10 @@ export function ProToolkitScreen() {
     const unique = Array.from(new Map(options.map((service) => [service.id, service])).values())
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
     setServices(unique);
+    setKits(parseProKit(session?.user.user_metadata?.klipp_work_kit));
     setSelectedServiceId((current) => current && unique.some((service) => service.id === current) ? current : unique[0]?.id ?? null);
     setLoading(false);
-  }, [userId]);
-
-  useEffect(() => {
-    setKits(parseProKit(session?.user.user_metadata?.klipp_work_kit));
-  }, [session?.user.id]);
+  }, [userId, session?.user.user_metadata?.klipp_work_kit]);
 
   useFocusEffect(useCallback(() => {
     void load();
