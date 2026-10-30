@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
 import * as Location from 'expo-location';
 import { ActivityIndicator, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -58,7 +58,161 @@ export function ProAgendaScreen() {
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
 
   useEffect(() => {
-    if (loading) return <View style={styles.centered}><ActivityIndicator color="#0F987A" /><Text style={styles.body}>Organizando tu agenda...</Text></View>;
+    if (loading) return;
+    const activeTripIds = activeTripKey ? activeTripKey.split(',') : [];
+    let active = true;
+    const subscriptions: Location.LocationSubscription[] = [];
+
+    async function startLocationUpdates() {
+      try {
+        if (activeTripIds.length === 0) {
+          if (Platform.OS !== 'web') {
+            await updateActiveProTrackingBookings([]);
+          }
+          return;
+        }
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) {
+          if (active) setError('Permite el acceso a tu ubicación para compartirla mientras estás en camino.');
+          return;
+        }
+        if (Platform.OS !== 'web') {
+          const backgroundPermission = await Location.requestBackgroundPermissionsAsync();
+          if (backgroundPermission.granted) {
+            try {
+              await updateActiveProTrackingBookings(activeTripIds);
+              const taskError = await getProLocationTaskError();
+              if (taskError && active) setError(taskError);
+              return;
+            } catch (cause) {
+              if (active) setError(cause instanceof Error ? cause.message : 'No pudimos iniciar el seguimiento en segundo plano.');
+            }
+          } else if (active) {
+            setError('La ubicación en segundo plano no está permitida; el seguimiento funcionará mientras la app esté abierta.');
+          }
+        }
+        for (const bookingId of activeTripIds) {
+          let subscription: Location.LocationSubscription | null = null;
+          subscription = await Location.watchPositionAsync({
+            accuracy: Location.Accuracy.High,
+            distanceInterval: 10,
+            timeInterval: 5000,
+          }, async ({ coords }) => {
+            const { data: published, error: publishError } = await supabase.rpc('publish_pro_location', {
+              p_booking_id: bookingId,
+              p_latitude: coords.latitude,
+              p_longitude: coords.longitude,
+            });
+            if (publishError && active) setError(publishError.message);
+            if (published === false) {
+              subscription?.remove();
+              if (active) await loadBookings();
+            }
+          });
+          if (active) subscriptions.push(subscription);
+          else subscription.remove();
+        }
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'No pudimos iniciar el seguimiento de ubicación.');
+      }
+    }
+
+    void startLocationUpdates();
+    return () => {
+      active = false;
+      subscriptions.forEach((subscription) => subscription.remove());
+    };
+  }, [activeTripKey, loading]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void getProLocationTaskError().then((taskError) => {
+          if (taskError) setError(taskError);
+        }).catch((cause: unknown) => {
+          setError(cause instanceof Error ? cause.message : 'No pudimos revisar el estado del seguimiento de ubicación.');
+        });
+      }
+    });
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    const channels = bookings
+      .filter((booking) => booking.status === 'en_route')
+      .map((booking) => supabase
+        .channel(`pro-booking-messages:${booking.id}`)
+        .on('postgres_changes', {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `booking_id=eq.${booking.id}`,
+        }, (payload) => {
+          const message = payload.new as AgendaMessage;
+          if (chatBookingId === booking.id) {
+            setChatMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message].slice(-20));
+          }
+        })
+        .subscribe());
+    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
+  }, [bookings, chatBookingId]);
+
+  async function refresh() {
+    setRefreshing(true);
+    await loadBookings();
+    setRefreshing(false);
+  }
+
+  async function advance(booking: AgendaBooking) {
+    const step = nextStep[booking.status];
+    if (!step) return;
+    setBusyId(booking.id);
+    setError(null);
+    const { error: rpcError } = await supabase.rpc('advance_booking', {
+      p_booking_id: booking.id,
+      p_new_status: step.status,
+    });
+    if (rpcError) setError(rpcError.message);
+    else {
+      setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: step.status } : item));
+      await loadBookings();
+    }
+    setBusyId(null);
+  }
+
+  async function toggleChat(bookingId: string) {
+    if (chatBookingId === bookingId) {
+      setChatBookingId(null);
+      return;
+    }
+    setChatBookingId(bookingId);
+    const { data, error: messagesError } = await supabase
+      .from('messages')
+      .select('id, booking_id, sender_id, body, created_at')
+      .eq('booking_id', bookingId)
+      .order('created_at', { ascending: true })
+      .limit(20);
+    if (messagesError) setError(messagesError.message);
+    else setChatMessages((data ?? []) as AgendaMessage[]);
+  }
+
+  async function sendMessage(bookingId: string) {
+    if (!session?.user.id) return;
+    const body = messageDraft.trim();
+    if (!body) return;
+    const { data, error: sendError } = await supabase
+      .from('messages')
+      .insert({ booking_id: bookingId, sender_id: session.user.id, body })
+      .select('id, booking_id, sender_id, body, created_at')
+      .single();
+    if (sendError) setError(sendError.message);
+    else {
+      setMessageDraft('');
+      setChatMessages((current) => current.some((item) => item.id === data.id) ? current : [...current, data as AgendaMessage].slice(-20));
+    }
+  }
+
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#0F987A" /><Text style={styles.body}>Organizando tu agenda...</Text></View>;
 
   const onRoute = bookings.filter((booking) => booking.status === 'en_route').length;
   const inProgress = bookings.filter((booking) => booking.status === 'in_progress' || booking.status === 'arrived').length;
