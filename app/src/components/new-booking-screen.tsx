@@ -12,6 +12,7 @@ import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
 import type { ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
+import { getCatalogServiceName, isCatalogServiceVisible } from '@/lib/service-catalog';
 
 type BookingCoordinate = { latitude: number; longitude: number };
 type ServiceOffer = {
@@ -173,7 +174,7 @@ export function NewBookingScreen() {
       const loadError = serviceResult.error ?? tierResult.error;
       if (loadError) setError(loadError.message);
       else {
-        const serviceRows = (serviceResult.data ?? []) as ServiceType[];
+        const serviceRows = ((serviceResult.data ?? []) as ServiceType[]).filter(isCatalogServiceVisible);
         setServices(serviceRows);
         setServiceIds(serviceRows.map((service) => service.id));
         const tierRows = (tierResult.data ?? []) as PricingTier[];
@@ -409,6 +410,13 @@ export function NewBookingScreen() {
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
+      <View style={styles.equipmentPolicy}>
+        <View style={styles.equipmentPolicyIcon}><SymbolView name={{ ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' }} tintColor="#0F987A" size={17} /></View>
+        <View style={styles.equipmentPolicyCopy}>
+          <Text style={styles.equipmentPolicyTitle}>El profesional acude con su propio equipo</Text>
+          <Text style={styles.equipmentPolicyText}>No tendrás que prestar herramientas, máquinas ni productos para realizar el servicio.</Text>
+        </View>
+      </View>
       <View style={styles.progressCard}>
         <View style={styles.progressTop}>
           <View><Text style={styles.progressEyebrow}>TU RESERVA</Text><Text style={styles.progressTitle}>Un servicio a tu medida</Text></View>
@@ -428,7 +436,7 @@ export function NewBookingScreen() {
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
-        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
+        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={getCatalogServiceName(service)} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
       </Section>
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
@@ -739,4 +747,9 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
   sectionStep: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#EEF2FF' },
   sectionStepText: { color: '#315BFF', fontSize: 12, fontWeight: '900' },
+  equipmentPolicy: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 20, padding: 13, borderRadius: 16, borderWidth: 1, borderColor: '#CFE9DC', backgroundColor: '#EFF8F3' },
+  equipmentPolicyIcon: { width: 35, height: 35, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#DDF3E8' },
+  equipmentPolicyCopy: { flex: 1, gap: 3 },
+  equipmentPolicyTitle: { color: '#14634D', fontSize: 12, fontWeight: '900' },
+  equipmentPolicyText: { color: '#47816C', fontSize: 10, lineHeight: 15 },
 });
