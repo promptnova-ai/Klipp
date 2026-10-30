@@ -605,6 +605,7 @@ export function NewBookingScreen() {
               <View style={styles.proMain}>
                 <Text style={styles.proName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
                 <Text style={styles.body}>{pro.years_experience ?? 0} años de experiencia</Text>
+                {typeof pro.distance_km === 'number' && <Text style={styles.body}>A {pro.distance_km.toFixed(1)} km aprox. de tu ubicación</Text>}
                 <Text style={styles.rating}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.rating_count} reseñas</Text>
               </View>
               <Text style={styles.profileLink}>{expandedProId === pro.pro_id ? 'Cerrar' : 'Ver perfil'}</Text>
