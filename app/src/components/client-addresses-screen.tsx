@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
