@@ -1,16 +1,16 @@
 # Klipp RBAC — staging validation runbook
 
-This runbook validates migrations 013/014 and the matching admin UI in a **disposable Supabase staging project or isolated database branch**.
+This runbook is for validating migrations 013/014 and the matching admin UI in a **future disposable Supabase staging project or isolated database branch**. It is not permission to apply migrations to production.
 
 ## Safety boundary
 
 - Do not run this against production.
-- Do not run `supabase db push`, apply migrations, or execute either migration until the project and target environment have been positively identified and the owner has explicitly approved that exact action.
 - Never use `main`; the code under test is `security/013-super-admin-rbac`.
 - Take a database backup or create a disposable database branch before applying anything.
 - Use dedicated test users and synthetic verification documents. Never use real customer/professional documents.
-- The migration preflight expects exactly one `admin@admin.com` profile with role `admin`. Confirm the staging identity before applying migration 013.
-- This runbook is not evidence that the migrations have been applied or that live Supabase has been tested.
+- The migration preflight expects exactly one `admin@admin.com` profile with role `admin`.
+- The migrations have already been applied to Klipp's only connected Supabase project. Do not re-run them there.
+- The only connected project was not a disposable staging environment. Real browser/native regression and real Storage access tests remain outstanding.
 
 ## 1. Environment identity and schema preflight (read-only)
 
@@ -21,9 +21,10 @@ select current_database() as database_name,
        current_user as database_user,
        current_setting('server_version') as postgres_version;
 
-select id, email, role
-from public.profiles
-where lower(email) = lower('admin@admin.com');
+select u.id, u.email, p.role
+from auth.users u
+join public.profiles p on p.id = u.id
+where lower(u.email) = lower('admin@admin.com');
 
 select to_regclass('public.platform_settings') as platform_settings,
        to_regclass('public.profiles') as profiles,
@@ -50,17 +51,14 @@ After reviewing the preflight output and obtaining explicit approval for the sta
 ## 3. Post-migration structural checks (read-only)
 
 ```sql
-select public.is_super_admin() as current_session_is_super_admin;
+select * from public.platform_owner;
 
-select *
-from public.platform_owner;
+select code, description, sensitive
+from public.staff_permissions
+order by code;
 
-select key, description
-from public.admin_permission_catalog
-order by key;
-
-select template_key, display_name
-from public.admin_role_templates
+select template_key, name, description
+from public.staff_role_templates
 order by template_key;
 
 select routine_name, routine_type
@@ -144,7 +142,7 @@ Record the staging project reference (never secrets), migration versions and tim
 
 ## 7. Exit criteria
 
-Do not promote this work to production until:
+Do not promote this work from staging until:
 - All SQL migrations apply cleanly to disposable staging.
 - Every authorization/data-minimization scenario above passes.
 - The matching app build passes lint for the changed admin screen and TypeScript.
@@ -152,6 +150,13 @@ Do not promote this work to production until:
 - Owner and employee UI regression tests pass.
 - The owner explicitly approves the production deployment plan.
 
-## Current status
+## Current deployment status
 
-The GitHub Actions app checks passed on the RBAC branch: dependency installation, ESLint for `app/src/components/admin-screen.tsx`, and `npx tsc --noEmit`. Project-wide Expo lint still reports unrelated issues in other files. No Supabase project has been connected for this session and neither migration has been applied.
+On 2026-10-30, migrations 013 and 014 were applied to the only connected Klipp Supabase project and recorded as:
+
+- `20261030113751` — `super_admin_rbac_foundation`
+- `20261030113758` — `staff_rbac_enforcement_and_management`
+
+A transactional dry run succeeded and was rolled back before application. Post-migration structural checks and rolled-back SQL-session tests for the owner, a synthetic Support employee, and a client passed. This does not replace real browser/native regression tests or real Storage document-access tests.
+
+The app UI remains on the open draft PR branch and has not been deployed as an app release. No PR has been merged and `main` has not been changed.
