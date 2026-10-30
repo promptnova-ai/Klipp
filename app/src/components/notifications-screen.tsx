@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
@@ -7,6 +7,9 @@ import { SymbolView } from 'expo-symbols';
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
+
+type EventPreference = { in_app_enabled: boolean; push_enabled: boolean };
+type PreferenceMap = Record<'booking_updates' | 'chat_messages', EventPreference>;
 
 type AppNotification = {
   id: string;
@@ -40,6 +43,10 @@ export function NotificationsScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
   const [items, setItems] = useState<AppNotification[]>([]);
+  const [preferences, setPreferences] = useState<PreferenceMap>({
+    booking_updates: { in_app_enabled: true, push_enabled: true },
+    chat_messages: { in_app_enabled: true, push_enabled: true },
+  });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +77,10 @@ export function NotificationsScreen() {
   }, [loadNotifications]);
 
   useEffect(() => {
+    void loadPreferences();
+  }, [loadPreferences]);
+
+  useEffect(() => {
     if (!session?.user.id) return;
     const channel = supabase
       .channel(`notifications-inbox:${session.user.id}`)
@@ -84,6 +95,48 @@ export function NotificationsScreen() {
   }, [session?.user.id, loadNotifications]);
 
   const unreadCount = items.filter((item) => !item.read_at).length;
+
+  const loadPreferences = useCallback(async () => {
+    if (!session?.user.id) return;
+    const { data, error: preferenceError } = await supabase
+      .from('notification_preferences')
+      .select('event_type, in_app_enabled, push_enabled')
+      .eq('user_id', session.user.id);
+    if (preferenceError) {
+      setError(preferenceError.message);
+      return;
+    }
+    const next: PreferenceMap = {
+      booking_updates: { in_app_enabled: true, push_enabled: true },
+      chat_messages: { in_app_enabled: true, push_enabled: true },
+    };
+    for (const row of data ?? []) {
+      if (row.event_type === 'booking_updates' || row.event_type === 'chat_messages') {
+        next[row.event_type] = { in_app_enabled: row.in_app_enabled, push_enabled: row.push_enabled };
+      }
+    }
+    setPreferences(next);
+  }, [session?.user.id]);
+
+  async function updatePreference(eventType: keyof PreferenceMap, channel: keyof EventPreference, enabled: boolean) {
+    if (!session?.user.id) return;
+    const previous = preferences[eventType];
+    const next = { ...previous, [channel]: enabled };
+    setPreferences((current) => ({ ...current, [eventType]: next }));
+    const { error: updateError } = await supabase
+      .from('notification_preferences')
+      .upsert({
+        user_id: session.user.id,
+        event_type: eventType,
+        in_app_enabled: next.in_app_enabled,
+        push_enabled: next.push_enabled,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,event_type' });
+    if (updateError) {
+      setPreferences((current) => ({ ...current, [eventType]: previous }));
+      setError(updateError.message);
+    }
+  }
 
   async function markAllRead() {
     if (!session?.user.id || unreadCount === 0) return;
@@ -141,6 +194,37 @@ export function NotificationsScreen() {
           </Pressable>
         )}
 
+        <View style={styles.preferencesCard}>
+          <Text style={styles.preferencesTitle}>Preferencias de avisos</Text>
+          <Text style={styles.preferencesHint}>Elige cómo quieres recibir las actualizaciones de Klipp.</Text>
+          {([
+            ['booking_updates', 'Reservas y servicios'],
+            ['chat_messages', 'Mensajes del chat'],
+          ] as const).map(([eventType, label]) => (
+            <View key={eventType} style={styles.preferenceRow}>
+              <Text style={styles.preferenceLabel}>{label}</Text>
+              <View style={styles.preferenceChannel}>
+                <Text style={styles.preferenceChannelLabel}>En la app</Text>
+                <Switch
+                  value={preferences[eventType].in_app_enabled}
+                  onValueChange={(value) => void updatePreference(eventType, 'in_app_enabled', value)}
+                  trackColor={{ true: KlippColors.blue }}
+                />
+              </View>
+              <View style={styles.preferenceChannel}>
+                <Text style={styles.preferenceChannelLabel}>Push</Text>
+                <Switch
+                  value={preferences[eventType].push_enabled}
+                  onValueChange={(value) => void updatePreference(eventType, 'push_enabled', value)}
+                  trackColor={{ true: KlippColors.blue }}
+                />
+              </View>
+            </View>
+          ))}
+        </View>
+
+
+
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {loading ? (
           <View style={styles.empty}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.emptyText}>Cargando notificaciones…</Text></View>
@@ -186,6 +270,13 @@ const styles = StyleSheet.create({
   headerIcon: { width: 52, height: 52, borderRadius: 17, backgroundColor: '#EAF2FF', alignItems: 'center', justifyContent: 'center' },
   markAllButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#EAF2FF' },
   markAllText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  preferencesCard: { padding: 15, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, gap: 9 },
+  preferencesTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  preferencesHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  preferenceRow: { paddingTop: 8, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 6 },
+  preferenceLabel: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
+  preferenceChannel: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  preferenceChannelLabel: { color: KlippColors.slate, fontSize: 12 },
   list: { gap: 10 },
   notification: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border },
   unreadNotification: { borderColor: '#BBD4FF', backgroundColor: '#F5F9FF' },
