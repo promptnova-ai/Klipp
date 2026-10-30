@@ -30,9 +30,10 @@ export default function ProLayout() {
           tabBarLabelStyle: { fontSize: 10, fontWeight: '800', marginTop: 3 },
           tabBarItemStyle: { paddingVertical: 1 },
         }}>
-        <Tabs.Screen name="index" options={{ title: 'Oportunidades', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'tray.full.fill', android: 'inbox', web: 'inbox' }} tintColor={color} size={21} /> }} />
-        <Tabs.Screen name="agenda" options={{ title: 'Mi agenda', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'calendar', android: 'event_note', web: 'event_note' }} tintColor={color} size={21} /> }} />
-        <Tabs.Screen name="profile" options={{ title: 'Mi negocio', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'person.crop.circle', android: 'person', web: 'person' }} tintColor={color} size={21} /> }} />
+        <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'square.grid.2x2.fill', android: 'dashboard', web: 'dashboard' }} tintColor={color} size={21} /> }} />
+        <Tabs.Screen name="agenda" options={{ title: 'Agenda', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'calendar', android: 'event_note', web: 'event_note' }} tintColor={color} size={21} /> }} />
+        <Tabs.Screen name="toolkit" options={{ title: 'Mi equipo', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' }} tintColor={color} size={21} /> }} />
+        <Tabs.Screen name="profile" options={{ title: 'Negocio', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'person.crop.circle', android: 'person', web: 'person' }} tintColor={color} size={21} /> }} />
       </Tabs>
     </RoleGuard>
   );
