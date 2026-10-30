@@ -9,6 +9,7 @@ import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/cove
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, ServiceType, VerificationStatus } from '@/lib/types';
+import { getCatalogServiceName, isCatalogServiceVisible } from '@/lib/service-catalog';
 
 type ProfessionalService = {
   service_type_id: number;
@@ -65,7 +66,7 @@ function verificationLabel(status: VerificationStatus) {
 }
 
 export function ProProfileScreen() {
-  const { session, signOut } = useAuth();
+  const { session, signOut, profile } = useAuth();
   const userId = session?.user.id;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -134,9 +135,10 @@ export function ProProfileScreen() {
           id: -slot.weekday,
           pro_id: userId,
         })));
-    const services = (catalogResult.data ?? []) as ServiceType[];
-    const offered = (offeredResult.data ?? []) as ProfessionalService[];
-    const configuredServices = offered.length ? offered : registrationDraft?.services ?? [];
+    const services = ((catalogResult.data ?? []) as ServiceType[]).filter(isCatalogServiceVisible);
+    const allowedServiceIds = new Set(services.map((service) => service.id));
+    const offered = ((offeredResult.data ?? []) as ProfessionalService[]).filter((service) => allowedServiceIds.has(service.service_type_id));
+    const configuredServices = (offered.length ? offered : registrationDraft?.services ?? []).filter((service) => allowedServiceIds.has(service.service_type_id));
     setCatalog(services);
     setSelectedServices(configuredServices.map((service) => service.service_type_id));
     setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
@@ -404,9 +406,33 @@ export function ProProfileScreen() {
     );
   }
 
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0] ?? 'Profesional';
+  const setupItems = [Boolean(phone.trim()), Boolean(bio.trim()), Boolean(coverageCenter), selectedServices.length > 0, availability.length > 0];
+  const setupComplete = setupItems.filter(Boolean).length;
+  const setupPercent = Math.round((setupComplete / setupItems.length) * 100);
+
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      <BrandScreenHeader eyebrow="TU NEGOCIO EN KLIPP" title="Mi perfil profesional" subtitle="Presenta tu trabajo para que los clientes sepan por qué elegirte." role="pro" />
+      <View style={styles.profileHero}>
+        <View style={styles.profileHeroTop}>
+          <View style={styles.profileAvatar}><Text style={styles.profileAvatarText}>{firstName[0]?.toUpperCase() ?? 'K'}</Text></View>
+          <View style={styles.profileIdentity}>
+            <Text style={styles.profileEyebrow}>PERFIL PROFESIONAL</Text>
+            <Text style={styles.profileName}>{profile?.full_name || 'Tu perfil Klipp'}</Text>
+            <Text style={styles.profileRole}>Proveedor de servicios a domicilio</Text>
+          </View>
+        </View>
+        <View style={styles.profileProgressHeader}><Text style={styles.profileProgressTitle}>Tu perfil está preparado</Text><Text style={styles.profileProgressValue}>{setupPercent}%</Text></View>
+        <View style={styles.profileProgressTrack}><View style={[styles.profileProgressFill, { width: setupPercent + '%' }]} /></View>
+        <View style={styles.profileStats}>
+          <View style={styles.profileStat}><Text style={styles.profileStatValue}>{selectedServices.length}</Text><Text style={styles.profileStatLabel}>Especialidades</Text></View>
+          <View style={styles.profileStatDivider} />
+          <View style={styles.profileStat}><Text style={styles.profileStatValue}>{coverageCenter ? coverageRadiusKm + ' km' : '—'}</Text><Text style={styles.profileStatLabel}>Cobertura</Text></View>
+          <View style={styles.profileStatDivider} />
+          <View style={styles.profileStat}><Text style={styles.profileStatValue}>{availability.length}</Text><Text style={styles.profileStatLabel}>Horarios</Text></View>
+        </View>
+      </View>
       <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
         <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
         {proProfile.verification_status !== 'approved' && (
@@ -414,13 +440,6 @@ export function ProProfileScreen() {
         )}
         {proProfile.verification_note && <Text style={styles.body}>Nota del equipo: {proProfile.verification_note}</Text>}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={signingOut}
-        onPress={() => void handleSignOut()}
-        style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutPressed, signingOut && styles.buttonDisabled]}>
-        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
-      </Pressable>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
 
       <Section title="Verificación de identidad">
@@ -474,7 +493,7 @@ export function ProProfileScreen() {
           const category = (service as ServiceType & { service_categories?: { name: string } | null }).service_categories?.name;
           return (
             <View key={service.id} style={styles.serviceEditor}>
-              <Choice selected={selected} label={`${service.name}${category ? ` · ${category}` : ''}`} onPress={() => toggleService(service.id)} />
+              <Choice selected={selected} label={getCatalogServiceName({ ...service, category_name: category ?? null })} onPress={() => toggleService(service.id)} />
               {selected && (
                 <View style={styles.serviceFields}>
                   <View style={styles.priceField}>
@@ -533,12 +552,24 @@ export function ProProfileScreen() {
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
       <ActionButton disabled={saving} label={saving ? 'Guardando...' : 'Guardar perfil'} onPress={() => void saveProfile()} />
+      <Pressable accessibilityRole="button" disabled={signingOut} onPress={() => void handleSignOut()} style={styles.signOutButton}>
+        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
+  const index = ['Verificación de identidad', 'Sobre ti', 'Servicios y tarifas', 'Disponibilidad semanal'].indexOf(title) + 1;
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeading}>
+        <View style={styles.sectionNumber}><Text style={styles.sectionNumberText}>{String(index).padStart(2, '0')}</Text></View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {children}
+    </View>
+  );
 }
 
 function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
@@ -554,27 +585,27 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 40, gap: 16, backgroundColor: KlippColors.canvas },
+  page: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 54, gap: 18, backgroundColor: '#F3F8F6' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
-  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
-  statusBanner: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.goldLight, gap: 5 },
-  signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, backgroundColor: '#FFF7F7' },
+  section: { padding: 21, borderWidth: 1, borderColor: '#DCECE6', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 14, shadowColor: '#124B3E', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 8 }, shadowRadius: 17, elevation: 3 },
+  sectionTitle: { color: '#173B34', fontSize: 21, fontWeight: '800', letterSpacing: -0.4 },
+  statusBanner: { padding: 16, borderRadius: 17, backgroundColor: '#FFF6E2', borderWidth: 1, borderColor: '#F5E6BC', gap: 5 },
+  signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#F2D9D7', borderRadius: 13, backgroundColor: '#FFF8F7' },
   signOutPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   signOutText: { color: KlippColors.danger, fontSize: 14, fontWeight: '700' },
-  statusApproved: { backgroundColor: '#E6F8F0' },
+  statusApproved: { backgroundColor: '#E8F6F1', borderColor: '#CBEADD' },
   statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  input: { minHeight: 50, borderWidth: 1, borderColor: '#D7E5DF', borderRadius: 12, paddingHorizontal: 14, color: '#173B34', backgroundColor: '#FFFFFF', fontSize: 15 },
   multiline: { minHeight: 92, paddingVertical: 10, textAlignVertical: 'top' },
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
-  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  choice: { minHeight: 42, paddingHorizontal: 13, borderWidth: 1, borderColor: '#D7E5DF', borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
+  choiceSelected: { borderColor: '#0F987A', backgroundColor: '#E8F6F1' },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.blueDark },
   serviceEditor: { gap: 9 },
@@ -583,7 +614,7 @@ const styles = StyleSheet.create({
   durationField: { flex: 1 },
   timeRow: { flexDirection: 'row', gap: 12 },
   timeField: { flex: 1, gap: 6 },
-  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.blue },
+  actionButton: { minHeight: 52, paddingHorizontal: 18, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0F987A' },
   actionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   buttonDisabled: { opacity: 0.55 },
   slotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#e7eeea' },
@@ -593,4 +624,25 @@ const styles = StyleSheet.create({
   empty: { color: '#68756f', fontSize: 14, paddingVertical: 6 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
   success: { color: '#067647', fontSize: 14 },
+  profileHero: { padding: 20, borderRadius: 23, backgroundColor: '#123F36', gap: 15, shadowColor: '#124B3E', shadowOpacity: 0.15, shadowOffset: { width: 0, height: 10 }, shadowRadius: 19, elevation: 4 },
+  profileHeroTop: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  profileAvatar: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF20' },
+  profileAvatarText: { color: '#FFFFFF', fontSize: 23, fontWeight: '900' },
+  profileIdentity: { flex: 1, gap: 3 },
+  profileEyebrow: { color: '#A5DCCB', fontSize: 8, fontWeight: '900', letterSpacing: 0.9 },
+  profileName: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  profileRole: { color: '#C4DED4', fontSize: 10, fontWeight: '600' },
+  profileProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  profileProgressTitle: { color: '#E0EFE9', fontSize: 11, fontWeight: '700' },
+  profileProgressValue: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  profileProgressTrack: { height: 6, overflow: 'hidden', borderRadius: 999, backgroundColor: '#FFFFFF25' },
+  profileProgressFill: { height: 6, borderRadius: 999, backgroundColor: '#8CE0BC' },
+  profileStats: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 13, borderTopWidth: 1, borderTopColor: '#FFFFFF25' },
+  profileStat: { flex: 1, gap: 2 },
+  profileStatValue: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
+  profileStatLabel: { color: '#C4DED4', fontSize: 9, fontWeight: '700' },
+  profileStatDivider: { width: 1, height: 27, marginHorizontal: 9, backgroundColor: '#FFFFFF30' },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
+  sectionNumber: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#E8F6F1' },
+  sectionNumberText: { color: '#0F987A', fontSize: 10, fontWeight: '900' },
 });

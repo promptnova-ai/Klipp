@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
@@ -6,7 +7,6 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
-import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { Address } from '@/lib/types';
 
@@ -116,44 +116,65 @@ export function ClientAddressesScreen() {
     setSaving(false);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando direcciones...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#315BFF" /><Text style={styles.body}>Cargando tus ubicaciones...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda ubicaciones con GPS para tus próximos servicios." />
-      {addresses.length === 0 && <Text style={styles.body}>Todavía no has guardado una dirección.</Text>}
-      {addresses.map((address) => (
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#315BFF" />} keyboardShouldPersistTaps="handled">
+      <BrandScreenHeader role="client" eyebrow="PREPARA TU RESERVA" title="Mis direcciones" subtitle="Guarda los lugares donde sueles necesitar ayuda." />
+      <View style={styles.introCard}>
+        <View style={styles.introIcon}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor="#315BFF" size={22} /></View>
+        <View style={styles.introCopy}>
+          <Text style={styles.introTitle}>Tus ubicaciones, siempre a mano</Text>
+          <Text style={styles.body}>Casa, trabajo o cualquier dirección habitual. Podrás seleccionarlas al reservar.</Text>
+        </View>
+      </View>
+      <View style={styles.listHeading}>
+        <Text style={styles.sectionTitle}>Lugares guardados</Text>
+        <View style={styles.countBadge}><Text style={styles.countText}>{addresses.length}</Text></View>
+      </View>
+      {addresses.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <View style={styles.emptyIcon}><SymbolView name={{ ios: 'house', android: 'home', web: 'home' }} tintColor="#315BFF" size={23} /></View>
+          <Text style={styles.emptyTitle}>Aún no tienes direcciones</Text>
+          <Text style={styles.body}>Guarda tu primera ubicación para que reservar sea más rápido la próxima vez.</Text>
+        </View>
+      ) : addresses.map((address) => (
         <View key={address.id} style={styles.addressCard}>
-          <Text style={styles.cardTitle}>{address.label || 'Dirección'}</Text>
-          {!!address.street && <Text style={styles.body}>{address.street}</Text>}
-          {!!address.references_text && <Text style={styles.body}>Referencias: {address.references_text}</Text>}
+          <View style={styles.addressIcon}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor="#315BFF" size={19} /></View>
+          <View style={styles.addressCopy}>
+            <View style={styles.addressTitleRow}><Text style={styles.cardTitle}>{address.label || 'Dirección guardada'}</Text><Text style={styles.savedTag}>GUARDADA</Text></View>
+            {!!address.street && <Text style={styles.addressStreet}>{address.street}</Text>}
+            {!!address.references_text && <Text style={styles.body}>Referencia: {address.references_text}</Text>}
+          </View>
         </View>
       ))}
-
       <View style={styles.form}>
-        <Text style={styles.sectionTitle}>Añadir dirección</Text>
+        <View style={styles.formHeading}>
+          <View style={styles.formIcon}><SymbolView name={{ ios: 'plus', android: 'add', web: 'add' }} tintColor="#FFFFFF" size={19} /></View>
+          <View><Text style={styles.sectionTitle}>Añadir una dirección</Text><Text style={styles.formSubtitle}>Completa los datos del lugar.</Text></View>
+        </View>
         <Text style={styles.label}>Nombre para identificarla</Text>
-        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor="#85918b" style={styles.input} value={label} />
+        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor="#8792A5" style={styles.input} value={label} />
         <Text style={styles.label}>Ubicación del servicio</Text>
         {coordinate ? (
           <>
             <LocationPicker coordinate={coordinate} onChange={setCoordinate} />
-            <TextInput onChangeText={setStreet} placeholder="Dirección aproximada" placeholderTextColor="#85918b" style={styles.input} value={street} />
+            <TextInput onChangeText={setStreet} placeholder="Calle, sector y ciudad" placeholderTextColor="#8792A5" style={styles.input} value={street} />
             <Pressable accessibilityRole="button" onPress={() => void locateCurrentPosition()} style={styles.locationButton}>
-              <Text style={styles.locationButtonText}>Usar mi ubicación actual</Text>
+              <SymbolView name={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} tintColor="#315BFF" size={16} /><Text style={styles.locationButtonText}>Actualizar ubicación actual</Text>
             </Pressable>
           </>
         ) : (
           <Pressable accessibilityRole="button" onPress={() => void locateCurrentPosition()} style={styles.locationButton}>
-            <Text style={styles.locationButtonText}>Compartir ubicación para continuar</Text>
+            <SymbolView name={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} tintColor="#315BFF" size={16} /><Text style={styles.locationButtonText}>Seleccionar ubicación en el mapa</Text>
           </Pressable>
         )}
         <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
-        <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor="#85918b" style={[styles.input, styles.multiline]} value={references} />
+        <TextInput multiline onChangeText={setReferences} placeholder="Apto 4B, frente al colmado, portón blanco..." placeholderTextColor="#8792A5" style={[styles.input, styles.multiline]} value={references} />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
         <Pressable accessibilityRole="button" disabled={saving} onPress={() => void saveAddress()} style={[styles.button, saving && styles.disabled]}>
-          <Text style={styles.buttonText}>{saving ? 'Guardando...' : 'Guardar dirección'}</Text>
+          <Text style={styles.buttonText}>{saving ? 'Guardando...' : 'Guardar dirección'}</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={16} />
         </Pressable>
       </View>
     </ScrollView>
@@ -161,22 +182,39 @@ export function ClientAddressesScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 36, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  addressCard: { padding: 16, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 5 },
-  cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
-  form: { marginTop: 8, padding: 17, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700', marginBottom: 3 },
-  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 3 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  page: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 54, gap: 17, backgroundColor: '#F7F8FC', flexGrow: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#F7F8FC' },
+  body: { color: '#6B778C', fontSize: 12, lineHeight: 18 },
+  introCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 18, backgroundColor: '#EEF2FF', borderWidth: 1, borderColor: '#E0E7FF' },
+  introIcon: { width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+  introCopy: { flex: 1, gap: 4 },
+  introTitle: { color: '#203B85', fontSize: 13, fontWeight: '900' },
+  listHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 },
+  sectionTitle: { color: '#15213B', fontSize: 18, fontWeight: '900', letterSpacing: -0.4 },
+  countBadge: { minWidth: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: '#E8EDFF' },
+  countText: { color: '#315BFF', fontSize: 11, fontWeight: '900' },
+  emptyCard: { alignItems: 'center', padding: 23, borderRadius: 20, borderWidth: 1, borderColor: '#E4E9F2', backgroundColor: '#FFFFFF', gap: 9 },
+  emptyIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF2FF' },
+  emptyTitle: { color: '#15213B', fontSize: 15, fontWeight: '900' },
+  addressCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: 18, borderWidth: 1, borderColor: '#E4E9F2', backgroundColor: '#FFFFFF' },
+  addressIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF2FF', alignItems: 'center', justifyContent: 'center' },
+  addressCopy: { flex: 1, gap: 5 },
+  addressTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  cardTitle: { color: '#15213B', fontSize: 14, fontWeight: '900', flex: 1 },
+  savedTag: { color: '#315BFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.6 },
+  addressStreet: { color: '#44516A', fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  form: { marginTop: 4, padding: 19, borderRadius: 21, borderWidth: 1, borderColor: '#E4E9F2', backgroundColor: '#FFFFFF', gap: 11, shadowColor: '#182B55', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 7 }, shadowRadius: 15, elevation: 2 },
+  formHeading: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 3 },
+  formIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#315BFF', alignItems: 'center', justifyContent: 'center' },
+  formSubtitle: { color: '#8792A5', fontSize: 10, marginTop: 2 },
+  label: { color: '#334155', fontSize: 12, fontWeight: '800', marginTop: 3 },
+  input: { minHeight: 49, borderWidth: 1, borderColor: '#DCE3EF', borderRadius: 12, paddingHorizontal: 13, color: '#15213B', backgroundColor: '#FFFFFF', fontSize: 14 },
   multiline: { minHeight: 78, paddingVertical: 10, textAlignVertical: 'top' },
-  locationButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#EEF4FF' },
-  locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
-  button: { minHeight: 48, marginTop: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  locationButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: '#EEF2FF' },
+  locationButtonText: { color: '#315BFF', fontSize: 12, fontWeight: '900' },
+  button: { minHeight: 51, marginTop: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 13, backgroundColor: '#315BFF' },
+  buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
   disabled: { opacity: 0.55 },
-  error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
-  success: { color: '#067647', fontSize: 14 },
+  error: { color: '#B42318', fontSize: 13, lineHeight: 19 },
+  success: { color: '#067647', fontSize: 13 },
 });

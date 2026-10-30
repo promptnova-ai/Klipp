@@ -19,6 +19,7 @@ import { useAuth } from '@/components/auth-provider';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
 import type { ServiceType } from '@/lib/types';
+import { getCatalogServiceName, isCatalogServiceVisible } from '@/lib/service-catalog';
 import { supabase } from '../../lib/supabase';
 
 type ProServiceDraft = { price: string; minutes: string };
@@ -31,6 +32,7 @@ type ProOnboardingDraft = {
   services: { service_type_id: number; base_price_dop: number; est_minutes: number }[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: AvailabilityDraft[];
+  equipment_commitment: boolean;
 };
 
 const steps = [
@@ -61,6 +63,7 @@ export function ProRegistrationScreen() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [equipmentCommitment, setEquipmentCommitment] = useState(false);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
@@ -85,7 +88,7 @@ export function ProRegistrationScreen() {
       .eq('active', true)
       .order('name');
     if (queryError) throw queryError;
-    return (data ?? []) as ServiceType[];
+    return ((data ?? []) as ServiceType[]).filter(isCatalogServiceVisible);
   }, []);
 
   function retryCatalog() {
@@ -137,6 +140,7 @@ export function ProRegistrationScreen() {
       if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
     if (step === 1) {
+      if (!equipmentCommitment) return 'Confirma que llevarás tus propias herramientas, equipos y productos. No debes utilizar los del cliente.';
       if (servicesLoading) return 'Espera un momento mientras cargamos las especialidades.';
       if (catalog.length === 0) return 'No hay especialidades disponibles ahora mismo.';
       if (selectedServices.length === 0) return 'Elige al menos un servicio para continuar.';
@@ -238,6 +242,7 @@ export function ProRegistrationScreen() {
         start_time: startTime,
         end_time: endTime,
       })),
+      equipment_commitment: true,
     };
 
     setBusy(true);
@@ -249,7 +254,7 @@ export function ProRegistrationScreen() {
         password,
         fullName.trim(),
         'pro',
-        { phone: phone.trim(), pro_onboarding: onboarding },
+        { phone: phone.trim(), pro_onboarding: onboarding, equipment_commitment: true },
       );
       if (hasSession) {
         router.replace('/');
@@ -346,6 +351,14 @@ export function ProRegistrationScreen() {
 
             {step === 1 && (
               <View style={styles.serviceList}>
+                <View style={styles.equipmentPolicy}>
+                  <Text style={styles.equipmentPolicyTitle}>Trabajas con tu propio equipo</Text>
+                  <Text style={styles.equipmentPolicyText}>Cada profesional debe llevar sus herramientas, utensilios y productos. No se utilizan equipos ni consumibles del cliente.</Text>
+                </View>
+                <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: equipmentCommitment }} onPress={() => setEquipmentCommitment((current) => !current)} style={styles.commitmentRow}>
+                  <View style={[styles.commitmentCheckbox, equipmentCommitment && styles.commitmentCheckboxSelected]}>{equipmentCommitment && <Text style={styles.commitmentCheck}>✓</Text>}</View>
+                  <Text style={styles.commitmentText}>Confirmo que llevaré mis propias herramientas, equipos y productos para cada servicio y que no utilizaré los del cliente.</Text>
+                </Pressable>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
                 ) : catalogError ? (
@@ -373,7 +386,7 @@ export function ProRegistrationScreen() {
                       <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => toggleService(service.id)} style={styles.serviceRow}>
                         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Text style={styles.checkmark}>✓</Text>}</View>
                         <View style={styles.serviceCopy}>
-                          <Text style={styles.serviceName}>{service.name}</Text>
+                          <Text style={styles.serviceName}>{getCatalogServiceName(service)}</Text>
                           {!!service.description && <Text style={styles.serviceDescription}>{service.description}</Text>}
                         </View>
                       </Pressable>
@@ -534,6 +547,14 @@ const styles = StyleSheet.create({
   experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#EEF4FF' },
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '700' },
+  commitmentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 14, borderWidth: 1, borderColor: '#D7E5DF', backgroundColor: '#FFFFFF' },
+  commitmentCheckbox: { width: 23, height: 23, alignItems: 'center', justifyContent: 'center', borderRadius: 7, borderWidth: 1.5, borderColor: '#A8BDB2', backgroundColor: '#FFFFFF' },
+  commitmentCheckboxSelected: { borderColor: '#0F987A', backgroundColor: '#0F987A' },
+  commitmentCheck: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  commitmentText: { flex: 1, color: '#41584D', fontSize: 11, lineHeight: 16, fontWeight: '700' },
+  equipmentPolicy: { padding: 14, borderRadius: 15, borderWidth: 1, borderColor: '#CFE9DC', backgroundColor: '#EFF8F3', gap: 4 },
+  equipmentPolicyTitle: { color: '#14634D', fontSize: 12, fontWeight: '900' },
+  equipmentPolicyText: { color: '#47816C', fontSize: 11, lineHeight: 16 },
   serviceList: { gap: 12 },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },

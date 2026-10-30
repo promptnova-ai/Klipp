@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -7,7 +8,7 @@ import { KlippColors } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type AdminSection = 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
+type AdminSection = 'overview' | 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
@@ -41,6 +42,7 @@ type ServiceDraft = Pick<ServiceRow, 'name' | 'description' | 'active' | 'catego
 type TierDraft = Pick<PricingTier, 'label' | 'price_dop' | 'est_minutes'>;
 
 const sections: { key: AdminSection; title: string }[] = [
+  { key: 'overview', title: 'Resumen' },
   { key: 'verification', title: 'Verificaciones' },
   { key: 'accounts', title: 'Cuentas y roles' },
   { key: 'issues', title: 'Incidencias' },
@@ -84,7 +86,7 @@ function permissionLabel(code: string) {
 
 export function AdminScreen() {
   const { profile, session, signOut } = useAuth();
-  const [section, setSection] = useState<AdminSection>('verification');
+  const [section, setSection] = useState<AdminSection>('overview');
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [staffRows, setStaffRows] = useState<StaffRow[]>([]);
@@ -204,6 +206,7 @@ export function AdminScreen() {
   const canManageAccounts = isSuperAdmin || permissions.includes('accounts.manage_clients');
   const canReviewProfessionals = isSuperAdmin || permissions.includes('verification.review');
   const visibleSections = sections.filter((item) => {
+    if (item.key === 'overview') return isSuperAdmin || permissions.length > 0;
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
     if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
@@ -398,7 +401,7 @@ export function AdminScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
+      <BrandScreenHeader role="admin" eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
       <View style={styles.sectionTabs}>
         {visibleSections.map((item) => (
           <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: activeSection === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, activeSection === item.key && styles.sectionTabSelected]}>
@@ -409,6 +412,67 @@ export function AdminScreen() {
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {visibleSections.length === 0 && <Text style={styles.empty}>Tu cuenta no tiene permisos para acceder a las secciones de administración.</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
+      {activeSection === 'overview' && (
+        <View style={styles.overviewContent}>
+          <View style={styles.overviewHero}>
+            <Text style={styles.overviewEyebrow}>KLIPP · CENTRO DE OPERACIONES</Text>
+            <Text style={styles.overviewTitle}>Todo lo importante, en un solo lugar.</Text>
+            <Text style={styles.overviewBody}>Supervisa la actividad, atiende lo que necesita respuesta y mantén la operación en movimiento.</Text>
+            <View style={styles.ownerBadge}><Text style={styles.ownerBadgeText}>{isSuperAdmin ? 'SUPERADMINISTRADOR' : 'ACCESO DE EQUIPO'}</Text></View>
+          </View>
+          <View style={styles.overviewSectionHeader}><View><Text style={styles.overviewEyebrowDark}>VISTA GENERAL</Text><Text style={styles.overviewSectionTitle}>Estado de la operación</Text></View><Text style={styles.lastUpdated}>Datos de tu acceso</Text></View>
+          <View style={styles.overviewMetrics}>
+            <View style={styles.overviewMetric}>
+              <Text style={styles.overviewMetricLabel}>POR VERIFICAR</Text>
+              <Text style={styles.overviewMetricValue}>{isSuperAdmin || permissions.includes('verification.review') ? pendingProfessionals.length : '—'}</Text>
+              <Text style={styles.overviewMetricHint}>Profesionales</Text>
+            </View>
+            <View style={styles.overviewMetric}>
+              <Text style={styles.overviewMetricLabel}>INCIDENCIAS ABIERTAS</Text>
+              <Text style={styles.overviewMetricValue}>{isSuperAdmin || permissions.includes('support.manage') ? issues.filter((item) => item.status === 'open').length : '—'}</Text>
+              <Text style={styles.overviewMetricHint}>Requieren atención</Text>
+            </View>
+            <View style={styles.overviewMetric}>
+              <Text style={styles.overviewMetricLabel}>CUENTAS</Text>
+              <Text style={styles.overviewMetricValue}>{isSuperAdmin || permissions.includes('accounts.read') ? accounts.length : '—'}</Text>
+              <Text style={styles.overviewMetricHint}>Usuarios registrados</Text>
+            </View>
+            <View style={styles.overviewMetric}>
+              <Text style={styles.overviewMetricLabel}>SERVICIOS ACTIVOS</Text>
+              <Text style={styles.overviewMetricValue}>{isSuperAdmin || permissions.includes('catalog.manage') ? services.filter((item) => item.active).length : '—'}</Text>
+              <Text style={styles.overviewMetricHint}>En el catálogo</Text>
+            </View>
+          </View>
+          <View style={styles.overviewSectionHeader}><View><Text style={styles.overviewEyebrowDark}>ACCESOS RÁPIDOS</Text><Text style={styles.overviewSectionTitle}>¿Qué necesitas gestionar?</Text></View></View>
+          <View style={styles.shortcutGrid}>
+            {visibleSections.filter((item) => item.key !== 'overview').map((item) => {
+              const descriptions: Record<string, string> = {
+                verification: 'Revisa documentos y valida profesionales.',
+                accounts: 'Consulta perfiles y administra roles.',
+                issues: 'Da seguimiento a casos y reclamaciones.',
+                configuration: 'Actualiza categorías, servicios y tarifas.',
+                staff: 'Gestiona empleados y permisos internos.',
+              };
+              const symbols = {
+                overview: { ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' },
+                verification: { ios: 'checkmark.shield', android: 'verified_user', web: 'verified_user' },
+                accounts: { ios: 'person.2', android: 'group', web: 'group' },
+                issues: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' },
+                configuration: { ios: 'slider.horizontal.3', android: 'tune', web: 'tune' },
+                staff: { ios: 'person.3', android: 'groups', web: 'groups' },
+              } as const;
+              return (
+                <Pressable key={item.key} accessibilityRole="button" onPress={() => setSection(item.key)} style={({ pressed }) => [styles.shortcutCard, pressed && styles.shortcutPressed]}>
+                  <View style={styles.shortcutIcon}><SymbolView name={symbols[item.key]} tintColor="#7051C8" size={20} /></View>
+                  <Text style={styles.shortcutTitle}>{item.title}</Text>
+                  <Text style={styles.shortcutBody}>{descriptions[item.key]}</Text>
+                  <Text style={styles.shortcutLink}>Abrir sección  ›</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      )}
 
       {activeSection === 'staff' && isSuperAdmin && (
         <View style={styles.section}>
@@ -683,10 +747,10 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 20, paddingBottom: 44, gap: 16, backgroundColor: KlippColors.canvas },
+  page: { padding: 22, paddingTop: 28, paddingBottom: 56, gap: 20, backgroundColor: '#F6F5FA' },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
-  section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  section: { padding: 21, gap: 15, borderWidth: 1, borderColor: '#E8E2F4', borderRadius: 22, backgroundColor: '#FFFFFF', shadowColor: '#38256D', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 3 },
+  sectionTitle: { color: '#27213F', fontSize: 21, fontWeight: '800', letterSpacing: -0.4 },
   issueSummary: { flexDirection: 'row', gap: 8 },
   issueCount: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#F3F6FA', gap: 3 },
   issueCountValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
@@ -696,9 +760,9 @@ const styles = StyleSheet.create({
   issueStatusDone: { backgroundColor: '#E8F7EE' },
   issueStatusText: { color: KlippColors.slate, fontSize: 10, fontWeight: '800' },
   resolutionBox: { padding: 12, gap: 8, borderRadius: 10, backgroundColor: '#F0F8F3' },
-  heroCard: { padding: 19, gap: 12, borderRadius: 18, backgroundColor: KlippColors.navy },
+  heroCard: { padding: 24, gap: 15, borderRadius: 24, backgroundColor: '#39266F', shadowColor: '#39266F', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 12 }, shadowRadius: 22, elevation: 6 },
   eyebrow: { color: '#B8D2FF', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
-  heroTitle: { color: KlippColors.white, fontSize: 23, fontWeight: '800' },
+  heroTitle: { color: '#FFFFFF', fontSize: 29, fontWeight: '900', letterSpacing: -0.8 },
   summaryGrid: { flexDirection: 'row', gap: 8, marginTop: 5 },
   summaryItem: { flex: 1, padding: 10, borderRadius: 11, backgroundColor: '#FFFFFF18', gap: 3 },
   summaryValue: { color: KlippColors.white, fontSize: 22, fontWeight: '800' },
@@ -716,23 +780,23 @@ const styles = StyleSheet.create({
   permissionName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   auditAction: { color: KlippColors.navy, fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
   sectionTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  sectionTab: { minHeight: 40, paddingHorizontal: 13, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
-  sectionTabSelected: { backgroundColor: KlippColors.navy, borderColor: KlippColors.navy },
+  sectionTab: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', borderRadius: 13, borderWidth: 1, borderColor: '#E6E0F0', backgroundColor: '#FFFFFF' },
+  sectionTabSelected: { backgroundColor: '#7051C8', borderColor: '#7051C8' },
   sectionTabText: { color: KlippColors.slate, fontWeight: '600', fontSize: 13 },
   sectionTabTextSelected: { color: KlippColors.white },
-  card: { padding: 13, gap: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: '#FCFCFD' },
+  card: { padding: 18, gap: 12, borderWidth: 1, borderColor: '#EAE5F2', borderRadius: 18, backgroundColor: '#FFFFFF' },
   tierCard: { paddingTop: 10, gap: 8, borderTopWidth: 1, borderTopColor: KlippColors.border },
   cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
-  input: { minHeight: 44, paddingHorizontal: 11, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 9, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 14 },
+  input: { minHeight: 50, paddingHorizontal: 14, borderWidth: 1, borderColor: '#DDD6EA', borderRadius: 12, backgroundColor: '#FFFFFF', color: '#27213F', fontSize: 14 },
   multiline: { minHeight: 70, paddingVertical: 9, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   flex: { flex: 1, minWidth: 100 },
   roleOption: { minHeight: 38, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 9, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 9, backgroundColor: KlippColors.white },
-  roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  roleOptionSelected: { borderColor: '#7051C8', backgroundColor: '#F1EDFA' },
   roleText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
-  roleTextSelected: { color: KlippColors.blueDark },
+  roleTextSelected: { color: '#593DAA' },
   auditRow: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 4 },
   permissionRow: { flexDirection: 'column', gap: 7, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },
   permissionCopy: { gap: 2 },
@@ -745,7 +809,7 @@ const styles = StyleSheet.create({
   permissionToggleTextActive: { color: '#067647' },
   permissionToggleTextDenied: { color: KlippColors.danger },
   permissionReset: { minWidth: 54, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
-  actionButton: { minHeight: 42, flex: 1, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
+  actionButton: { minHeight: 48, flex: 1, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#7051C8' },
   actionText: { color: KlippColors.white, fontWeight: '700', fontSize: 13, textAlign: 'center' },
   secondaryButton: { backgroundColor: '#FEECEB' },
   secondaryActionText: { color: KlippColors.danger },
@@ -754,4 +818,27 @@ const styles = StyleSheet.create({
   empty: { color: KlippColors.muted, fontSize: 14, paddingVertical: 8 },
   error: { color: KlippColors.danger, fontSize: 14 },
   notice: { color: '#067647', fontSize: 14 },
+  overviewContent: { gap: 17 },
+  overviewHero: { padding: 23, borderRadius: 25, backgroundColor: '#39266F', gap: 11, shadowColor: '#39266F', shadowOpacity: 0.18, shadowOffset: { width: 0, height: 11 }, shadowRadius: 21, elevation: 5 },
+  overviewEyebrow: { color: '#D3C6FA', fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  overviewTitle: { color: '#FFFFFF', fontSize: 27, lineHeight: 32, fontWeight: '900', letterSpacing: -0.7 },
+  overviewBody: { color: '#E1DDF1', fontSize: 13, lineHeight: 20 },
+  ownerBadge: { alignSelf: 'flex-start', marginTop: 3, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: '#FFFFFF20' },
+  ownerBadgeText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
+  overviewSectionHeader: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
+  overviewEyebrowDark: { color: '#7051C8', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  overviewSectionTitle: { color: '#27213F', fontSize: 19, fontWeight: '900', marginTop: 4, letterSpacing: -0.4 },
+  lastUpdated: { color: '#8B849D', fontSize: 9, fontWeight: '600' },
+  overviewMetrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  overviewMetric: { width: '48%', flexGrow: 1, minHeight: 104, padding: 14, borderWidth: 1, borderColor: '#EAE5F2', borderRadius: 17, backgroundColor: '#FFFFFF', gap: 4 },
+  overviewMetricLabel: { color: '#89819D', fontSize: 8, fontWeight: '900', letterSpacing: 0.6 },
+  overviewMetricValue: { color: '#39266F', fontSize: 27, fontWeight: '900' },
+  overviewMetricHint: { color: '#777087', fontSize: 10, fontWeight: '600' },
+  shortcutGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  shortcutCard: { width: '48%', flexGrow: 1, minHeight: 154, padding: 14, borderWidth: 1, borderColor: '#EAE5F2', borderRadius: 17, backgroundColor: '#FFFFFF', gap: 8 },
+  shortcutIcon: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F1EDFA' },
+  shortcutTitle: { color: '#27213F', fontSize: 14, fontWeight: '900' },
+  shortcutBody: { color: '#777087', fontSize: 10, lineHeight: 15, flex: 1 },
+  shortcutLink: { color: '#7051C8', fontSize: 10, fontWeight: '900' },
+  shortcutPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
 });
