@@ -341,7 +341,7 @@ export function ClientBookingsScreen() {
             )}
             {booking.status === 'en_route' && (
               <View style={styles.trackingPanel}>
-                <Text style={styles.etaBadge}>{eta === null ? 'Buscando ubicación en vivo...' : `Llega en ~${eta} min`}</Text>
+                <Text style={styles.etaBadge}>{eta === null ? 'Buscando ubicación en vivo...' : `Estimación preliminar: ~${eta} min`}</Text>
                 {pro && <View style={styles.trackingPro}>
                   <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
                   <View style={styles.serviceHeadingCopy}>
