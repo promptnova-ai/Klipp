@@ -75,6 +75,7 @@ export interface ProCard {
   rating_count: number;
   jobs_completed: number;
   transport_type?: string | null;
+  distance_km?: number | null;
 }
 
 export interface ProSector {
