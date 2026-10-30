@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceRoleKey);
     const { data: booking, error: bookingError } = await admin
       .from("bookings")
-      .select("client_id, assignment_mode, status, pro_id")
+      .select("client_id, assignment_mode, status, pro_id, scheduled_start")
       .eq("id", bookingId)
       .maybeSingle();
 
@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
     if (booking.assignment_mode !== "auto") return jsonResponse({ error: "Booking is not automatic" }, 400);
     if (booking.status !== "requested" || booking.pro_id) {
       return jsonResponse({ error: "Booking is no longer available for assignment" }, 409);
+    }
+    if (new Date(booking.scheduled_start).getTime() > Date.now() + 5 * 60 * 1000) {
+      return jsonResponse({ success: true, status: "on_hold" }, 202);
     }
 
     const { data: pendingRequests, error: pendingError } = await admin
