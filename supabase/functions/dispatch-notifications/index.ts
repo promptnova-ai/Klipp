@@ -57,6 +57,25 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      const eventType = notification.type === "chat_message" ? "chat_messages" : "booking_updates";
+      const { data: preference } = await admin
+        .from("notification_preferences")
+        .select("push_enabled")
+        .eq("user_id", notification.user_id)
+        .eq("event_type", eventType)
+        .maybeSingle();
+      if (preference?.push_enabled === false) {
+        await admin.from("push_delivery_queue").update({
+          status: "sent",
+          claimed_at: null,
+          ticket_map: [],
+          receipts_checked_at: new Date().toISOString(),
+          sent_at: new Date().toISOString(),
+          last_error: "Push delivery disabled by the recipient.",
+        }).eq("id", item.queue_id);
+        continue;
+      }
+
       const { data: devices, error: devicesError } = await admin
         .from("notification_devices")
         .select("id, expo_push_token")
