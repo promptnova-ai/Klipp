@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
@@ -49,6 +49,23 @@ export function ProRequestsScreen() {
       void loadRequests();
     }, [loadRequests]),
   );
+
+  useEffect(() => {
+    const proId = session?.user.id;
+    if (!proId) return;
+    const channel = supabase
+      .channel(`pro-booking-requests:${proId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'booking_requests',
+        filter: `pro_id=eq.${proId}`,
+      }, () => {
+        void loadRequests();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadRequests, session?.user.id]);
 
   async function refresh() {
     setRefreshing(true);
