@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { AnimatedIcon } from '@/components/animated-icon';
-import { AccountPanel } from '@/components/account-panel';
+import { AdminScreen } from '@/components/admin-screen';
 import { useAuth } from '@/components/auth-provider';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
@@ -61,7 +61,7 @@ export default function HomeScreen() {
   if (profile.role === 'client') return <Redirect href="/(client)" />;
   if (profile.role === 'pro') return <Redirect href="/(pro)" />;
 
-  return <AccountPanel roleLabel="Administrador" />;
+  return <AdminScreen />;
 
   /* Original starter screen retained below until the client and pro home screens are built. */
   /*

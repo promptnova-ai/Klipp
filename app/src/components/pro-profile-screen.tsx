@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -87,6 +88,7 @@ export function ProProfileScreen() {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('12:00');
   const [addingAvailability, setAddingAvailability] = useState(false);
+  const [uploadingVerification, setUploadingVerification] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!userId) return;
@@ -146,6 +148,60 @@ export function ProProfileScreen() {
     void Promise.resolve().then(loadProfile);
   }, [loadProfile]);
 
+  async function uploadVerificationDocument() {
+    if (!userId || !proProfile) return;
+    setError(null);
+    setNotice(null);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/jpeg', 'image/png'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled) return;
+      const document = result.assets[0];
+      if (!document) throw new Error('No se seleccionó ningún documento.');
+      if (document.size !== undefined && document.size > 10 * 1024 * 1024) {
+        throw new Error('El archivo no puede superar los 10 MB.');
+      }
+      const contentType = document.mimeType;
+      if (!contentType || !['application/pdf', 'image/jpeg', 'image/png'].includes(contentType)) {
+        throw new Error('Selecciona un documento PDF, JPG o PNG.');
+      }
+
+      setUploadingVerification(true);
+      const response = await fetch(document.uri);
+      if (!response.ok) throw new Error('No pudimos leer el archivo seleccionado.');
+      const file = await response.blob();
+      const safeName = document.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100) || 'document';
+      const objectPath = `${userId}/${Date.now()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage
+        .from('pro-verification-documents')
+        .upload(objectPath, file, { contentType, upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { error: submitError } = await supabase.rpc('submit_pro_verification_document', {
+        p_object_path: objectPath,
+      });
+      if (submitError) {
+        const { error: cleanupError } = await supabase.storage
+          .from('pro-verification-documents')
+          .remove([objectPath]);
+        if (cleanupError) {
+          throw new Error(`${submitError.message}. Además, no pudimos limpiar el archivo cargado: ${cleanupError.message}`);
+        }
+        throw submitError;
+      }
+
+      setNotice('Documento enviado. El equipo de Klipp revisará tu perfil.');
+      await loadProfile();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos enviar tu documento de verificación.');
+    } finally {
+      setUploadingVerification(false);
+    }
+  }
+
   async function saveProfile() {
     if (!userId || !proProfile) return;
     const parsedYears = years.trim() ? Number(years) : null;
@@ -153,6 +209,7 @@ export function ProProfileScreen() {
       setError('Los años de experiencia deben ser un número entero igual o mayor que cero.');
       return;
     }
+
     const invalidService = selectedServices.find((serviceId) => {
       const price = Number(servicePrices[serviceId]);
       const duration = Number(serviceDurations[serviceId]);
@@ -355,6 +412,7 @@ export function ProProfileScreen() {
         {proProfile.verification_status !== 'approved' && (
           <Text style={styles.body}>Debes completar la verificación antes de recibir solicitudes.</Text>
         )}
+        {proProfile.verification_note && <Text style={styles.body}>Nota del equipo: {proProfile.verification_note}</Text>}
       </View>
       <Pressable
         accessibilityRole="button"
@@ -364,6 +422,16 @@ export function ProProfileScreen() {
         <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
       </Pressable>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+
+      <Section title="Verificación de identidad">
+        <Text style={styles.body}>Sube una imagen JPG/PNG o un PDF de tu documento de identidad. El archivo es privado y solo tú y el equipo autorizado pueden verlo. Máximo 10 MB.</Text>
+        {proProfile.id_document_path && <Text style={styles.success}>Ya enviaste un documento para revisión.</Text>}
+        <ActionButton
+          disabled={uploadingVerification}
+          label={uploadingVerification ? 'Enviando documento...' : proProfile.id_document_path ? 'Reemplazar documento' : 'Subir documento'}
+          onPress={() => void uploadVerificationDocument()}
+        />
+      </Section>
 
       <Section title="Sobre ti">
         <Text style={styles.label}>Teléfono de contacto</Text>

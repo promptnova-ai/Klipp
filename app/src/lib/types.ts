@@ -48,6 +48,9 @@ export interface ProProfile {
   base_sector_id: number | null;
   verification_status: VerificationStatus;
   id_document_path: string | null;
+  verification_note?: string | null;
+  verification_reviewed_at?: string | null;
+  verification_reviewed_by?: string | null;
   accepts_auto_assign: boolean;
   active: boolean;
   rating_avg: number;

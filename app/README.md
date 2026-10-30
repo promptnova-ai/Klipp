@@ -8,6 +8,24 @@ Apply `supabase/migrations/004_location_services_and_tracking.sql` after the exi
 
 For native maps, set `GOOGLE_MAPS_ANDROID_API_KEY` in the build environment. Set `GOOGLE_MAPS_IOS_API_KEY` only if using Google Maps instead of the default Apple map on iOS. Restrict each key to the app's package/bundle identifier and required Maps SDK. Native permission and background-location changes require a new development or production build; live location is shared only while a booking is `en_route`.
 
+## Admin accounts and professional verification
+
+Apply `supabase/migrations/007_admin_verification_and_settings.sql` after the other migrations. The migration creates a private Storage bucket for identity documents, admin-only database functions, audit records, and editable commission/request-expiry settings. Never make the verification bucket public or put a Supabase service-role key in the app.
+
+Bootstrap the first administrator from the Supabase SQL Editor after that person has registered and confirmed their email. Replace the email below with the account to promote:
+
+```sql
+update public.profiles p
+set role = 'admin'
+from auth.users u
+where p.id = u.id
+  and lower(u.email) = lower('admin@example.com');
+```
+
+Confirm exactly one account was updated, then sign in with that account. The admin panel is shown on the account home screen. Administrators can assign `client`, `pro`, or `admin` to other existing accounts, review professional documents, edit the service catalog and pricing tiers, and change the commission and professional-request expiry applied to new records. The current administrator cannot change their own role from the panel.
+
+Professionals submit a PDF, JPG, or PNG (maximum 10 MB) from **Mi perfil → Verificación de identidad**. Documents stay in private Storage; an administrator opens a short-lived signed link, then approves or rejects the submission with a reason. Approval requires a confirmed email and a submitted document. Do not approve a profile unless its identity has actually been checked.
+
 ## Get started
 
 1. Install dependencies
