@@ -11,6 +11,7 @@ type AdminSection = 'verification' | 'accounts' | 'configuration' | 'staff';
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
+type AuditEntry = { id: number; actor_email: string | null; action: string; target_email: string | null; details: Record<string, unknown>; created_at: string };
 type AdminAccount = {
   user_id: string;
   email: string | null;
@@ -52,6 +53,7 @@ export function AdminScreen() {
   const [permissions, setPermissions] = useState<string[]>([]);
   const [staffRows, setStaffRows] = useState<StaffRow[]>([]);
   const [staffTemplates, setStaffTemplates] = useState<StaffTemplate[]>([]);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
@@ -392,6 +394,16 @@ export function AdminScreen() {
             </View>
           ))}
           {staffRows.filter((staff) => !staff.is_owner).length === 0 && <Text style={styles.empty}>Aún no hay empleados con rol de administrador.</Text>}
+          <Text style={styles.sectionTitle}>Registro de actividad</Text>
+          <Text style={styles.body}>Últimas 100 acciones administrativas. Solo visible para el propietario.</Text>
+          {auditEntries.length === 0 ? <Text style={styles.empty}>Todavía no hay acciones registradas.</Text> : auditEntries.map((entry) => (
+            <View key={entry.id} style={styles.auditRow}>
+              <Text style={styles.label}>{entry.action}</Text>
+              <Text style={styles.body}>{entry.actor_email || 'Actor desconocido'}{entry.target_email ? ` → ${entry.target_email}` : ''}</Text>
+              <Text style={styles.permissionCode}>{new Date(entry.created_at).toLocaleString()}</Text>
+              <Text style={styles.permissionCode}>{JSON.stringify(entry.details)}</Text>
+            </View>
+          ))}
         </View>
       )}
 
@@ -563,6 +575,7 @@ const styles = StyleSheet.create({
   roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
   roleText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
   roleTextSelected: { color: KlippColors.blueDark },
+  auditRow: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 4 },
   permissionRow: { flexDirection: 'column', gap: 7, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },
   permissionCopy: { gap: 2 },
   permissionCode: { color: KlippColors.muted, fontSize: 11 },
