@@ -1,12 +1,6 @@
 name: Validate Klipp app
 
 on:
-  push:
-    branches:
-      - security/013-super-admin-rbac
-    paths:
-      - "app/**"
-      - ".github/workflows/validate-app.yml"
   pull_request:
     branches:
       - security/008-profile-permissions
