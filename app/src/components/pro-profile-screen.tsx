@@ -627,5 +627,6 @@ const styles = StyleSheet.create({
   removeText: { color: '#a32f27', fontSize: 13, fontWeight: '600' },
   empty: { color: '#68756f', fontSize: 14, paddingVertical: 6 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
-  success: { color: '#067647', fontSize: 14 },
+  success: { color: '#067647', fontSize: 14, lineHeight: 20 },
+  warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
 });
