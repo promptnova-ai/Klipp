@@ -6,7 +6,6 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
-import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { Address } from '@/lib/types';
 
