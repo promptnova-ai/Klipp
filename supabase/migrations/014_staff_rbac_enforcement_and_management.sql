@@ -33,8 +33,10 @@ BEGIN
   RETURN QUERY
   SELECT p.id, u.email::text, u.email_confirmed_at IS NOT NULL,
          p.full_name, p.phone, p.role, p.created_at,
-         pp.verification_status, pp.id_document_path, pp.verification_note,
-         pp.verification_reviewed_at
+         CASE WHEN public.has_admin_permission('verification.review') THEN pp.verification_status ELSE NULL END,
+         CASE WHEN public.has_admin_permission('verification.review') THEN pp.id_document_path ELSE NULL END,
+         CASE WHEN public.has_admin_permission('verification.review') THEN pp.verification_note ELSE NULL END,
+         CASE WHEN public.has_admin_permission('verification.review') THEN pp.verification_reviewed_at ELSE NULL END
   FROM public.profiles p
   JOIN auth.users u ON u.id = p.id
   LEFT JOIN public.pro_profiles pp ON pp.user_id = p.id
@@ -94,6 +96,15 @@ BEGIN
   END IF;
 
   UPDATE public.profiles SET role = p_role WHERE id = p_user_id;
+
+  IF p_role::text = 'admin' THEN
+    INSERT INTO public.staff_role_assignments (user_id, template_key, assigned_by, assigned_at)
+    VALUES (p_user_id, 'custom', auth.uid(), now())
+    ON CONFLICT (user_id) DO NOTHING;
+  ELSIF target_role::text = 'admin' THEN
+    DELETE FROM public.staff_permission_overrides WHERE user_id = p_user_id;
+    DELETE FROM public.staff_role_assignments WHERE user_id = p_user_id;
+  END IF;
 
   INSERT INTO public.admin_audit_log (actor_id, action, target_id, details)
   VALUES (
