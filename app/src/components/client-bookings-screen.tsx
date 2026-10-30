@@ -321,6 +321,7 @@ export function ClientBookingsScreen() {
               <SymbolView name={{ ios: 'calendar', android: 'event', web: 'event' }} tintColor={KlippColors.muted} size={17} />
               <Text style={styles.body}>{formatBusinessDate(booking.scheduled_start)}</Text>
             </View>
+            {searching && <Text style={styles.body}>Klipp buscará un profesional conectado y disponible cuando se acerque la hora del servicio.</Text>}
             <View style={styles.detailRow}>
               <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.muted} size={17} />
               <Text style={styles.body}>{booking.address_text || booking.addresses?.label || booking.addresses?.street || 'Dirección no disponible'}</Text>
