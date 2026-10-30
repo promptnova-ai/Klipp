@@ -6,6 +6,7 @@ import { SymbolView } from 'expo-symbols';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { getServiceKitItems, parseProKit, type ProKitEntry, type ProKitMap } from '@/lib/pro-kit';
+import { getCatalogServiceName } from '@/lib/service-catalog';
 import { supabase } from '../../lib/supabase';
 
 type ProServiceOption = { id: number; code: string; name: string };
@@ -166,7 +167,7 @@ export function ProToolkitScreen() {
               const selected = selectedServiceId === service.id;
               return (
                 <Pressable key={service.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => { setSelectedServiceId(service.id); setCustomDraft(''); setError(null); setNotice(null); }} style={[styles.serviceChip, selected && styles.serviceChipSelected]}>
-                  <Text style={[styles.serviceChipText, selected && styles.serviceChipTextSelected]}>{service.name}</Text>
+                  <Text style={[styles.serviceChipText, selected && styles.serviceChipTextSelected]}>{getCatalogServiceName(service)}</Text>
                 </Pressable>
               );
             })}
