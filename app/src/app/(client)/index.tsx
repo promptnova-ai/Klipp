@@ -348,7 +348,7 @@ export default function ClientHomeScreen() {
             </Pressable>
           );
         })}
-      </View>lView>
+      </View>
       <View style={styles.sectionHeadingRow}>
         <View><Text style={styles.sectionEyebrow}>{coordinate ? 'DISPONIBLES PARA TU ZONA' : 'CATÁLOGO KLIPP'}</Text><Text style={styles.sectionTitle}>Servicios para ti</Text></View>
         <View style={styles.catalogCount}><Text style={styles.catalogCountText}>{visibleServices.length}</Text></View>
