@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
-import { ActivityIndicator, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -37,6 +37,7 @@ export function ProAgendaScreen() {
   const [messageDraft, setMessageDraft] = useState('');
   const [isOnline, setIsOnline] = useState(false);
   const [presenceBusy, setPresenceBusy] = useState(false);
+  const [equipmentConfirmationBooking, setEquipmentConfirmationBooking] = useState<AgendaBooking | null>(null);
   const activeTripKey = bookings
     .filter((booking) => booking.status === 'en_route')
     .map((booking) => booking.id)
@@ -236,6 +237,10 @@ export function ProAgendaScreen() {
   async function advance(booking: AgendaBooking) {
     const step = nextStep[booking.status];
     if (!step) return;
+    if (booking.status === 'arrived') {
+      setEquipmentConfirmationBooking(booking);
+      return;
+    }
     setBusyId(booking.id);
     setError(null);
     const { error: rpcError } = await supabase.rpc('advance_booking', {
@@ -245,6 +250,24 @@ export function ProAgendaScreen() {
     if (rpcError) setError(rpcError.message);
     else {
       setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: step.status } : item));
+      await loadBookings();
+    }
+    setBusyId(null);
+  }
+
+  async function confirmEquipmentAndStart() {
+    const booking = equipmentConfirmationBooking;
+    if (!booking) return;
+    setBusyId(booking.id);
+    setError(null);
+    const { error: rpcError } = await supabase.rpc('confirm_booking_equipment_and_start', {
+      p_booking_id: booking.id,
+    });
+    if (rpcError) {
+      setError(rpcError.message);
+    } else {
+      setEquipmentConfirmationBooking(null);
+      setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: 'in_progress' } : item));
       await loadBookings();
     }
     setBusyId(null);
@@ -285,7 +308,28 @@ export function ProAgendaScreen() {
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando agenda...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+    <>
+      <Modal
+        animationType="fade"
+        transparent
+        visible={equipmentConfirmationBooking !== null}
+        onRequestClose={() => { if (!busyId) setEquipmentConfirmationBooking(null); }}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.equipmentModal}>
+            <Text style={styles.modalTitle}>Confirmar equipamiento</Text>
+            <Text style={styles.modalMessage}>¿Confirmas que tienes contigo todas las herramientas, equipos, productos y materiales necesarios para realizar este servicio? Klipp no espera que utilices materiales del cliente.</Text>
+            <View style={styles.modalActions}>
+              <Pressable accessibilityRole="button" disabled={busyId !== null} onPress={() => setEquipmentConfirmationBooking(null)} style={styles.modalSecondary}>
+                <Text style={styles.modalSecondaryText}>Ahora no</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" disabled={busyId !== null} onPress={() => void confirmEquipmentAndStart()} style={[styles.modalPrimary, busyId !== null && styles.disabled]}>
+                <Text style={styles.modalPrimaryText}>{busyId === equipmentConfirmationBooking?.id ? 'Confirmando…' : 'Sí, confirmo'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+      <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       <View style={styles.presenceCard}>
         <View style={styles.presenceCopy}>
@@ -346,12 +390,22 @@ export function ProAgendaScreen() {
           </View>
         );
       })}
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, backgroundColor: 'rgba(15, 23, 42, 0.55)' },
+  equipmentModal: { width: '100%', maxWidth: 440, padding: 22, borderRadius: 18, backgroundColor: KlippColors.white, gap: 14 },
+  modalTitle: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
+  modalMessage: { color: KlippColors.slate, fontSize: 15, lineHeight: 23 },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10, marginTop: 4 },
+  modalSecondary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10 },
+  modalSecondaryText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  modalPrimary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 10, backgroundColor: KlippColors.blue },
+  modalPrimaryText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   presenceCard: { marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white, gap: 12 },
   presenceCopy: { gap: 5 },
   presenceTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '800' },
