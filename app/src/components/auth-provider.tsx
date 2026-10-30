@@ -153,7 +153,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await unregisterPushDeviceAsync(session.user.id);
       } catch (cause) {
-        setAuthError(cause instanceof Error ? cause.message : 'No pudimos desactivar este dispositivo para las notificaciones.');
+        const message = cause instanceof Error ? cause.message : 'No pudimos desactivar este dispositivo para las notificaciones.';
+        setAuthError(message);
+        throw cause;
       }
     }
     const { error } = await supabase.auth.signOut();
