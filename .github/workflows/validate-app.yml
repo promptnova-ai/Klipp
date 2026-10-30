@@ -3,6 +3,7 @@ name: Validate Klipp app
 on:
   pull_request:
     branches:
+      - main
       - security/008-profile-permissions
     paths:
       - "app/**"
