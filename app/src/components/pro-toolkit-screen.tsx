@@ -45,7 +45,7 @@ export function ProToolkitScreen() {
     const rows = (data ?? []) as unknown as JoinedProService[];
     const options = rows
       .map((row) => Array.isArray(row.service_types) ? row.service_types[0] : row.service_types)
-      .filter((service): service is ProServiceOption => Boolean(service) && service.code !== 'masajes');
+      .filter((service): service is ProServiceOption => service !== null && service !== undefined && service.code !== 'masajes');
     const unique = Array.from(new Map(options.map((service) => [service.id, service])).values())
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
     setServices(unique);
@@ -70,8 +70,8 @@ export function ProToolkitScreen() {
   );
   const customItems = entry.customItems;
   const readyIds = new Set(entry.readyIds);
-  const totalItems = baseItems.length + customItems.length;
-  const readyCount = baseItems.filter((item) => readyIds.has(item.id)).length + customItems.filter((item) => item.ready).length;
+  const totalItems = baseItems.filter((item) => item.required !== false).length + customItems.length;
+  const readyCount = baseItems.filter((item) => item.required !== false && readyIds.has(item.id)).length + customItems.filter((item) => item.ready).length;
   const allReady = totalItems > 0 && readyCount === totalItems;
 
   function updateEntry(next: ProKitEntry) {
