@@ -17,7 +17,7 @@ export function BrandScreenHeader({
   return (
     <View style={[styles.header, { backgroundColor: theme.canvas }]}>
       <View style={styles.brandRow}>
-        <View style={[styles.logoMark, { backgroundColor: KlippColors.navyDeep }]}>
+        <View style={[styles.logoMark, { backgroundColor: theme.accent }]}>
           <Text style={styles.logoLetter}>K</Text>
         </View>
         <View style={styles.brandCopy}>
@@ -27,7 +27,7 @@ export function BrandScreenHeader({
               <Text style={[styles.badgeText, { color: theme.accentStrong }]}>RD</Text>
             </View>
           </View>
-          <Text style={styles.location}>SERVICIOS A DOMICILIO</Text>
+          <Text style={styles.location}>SERVICIOS EN TU PUERTA</Text>
         </View>
       </View>
       <View style={styles.heading}>
@@ -42,15 +42,15 @@ export function BrandScreenHeader({
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 22,
-    paddingTop: 58,
-    paddingBottom: 12,
-    gap: 25,
+    paddingTop: 26,
+    paddingBottom: 8,
+    gap: 21,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   logoMark: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#101A30',
@@ -62,12 +62,12 @@ const styles = StyleSheet.create({
   logoLetter: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -1 },
   brandCopy: { gap: 2 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brand: { color: KlippColors.navy, fontSize: 21, fontWeight: '900', letterSpacing: -0.8 },
+  brand: { color: KlippColors.navy, fontSize: 25, fontWeight: '900', letterSpacing: -0.8 },
   badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 7 },
   badgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
   location: { color: '#8792A5', fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
   heading: { gap: 7 },
   eyebrow: { fontSize: 10, fontWeight: '800', letterSpacing: 1.25 },
-  title: { fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.9 },
-  subtitle: { color: '#66748A', fontSize: 15, lineHeight: 22, maxWidth: 520 },
+  title: { fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -0.9 },
+  subtitle: { color: '#66748A', fontSize: 14, lineHeight: 21, maxWidth: 540 },
 });
