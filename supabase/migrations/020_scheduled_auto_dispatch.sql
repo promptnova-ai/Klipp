@@ -69,7 +69,7 @@ create or replace function public.process_scheduled_booking_dispatch()
 returns integer language plpgsql security definer set search_path = public, extensions as $$
 declare
   b record;
-  candidate record;
+  candidate_pro_id uuid;
   lead_minutes integer;
   dispatched integer := 0;
 begin
@@ -92,12 +92,13 @@ begin
       else greatest(15, ceil(b.distance_m / 350.0)::integer + 12) end;
 
     if b.scheduled_start <= now() + make_interval(mins => lead_minutes) then
-      select c.pro_id into candidate
+      candidate_pro_id := null;
+      select c.pro_id into candidate_pro_id
       from public.find_auto_candidates(b.id,1) c limit 1;
 
-      if candidate.pro_id is not null then
+      if candidate_pro_id is not null then
         insert into public.booking_requests(booking_id,pro_id,expires_at)
-        values (b.id,candidate.pro_id,now() + interval '45 seconds')
+        values (b.id,candidate_pro_id,now() + interval '45 seconds')
         on conflict (booking_id,pro_id) do nothing;
         if found then dispatched := dispatched + 1; end if;
       elsif b.scheduled_start <= now() - interval '10 minutes' then
