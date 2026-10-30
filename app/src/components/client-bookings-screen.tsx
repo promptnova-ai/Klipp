@@ -274,7 +274,7 @@ export function ClientBookingsScreen() {
         const pro = booking.pro_id ? pros[booking.pro_id] : undefined;
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
-        const immediateSearch = searching && new Date(booking.scheduled_start).getTime() <= Date.now() + 5 * 60 * 1000;
+        const immediateSearch = searching && new Date(booking.scheduled_start).getTime() <= Date.now() + 60 * 60 * 1000;
         const canReview = ['completed', 'confirmed'].includes(booking.status) && !!booking.pro_id && !review;
         const statusLabel = searching ? (immediateSearch ? 'Buscando profesional' : 'Reserva en espera') : statusLabels[booking.status];
         const livePoint = tracking[booking.id];
