@@ -450,6 +450,58 @@ create trigger payment_status_create_notification
   after insert or update of status on public.payments
   for each row execute function public.notify_klipp_payment_status();
 
+
+
+create or replace function public.notify_klipp_review_received()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+begin
+  perform public.create_klipp_notification(
+    new.pro_id, new.booking_id, 'review_received', 'Has recibido una valoración',
+    'Un cliente ha valorado uno de tus servicios. Consulta tu perfil para ver la reseña.',
+    jsonb_build_object('bookingId', new.booking_id, 'reviewId', new.id, 'rating', new.rating, 'target', 'pro'),
+    'review:' || new.id::text || ':pro',
+    'booking_updates'
+  );
+  return new;
+end;
+$;
+revoke all on function public.notify_klipp_review_received() from public, anon, authenticated;
+
+drop trigger if exists review_create_notification on public.reviews;
+create trigger review_create_notification
+  after insert on public.reviews
+  for each row execute function public.notify_klipp_review_received();
+
+create or replace function public.notify_klipp_issue_resolved()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+begin
+  if new.status is distinct from old.status and new.status = 'resolved' then
+    perform public.create_klipp_notification(
+      new.reporter_id, new.booking_id, 'issue_resolved', 'Tu incidencia ha sido resuelta',
+      'El equipo de Klipp ha actualizado el estado de tu incidencia. Consulta el detalle para ver la resolución.',
+      jsonb_build_object('bookingId', new.booking_id, 'issueId', new.id, 'target', 'support'),
+      'issue:' || new.id::text || ':resolved:' || new.reporter_id::text,
+      'booking_updates'
+    );
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.notify_klipp_issue_resolved() from public, anon, authenticated;
+
+drop trigger if exists issue_resolved_create_notification on public.issues;
+create trigger issue_resolved_create_notification
+  after update of status on public.issues
+  for each row execute function public.notify_klipp_issue_resolved();
+
 -- Track the last ETA baseline so meaningful delays can be notified without spamming.
 create table if not exists public.booking_eta_tracking (
   booking_id uuid primary key references public.bookings(id) on delete cascade,
