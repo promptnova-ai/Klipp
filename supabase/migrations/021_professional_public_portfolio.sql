@@ -23,13 +23,11 @@ alter table public.pro_portfolio enable row level security;
 drop policy if exists pro_portfolio_public_read on public.pro_portfolio;
 create policy pro_portfolio_public_read
   on public.pro_portfolio for select
-  to anon, authenticated
+  to authenticated
   using (
     exists (
-      select 1 from public.pro_profiles pp
-      where pp.user_id = pro_portfolio.pro_id
-        and pp.active
-        and pp.verification_status = 'approved'
+      select 1 from public.pro_cards pc
+      where pc.pro_id = pro_portfolio.pro_id
     )
   );
 
@@ -77,5 +75,5 @@ create policy pro_portfolio_storage_owner_delete
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
-grant select on public.pro_portfolio to anon, authenticated;
+grant select on public.pro_portfolio to authenticated;
 grant insert, delete on public.pro_portfolio to authenticated;
