@@ -11,6 +11,7 @@ import { formatBusinessDate, formatDop } from '@/lib/format';
 import { getProLocationTaskError, updateActiveProTrackingBookings } from '@/lib/pro-location-task';
 import type { Booking, BookingStatus } from '@/lib/types';
 import { getKitReadiness, parseProKit } from '@/lib/pro-kit';
+import { getCatalogServiceName } from '@/lib/service-catalog';
 
 type AgendaBooking = Booking & {
   service_types: { code: string; name: string } | null;
@@ -265,7 +266,7 @@ export function ProAgendaScreen() {
             <View style={styles.bookingTop}>
               <View style={styles.bookingIcon}><SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor="#0F987A" size={22} /></View>
               <View style={styles.bookingTitleCopy}>
-                <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio a domicilio'}</Text>
+                <Text style={styles.cardTitle}>{booking.service_types ? getCatalogServiceName(booking.service_types) : 'Servicio a domicilio'}</Text>
                 <Text style={styles.bodySmall}>{booking.pricing_tiers?.label ?? booking.est_minutes + ' min'}</Text>
               </View>
               <View style={[styles.statusPill, statusStyle]}><Text style={styles.statusPillText}>{statusLabel}</Text></View>
