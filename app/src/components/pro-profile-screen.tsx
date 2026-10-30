@@ -406,7 +406,7 @@ export function ProProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." role="pro" />
       <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
         <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
         {proProfile.verification_status !== 'approved' && (
