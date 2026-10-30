@@ -579,7 +579,7 @@ export function ProProfileScreen() {
       </Section>
 
       <Section title="Fotos de tus trabajos">
-        <Text style={styles.body}>Muestra hasta 6 fotos reales de tus trabajos para que los clientes conozcan la calidad de tu servicio. No incluyas teléfonos ni datos personales de clientes.</Text>
+        <Text style={styles.body}>Muestra hasta 6 fotos reales de tus trabajos. No incluyas rostros, matrículas, direcciones, teléfonos ni datos que identifiquen a clientes.</Text>
         <View style={styles.portfolioGrid}>
           {portfolio.map((photo) => {
             const imageUrl = supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl;
