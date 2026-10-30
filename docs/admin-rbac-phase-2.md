@@ -60,6 +60,10 @@ Authenticated SQL-session tests (all wrapped in transactions and rolled back) co
 
 These tests used simulated JWT subject claims inside rolled-back SQL transactions. They do not replace tests from real owner/employee browser sessions or real Storage access tests.
 
+- Synthetic Operations employee (rolled back): `is_super_admin() = false`; `verification.review = true`; `settings.operational = true`; the settings RPC returned zero keys, confirming commission/request-expiry values are not exposed.
+- Privilege checks: `authenticated` and `anon` cannot directly SELECT the owner/RBAC tables; `anon` cannot execute the owner staff RPC; authenticated users can execute the RPC endpoint, which checks owner identity internally.
+- Final database state after test rollbacks: one admin role (the owner), zero employee assignments, zero overrides, and one owner singleton.
+
 ## Security advisor findings
 
 The post-migration Supabase security advisor still reports:
