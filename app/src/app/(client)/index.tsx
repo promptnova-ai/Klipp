@@ -70,13 +70,13 @@ function getCategoryGlyph(category: string) {
 function getServiceSymbol(service: Pick<ServiceType, 'name' | 'code'> & { category_name?: string | null }) {
   const value = (service.category_name ?? '') + ' ' + service.name + ' ' + service.code;
   const normalized = value.toLocaleLowerCase();
-  if (normalized.includes('limpieza') || normalized.includes('clean')) return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
-  if (normalized.includes('barber') || normalized.includes('belleza') || normalized.includes('estét') || normalized.includes('uña')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' };
-  if (normalized.includes('plomer') || normalized.includes('agua')) return { ios: 'drop.fill', android: 'water_drop', web: 'water_drop' };
-  if (normalized.includes('electric')) return { ios: 'bolt.fill', android: 'bolt', web: 'bolt' };
-  if (normalized.includes('jard')) return { ios: 'leaf.fill', android: 'yard', web: 'yard' };
-  if (normalized.includes('repar') || normalized.includes('manten')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' };
-  return { ios: 'house.fill', android: 'home', web: 'home' };
+  if (normalized.includes('limpieza') || normalized.includes('clean')) return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' } as const;
+  if (normalized.includes('barber') || normalized.includes('belleza') || normalized.includes('estét') || normalized.includes('uña')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' } as const;
+  if (normalized.includes('plomer') || normalized.includes('agua')) return { ios: 'drop.fill', android: 'water_drop', web: 'water_drop' } as const;
+  if (normalized.includes('electric')) return { ios: 'bolt.fill', android: 'bolt', web: 'bolt' } as const;
+  if (normalized.includes('jard')) return { ios: 'leaf.fill', android: 'yard', web: 'yard' } as const;
+  if (normalized.includes('repar') || normalized.includes('manten')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' } as const;
+  return { ios: 'house.fill', android: 'home', web: 'home' } as const;
 }
 
 function ServiceSkeleton() {
