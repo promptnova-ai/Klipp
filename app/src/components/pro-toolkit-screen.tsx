@@ -184,7 +184,7 @@ export function ProToolkitScreen() {
               <View style={styles.listCard}>
                 <View style={styles.listHeading}>
                   <View><Text style={styles.sectionTitle}>Kit recomendado</Text><Text style={styles.body}>Lista base para {selectedService.name.toLocaleLowerCase()}.</Text></View>
-                  <SymbolView name={{ ios: 'clipboard.checkmark', android: 'fact_check', web: 'fact_check' }} tintColor="#0F987A" size={22} />
+                  <SymbolView name={{ ios: 'checkmark.circle', android: 'fact_check', web: 'fact_check' }} tintColor="#0F987A" size={22} />
                 </View>
                 {baseItems.map((item) => {
                   const checked = readyIds.has(item.id);
