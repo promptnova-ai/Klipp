@@ -26,8 +26,8 @@ SECURITY DEFINER
 SET search_path = public, auth
 AS $$
 BEGIN
-  IF NOT public.has_admin_permission('accounts.read') THEN
-    RAISE EXCEPTION 'permission denied: accounts.read';
+  IF NOT (public.has_admin_permission('accounts.read') OR public.has_admin_permission('verification.review')) THEN
+    RAISE EXCEPTION 'permission denied: accounts.read or verification.review';
   END IF;
 
   RETURN QUERY
@@ -40,6 +40,7 @@ BEGIN
   FROM public.profiles p
   JOIN auth.users u ON u.id = p.id
   LEFT JOIN public.pro_profiles pp ON pp.user_id = p.id
+  WHERE public.has_admin_permission('accounts.read') OR p.role::text = 'pro'
   ORDER BY p.created_at DESC;
 END;
 $$;
