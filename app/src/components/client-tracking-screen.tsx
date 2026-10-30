@@ -59,6 +59,8 @@ export function ClientTrackingScreen() {
   const [booking, setBooking] = useState<TrackingBooking | null>(null);
   const [professional, setProfessional] = useState<ProCard | null>(null);
   const [professionalCoordinate, setProfessionalCoordinate] = useState<Coordinate | null>(null);
+  const [locationUpdatedAt, setLocationUpdatedAt] = useState<string | null>(null);
+  const [clockNow, setClockNow] = useState(Date.now());
   const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -106,15 +108,17 @@ export function ClientTrackingScreen() {
     if (bookingRow.status === 'en_route') {
       const { data: location, error: locationError } = await supabase
         .from('pro_locations')
-        .select('latitude, longitude')
+        .select('latitude, longitude, updated_at')
         .eq('booking_id', bookingRow.id)
         .maybeSingle();
       if (locationError) setError(locationError.message);
       else if (typeof location?.latitude === 'number' && typeof location.longitude === 'number') {
         setProfessionalCoordinate({ latitude: location.latitude, longitude: location.longitude });
+        setLocationUpdatedAt(location.updated_at ?? null);
       }
     } else {
       setProfessionalCoordinate(null);
+      setLocationUpdatedAt(null);
     }
     setLoading(false);
   }, [bookingId, session]);
@@ -155,16 +159,23 @@ export function ClientTrackingScreen() {
       }, (payload) => {
         if (payload.eventType === 'DELETE') {
           setProfessionalCoordinate(null);
+          setLocationUpdatedAt(null);
           return;
         }
-        const row = payload.new as { latitude?: number; longitude?: number };
+        const row = payload.new as { latitude?: number; longitude?: number; updated_at?: string };
         if (typeof row.latitude === 'number' && typeof row.longitude === 'number') {
           setProfessionalCoordinate({ latitude: row.latitude, longitude: row.longitude });
+          setLocationUpdatedAt(row.updated_at ?? new Date().toISOString());
         }
       })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [booking?.id, booking?.status]);
+
+  useEffect(() => {
+    const interval = setInterval(() => setClockNow(Date.now()), 10_000);
+    return () => clearInterval(interval);
+  }, []);
 
   const destination = booking && typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number'
     ? { latitude: booking.client_lat, longitude: booking.client_lng }
@@ -172,6 +183,15 @@ export function ClientTrackingScreen() {
   const etaMinutes = professionalCoordinate && destination
     ? Math.max(1, Math.round(distanceInKm(professionalCoordinate, destination) / 25 * 60))
     : null;
+  const locationAgeSeconds = locationUpdatedAt
+    ? Math.max(0, Math.floor((clockNow - new Date(locationUpdatedAt).getTime()) / 1000))
+    : null;
+  const locationIsStale = locationAgeSeconds !== null && locationAgeSeconds > 30;
+  const locationFreshnessLabel = locationAgeSeconds === null
+    ? 'Esperando la primera ubicación del profesional.'
+    : locationIsStale
+      ? `Última ubicación recibida hace ${Math.floor(locationAgeSeconds / 60)} min. Puede estar desactualizada.`
+      : `Ubicación actualizada hace ${locationAgeSeconds} s.`;
 
   if (loading) {
     return <SafeAreaView style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando seguimiento...</Text></SafeAreaView>;
@@ -197,9 +217,9 @@ export function ClientTrackingScreen() {
             {booking.status === 'en_route' ? (
               <>
                 <View style={styles.etaCard}>
-                  <Text style={styles.etaLabel}>LLEGADA ESTIMADA</Text>
+                  <Text style={styles.etaLabel}>ESTIMACIÓN INICIAL DE LLEGADA</Text>
                   <Text style={styles.etaValue}>{etaMinutes === null ? 'Calculando…' : `~${etaMinutes} min`}</Text>
-                  <Text style={styles.etaHint}>{professionalCoordinate ? 'La ubicación se actualiza en vivo.' : 'Esperando la primera actualización de ubicación del profesional.'}</Text>
+                  <Text style={styles.etaHint}>{locationFreshnessLabel} El cálculo actual es aproximado y todavía no incorpora ruta vial ni tráfico.</Text>
                 </View>
                 {professionalCoordinate && destination ? (
                   <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} />
