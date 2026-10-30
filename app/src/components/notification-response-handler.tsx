@@ -39,7 +39,7 @@ export function NotificationResponseHandler() {
     const data = request.content.data as Record<string, unknown>;
     const bookingId = typeof data.bookingId === 'string' ? data.bookingId : null;
     if (profile.role === 'pro') {
-      if (data.target === 'pro' && data.status === 'requested') router.push('/(pro)');
+      if (data.target === 'pro' && typeof data.requestId === 'string') router.push('/(pro)');
       else router.push('/(pro)/agenda');
     } else if (bookingId) {
       router.push({ pathname: '/tracking', params: { bookingId } });
@@ -47,6 +47,7 @@ export function NotificationResponseHandler() {
       router.push('/(client)/bookings');
     }
     setPendingResponse(null);
+    void Notifications.clearLastNotificationResponseAsync();
   }, [pendingResponse, session, profile, router]);
 
   return null;
