@@ -127,3 +127,18 @@ begin
   end if;
 end;
 $$;
+
+-- Publish incoming offers so the professional app can react without manual refresh.
+do $$
+begin
+  if exists (select 1 from pg_publication where pubname = 'supabase_realtime')
+     and not exists (
+       select 1 from pg_publication_tables
+       where pubname = 'supabase_realtime'
+         and schemaname = 'public'
+         and tablename = 'booking_requests'
+     ) then
+    alter publication supabase_realtime add table public.booking_requests;
+  end if;
+end;
+$$;
