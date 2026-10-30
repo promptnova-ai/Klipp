@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { BookingRequest } from '@/lib/types';
 import { getKitReadiness, parseProKit } from '@/lib/pro-kit';
+import { getCatalogServiceName } from '@/lib/service-catalog';
 
 type RequestBooking = {
   id: string;
@@ -128,7 +129,7 @@ export function ProRequestsScreen() {
                 <View style={styles.requestHeader}>
                   <View style={styles.requestIcon}><SymbolView name={{ ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' }} tintColor="#0F987A" size={23} /></View>
                   <View style={styles.requestTitleCopy}>
-                    <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio a domicilio'}</Text>
+                    <Text style={styles.cardTitle}>{booking.service_types ? getCatalogServiceName(booking.service_types) : 'Servicio a domicilio'}</Text>
                     <Text style={styles.requestSubtitle}>{booking.pricing_tiers?.label ?? booking.est_minutes + ' minutos de servicio'}</Text>
                   </View>
                   <View style={styles.newPill}><Text style={styles.newPillText}>NUEVA</Text></View>
