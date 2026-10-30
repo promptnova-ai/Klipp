@@ -11,7 +11,7 @@ Phase 2 moves the permission model from foundation to enforcement for the admini
 - Granting or revoking administrator status remains exclusive to the platform owner.
 - Professional approval/rejection and private verification-document reads require `verification.review`.
 - Catalog category, service, and pricing changes require `catalog.manage`.
-- Reading operational settings requires `settings.operational`.
+- Reading operational settings requires `settings.operational`. The current `platform_settings` table contains only owner-managed critical values, so the read RPC returns an empty object to employees until noncritical keys are explicitly introduced and allow-listed.
 - Commission and request-expiry changes are critical settings and restricted to the platform owner.
 - The owner has staff-listing, template-assignment, per-user allow/deny/reset overrides, staff-access revocation, and audit-log listing RPCs. Staff-management actions are written to `admin_audit_log`.
 - Newly promoted administrators receive the empty `custom` template by default. Demoted administrators have staff assignments and overrides removed.
