@@ -94,10 +94,7 @@ async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: 
   );
   if (candidatesError) throw candidatesError;
 
-  if (!candidates?.length) {
-    await admin.from("bookings").update({ status: "expired" }).eq("id", bookingId).eq("status", "requested");
-    return;
-  }
+  if (!candidates?.length) return;
 
   for (const candidate of candidates) {
     const { data: currentBooking, error: currentBookingError } = await admin
@@ -145,5 +142,5 @@ async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: 
     }
   }
 
-  await admin.from("bookings").update({ status: "expired" }).eq("id", bookingId).eq("status", "requested");
+  // Leave the booking requested; the scheduled dispatcher will retry with fresh presence data.
 }
