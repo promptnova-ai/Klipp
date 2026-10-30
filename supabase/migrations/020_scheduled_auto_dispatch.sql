@@ -1,4 +1,12 @@
 -- Hold future auto bookings until a nearby, online professional can travel on time.
+create index if not exists bookings_auto_dispatch_due_idx
+  on public.bookings (scheduled_start)
+  where assignment_mode = 'auto' and status = 'requested' and pro_id is null;
+
+create index if not exists booking_requests_pending_expiry_idx
+  on public.booking_requests (expires_at)
+  where status = 'pending';
+
 create or replace function public.apply_booking_request_expiry()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare expiry_minutes integer;
