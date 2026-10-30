@@ -32,9 +32,59 @@ Deno.serve(async (req) => {
   if (!isServiceRole && !isScheduledCall) return jsonResponse({ error: "Not authorized" }, 401);
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
-  const summary = { claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
+  const summary = { remindersProcessed: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
 
   try {
+    const now = Date.now();
+    const reminderWindows = [
+      {
+        key: "24h",
+        from: new Date(now + 23 * 60 * 60_000).toISOString(),
+        to: new Date(now + 24 * 60 * 60_000).toISOString(),
+        title: "Tu servicio es mañana",
+        body: "Recuerda que tienes un servicio Klipp programado para las próximas 24 horas.",
+      },
+      {
+        key: "1h",
+        from: new Date(now + 55 * 60_000).toISOString(),
+        to: new Date(now + 60 * 60_000).toISOString(),
+        title: "Tu servicio comienza pronto",
+        body: "Tu servicio Klipp está programado para aproximadamente dentro de una hora.",
+      },
+    ];
+
+    for (const reminder of reminderWindows) {
+      const { data: upcomingBookings, error: reminderQueryError } = await admin
+        .from("bookings")
+        .select("id, client_id, pro_id, scheduled_start")
+        .eq("status", "scheduled")
+        .gt("scheduled_start", reminder.from)
+        .lte("scheduled_start", reminder.to)
+        .limit(100);
+      if (reminderQueryError) throw reminderQueryError;
+
+      for (const booking of upcomingBookings ?? []) {
+        const recipients = [
+          { userId: booking.client_id, target: "client" },
+          ...(booking.pro_id ? [{ userId: booking.pro_id, target: "pro" }] : []),
+        ];
+        for (const recipient of recipients) {
+          const { error: createReminderError } = await admin.rpc("create_klipp_notification", {
+            p_user_id: recipient.userId,
+            p_booking_id: booking.id,
+            p_type: "booking_reminder",
+            p_title: reminder.title,
+            p_body: reminder.body,
+            p_data: { bookingId: booking.id, target: recipient.target, reminder: reminder.key },
+            p_dedupe_key: `booking:${booking.id}:reminder:${reminder.key}:${recipient.target}`,
+            p_event_type: "reminders",
+          });
+          if (createReminderError) throw createReminderError;
+          summary.remindersProcessed += 1;
+        }
+      }
+    }
+
     const { data: claimedRows, error: claimError } = await admin.rpc("claim_klipp_push_deliveries", { p_limit: 50 });
     if (claimError) throw claimError;
     const claimed = (claimedRows ?? []) as ClaimedDelivery[];
