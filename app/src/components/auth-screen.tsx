@@ -66,16 +66,24 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           <View style={styles.brandBlock}>
             <View style={styles.brandRow}>
               <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-              <Text style={styles.brand}>klipp</Text>
+              <View><Text style={styles.brand}>klipp</Text><Text style={styles.location}>SERVICIOS A DOMICILIO · RD</Text></View>
             </View>
-            <Text style={styles.location}>SANTO DOMINGO, RD</Text>
+            <View style={styles.welcomeHero}>
+              <Text style={styles.welcomeEyebrow}>TU TIEMPO VALE</Text>
+              <Text style={styles.welcomeTitle}>La ayuda que necesitas, a un toque.</Text>
+              <Text style={styles.welcomeBody}>Descubre profesionales, reserva en tu zona y sigue cada servicio desde Klipp.</Text>
+              <View style={styles.welcomeBenefits}>
+                <View style={styles.benefit}><Text style={styles.benefitMark}>✓</Text><Text style={styles.benefitText}>Profesionales verificados</Text></View>
+                <View style={styles.benefit}><Text style={styles.benefitMark}>✓</Text><Text style={styles.benefitText}>Reserva y seguimiento</Text></View>
+              </View>
+            </View>
           </View>
 
           <View style={styles.form}>
             <Text style={styles.eyebrow}>{isRegister ? 'EMPIEZA CON KLIPP' : 'QUÉ BUENO VERTE'}</Text>
             <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
             <Text style={styles.subtitle}>
-              {isRegister ? 'Servicios de limpieza confiables, cerca de ti.' : 'Accede a tu espacio de Klipp.'}
+              {isRegister ? 'Encuentra ayuda confiable para tu hogar y tu día a día.' : 'Accede a tu espacio de Klipp.'}
             </Text>
 
             {isRegister && (
@@ -163,32 +171,40 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 24 },
-  brandBlock: { marginBottom: 30, gap: 4 },
+  safeArea: { flex: 1, backgroundColor: '#F5F7FC' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 22, paddingVertical: 28 },
+  brandBlock: { width: '100%', maxWidth: 480, alignSelf: 'center', marginBottom: 20, gap: 18 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 42, height: 42, borderRadius: 12, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: KlippColors.teal },
+  logoMark: { width: 46, height: 46, borderRadius: 15, backgroundColor: '#315BFF', alignItems: 'center', justifyContent: 'center' },
   logoLetter: { color: KlippColors.white, fontSize: 23, fontWeight: '900' },
-  brand: { color: KlippColors.navy, fontSize: 30, fontWeight: '900' },
-  location: { color: KlippColors.muted, fontSize: 10, fontWeight: '700', marginTop: 5, letterSpacing: 0.5 },
-  form: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: 10, padding: 18, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  brand: { color: '#15213B', fontSize: 28, lineHeight: 29, fontWeight: '900', letterSpacing: -1 },
+  location: { color: '#8792A5', fontSize: 8, fontWeight: '900', marginTop: 3, letterSpacing: 0.8 },
+  form: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 11, padding: 23, borderRadius: 24, borderWidth: 1, borderColor: '#E4E9F2', backgroundColor: '#FFFFFF', shadowColor: '#182B55', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 10 }, shadowRadius: 20, elevation: 3 },
   eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '800', marginBottom: 2 },
   title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '800' },
   subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22, marginBottom: 10 },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
-  input: { minHeight: 50, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 14, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  input: { minHeight: 52, borderWidth: 1, borderColor: '#DCE3EF', borderRadius: 13, paddingHorizontal: 15, color: '#15213B', backgroundColor: '#FFFFFF', fontSize: 14 },
   roleOptions: { flexDirection: 'row', gap: 10 },
-  roleOption: { flex: 1, minHeight: 46, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 7, backgroundColor: '#fff', paddingHorizontal: 8 },
-  roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  roleOption: { flex: 1, minHeight: 50, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#DCE3EF', borderRadius: 13, backgroundColor: '#FFFFFF', paddingHorizontal: 8 },
+  roleOptionSelected: { borderColor: '#315BFF', backgroundColor: '#EEF2FF' },
   roleText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   roleTextSelected: { color: KlippColors.blueDark },
   error: { color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
   notice: { color: '#067647', fontSize: 13, lineHeight: 19 },
-  submit: { minHeight: 52, marginTop: 8, borderRadius: 7, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center' },
+  submit: { minHeight: 55, marginTop: 9, borderRadius: 14, backgroundColor: '#315BFF', alignItems: 'center', justifyContent: 'center' },
   submitDisabled: { backgroundColor: '#93B0FF' },
   submitPressed: { opacity: 0.85 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' },
   switchText: { color: '#52615b', fontSize: 14 },
   link: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
+  welcomeHero: { overflow: 'hidden', padding: 22, borderRadius: 24, backgroundColor: '#244BDE', gap: 9, shadowColor: '#244BDE', shadowOpacity: 0.15, shadowOffset: { width: 0, height: 9 }, shadowRadius: 16, elevation: 4 },
+  welcomeEyebrow: { color: '#D4DEFF', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  welcomeTitle: { maxWidth: 360, color: '#FFFFFF', fontSize: 28, lineHeight: 33, fontWeight: '900', letterSpacing: -0.7 },
+  welcomeBody: { color: '#E2E9FF', fontSize: 12, lineHeight: 18 },
+  welcomeBenefits: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 4 },
+  benefit: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  benefitMark: { color: '#B6F0D2', fontSize: 12, fontWeight: '900' },
+  benefitText: { color: '#E2E9FF', fontSize: 9, fontWeight: '700' },
 });
