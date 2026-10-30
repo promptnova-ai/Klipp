@@ -14,6 +14,7 @@ import { formatDop } from '@/lib/format';
 import type { ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
 
 type BookingCoordinate = { latitude: number; longitude: number };
+type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type ServiceOffer = {
   id: string;
   pro_id: string;
@@ -72,6 +73,7 @@ export function NewBookingScreen() {
   const { serviceId: serviceIdParam, tierId: tierIdParam, offerId: offerIdParam } = useLocalSearchParams<{ serviceId?: string; tierId?: string; offerId?: string }>();
   const { session } = useAuth();
   const [services, setServices] = useState<ServiceType[]>([]);
+  const [equipmentByService, setEquipmentByService] = useState<Record<number, EquipmentRequirement[]>>({});
   const [serviceIds, setServiceIds] = useState<number[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [offers, setOffers] = useState<ServiceOffer[]>([]);
@@ -169,14 +171,17 @@ export function NewBookingScreen() {
   useEffect(() => {
     async function loadOptions() {
       if (!session?.user.id) return;
-      const [serviceResult, tierResult] = await Promise.all([
+      const [serviceResult, tierResult, equipmentResult] = await Promise.all([
         supabase.from('service_types').select('id, code, name, description, active, category_id').eq('active', true).order('name'),
         supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
+        supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
       ]);
-      const loadError = serviceResult.error ?? tierResult.error;
+      const loadError = serviceResult.error ?? tierResult.error ?? equipmentResult.error;
       if (loadError) setError(loadError.message);
       else {
         const serviceRows = (serviceResult.data ?? []) as ServiceType[];
+        const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
+        setEquipmentByService(Object.fromEntries(serviceRows.map((service) => [service.id, equipment.filter((item) => item.service_type_id === service.id)])));
         setServices(serviceRows);
         setServiceIds(serviceRows.map((service) => service.id));
         const tierRows = (tierResult.data ?? []) as PricingTier[];
@@ -409,6 +414,22 @@ export function NewBookingScreen() {
       <Section title="1. Servicio">
         {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
       </Section>
+      {selectedServiceId !== null && (
+        <Section title="Equipamiento del servicio">
+          <Text style={styles.equipmentNotice}>
+            El profesional debe llevar sus propias herramientas, equipos, productos y consumibles. No tendrá que pedirte prestado material para realizar el trabajo.
+          </Text>
+          {(equipmentByService[selectedServiceId] ?? []).map((item) => (
+            <View key={item.id} style={styles.equipmentRow}>
+              <Text style={styles.equipmentBullet}>✓</Text>
+              <View style={styles.equipmentCopy}>
+                <Text style={styles.equipmentName}>{item.item_name}</Text>
+                {!!item.details && <Text style={styles.equipmentDetails}>{item.details}</Text>}
+              </View>
+            </View>
+          ))}
+        </Section>
+      )}
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
           <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
@@ -598,6 +619,12 @@ function ModeOption({ label, selected, onPress }: { label: string; selected: boo
 }
 
 const styles = StyleSheet.create({
+  equipmentNotice: { color: KlippColors.slate, fontSize: 13, lineHeight: 19, padding: 12, borderRadius: 10, backgroundColor: '#F1F7FD', borderWidth: 1, borderColor: '#C9DDF2' },
+  equipmentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 3 },
+  equipmentBullet: { color: '#047857', fontSize: 14, fontWeight: '800' },
+  equipmentCopy: { flex: 1, gap: 2 },
+  equipmentName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
+  equipmentDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   page: { paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
