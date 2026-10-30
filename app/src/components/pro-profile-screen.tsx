@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Image } from 'expo-image';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -10,6 +11,7 @@ import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, ServiceType, VerificationStatus } from '@/lib/types';
 
+type PortfolioPhoto = { id: string; pro_id: string; object_path: string; caption: string | null; sort_order: number; created_at: string };
 type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type ProfessionalService = {
   service_type_id: number;
@@ -91,25 +93,29 @@ export function ProProfileScreen() {
   const [endTime, setEndTime] = useState('12:00');
   const [addingAvailability, setAddingAvailability] = useState(false);
   const [uploadingVerification, setUploadingVerification] = useState(false);
+  const [portfolio, setPortfolio] = useState<PortfolioPhoto[]>([]);
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false);
 
   const loadProfile = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    const [profileResult, availabilityResult, catalogResult, offeredResult, equipmentResult] = await Promise.all([
+    const [profileResult, availabilityResult, catalogResult, offeredResult, equipmentResult, portfolioResult] = await Promise.all([
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pro_services').select('service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
       supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
+      supabase.from('pro_portfolio').select('id, pro_id, object_path, caption, sort_order, created_at').eq('pro_id', userId).order('sort_order').order('created_at', { ascending: false }),
     ]);
-    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error) {
+    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error || portfolioResult.error) {
       setError(
-        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? 'No pudimos cargar tu perfil.',
+        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? portfolioResult.error?.message ?? 'No pudimos cargar tu perfil.',
       );
       setLoading(false);
       return;
     }
+    setPortfolio((portfolioResult.data ?? []) as PortfolioPhoto[]);
     const savedProfile = profileResult.data as ProProfile;
     const registrationDraft = getRegistrationDraft(session?.user.user_metadata?.pro_onboarding);
     setProProfile(savedProfile);
@@ -220,6 +226,71 @@ export function ProProfileScreen() {
     } finally {
       setUploadingVerification(false);
     }
+  }
+
+  async function uploadPortfolioPhoto() {
+    if (!userId) return;
+    if (portfolio.length >= 6) {
+      setError('Puedes mostrar hasta 6 fotos de trabajos en tu perfil.');
+      return;
+    }
+    setError(null);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/jpeg', 'image/png', 'image/webp'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled) return;
+      const asset = result.assets[0];
+      if (!asset) return;
+      if (asset.size !== undefined && asset.size > 8 * 1024 * 1024) {
+        throw new Error('Cada foto debe pesar como máximo 8 MB.');
+      }
+      const mimeType = asset.mimeType;
+      if (!mimeType || !['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) {
+        throw new Error('Selecciona una foto JPG, PNG o WEBP.');
+      }
+      setUploadingPortfolio(true);
+      const response = await fetch(asset.uri);
+      if (!response.ok) throw new Error('No pudimos leer la foto seleccionada.');
+      const file = await response.blob();
+      const extension = mimeType === 'image/jpeg' ? 'jpg' : mimeType === 'image/png' ? 'png' : 'webp';
+      const objectPath = `${userId}/${Date.now()}.${extension}`;
+      const { error: uploadError } = await supabase.storage.from('pro-portfolio').upload(objectPath, file, {
+        contentType: mimeType,
+        upsert: false,
+      });
+      if (uploadError) throw uploadError;
+      const { data, error: insertError } = await supabase.from('pro_portfolio').insert({
+        pro_id: userId,
+        object_path: objectPath,
+        sort_order: portfolio.length,
+      }).select('id, pro_id, object_path, caption, sort_order, created_at').single();
+      if (insertError) {
+        await supabase.storage.from('pro-portfolio').remove([objectPath]);
+        throw insertError;
+      }
+      setPortfolio((current) => [...current, data as PortfolioPhoto]);
+      setNotice('Foto añadida a tu perfil público.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos subir la foto.');
+    } finally {
+      setUploadingPortfolio(false);
+    }
+  }
+
+  async function deletePortfolioPhoto(photo: PortfolioPhoto) {
+    if (!userId) return;
+    setError(null);
+    const { error: rowError } = await supabase.from('pro_portfolio').delete().eq('id', photo.id).eq('pro_id', userId);
+    if (rowError) {
+      setError(rowError.message);
+      return;
+    }
+    const { error: fileError } = await supabase.storage.from('pro-portfolio').remove([photo.object_path]);
+    if (fileError) setError(`La foto se quitó del perfil, pero no se pudo borrar el archivo: ${fileError.message}`);
+    setPortfolio((current) => current.filter((item) => item.id !== photo.id));
   }
 
   async function saveProfile() {
@@ -507,6 +578,24 @@ export function ProProfileScreen() {
         )}
       </Section>
 
+      <Section title="Fotos de tus trabajos">
+        <Text style={styles.body}>Muestra hasta 6 fotos reales de tus trabajos para que los clientes conozcan la calidad de tu servicio. No incluyas teléfonos ni datos personales de clientes.</Text>
+        <View style={styles.portfolioGrid}>
+          {portfolio.map((photo) => {
+            const imageUrl = supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl;
+            return (
+              <View key={photo.id} style={styles.portfolioItem}>
+                <Image source={{ uri: imageUrl }} contentFit="cover" style={styles.portfolioImage} />
+                <Pressable accessibilityRole="button" onPress={() => void deletePortfolioPhoto(photo)} style={styles.portfolioDelete}>
+                  <Text style={styles.portfolioDeleteText}>Eliminar</Text>
+                </Pressable>
+              </View>
+            );
+          })}
+        </View>
+        <ActionButton disabled={uploadingPortfolio || portfolio.length >= 6} label={uploadingPortfolio ? 'Subiendo foto...' : portfolio.length >= 6 ? 'Límite de 6 fotos alcanzado' : 'Añadir foto de un trabajo'} onPress={() => void uploadPortfolioPhoto()} />
+      </Section>
+
       <Section title="Servicios y tarifas">
         <Text style={styles.body}>Elige las especialidades que ofreces y define tu precio base en pesos dominicanos.</Text>
         {catalog.map((service) => {
@@ -614,6 +703,11 @@ const styles = StyleSheet.create({
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
   section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  portfolioItem: { width: '47%', gap: 5 },
+  portfolioImage: { width: '100%', height: 118, borderRadius: 12, backgroundColor: KlippColors.canvas },
+  portfolioDelete: { alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 9, borderRadius: 8, backgroundColor: '#FFF1F2' },
+  portfolioDeleteText: { color: '#BE123C', fontSize: 12, fontWeight: '700' },
   statusBanner: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.goldLight, gap: 5 },
   signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, backgroundColor: '#FFF7F7' },
   signOutPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
