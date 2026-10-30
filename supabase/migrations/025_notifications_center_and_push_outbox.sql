@@ -391,6 +391,65 @@ end;
 $$;
 
 
+
+
+create or replace function public.notify_klipp_payment_status()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  v_booking public.bookings%rowtype;
+begin
+  if tg_op = 'UPDATE' and new.status is not distinct from old.status then return new; end if;
+  select * into v_booking from public.bookings where id = new.booking_id;
+  if not found then return new; end if;
+
+  if new.status = 'failed' then
+    perform public.create_klipp_notification(
+      v_booking.client_id, v_booking.id, 'payment_status', 'No se pudo confirmar el pago',
+      'El pago de tu reserva no se ha completado. Revisa el método de pago antes de continuar.',
+      jsonb_build_object('bookingId', v_booking.id, 'paymentId', new.id, 'paymentStatus', new.status, 'target', 'client'),
+      'payment:' || new.id::text || ':failed:client',
+      'booking_updates'
+    );
+    if v_booking.pro_id is not null then
+      perform public.create_klipp_notification(
+        v_booking.pro_id, v_booking.id, 'payment_status', 'Pago pendiente de confirmación',
+        'Klipp todavía no ha confirmado el pago. No inicies el servicio hasta que la reserva aparezca confirmada.',
+        jsonb_build_object('bookingId', v_booking.id, 'paymentId', new.id, 'paymentStatus', new.status, 'target', 'pro'),
+        'payment:' || new.id::text || ':failed:pro',
+        'booking_updates'
+      );
+    end if;
+  elsif new.status = 'refunded' then
+    perform public.create_klipp_notification(
+      v_booking.client_id, v_booking.id, 'payment_status', 'Reembolso registrado',
+      'Se ha registrado un reembolso asociado a tu reserva. Consulta el detalle del pago.',
+      jsonb_build_object('bookingId', v_booking.id, 'paymentId', new.id, 'paymentStatus', new.status, 'target', 'client'),
+      'payment:' || new.id::text || ':refunded:client',
+      'booking_updates'
+    );
+  elsif new.status = 'released' and v_booking.pro_id is not null then
+    perform public.create_klipp_notification(
+      v_booking.pro_id, v_booking.id, 'payment_status', 'Pago liberado',
+      'El pago de este servicio ha sido liberado. Consulta el detalle de tus ingresos.',
+      jsonb_build_object('bookingId', v_booking.id, 'paymentId', new.id, 'paymentStatus', new.status, 'target', 'pro'),
+      'payment:' || new.id::text || ':released:pro',
+      'booking_updates'
+    );
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.notify_klipp_payment_status() from public, anon, authenticated;
+
+drop trigger if exists payment_status_create_notification on public.payments;
+create trigger payment_status_create_notification
+  after insert or update of status on public.payments
+  for each row execute function public.notify_klipp_payment_status();
+
 -- Track the last ETA baseline so meaningful delays can be notified without spamming.
 create table if not exists public.booking_eta_tracking (
   booking_id uuid primary key references public.bookings(id) on delete cascade,
