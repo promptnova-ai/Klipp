@@ -227,6 +227,15 @@ export function NewBookingScreen() {
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
   const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
   const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
+  const bookingStepDone = [
+    Boolean(selectedServiceId),
+    Boolean(selectedTierId || selectedOfferId),
+    Boolean(coordinate),
+    Boolean(scheduledTime),
+    Boolean(selectedOfferId || selectedProId || (mode === 'auto' && Boolean(scheduledTime))),
+  ];
+  const completedSteps = bookingStepDone.filter(Boolean).length;
+  const progressLabels = ['Servicio', 'Opción', 'Ubicación', 'Horario', 'Profesional'];
 
   useEffect(() => {
     if (!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate) {
@@ -400,6 +409,21 @@ export function NewBookingScreen() {
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
+      <View style={styles.progressCard}>
+        <View style={styles.progressTop}>
+          <View><Text style={styles.progressEyebrow}>TU RESERVA</Text><Text style={styles.progressTitle}>Un servicio a tu medida</Text></View>
+          <Text style={styles.progressCount}>{completedSteps}/5</Text>
+        </View>
+        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: (completedSteps / 5 * 100) + '%' }]} /></View>
+        <View style={styles.progressSteps}>
+          {progressLabels.map((label, index) => (
+            <View key={label} style={styles.progressStep}>
+              <View style={[styles.progressDot, bookingStepDone[index] && styles.progressDotDone]}><Text style={[styles.progressDotText, bookingStepDone[index] && styles.progressDotTextDone]}>{bookingStepDone[index] ? '✓' : index + 1}</Text></View>
+              <Text style={[styles.progressLabel, bookingStepDone[index] && styles.progressLabelDone]}>{label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
       {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
@@ -579,7 +603,17 @@ export function NewBookingScreen() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
+  const step = title.match(/^\d+/)?.[0] ?? '';
+  const heading = title.replace(/^\d+\.\s*/, '');
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeading}>
+        <View style={styles.sectionStep}><Text style={styles.sectionStepText}>{step}</Text></View>
+        <Text style={styles.sectionTitle}>{heading}</Text>
+      </View>
+      {children}
+    </View>
+  );
 }
 
 function Choice({ selected, label, secondary, onPress }: { selected: boolean; label: string; secondary?: string; onPress: () => void }) {
@@ -599,14 +633,14 @@ function ModeOption({ label, selected, onPress }: { label: string; selected: boo
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
+  page: { paddingBottom: 52, gap: 18, backgroundColor: '#F7F8FC' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
   pressed: { opacity: 0.88 },
   backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  section: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700', marginBottom: 2 },
+  section: { marginHorizontal: 20, padding: 19, borderRadius: 21, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E4E9F2', gap: 13, shadowColor: '#182B55', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 7 }, shadowRadius: 15, elevation: 2 },
+  sectionTitle: { color: '#15213B', fontSize: 17, fontWeight: '900', letterSpacing: -0.3 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
   notesInput: { minHeight: 84, paddingHorizontal: 13, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, textAlignVertical: 'top', backgroundColor: KlippColors.white },
@@ -618,7 +652,7 @@ const styles = StyleSheet.create({
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
   dateList: { gap: 8, paddingVertical: 2 },
   dateOption: { width: 62, minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 3, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, backgroundColor: KlippColors.white },
-  dateOptionSelected: { borderColor: KlippColors.navy, backgroundColor: KlippColors.navy },
+  dateOptionSelected: { borderColor: '#315BFF', backgroundColor: '#315BFF' },
   dateWeekday: { color: KlippColors.muted, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   dateDay: { color: KlippColors.navy, fontSize: 19, fontWeight: '700' },
   dateMonth: { color: KlippColors.muted, fontSize: 10, textTransform: 'capitalize' },
@@ -636,7 +670,7 @@ const styles = StyleSheet.create({
   noSlots: { padding: 14, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 4 },
   noSlotsTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
   choice: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
-  choiceSelected: { borderColor: '#B8CBFF', backgroundColor: '#F4F7FF' },
+  choiceSelected: { borderColor: '#AFC2FF', backgroundColor: '#F0F4FF' },
   choicePressed: { opacity: 0.9 },
   choiceCopy: { flex: 1, gap: 3 },
   choiceText: { color: KlippColors.slate, fontSize: 14, fontWeight: '600' },
@@ -649,7 +683,7 @@ const styles = StyleSheet.create({
   emptyInline: { gap: 6 },
   modeOptions: { flexDirection: 'row', gap: 9 },
   modeOption: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
-  proCard: { padding: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
+  proCard: { padding: 16, borderWidth: 1, borderColor: '#E4E9F2', borderRadius: 19, backgroundColor: '#FFFFFF', gap: 12, shadowColor: '#182B55', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 7 }, shadowRadius: 15, elevation: 2 },
   proCardSelected: { borderColor: '#B8CBFF', backgroundColor: '#F8FAFF' },
   proSummary: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#EEF4FF' },
@@ -668,7 +702,7 @@ const styles = StyleSheet.create({
   totalLabel: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
   totalHint: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
   priceLine: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
-  summaryCard: { marginHorizontal: 20, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  summaryCard: { marginHorizontal: 20, padding: 20, borderRadius: 22, borderWidth: 1, borderColor: '#D9E2FB', backgroundColor: '#FFFFFF', gap: 14, shadowColor: '#2348D9', shadowOpacity: 0.07, shadowOffset: { width: 0, height: 8 }, shadowRadius: 17, elevation: 3 },
   summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
   summaryIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECFDF5' },
@@ -678,7 +712,7 @@ const styles = StyleSheet.create({
   summaryDivider: { height: 1, backgroundColor: KlippColors.border },
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   priceLabel: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
-  submit: { minHeight: 54, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 7 }, shadowRadius: 14, elevation: 3 },
+  submit: { minHeight: 58, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: '#315BFF', shadowColor: '#315BFF', shadowOpacity: 0.2, shadowOffset: { width: 0, height: 8 }, shadowRadius: 15, elevation: 4 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.55 },
   buttonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
@@ -687,4 +721,22 @@ const styles = StyleSheet.create({
   successBanner: { padding: 16, marginHorizontal: 20, borderRadius: 16, backgroundColor: '#ECFDF5', gap: 7 },
   successTitle: { color: '#067647', fontSize: 14, lineHeight: 20, fontWeight: '700' },
   successLink: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
+  progressCard: { marginHorizontal: 20, marginTop: 1, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: '#DFE6F8', backgroundColor: '#FFFFFF', gap: 12 },
+  progressTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  progressEyebrow: { color: '#315BFF', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  progressTitle: { color: '#15213B', fontSize: 16, fontWeight: '900', marginTop: 3 },
+  progressCount: { color: '#315BFF', fontSize: 13, fontWeight: '900' },
+  progressTrack: { height: 6, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E9EEFA' },
+  progressFill: { height: 6, borderRadius: 999, backgroundColor: '#315BFF' },
+  progressSteps: { flexDirection: 'row', justifyContent: 'space-between', gap: 3 },
+  progressStep: { flex: 1, alignItems: 'center', gap: 5 },
+  progressDot: { width: 23, height: 23, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF1F7' },
+  progressDotDone: { backgroundColor: '#315BFF' },
+  progressDotText: { color: '#8490A5', fontSize: 9, fontWeight: '900' },
+  progressDotTextDone: { color: '#FFFFFF' },
+  progressLabel: { color: '#8B96A8', fontSize: 8, fontWeight: '700' },
+  progressLabelDone: { color: '#315BFF' },
+  sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
+  sectionStep: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#EEF2FF' },
+  sectionStepText: { color: '#315BFF', fontSize: 12, fontWeight: '900' },
 });
