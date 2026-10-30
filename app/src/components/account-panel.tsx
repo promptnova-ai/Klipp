@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors } from '@/lib/brand';
 
 export function AccountPanel({ roleLabel }: { roleLabel: string }) {
   const { profile, signOut } = useAuth();
