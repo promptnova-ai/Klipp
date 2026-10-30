@@ -1,12 +1,15 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, type ScrollViewInstance, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
+import Animated, { FadeInRight, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
-import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { Button } from '@/components/ui/button';
 import { LocationPicker } from '@/components/location-picker';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
@@ -97,6 +100,9 @@ export function NewBookingScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
+  const scrollRef = useRef<ScrollViewInstance>(null);
+  const [step, setStep] = useState(0);
   const dateOptions = useMemo(() => getDateOptions(), []);
   const slotOptions = useMemo(
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
@@ -397,24 +403,58 @@ export function NewBookingScreen() {
     setSaving(false);
   }
 
+  const canContinue =
+    step === 0 ? !!selectedServiceId && !!(selectedTier || selectedOffer)
+    : step === 1 ? !!coordinate && !locationLoading
+    : step === 2 ? !!scheduledDate && !!scheduledTime
+    : step === 3 ? !!selectedOffer || mode === 'auto' || !!selectedProId
+    : true;
+
+  function goNext() {
+    if (!canContinue) return;
+    void Haptics.selectionAsync();
+    setError(null);
+    setStep((current) => Math.min(current + 1, STEPS.length - 1));
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
+
+  function goBack() {
+    if (step === 0 || success) {
+      router.back();
+      return;
+    }
+    setError(null);
+    setStep((current) => current - 1);
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
-      <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
+    <View style={styles.root}>
+    <ScrollView ref={scrollRef} contentContainerStyle={[styles.page, { paddingTop: insets.top + 8 }]} keyboardShouldPersistTaps="handled">
+      <View style={styles.wizardHeader}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Volver" hitSlop={12} onPress={goBack} style={({ pressed }) => [styles.back, pressed && styles.pressed]}>
+          <Text style={styles.backText}>{step > 0 && !success ? '‹  Atrás' : '✕  Cerrar'}</Text>
+        </Pressable>
+        <Text style={styles.stepCounter}>Paso {step + 1} de {STEPS.length}</Text>
+      </View>
+      <ProgressBar step={step} total={STEPS.length} />
+      <Text style={styles.wizardTitle}>{STEPS[step]}</Text>
       {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
-      <Section title="1. Servicio">
+      <Animated.View key={step} entering={FadeInRight.duration(220)} style={styles.stepBody}>
+      {step === 0 && <>
+      <Section title="Servicio">
         {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
       </Section>
-      {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
+      {visibleTiers.length > 0 && <Section title="Tamaño / modalidad">
         {visibleTiers.map((tier) => (
           <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
-      {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
+      {visibleTiers.length === 0 && <Section title="Servicio y profesional">
         {offers.filter((offer) => offer.service_type_id === selectedServiceId).length === 0
           ? <Text style={styles.body}>Aún no hay profesionales con este servicio disponible.</Text>
           : offers.filter((offer) => offer.service_type_id === selectedServiceId).map((offer) => (
@@ -427,7 +467,9 @@ export function NewBookingScreen() {
             />
           ))}
       </Section>}
-      <Section title="3. Ubicación del servicio">
+      </>}
+      {step === 1 && <>
+      <Section title="Ubicación del servicio">
         {locationLoading ? (
           <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Obteniendo tu ubicación...</Text></View>
         ) : coordinate ? (
@@ -463,7 +505,9 @@ export function NewBookingScreen() {
         )}
         {locationError && <Text accessibilityRole="alert" style={styles.error}>{locationError}</Text>}
       </Section>
-      <Section title="4. Fecha y hora">
+      </>}
+      {step === 2 && <>
+      <Section title="Fecha y hora">
         <Text style={styles.label}>Elige el día</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateList}>
           {dateOptions.map((option) => {
@@ -512,7 +556,9 @@ export function NewBookingScreen() {
           </View>
         )}
       </Section>
-      <Section title="5. Profesional">
+      </>}
+      {step === 3 && <>
+      <Section title="Profesional">
         {!selectedOffer && <View style={styles.modeOptions}>
           <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
           <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
@@ -546,6 +592,8 @@ export function NewBookingScreen() {
         {!selectedOffer && mode === 'auto' && <Text style={styles.body}>Buscaremos un profesional disponible para este servicio y horario en tu zona.</Text>}
       </Section>
 
+      </>}
+      {step === 4 && <>
       {(selectedTier || selectedOffer) && coordinate && scheduledDate && scheduledTime && (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeading}>
@@ -569,11 +617,45 @@ export function NewBookingScreen() {
           <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
         </View>
       )}
+      </>}
+      </Animated.View>
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
-      <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Solicitar servicio</Text>}
-      </Pressable>
-    </ScrollView>
+          </ScrollView>
+    <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+      {step >= 2 && !!selectedPrice && (
+        <View style={styles.footerPrice}>
+          <Text style={styles.footerPriceLabel}>Total</Text>
+          <Text style={styles.footerPriceValue}>{formatDop(selectedPrice)}</Text>
+        </View>
+      )}
+      {!canContinue && !success && <Text style={styles.footerHint}>{HINTS[step]}</Text>}
+      {success ? (
+        <Button label="Ver mis reservas" onPress={() => router.replace('/(client)/bookings')} />
+      ) : step < STEPS.length - 1 ? (
+        <Button label="Continuar" disabled={!canContinue} onPress={goNext} />
+      ) : (
+        <Button label="Solicitar servicio" loading={saving} disabled={!coordinate || locationLoading} onPress={() => void createBooking()} />
+      )}
+    </View>
+    </View>
+  );
+}
+
+const STEPS = ['¿Qué servicio necesitas?', '¿Dónde lo hacemos?', '¿Cuándo te viene bien?', 'Elige tu profesional', 'Revisa y confirma'];
+const HINTS = ['Elige un servicio para continuar.', 'Confirma tu ubicación para continuar.', 'Elige un horario disponible.', 'Elige un profesional o la asignación automática.', ''];
+
+function ProgressBar({ step, total }: { step: number; total: number }) {
+  const progress = useSharedValue((step + 1) / total);
+  useEffect(() => {
+    progress.value = withTiming((step + 1) / total, { duration: 280 });
+  }, [step, total, progress]);
+  const fill = useAnimatedStyle(() => ({ flexGrow: progress.value }));
+  const rest = useAnimatedStyle(() => ({ flexGrow: 1 - progress.value }));
+  return (
+    <View accessibilityRole="progressbar" style={styles.progressTrack}>
+      <Animated.View style={[styles.progressFill, fill]} />
+      <Animated.View style={[styles.progressRest, rest]} />
+    </View>
   );
 }
 
@@ -598,7 +680,20 @@ function ModeOption({ label, selected, onPress }: { label: string; selected: boo
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
+  root: { flex: 1, backgroundColor: KlippColors.canvas },
+  page: { paddingBottom: 24, gap: 20, backgroundColor: KlippColors.canvas },
+  stepBody: { gap: 24 },
+  wizardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stepCounter: { marginRight: 20, color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
+  wizardTitle: { marginHorizontal: 20, color: KlippColors.navy, fontSize: 26, lineHeight: 32, fontWeight: '800' },
+  progressTrack: { flexDirection: 'row', height: 6, marginHorizontal: 20, borderRadius: 3, overflow: 'hidden', backgroundColor: '#E2E8F0' },
+  progressFill: { flexBasis: 0, backgroundColor: KlippColors.blue, borderRadius: 3 },
+  progressRest: { flexBasis: 0 },
+  footer: { paddingTop: 12, paddingHorizontal: 20, gap: 10, backgroundColor: KlippColors.white, borderTopWidth: 1, borderTopColor: KlippColors.border },
+  footerPrice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  footerPriceLabel: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
+  footerPriceValue: { color: KlippColors.navy, fontSize: 18, fontWeight: '800' },
+  footerHint: { color: KlippColors.muted, fontSize: 13, textAlign: 'center' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
   pressed: { opacity: 0.88 },
