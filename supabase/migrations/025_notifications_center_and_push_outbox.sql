@@ -117,6 +117,8 @@ grant select, update on public.notifications to authenticated;
 grant select, insert, update on public.notification_preferences to authenticated;
 grant select, insert, update, delete on public.notification_devices to authenticated;
 revoke all on public.push_delivery_queue from anon, authenticated;
+grant select on public.notifications, public.notification_devices to service_role;
+grant select, update on public.push_delivery_queue to service_role;
 
 create or replace function public.create_klipp_notification(
   p_user_id uuid,
