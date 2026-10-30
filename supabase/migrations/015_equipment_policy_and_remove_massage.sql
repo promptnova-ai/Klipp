@@ -57,14 +57,16 @@ security definer
 set search_path = public
 as $$
 begin
-  if new.pro_id is not null
-     and (tg_op = 'INSERT' or old.pro_id is distinct from new.pro_id)
-     and not exists (
-       select 1 from public.pro_profiles pp
-       where pp.user_id = new.pro_id
-         and pp.equipment_policy_accepted_at is not null
-     ) then
-    raise exception 'professional must confirm the Klipp equipment policy before accepting bookings';
+  if new.pro_id is not null then
+    if tg_op = 'INSERT' or old.pro_id is distinct from new.pro_id then
+      if not exists (
+        select 1 from public.pro_profiles pp
+        where pp.user_id = new.pro_id
+          and pp.equipment_policy_accepted_at is not null
+      ) then
+        raise exception 'professional must confirm the Klipp equipment policy before accepting bookings';
+      end if;
+    end if;
   end if;
 
   return new;
