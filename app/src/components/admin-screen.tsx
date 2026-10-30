@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { useAuth } from '@/components/auth-provider';
@@ -244,13 +244,18 @@ export function AdminScreen() {
       setError('El vencimiento debe estar entre 15 y 1440 minutos.');
       return;
     }
-    await runAction('settings', async () => {
-      const { error: settingsError } = await supabase.rpc('admin_update_platform_settings', {
-        p_commission_pct: commission,
-        p_request_expiry_minutes: expiry,
-      });
-      if (settingsError) throw settingsError;
-    }, 'Configuración operativa guardada.');
+    Alert.alert('Actualizar parámetros críticos', 'La comisión y el vencimiento afectan a las nuevas operaciones de Klipp. ¿Confirmas los cambios?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Confirmar cambios', style: 'destructive', onPress: () => {
+        void runAction('settings', async () => {
+          const { error: settingsError } = await supabase.rpc('admin_update_platform_settings', {
+            p_commission_pct: commission,
+            p_request_expiry_minutes: expiry,
+          });
+          if (settingsError) throw settingsError;
+        }, 'Parámetros críticos guardados.');
+      } },
+    ]);
   }
 
   async function saveService(service: ServiceRow) {
@@ -319,10 +324,15 @@ export function AdminScreen() {
   }
 
   async function revokeStaff(userId: string) {
-    await runAction(`staff-revoke:${userId}`, async () => {
-      const { error } = await supabase.rpc('admin_revoke_staff_access', { p_user_id: userId });
-      if (error) throw error;
-    }, 'Acceso de administrador revocado.');
+    Alert.alert('Revocar acceso', 'Esta persona perderá inmediatamente el acceso de administrador y volverá al rol de cliente. ¿Continuar?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Revocar acceso', style: 'destructive', onPress: () => {
+        void runAction(`staff-revoke:${userId}`, async () => {
+          const { error } = await supabase.rpc('admin_revoke_staff_access', { p_user_id: userId });
+          if (error) throw error;
+        }, 'Acceso de administrador revocado.');
+      } },
+    ]);
   }
 
   if (loading) {
