@@ -351,9 +351,20 @@ language sql
 security definer
 set search_path = public
 as $$
-  with picked as (
+  with exhausted as (
+    update public.push_delivery_queue
+    set status = 'failed',
+        claimed_at = null,
+        last_error = coalesce(last_error, 'Maximum push attempts exhausted after worker interruption')
+    where status = 'processing'
+      and claimed_at < now() - interval '10 minutes'
+      and attempts >= 5
+    returning id
+  ),
+  picked as (
     select q.id
     from public.push_delivery_queue q
+    cross join (select count(*) from exhausted) cleanup
     where (
         (q.status = 'pending' and q.next_attempt_at <= now())
         or (q.status = 'processing' and q.claimed_at < now() - interval '10 minutes')
