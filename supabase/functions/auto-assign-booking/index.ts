@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     if (booking.status !== "requested" || booking.pro_id) {
       return jsonResponse({ error: "Booking is no longer available for assignment" }, 409);
     }
-    if (new Date(booking.scheduled_start).getTime() > Date.now() + 5 * 60 * 1000) {
+    if (new Date(booking.scheduled_start).getTime() > Date.now() + 20 * 60 * 1000) {
       return jsonResponse({ success: true, status: "on_hold" }, 202);
     }
 
