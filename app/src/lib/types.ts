@@ -60,6 +60,7 @@ export interface ProProfile {
   service_area_latitude?: number | null;
   service_area_longitude?: number | null;
   service_area_radius_m?: number | null;
+  equipment_policy_accepted_at?: string | null;
   created_at: string;
 }
 
