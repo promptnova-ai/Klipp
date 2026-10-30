@@ -37,6 +37,7 @@ create policy pro_portfolio_owner_insert
   to authenticated
   with check (
     pro_id = auth.uid()
+    and (storage.foldername(object_path))[1] = auth.uid()::text
     and exists (
       select 1 from public.pro_profiles pp
       where pp.user_id = auth.uid()
