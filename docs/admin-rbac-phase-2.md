@@ -38,9 +38,11 @@ The owner-only Control Center and permission-aware admin navigation are implemen
 
 ## Validation status
 
-Static review only. The following checks have **not** been run against a local install or live Supabase project:
+The GitHub Actions run for the current branch completed successfully for dependency installation, lint of the changed admin screen, and TypeScript typecheck. The project-wide Expo lint command still reports 15 errors and 12 warnings in files outside the RBAC change; that baseline diagnostic is non-blocking in this workflow.
 
-1. App lint and TypeScript typecheck (from `app/`: `npm ci`, then `npm run lint` and `npx tsc --noEmit`).
+The following checks have **not** been run against a live Supabase project or a staging database:
+
+1. SQL application against a disposable database matching the current Supabase schema.
 2. SQL application against a disposable database matching the current Supabase schema.
 3. Owner bootstrap, including the exact `admin@admin.com` profile/role precondition.
 4. Support/operations/finance/custom template grants and explicit allow/deny/reset behavior.
@@ -49,7 +51,7 @@ Static review only. The following checks have **not** been run against a local i
 7. Promotion, demotion, revocation, and audit-event behavior.
 8. Regression of existing owner admin flows and mobile/web rendering.
 
-The GitHub PR currently has no associated pull-request workflow runs. The available environment could not clone the repository to install dependencies, so lint/typecheck results remain unknown. Before executing either migration, run the app checks and SQL/security tests in a controlled staging environment, then review the results.
+The app checks ran in GitHub Actions: `npm ci` passed, `npx eslint src/components/admin-screen.tsx` passed, and `npx tsc --noEmit` passed. The full-app lint diagnostic remains open for the unrelated files noted above. Before executing either migration, run SQL/security tests in a controlled staging environment, then review the results.
 
 ## Deployment sequence after explicit approval
 
