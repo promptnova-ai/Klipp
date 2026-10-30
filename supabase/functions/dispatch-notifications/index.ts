@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
   if (!isServiceRole && !isScheduledCall) return jsonResponse({ error: "Not authorized" }, 401);
 
   const admin = createClient(supabaseUrl, serviceRoleKey);
-  const summary = { remindersProcessed: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
+  const summary = { remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
 
   try {
     const now = Date.now();
@@ -81,6 +81,92 @@ Deno.serve(async (req) => {
           });
           if (createReminderError) throw createReminderError;
           summary.remindersProcessed += 1;
+        }
+      }
+    }
+
+    const googleMapsKey = Deno.env.get("GOOGLE_MAPS_SERVER_API_KEY");
+    if (googleMapsKey) {
+      const { data: enRouteBookings, error: enRouteError } = await admin
+        .from("bookings")
+        .select("id, client_id, client_lat, client_lng")
+        .eq("status", "en_route")
+        .not("client_lat", "is", null)
+        .not("client_lng", "is", null)
+        .limit(100);
+      if (enRouteError) throw enRouteError;
+
+      for (const booking of enRouteBookings ?? []) {
+        const { data: etaState } = await admin
+          .from("booking_eta_tracking")
+          .select("updated_at")
+          .eq("booking_id", booking.id)
+          .maybeSingle();
+        if (etaState?.updated_at && Date.now() - new Date(etaState.updated_at).getTime() < 3 * 60_000) continue;
+
+        const { data: location, error: locationError } = await admin
+          .from("pro_locations")
+          .select("latitude, longitude, updated_at")
+          .eq("booking_id", booking.id)
+          .maybeSingle();
+        if (locationError || !location || typeof location.latitude !== "number" || typeof location.longitude !== "number") continue;
+        const locationAge = Date.now() - new Date(location.updated_at).getTime();
+        if (!Number.isFinite(locationAge) || locationAge > 120_000) continue;
+
+        try {
+          const routeResponse = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Goog-Api-Key": googleMapsKey,
+              "X-Goog-FieldMask": "routes.duration",
+            },
+            body: JSON.stringify({
+              origin: { location: { latLng: { latitude: location.latitude, longitude: location.longitude } } },
+              destination: { location: { latLng: { latitude: booking.client_lat, longitude: booking.client_lng } } },
+              travelMode: "DRIVE",
+              routingPreference: "TRAFFIC_AWARE",
+              computeAlternativeRoutes: false,
+              languageCode: "es-DO",
+              units: "METRIC",
+            }),
+          });
+          if (!routeResponse.ok) {
+            console.error("Background ETA route failed", booking.id, routeResponse.status);
+            continue;
+          }
+          const routePayload = await routeResponse.json();
+          const duration = routePayload?.routes?.[0]?.duration;
+          if (typeof duration !== "string") continue;
+          const durationSeconds = Number.parseFloat(duration.replace(/s$/, ""));
+          if (!Number.isFinite(durationSeconds) || durationSeconds < 0) continue;
+
+          const etaMinutes = Math.max(1, Math.ceil(durationSeconds / 60));
+          summary.etaRoutesCalculated += 1;
+          const { data: shouldNotifyDelay, error: etaTrackingError } = await admin.rpc("should_notify_booking_eta_delay", {
+            p_booking_id: booking.id,
+            p_eta_minutes: etaMinutes,
+          });
+          if (etaTrackingError) {
+            console.error("Background ETA threshold check failed", booking.id, etaTrackingError);
+            continue;
+          }
+          if (shouldNotifyDelay === true) {
+            const { error: notificationError } = await admin.rpc("create_klipp_notification", {
+              p_user_id: booking.client_id,
+              p_booking_id: booking.id,
+              p_type: "eta_delay",
+              p_title: "Tu llegada estimada ha cambiado",
+              p_body: `El tiempo estimado de llegada ahora es de unos ${etaMinutes} minutos. Puede haber retrasos en el trayecto.`,
+              p_data: { bookingId: booking.id, target: "client", etaMinutes },
+              p_dedupe_key: `booking:${booking.id}:eta-delay:${etaMinutes}`,
+              p_event_type: "booking_updates",
+            });
+            if (notificationError) console.error("Background ETA notification failed", booking.id, notificationError);
+            else summary.etaDelayNotifications += 1;
+          }
+        } catch (error) {
+          console.error("Background ETA calculation failed", booking.id, error);
         }
       }
     }
