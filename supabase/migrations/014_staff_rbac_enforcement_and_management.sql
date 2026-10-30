@@ -184,9 +184,14 @@ BEGIN
   IF NOT public.has_admin_permission('settings.operational') THEN
     RAISE EXCEPTION 'permission denied: settings.operational';
   END IF;
+  -- Only the owner can read the critical settings written by the owner-only
+  -- update RPC. Operational staff receive explicitly allow-listed noncritical
+  -- settings; the current schema has no such keys, so their result is empty.
   SELECT COALESCE(jsonb_object_agg(key, value), '{}'::jsonb)
   INTO result
-  FROM public.platform_settings;
+  FROM public.platform_settings
+  WHERE public.is_super_admin()
+     OR key IN ('operational_notice', 'support_contact_email');
   RETURN result;
 END;
 $$;
