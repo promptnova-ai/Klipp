@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      const eventType = notification.type === "chat_message" ? "chat_messages" : "booking_updates";
+      const eventType = notification.type === "chat_message" ? "chat_messages" : notification.type === "booking_reminder" ? "reminders" : "booking_updates";
       const { data: preference } = await admin
         .from("notification_preferences")
         .select("push_enabled")
