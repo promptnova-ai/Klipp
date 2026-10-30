@@ -38,7 +38,7 @@ export async function registerPushDeviceAsync(userId: string) {
   const { error } = await supabase.from('notification_devices').upsert({
     user_id: userId,
     expo_push_token: token,
-    platform: Platform.OS,
+    platform: Platform.OS === 'ios' ? 'ios' : 'android',
     device_name: Device.deviceName ?? null,
     last_registered_at: new Date().toISOString(),
   }, { onConflict: 'expo_push_token' });
