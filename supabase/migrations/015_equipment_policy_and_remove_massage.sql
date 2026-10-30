@@ -124,3 +124,25 @@ $$;
 
 revoke execute on function public.find_auto_candidates(uuid, int) from public, anon, authenticated;
 grant execute on function public.find_auto_candidates(uuid, int) to service_role;
+
+create or replace function public.enforce_active_service_catalog()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.active and not exists (
+    select 1 from public.service_types st
+    where st.id = new.service_type_id and st.active
+  ) then
+    raise exception 'cannot activate a professional offer for an inactive catalog service';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_enforce_active_service_catalog on public.pro_services;
+create trigger trg_enforce_active_service_catalog
+before insert or update of active, service_type_id on public.pro_services
+for each row execute function public.enforce_active_service_catalog();
