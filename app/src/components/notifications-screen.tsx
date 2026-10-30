@@ -32,13 +32,6 @@ function relativeDate(value: string) {
   return date.toLocaleDateString('es-DO', { day: 'numeric', month: 'short' });
 }
 
-function notificationIcon(type: string) {
-  if (type === 'chat_message') return 'message-circle';
-  if (type === 'booking_request') return 'clipboard-list';
-  if (type === 'booking_status') return 'calendar-check';
-  return 'bell';
-}
-
 export function NotificationsScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
@@ -72,6 +65,28 @@ export function NotificationsScreen() {
     setLoading(false);
   }, [session?.user.id]);
 
+  const loadPreferences = useCallback(async () => {
+    if (!session?.user.id) return;
+    const { data, error: preferenceError } = await supabase
+      .from('notification_preferences')
+      .select('event_type, in_app_enabled, push_enabled')
+      .eq('user_id', session.user.id);
+    if (preferenceError) {
+      setError(preferenceError.message);
+      return;
+    }
+    const next: PreferenceMap = {
+      booking_updates: { in_app_enabled: true, push_enabled: true },
+      chat_messages: { in_app_enabled: true, push_enabled: true },
+    };
+    for (const row of data ?? []) {
+      if (row.event_type === 'booking_updates' || row.event_type === 'chat_messages') {
+        next[row.event_type] = { in_app_enabled: row.in_app_enabled, push_enabled: row.push_enabled };
+      }
+    }
+    setPreferences(next);
+  }, [session?.user.id]);
+
   useEffect(() => {
     void loadNotifications();
   }, [loadNotifications]);
@@ -96,27 +111,7 @@ export function NotificationsScreen() {
 
   const unreadCount = items.filter((item) => !item.read_at).length;
 
-  const loadPreferences = useCallback(async () => {
-    if (!session?.user.id) return;
-    const { data, error: preferenceError } = await supabase
-      .from('notification_preferences')
-      .select('event_type, in_app_enabled, push_enabled')
-      .eq('user_id', session.user.id);
-    if (preferenceError) {
-      setError(preferenceError.message);
-      return;
-    }
-    const next: PreferenceMap = {
-      booking_updates: { in_app_enabled: true, push_enabled: true },
-      chat_messages: { in_app_enabled: true, push_enabled: true },
-    };
-    for (const row of data ?? []) {
-      if (row.event_type === 'booking_updates' || row.event_type === 'chat_messages') {
-        next[row.event_type] = { in_app_enabled: row.in_app_enabled, push_enabled: row.push_enabled };
-      }
-    }
-    setPreferences(next);
-  }, [session?.user.id]);
+
 
   async function updatePreference(eventType: keyof PreferenceMap, channel: keyof EventPreference, enabled: boolean) {
     if (!session?.user.id) return;
