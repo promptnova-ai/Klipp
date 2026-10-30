@@ -49,6 +49,7 @@ Deno.serve(async (req) => {
       if (notificationError || !notification) {
         await admin.from("push_delivery_queue").update({
           status: item.attempts >= 5 ? "failed" : "pending",
+          claimed_at: null,
           next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
           last_error: notificationError?.message ?? "Notification not found",
         }).eq("id", item.queue_id);
@@ -63,6 +64,7 @@ Deno.serve(async (req) => {
       if (devicesError) {
         await admin.from("push_delivery_queue").update({
           status: item.attempts >= 5 ? "failed" : "pending",
+          claimed_at: null,
           next_attempt_at: new Date(Date.now() + Math.min(60 * 60_000, 30_000 * 2 ** item.attempts)).toISOString(),
           last_error: devicesError.message,
         }).eq("id", item.queue_id);
@@ -122,7 +124,8 @@ Deno.serve(async (req) => {
         const allRejected = ticketMap.length === 0 && permanentErrors.length > 0;
         const shouldRetry = allRejected && item.attempts < 5;
         await admin.from("push_delivery_queue").update({
-          status: shouldRetry ? "pending" : "sent",
+          status: shouldRetry ? "pending" : allRejected ? "failed" : "sent",
+          claimed_at: null,
           next_attempt_at: shouldRetry ? new Date(Date.now() + Math.min(60 * 60_000, 30_000 * 2 ** item.attempts)).toISOString() : new Date().toISOString(),
           ticket_map: ticketMap,
           receipts_checked_at: ticketMap.length === 0 ? new Date().toISOString() : null,
@@ -138,6 +141,7 @@ Deno.serve(async (req) => {
         const shouldRetry = item.attempts < 5;
         await admin.from("push_delivery_queue").update({
           status: shouldRetry ? "pending" : "failed",
+          claimed_at: null,
           next_attempt_at: new Date(Date.now() + Math.min(60 * 60_000, 30_000 * 2 ** item.attempts)).toISOString(),
           last_error: message.slice(0, 1500),
         }).eq("id", item.queue_id);
