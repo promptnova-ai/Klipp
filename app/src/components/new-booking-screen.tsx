@@ -14,6 +14,8 @@ import { formatDop } from '@/lib/format';
 import type { ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
 
 type BookingCoordinate = { latitude: number; longitude: number };
+type PublicProService = { service_type_id: number; service_name: string; base_price_dop: number; est_minutes: number };
+type PublicPortfolioPhoto = { id: string; object_path: string; caption: string | null };
 type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type ServiceOffer = {
   id: string;
@@ -95,6 +97,9 @@ export function NewBookingScreen() {
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
   const [expandedProId, setExpandedProId] = useState<string | null>(null);
   const [proReviews, setProReviews] = useState<Review[]>([]);
+  const [proServices, setProServices] = useState<PublicProService[]>([]);
+  const [proPortfolio, setProPortfolio] = useState<PublicPortfolioPhoto[]>([]);
+  const [loadingProDetails, setLoadingProDetails] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingPros, setLoadingPros] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -342,16 +347,55 @@ export function NewBookingScreen() {
   }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, mode, timing, getScheduledStart]);
 
   async function showProProfile(pro: ProCard) {
-    setExpandedProId((current) => current === pro.pro_id ? null : pro.pro_id);
-    setSelectedProId(pro.pro_id);
-    const { data, error: reviewError } = await supabase
-      .from('reviews')
-      .select('id, booking_id, client_id, pro_id, rating, comment, created_at')
-      .eq('pro_id', pro.pro_id)
-      .order('created_at', { ascending: false })
-      .limit(3);
-    if (reviewError) setError(reviewError.message);
-    else setProReviews((data ?? []) as Review[]);
+    if (expandedProId === pro.pro_id) {
+      setExpandedProId(null);
+      return;
+    }
+    setExpandedProId(pro.pro_id);
+    setProReviews([]);
+    setProServices([]);
+    setProPortfolio([]);
+    setLoadingProDetails(true);
+    const [reviewResult, serviceResult, portfolioResult] = await Promise.all([
+      supabase.from('reviews')
+        .select('id, booking_id, client_id, pro_id, rating, comment, created_at')
+        .eq('pro_id', pro.pro_id)
+        .order('created_at', { ascending: false })
+        .limit(5),
+      supabase.from('pro_services')
+        .select('service_type_id, base_price_dop, est_minutes')
+        .eq('pro_id', pro.pro_id)
+        .eq('active', true)
+        .order('base_price_dop'),
+      supabase.from('pro_portfolio')
+        .select('id, object_path, caption')
+        .eq('pro_id', pro.pro_id)
+        .order('sort_order')
+        .order('created_at', { ascending: false })
+        .limit(6),
+    ]);
+    if (reviewResult.error || serviceResult.error || portfolioResult.error) {
+      setError(reviewResult.error?.message ?? serviceResult.error?.message ?? portfolioResult.error?.message ?? 'No pudimos cargar el perfil profesional.');
+    } else {
+      const serviceRows = serviceResult.data ?? [];
+      const serviceIds = serviceRows.map((item) => item.service_type_id);
+      const { data: serviceTypes, error: serviceTypesError } = serviceIds.length
+        ? await supabase.from('service_types').select('id, name').in('id', serviceIds)
+        : { data: [], error: null };
+      if (serviceTypesError) setError(serviceTypesError.message);
+      else {
+        const names = new Map((serviceTypes ?? []).map((item) => [item.id, item.name]));
+        setProServices(serviceRows.map((item) => ({
+          service_type_id: item.service_type_id,
+          service_name: names.get(item.service_type_id) ?? 'Servicio Klipp',
+          base_price_dop: item.base_price_dop,
+          est_minutes: item.est_minutes,
+        })));
+      }
+      setProReviews((reviewResult.data ?? []) as Review[]);
+      setProPortfolio((portfolioResult.data ?? []) as PublicPortfolioPhoto[]);
+    }
+    setLoadingProDetails(false);
   }
 
   async function createBooking() {
@@ -567,10 +611,32 @@ export function NewBookingScreen() {
             </Pressable>
             {expandedProId === pro.pro_id && (
               <View style={styles.profileDetails}>
-                <Text style={styles.body}>{pro.bio || 'Este profesional aún no ha añadido una biografía.'}</Text>
-                <Text style={styles.reviewHeading}>Reseñas recientes</Text>
-                {proReviews.length === 0 ? <Text style={styles.body}>Todavía no hay reseñas.</Text> : proReviews.map((review) => <Text key={review.id} style={styles.reviewText}>★ {review.rating} {review.comment || ''}</Text>)}
-                <Pressable accessibilityRole="button" onPress={() => setSelectedProId(pro.pro_id)} style={({ pressed }) => [styles.selectPro, pressed && styles.choicePressed]}><Text style={styles.selectProText}>{selectedProId === pro.pro_id ? 'Profesional seleccionado' : 'Elegir este profesional'}</Text></Pressable>
+                {loadingProDetails ? <ActivityIndicator color="#16766c" /> : <>
+                  <Text style={styles.body}>{pro.bio || 'Este profesional aún no ha añadido una biografía.'}</Text>
+                  <View style={styles.proStats}>
+                    <View style={styles.proStat}><Text style={styles.proStatValue}>{pro.jobs_completed}</Text><Text style={styles.proStatLabel}>Trabajos</Text></View>
+                    <View style={styles.proStat}><Text style={styles.proStatValue}>{pro.years_experience ?? 0}</Text><Text style={styles.proStatLabel}>Años exp.</Text></View>
+                    <View style={styles.proStat}><Text style={styles.proStatValue}>{Number(pro.rating_avg).toFixed(1)} ★</Text><Text style={styles.proStatLabel}>{pro.rating_count} opiniones</Text></View>
+                  </View>
+                  <Text style={styles.reviewHeading}>Servicios y precios</Text>
+                  {proServices.length === 0 ? <Text style={styles.body}>No hay servicios publicados.</Text> : proServices.map((service) => (
+                    <View key={service.service_type_id} style={styles.publicServiceRow}>
+                      <View style={styles.publicServiceCopy}><Text style={styles.publicServiceName}>{service.service_name}</Text><Text style={styles.body}>{service.est_minutes} min aprox.</Text></View>
+                      <Text style={styles.publicServicePrice}>{formatDop(service.base_price_dop)}</Text>
+                    </View>
+                  ))}
+                  {proPortfolio.length > 0 && <>
+                    <Text style={styles.reviewHeading}>Fotos de sus trabajos</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioList}>
+                      {proPortfolio.map((photo) => (
+                        <Image key={photo.id} source={{ uri: supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl }} contentFit="cover" style={styles.publicPortfolioImage} />
+                      ))}
+                    </ScrollView>
+                  </>}
+                  <Text style={styles.reviewHeading}>Reseñas recientes</Text>
+                  {proReviews.length === 0 ? <Text style={styles.body}>Todavía no hay reseñas.</Text> : proReviews.map((review) => <Text key={review.id} style={styles.reviewText}>★ {review.rating} {review.comment || ''}</Text>)}
+                  <Pressable accessibilityRole="button" onPress={() => setSelectedProId(pro.pro_id)} style={({ pressed }) => [styles.selectPro, pressed && styles.choicePressed]}><Text style={styles.selectProText}>{selectedProId === pro.pro_id ? 'Profesional seleccionado' : 'Elegir este profesional'}</Text></Pressable>
+                </>}
               </View>
             )}
           </View>
@@ -695,6 +761,16 @@ const styles = StyleSheet.create({
   proName: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   rating: { color: '#946200', fontSize: 13, fontWeight: '700' },
   profileLink: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  proStats: { flexDirection: 'row', justifyContent: 'space-between', gap: 8, marginVertical: 8 },
+  proStat: { flex: 1, padding: 9, borderRadius: 10, backgroundColor: '#F1F5F9', alignItems: 'center', gap: 3 },
+  proStatValue: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  proStatLabel: { color: KlippColors.muted, fontSize: 11 },
+  publicServiceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9, borderBottomWidth: 1, borderBottomColor: KlippColors.border },
+  publicServiceCopy: { flex: 1, gap: 2 },
+  publicServiceName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  publicServicePrice: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '800' },
+  portfolioList: { gap: 9, paddingVertical: 4 },
+  publicPortfolioImage: { width: 150, height: 112, borderRadius: 12, backgroundColor: KlippColors.canvas },
   profileDetails: { paddingTop: 12, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 9 },
   reviewHeading: { color: KlippColors.navy, fontSize: 13, fontWeight: '700', marginTop: 4 },
   reviewText: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
