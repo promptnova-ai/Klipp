@@ -579,7 +579,7 @@ export function NewBookingScreen() {
         {!selectedOffer && mode === 'auto' && timing === 'scheduled' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
-      {(selectedTier || selectedOffer) && coordinate && scheduledDate && scheduledTime && (
+      {(selectedTier || selectedOffer) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeading}>
             <View>
