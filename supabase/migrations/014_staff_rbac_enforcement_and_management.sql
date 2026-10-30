@@ -635,7 +635,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth
-AS $
+AS $audit$
 BEGIN
   IF NOT public.is_super_admin() THEN
     RAISE EXCEPTION 'only the platform owner can read the administrative audit log';
@@ -658,7 +658,7 @@ BEGIN
   ORDER BY log.created_at DESC
   LIMIT p_limit;
 END;
-$;
+$audit$;
 
 -- Keep direct table access closed; all staff administration uses owner-checked RPCs.
 REVOKE ALL ON TABLE
