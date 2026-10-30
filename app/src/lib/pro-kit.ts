@@ -1,4 +1,4 @@
-export type ProKitItem = { id: string; label: string };
+export type ProKitItem = { id: string; label: string; required?: boolean };
 export type ProKitCustomItem = { id: string; label: string; ready: boolean };
 export type ProKitEntry = { readyIds: string[]; customItems: ProKitCustomItem[] };
 export type ProKitMap = Record<string, ProKitEntry>;
@@ -32,7 +32,7 @@ const kits: Record<string, ProKitItem[]> = {
     { id: 'gloves', label: 'Guantes y protección personal' },
     { id: 'towels', label: 'Toallas y textiles profesionales' },
     { id: 'sanitation', label: 'Desinfectante y material de higiene' },
-    { id: 'lighting', label: 'Luz o lámpara portátil, cuando sea necesaria' },
+    { id: 'lighting', label: 'Luz o lámpara portátil, cuando sea necesaria', required: false },
   ],
   limpieza: [
     { id: 'cleaning-products', label: 'Productos de limpieza propios' },
@@ -43,7 +43,7 @@ const kits: Record<string, ProKitItem[]> = {
     { id: 'brushes', label: 'Cepillos, estropajos y bayetas' },
     { id: 'gloves', label: 'Guantes y protección personal' },
     { id: 'bags', label: 'Bolsas y consumibles propios' },
-    { id: 'vacuum', label: 'Aspiradora propia, si el servicio la requiere' },
+    { id: 'vacuum', label: 'Aspiradora propia, si el servicio la requiere', required: false },
   ],
   carwash: [
     { id: 'wash-equipment', label: 'Equipo portátil de lavado' },
@@ -69,7 +69,7 @@ const kits: Record<string, ProKitItem[]> = {
     { id: 'toolbox', label: 'Caja de herramientas propia' },
     { id: 'hand-tools', label: 'Destornilladores, llaves y alicates' },
     { id: 'power-tools', label: 'Herramientas eléctricas necesarias' },
-    { id: 'tester', label: 'Multímetro o equipo de medición, según el trabajo' },
+    { id: 'tester', label: 'Multímetro o equipo de medición, según el trabajo', required: false },
     { id: 'consumables', label: 'Tornillería y consumibles habituales' },
     { id: 'ppe', label: 'Equipo de protección personal' },
     { id: 'clean-up', label: 'Útiles propios para dejar el área recogida' },
@@ -120,8 +120,8 @@ export function getKitReadiness(code: string, name: string, entry?: ProKitEntry)
   const configured = entry ?? { readyIds: [], customItems: [] };
   const ready = new Set(configured.readyIds);
   const items = getServiceKitItems(code, name).map((item) => ({ ...item, available: ready.has(item.id) }));
-  const customItems = configured.customItems.map((item) => ({ ...item, available: item.ready }));
-  const all = [...items, ...customItems];
+  const customItems = configured.customItems.map((item) => ({ ...item, available: item.ready, required: true }));
+  const all = [...items, ...customItems].filter((item) => item.required !== false);
   const missing = all.filter((item) => !item.available);
   return {
     items,
