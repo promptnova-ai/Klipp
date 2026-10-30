@@ -2,7 +2,7 @@
 
 ## Scope
 
-Phase 2 moves the permission model from foundation to enforcement for the administrative operations already present in the app.
+Phase 2 enforces the permission model for the administrative operations already present in the app.
 
 ### Backend enforcement
 
@@ -30,33 +30,52 @@ The owner-only Control Center and permission-aware admin navigation are implemen
 
 ## Important boundaries
 
-- Both migrations are committed for review only. Neither has been executed in Supabase.
+- Migrations 013 and 014 have now been applied to the only connected Supabase project. That project was not a disposable staging environment.
 - No PR has been merged and `main` has not been changed.
-- Do not assign employees restricted templates in production until migrations 013/014 and this app version have been deployed and tested together.
+- The app code remains on `security/013-super-admin-rbac`; this work has not been deployed as a web/native app release.
+- Do not assign employees restricted templates for day-to-day use until the matching app build has been deployed and browser/native regression tests have passed.
 - The `professionals.manage`, booking, support, finance, and `settings.operational` capabilities are represented in the permission catalog, but not all have corresponding administrative UI/workflows in this phase. Do not interpret a seeded permission as a completed operational module.
 - Critical settings are protected by `is_super_admin()` in the server-side RPC, not merely by a UI condition or an employee permission override.
 
-## Validation status
+## Live database validation
 
-The GitHub Actions run for the current branch completed successfully for dependency installation, lint of the changed admin screen, and TypeScript typecheck. The project-wide Expo lint command still reports 15 errors and 12 warnings in files outside the RBAC change; that baseline diagnostic is non-blocking in this workflow.
+The two migrations were first executed together inside a transaction and rolled back; the dry run completed without SQL errors. They were then applied sequentially using Supabase migration tracking:
 
-The following checks have **not** been run against a live Supabase project or a staging database:
+- `20261030113751` — `super_admin_rbac_foundation`
+- `20261030113758` — `staff_rbac_enforcement_and_management`
 
-1. SQL application against a disposable database matching the current Supabase schema.
-2. SQL application against a disposable database matching the current Supabase schema.
-3. Owner bootstrap, including the exact `admin@admin.com` profile/role precondition.
-4. Support/operations/finance/custom template grants and explicit allow/deny/reset behavior.
-5. Non-owner denial for staff changes and critical settings.
-6. Account-list data minimization and private Storage access for owner, verification staff, document owner, and unrelated users.
-7. Promotion, demotion, revocation, and audit-event behavior.
-8. Regression of existing owner admin flows and mobile/web rendering.
+Read-only post-migration checks confirmed:
 
-The app checks ran in GitHub Actions: `npm ci` passed, `npx eslint src/components/admin-screen.tsx` passed, and `npx tsc --noEmit` passed. The full-app lint diagnostic remains open for the unrelated files noted above. Before executing either migration, run SQL/security tests in a controlled staging environment, then review the results.
+- Exactly one owner singleton exists and points to the expected `admin@admin.com` profile.
+- Six RBAC tables exist with RLS enabled.
+- Four role templates and fourteen permission catalog entries exist.
+- All eight owner-only staff RPCs are present.
+- The private verification Storage policy and catalog permission policy are present.
 
-## Deployment sequence after explicit approval
+Authenticated SQL-session tests (all wrapped in transactions and rolled back) confirmed:
 
-1. Confirm the live schema and the owner bootstrap precondition.
-2. Apply migration 013 in staging and verify the owner identity and permission resolver.
-3. Apply migration 014 in staging and test every permission boundary above.
-4. Deploy the matching app build and test owner and restricted employee accounts on each supported platform.
-5. Only after explicit validation, plan production migration execution. No migration is run automatically by this branch.
+- Owner: `is_super_admin() = true`; permission resolver grants owner access; four templates are visible; the `custom` template is empty; owner staff list and audit-log RPCs return expected records.
+- Synthetic Support employee: `is_super_admin() = false`; `accounts.read = true`; `verification.review = false`; `settings.operational = false`; account listing returns 12 rows and exposes zero non-null verification metadata fields.
+- Client: `is_super_admin() = false` and `accounts.read = false`.
+
+These tests used simulated JWT subject claims inside rolled-back SQL transactions. They do not replace tests from real owner/employee browser sessions or real Storage access tests.
+
+## Security advisor findings
+
+The post-migration Supabase security advisor still reports:
+
+- Existing `public.pro_cards` view flagged as SECURITY DEFINER.
+- Six pre-existing SECURITY DEFINER functions executable by `anon`.
+- SECURITY DEFINER RPCs executable by `authenticated`, including the new admin RPCs. These are intentionally callable by signed-in users and perform authorization checks internally; still review the function bodies and grants.
+- RLS-enabled tables with no policies, including the new RBAC tables. Direct table privileges are revoked intentionally and access is mediated through checked RPCs; verify this invariant before any future grant changes.
+- Existing mutable search_path warning on `create_booking()`, plus performance linter findings unrelated to these migrations.
+
+No unrelated advisor finding was automatically changed as part of this RBAC deployment.
+
+## Remaining validation and release work
+
+- Test the owner and a real restricted employee in authenticated browser sessions.
+- Test real private Storage document access for document owner, verification staff, and unrelated users using synthetic documents.
+- Exercise promotion, demotion, permission overrides, revocation, and audit events through the UI.
+- Deploy the matching app build and test web and native layouts and existing client/pro registration, bookings, verification, and catalog flows.
+- GitHub Actions previously passed `npm ci`, ESLint for the changed admin screen, and `npx tsc --noEmit`. Project-wide Expo lint still reports 15 errors and 12 warnings in unrelated files.
