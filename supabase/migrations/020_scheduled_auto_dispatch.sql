@@ -113,6 +113,20 @@ $$;
 revoke all on function public.process_scheduled_booking_dispatch() from public, anon, authenticated;
 grant execute on function public.process_scheduled_booking_dispatch() to service_role;
 
+-- Try to enable Supabase's PostgreSQL scheduler. If the project restricts this,
+-- the notice below explains the one-time Dashboard action required.
+do $
+begin
+  if to_regnamespace('cron') is null then
+    begin
+      execute 'create extension if not exists pg_cron with schema pg_catalog';
+    exception when others then
+      raise notice 'pg_cron could not be enabled automatically: %', sqlerrm;
+    end;
+  end if;
+end;
+$;
+
 -- When Supabase Cron is enabled, run this worker every minute.
 do $$
 begin
