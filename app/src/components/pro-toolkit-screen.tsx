@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
@@ -57,9 +57,9 @@ export function ProToolkitScreen() {
     setKits(parseProKit(session?.user.user_metadata?.klipp_work_kit));
   }, [session?.user.id]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     void load();
-  }, [load]);
+  }, [load]));
 
   const selectedService = services.find((service) => service.id === selectedServiceId) ?? null;
   const selectedKey = selectedServiceId ? String(selectedServiceId) : '';
@@ -195,7 +195,7 @@ export function ProToolkitScreen() {
                     <Pressable key={item.id} accessibilityRole="checkbox" accessibilityState={{ checked }} onPress={() => toggleItem(item.id)} style={styles.kitRow}>
                       <View style={[styles.checkbox, checked && styles.checkboxChecked]}>{checked && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#FFFFFF" size={13} />}</View>
                       <Text style={[styles.kitItemText, checked && styles.kitItemTextChecked]}>{item.label}</Text>
-                      <Text style={[styles.itemStatus, checked && styles.itemStatusChecked]}>{checked ? 'LO TENGO' : 'PENDIENTE'}</Text>
+                      <Text style={[item.required === false ? styles.itemOptional : styles.itemStatus, checked && styles.itemStatusChecked]}>{item.required === false ? 'OPCIONAL' : checked ? 'LO TENGO' : 'PENDIENTE'}</Text>
                     </Pressable>
                   );
                 })}
@@ -275,6 +275,7 @@ const styles = StyleSheet.create({
   kitItemTextChecked: { color: '#087A63' },
   itemStatus: { color: '#A38A58', fontSize: 7, fontWeight: '900', letterSpacing: 0.4 },
   itemStatusChecked: { color: '#0F987A' },
+  itemOptional: { color: '#9AA6A0', fontSize: 7, fontWeight: '800', letterSpacing: 0.4 },
   customDivider: { paddingTop: 7, borderTopWidth: 1, borderTopColor: '#E8F0EB' },
   customHeading: { color: '#173B34', fontSize: 11, fontWeight: '900' },
   customRow: { flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#EEF3F0' },
