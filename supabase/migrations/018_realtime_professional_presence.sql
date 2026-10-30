@@ -66,7 +66,7 @@ begin
       set is_online = true,
           latitude = excluded.latitude,
           longitude = excluded.longitude,
-          online_since = case when public.pro_presence.is_online then public.pro_presence.online_since else v_now end,
+          online_since = case when public.pro_presence.is_online and public.pro_presence.last_seen_at >= v_now - interval '90 seconds' then public.pro_presence.online_since else v_now end,
           last_seen_at = v_now,
           updated_at = v_now
     returning last_seen_at into v_last_seen;
