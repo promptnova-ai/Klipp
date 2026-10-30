@@ -60,6 +60,12 @@ create policy pro_portfolio_storage_owner_insert
   with check (
     bucket_id = 'pro-portfolio'
     and (storage.foldername(name))[1] = auth.uid()::text
+    and exists (
+      select 1 from public.pro_profiles pp
+      where pp.user_id = auth.uid()
+        and pp.active
+        and pp.verification_status = 'approved'
+    )
   );
 
 drop policy if exists pro_portfolio_storage_owner_delete on storage.objects;
