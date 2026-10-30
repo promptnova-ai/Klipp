@@ -1,45 +1,45 @@
--- Klipp security hardening: explicitly allow only user-editable profile columns.
--- Administrative, verification and calculated fields remain server-managed.
--- Safe to re-run; this migration does not change row-level ownership policies.
+-- Klipp security hardening: allow-list profile UPDATE privileges.
+-- Removes both table-level and column-level UPDATE grants from client-facing
+-- roles, including any grants inherited through PUBLIC.
+-- service_role and postgres privileges are intentionally untouched.
 
--- Profiles: users may edit their own contact/display information only.
--- Revoke table-level AND any historical column-level grants before re-granting.
-revoke update on table public.profiles from public, anon, authenticated;
-revoke update (full_name, phone, avatar_url, role, created_at)
-  on table public.profiles from public, anon, authenticated;
+do $$
+declare
+  v_table text;
+  v_column text;
+begin
+  foreach v_table in array array['profiles', 'pro_profiles'] loop
+    -- Remove table-level UPDATE privileges first.
+    execute format(
+      'revoke update on table public.%I from PUBLIC, anon, authenticated',
+      v_table
+    );
+
+    -- Also remove every historical column-level UPDATE grant. A table-level
+    -- REVOKE does not remove independently granted column privileges.
+    for v_column in
+      select c.column_name
+      from information_schema.columns c
+      where c.table_schema = 'public'
+        and c.table_name = v_table
+    loop
+      execute format(
+        'revoke update (%I) on table public.%I from PUBLIC, anon, authenticated',
+        v_column,
+        v_table
+      );
+    end loop;
+  end loop;
+end
+$$;
+
+-- Re-grant only fields currently updated directly by the mobile app.
+-- RLS owner policies still determine WHICH row can be updated.
 grant update (full_name, phone, avatar_url)
   on table public.profiles to authenticated;
 
--- Professional profiles: revoke the column-level grants issued by earlier
--- migrations (including transport_type from migration 004) before rebuilding
--- the allow-list. Table-level REVOKE alone does not remove column grants.
-revoke update on table public.pro_profiles from public, anon, authenticated;
-revoke update (
-  bio,
-  years_experience,
-  base_sector_id,
-  accepts_auto_assign,
-  active,
-  id_document_path,
-  transport_type,
-  verification_status,
-  verification_note,
-  verification_reviewed_at,
-  verification_reviewed_by,
-  rating_avg,
-  rating_count,
-  jobs_completed
-) on table public.pro_profiles from public, anon, authenticated;
+grant update (bio, years_experience, transport_type)
+  on table public.pro_profiles to authenticated;
 
--- These are the only pro-profile fields the app currently needs users to edit.
-grant update (
-  bio,
-  years_experience,
-  base_sector_id,
-  accepts_auto_assign,
-  active,
-  transport_type
-) on table public.pro_profiles to authenticated;
-
--- Existing RLS policies profiles_update_own and pro_profiles_update_own
--- continue to restrict permitted column updates to the authenticated owner.
+-- Roles, ownership IDs, verification/document fields, service-area fields,
+-- availability flags, and calculated reputation counters remain server-managed.
