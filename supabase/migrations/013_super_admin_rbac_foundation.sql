@@ -16,7 +16,7 @@ BEGIN
     RAISE EXCEPTION 'Phase 1 aborted: auth.users does not exist';
   END IF;
 
-  SELECT count(*), min(u.id)
+  SELECT count(*), (array_agg(u.id))[1]
     INTO matching_accounts, configured_owner
   FROM auth.users u
   JOIN public.profiles p ON p.id = u.id
