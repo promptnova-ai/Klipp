@@ -62,6 +62,9 @@ export function ClientTrackingScreen() {
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<string | null>(null);
   const [clockNow, setClockNow] = useState(Date.now());
   const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
+  const [routeEtaMinutes, setRouteEtaMinutes] = useState<number | null>(null);
+  const [routeDistanceMeters, setRouteDistanceMeters] = useState<number | null>(null);
+  const [routeEtaUpdatedAt, setRouteEtaUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,6 +180,38 @@ export function ClientTrackingScreen() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!booking?.id || booking.status !== 'en_route') {
+      setRouteEtaMinutes(null);
+      setRouteDistanceMeters(null);
+      setRouteEtaUpdatedAt(null);
+      return;
+    }
+
+    let active = true;
+    const refreshRouteEta = async () => {
+      const { data, error: routeError } = await supabase.functions.invoke('booking-route-eta', {
+        body: { bookingId: booking.id },
+      });
+      if (!active) return;
+      if (routeError || !data || typeof data.etaMinutes !== 'number') {
+        setRouteEtaMinutes(null);
+        setRouteDistanceMeters(null);
+        return;
+      }
+      setRouteEtaMinutes(data.etaMinutes);
+      setRouteDistanceMeters(typeof data.distanceMeters === 'number' ? data.distanceMeters : null);
+      setRouteEtaUpdatedAt(typeof data.calculatedAt === 'string' ? data.calculatedAt : null);
+    };
+
+    void refreshRouteEta();
+    const interval = setInterval(() => { void refreshRouteEta(); }, 60_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [booking?.id, booking?.status]);
+
   const destination = booking && typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number'
     ? { latitude: booking.client_lat, longitude: booking.client_lng }
     : null;
@@ -218,8 +253,8 @@ export function ClientTrackingScreen() {
               <>
                 <View style={styles.etaCard}>
                   <Text style={styles.etaLabel}>ESTIMACIÓN INICIAL DE LLEGADA</Text>
-                  <Text style={styles.etaValue}>{etaMinutes === null ? 'Calculando…' : `~${etaMinutes} min`}</Text>
-                  <Text style={styles.etaHint}>{locationFreshnessLabel} El cálculo actual es aproximado y todavía no incorpora ruta vial ni tráfico.</Text>
+                  <Text style={styles.etaValue}>{routeEtaMinutes !== null ? `~${routeEtaMinutes} min` : etaMinutes === null ? 'Calculando…' : `~${etaMinutes} min`}</Text>
+                  <Text style={styles.etaHint}>{locationFreshnessLabel} {routeEtaMinutes !== null ? `Ruta por carretera con tráfico estimado · ${routeDistanceMeters !== null ? (routeDistanceMeters / 1000).toFixed(1) + ' km' : ''} · Actualizado ${routeEtaUpdatedAt ? new Date(routeEtaUpdatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : ''}.` : 'Mostrando una estimación provisional en línea recta; la ruta con tráfico todavía no está disponible.'}</Text>
                 </View>
                 {professionalCoordinate && destination ? (
                   <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} />
