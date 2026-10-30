@@ -25,10 +25,10 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KlippColors.canvas },
-  details: { marginHorizontal: 22, marginTop: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, padding: 18, gap: 7 },
+  details: { marginHorizontal: 22, marginTop: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, padding: 20, gap: 9 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.navy, fontSize: 16 },
-  signOut: { marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginTop: 20, backgroundColor: KlippColors.white },
+  signOut: { marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20, backgroundColor: KlippColors.white },
   signOutText: { color: KlippColors.danger, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.75 },
 });
