@@ -148,6 +148,21 @@ export function ProProfileScreen() {
     void Promise.resolve().then(loadProfile);
   }, [loadProfile]);
 
+  async function confirmEquipmentPolicy() {
+    if (!userId || !proProfile || proProfile.equipment_policy_accepted_at) return;
+    setSaving(true);
+    setError(null);
+    setNotice(null);
+    const { data, error: policyError } = await supabase.rpc('confirm_pro_equipment_policy');
+    if (policyError) {
+      setError(policyError.message);
+    } else {
+      setProProfile({ ...proProfile, equipment_policy_accepted_at: data as string });
+      setNotice('Compromiso de equipamiento confirmado. Ya puedes recibir solicitudes si cumples los demás requisitos.');
+    }
+    setSaving(false);
+  }
+
   async function uploadVerificationDocument() {
     if (!userId || !proProfile) return;
     setError(null);
@@ -422,6 +437,26 @@ export function ProProfileScreen() {
         <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
       </Pressable>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+
+      <Section title="Herramientas y materiales propios">
+        <Text style={styles.body}>
+          Klipp exige que acudas con tus propias herramientas, equipos, productos y materiales necesarios para completar cada servicio. No debes depender de herramientas, productos, utensilios ni equipos del cliente. Antes de aceptar cada solicitud, comprueba que llevas todo lo necesario.
+        </Text>
+        {proProfile.equipment_policy_accepted_at ? (
+          <Text style={styles.success}>Compromiso confirmado. Recuerda que debes llevar el equipamiento necesario para cada trabajo.</Text>
+        ) : (
+          <>
+            <Text style={styles.warning}>
+              Todavía no has confirmado esta política. No podrás aceptar reservas hasta hacerlo.
+            </Text>
+            <ActionButton
+              disabled={saving}
+              label={saving ? 'Guardando confirmación...' : 'Confirmo que llevaré mis propias herramientas'}
+              onPress={() => void confirmEquipmentPolicy()}
+            />
+          </>
+        )}
+      </Section>
 
       <Section title="Verificación de identidad">
         <Text style={styles.body}>Sube una imagen JPG/PNG o un PDF de tu documento de identidad. El archivo es privado y solo tú y el equipo autorizado pueden verlo. Máximo 10 MB.</Text>
