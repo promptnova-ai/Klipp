@@ -386,15 +386,7 @@ export function NewBookingScreen() {
     else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
     else {
       if (!selectedOffer && mode === 'auto') {
-        const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', {
-          body: { bookingId },
-        });
-        if (assignmentError) {
-          setError('La reserva se creó, pero no pudimos iniciar la búsqueda automática. Puedes verla en Mis reservas.');
-          setSuccess('Solicitud creada.');
-        } else {
-          setSuccess('Buscando profesional. Sigue el estado en Mis reservas.');
-        }
+        setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
       } else {
         setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
       }
@@ -564,7 +556,7 @@ export function NewBookingScreen() {
             )}
           </View>
         ))}
-        {!selectedOffer && mode === 'auto' && <Text style={styles.body}>Buscaremos un profesional disponible para este servicio y horario en tu zona.</Text>}
+        {!selectedOffer && mode === 'auto' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
       {(selectedTier || selectedOffer) && coordinate && scheduledDate && scheduledTime && (
