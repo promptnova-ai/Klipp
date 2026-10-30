@@ -227,7 +227,7 @@ export default function ClientHomeScreen() {
   function openBooking(service: CatalogService, tier?: PricingTier, offer?: ServiceOffer) {
     setSelectedService(null);
     router.push({
-      pathname: '/(client)/new-booking',
+      pathname: '/new-booking',
       params: {
         serviceId: String(service.id),
         ...(tier ? { tierId: String(tier.id) } : {}),

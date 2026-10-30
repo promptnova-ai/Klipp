@@ -374,7 +374,7 @@ export function ClientBookingsScreen() {
                     <Text style={styles.tier}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.transport_type || 'En camino'}</Text>
                   </View>
                 </View>}
-                <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/tracking', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.followButton, pressed && styles.buttonPressed]}>
+                <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/tracking', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.followButton, pressed && styles.buttonPressed]}>
                   <Text style={styles.followButtonText}>Ver seguimiento en vivo</Text>
                 </Pressable>
                 <View style={styles.contactActions}>
