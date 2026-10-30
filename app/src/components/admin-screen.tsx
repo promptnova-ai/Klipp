@@ -7,7 +7,10 @@ import { KlippColors } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type AdminSection = 'verification' | 'accounts' | 'configuration';
+type AdminSection = 'verification' | 'accounts' | 'configuration' | 'staff';
+type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
+type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
+type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
 type AdminAccount = {
   user_id: string;
   email: string | null;
@@ -39,11 +42,16 @@ const sections: { key: AdminSection; title: string }[] = [
   { key: 'verification', title: 'Verificaciones' },
   { key: 'accounts', title: 'Cuentas y roles' },
   { key: 'configuration', title: 'Configuración' },
+  { key: 'staff', title: 'Equipo y permisos' },
 ];
 
 export function AdminScreen() {
   const { profile, session, signOut } = useAuth();
   const [section, setSection] = useState<AdminSection>('verification');
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [staffRows, setStaffRows] = useState<StaffRow[]>([]);
+  const [staffTemplates, setStaffTemplates] = useState<StaffTemplate[]>([]);
   const [accounts, setAccounts] = useState<AdminAccount[]>([]);
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
@@ -64,56 +72,81 @@ export function AdminScreen() {
     if (!session?.user.id) return;
     setLoading(true);
     setError(null);
-    const [accountResult, settingsResult, serviceResult, categoryResult, tierResult] = await Promise.all([
-      supabase.rpc('admin_list_accounts'),
-      supabase.rpc('admin_get_platform_settings'),
-      supabase.from('service_types')
-        .select('id, code, name, description, active, category_id')
-        .order('name'),
-      supabase.rpc('admin_list_service_categories'),
-      supabase.from('pricing_tiers')
-        .select('id, service_type_id, label, price_dop, est_minutes')
-        .order('service_type_id')
-        .order('price_dop'),
-    ]);
-    const loadError = accountResult.error ?? settingsResult.error ?? serviceResult.error ?? categoryResult.error ?? tierResult.error;
-    if (loadError) {
-      setError(loadError.message);
-      setLoading(false);
-      return;
-    }
+    try {
+      const ownerResult = await supabase.rpc('is_super_admin');
+      if (ownerResult.error) throw ownerResult.error;
+      const owner = Boolean(ownerResult.data);
+      setIsSuperAdmin(owner);
 
-    const accountRows = (accountResult.data ?? []) as AdminAccount[];
-    const serviceRows = (serviceResult.data ?? []) as ServiceRow[];
-    const categoryRows = (categoryResult.data ?? []) as ServiceCategory[];
-    const tierRows = (tierResult.data ?? []) as PricingTier[];
-    const settings = (settingsResult.data ?? {}) as Record<string, unknown>;
-    setAccounts(accountRows);
-    setServices(serviceRows);
-    setCategories(categoryRows);
-    setTiers(tierRows);
-    setServiceDrafts(Object.fromEntries(serviceRows.map((service) => [service.id, {
-      name: service.name,
-      description: service.description,
-      active: service.active,
-      category_id: service.category_id,
-    }])));
-    setTierDrafts(Object.fromEntries(tierRows.map((tier) => [tier.id, {
-      label: tier.label,
-      price_dop: tier.price_dop,
-      est_minutes: tier.est_minutes,
-    }])));
-    setCategoryDrafts(Object.fromEntries(categoryRows.map((category) => [category.id, {
-      name: category.name,
-      description: category.description,
-      active: category.active,
-    }])));
-    const commission = Number(settings.commission_pct);
-    const expiry = Number(settings.request_expiry_minutes);
-    if (Number.isFinite(commission)) setCommissionPct(String(commission));
-    if (Number.isInteger(expiry)) setRequestExpiryMinutes(String(expiry));
-    setLoading(false);
-  }, [session?.user.id]);
+      const permissionCodes = [
+        'accounts.read', 'accounts.manage_clients', 'verification.review',
+        'catalog.manage', 'settings.operational',
+      ];
+      const permissionResults = owner
+        ? permissionCodes.map(() => ({ data: true, error: null }))
+        : await Promise.all(permissionCodes.map((code) =>
+            supabase.rpc('has_admin_permission', { p_permission_code: code }),
+          ));
+      const granted = permissionCodes.filter((_, index) => Boolean(permissionResults[index].data));
+      setPermissions(granted);
+
+      const canReadAccounts = owner || granted.includes('accounts.read');
+      const canReview = owner || granted.includes('verification.review');
+      const canCatalog = owner || granted.includes('catalog.manage');
+      const canReadSettings = owner || granted.includes('settings.operational');
+
+      const [accountResult, settingsResult, serviceResult, categoryResult, tierResult] = await Promise.all([
+        canReadAccounts ? supabase.rpc('admin_list_accounts') : Promise.resolve({ data: [], error: null }),
+        canReadSettings ? supabase.rpc('admin_get_platform_settings') : Promise.resolve({ data: {}, error: null }),
+        canCatalog ? supabase.from('service_types').select('id, code, name, description, active, category_id').order('name') : Promise.resolve({ data: [], error: null }),
+        canCatalog ? supabase.rpc('admin_list_service_categories') : Promise.resolve({ data: [], error: null }),
+        canCatalog ? supabase.from('pricing_tiers').select('id, service_type_id, label, price_dop, est_minutes').order('service_type_id').order('price_dop') : Promise.resolve({ data: [], error: null }),
+      ]);
+      const loadError = accountResult.error ?? settingsResult.error ?? serviceResult.error ?? categoryResult.error ?? tierResult.error;
+      if (loadError) throw loadError;
+
+      const accountRows = (accountResult.data ?? []) as AdminAccount[];
+      const serviceRows = (serviceResult.data ?? []) as ServiceRow[];
+      const categoryRows = (categoryResult.data ?? []) as ServiceCategory[];
+      const tierRows = (tierResult.data ?? []) as PricingTier[];
+      const settings = (settingsResult.data ?? {}) as Record<string, unknown>;
+      setAccounts(accountRows);
+      setServices(serviceRows);
+      setCategories(categoryRows);
+      setTiers(tierRows);
+      setServiceDrafts(Object.fromEntries(serviceRows.map((service) => [service.id, {
+        name: service.name, description: service.description, active: service.active, category_id: service.category_id,
+      }])));
+      setTierDrafts(Object.fromEntries(tierRows.map((tier) => [tier.id, {
+        label: tier.label, price_dop: tier.price_dop, est_minutes: tier.est_minutes,
+      }])));
+      setCategoryDrafts(Object.fromEntries(categoryRows.map((category) => [category.id, {
+        name: category.name, description: category.description, active: category.active,
+      }])));
+      const commission = Number(settings.commission_pct);
+      const expiry = Number(settings.request_expiry_minutes);
+      if (Number.isFinite(commission)) setCommissionPct(String(commission));
+      if (Number.isInteger(expiry)) setRequestExpiryMinutes(String(expiry));
+
+      if (owner) {
+        const [staffResult, templatesResult] = await Promise.all([
+          supabase.rpc('admin_list_staff_access'),
+          supabase.rpc('admin_list_staff_templates'),
+        ]);
+        if (staffResult.error) throw staffResult.error;
+        if (templatesResult.error) throw templatesResult.error;
+        setStaffRows((staffResult.data ?? []) as StaffRow[]);
+        setStaffTemplates((templatesResult.data ?? []) as StaffTemplate[]);
+      } else {
+        setStaffRows([]);
+        setStaffTemplates([]);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos cargar el panel.');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user.id]);;
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
@@ -123,6 +156,13 @@ export function AdminScreen() {
     () => accounts.filter((account) => account.role === 'pro' && account.verification_status !== 'approved'),
     [accounts],
   );
+  const visibleSections = sections.filter((item) => {
+    if (item.key === 'staff') return isSuperAdmin;
+    if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
+    if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
+    if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage') || permissions.includes('settings.operational');
+    return false;
+  });
   const filteredAccounts = useMemo(() => {
     const normalized = search.trim().toLocaleLowerCase();
     return normalized
@@ -170,6 +210,7 @@ export function AdminScreen() {
 
   async function changeRole(account: AdminAccount, role: AdminAccount['role']) {
     if (account.user_id === profile?.id || role === account.role) return;
+    if (role === 'admin' && !isSuperAdmin) return;
     await runAction(`role:${account.user_id}`, async () => {
       const { error: roleError } = await supabase.rpc('admin_set_user_role', {
         p_user_id: account.user_id,
@@ -180,6 +221,7 @@ export function AdminScreen() {
   }
 
   async function saveSettings() {
+    if (!isSuperAdmin) { setError('Solo el superadministrador puede modificar parámetros críticos.'); return; }
     const commission = Number(commissionPct);
     const expiry = Number(requestExpiryMinutes);
     if (!Number.isFinite(commission) || commission < 0 || commission > 50) {
@@ -248,6 +290,29 @@ export function AdminScreen() {
     }, `Categoría “${draft.name}” guardada.`);
   }
 
+  async function assignStaffTemplate(userId: string, templateKey: string) {
+    await runAction(`staff-template:${userId}`, async () => {
+      const { error } = await supabase.rpc('admin_set_staff_template', { p_user_id: userId, p_template_key: templateKey });
+      if (error) throw error;
+    }, 'Plantilla de permisos actualizada.');
+  }
+
+  async function setStaffPermission(userId: string, permissionCode: string, allowed: boolean | null) {
+    await runAction(`staff-permission:${userId}:${permissionCode}`, async () => {
+      const { error } = await supabase.rpc('admin_set_staff_permission', {
+        p_user_id: userId, p_permission_code: permissionCode, p_allowed: allowed,
+      });
+      if (error) throw error;
+    }, 'Permiso individual actualizado.');
+  }
+
+  async function revokeStaff(userId: string) {
+    await runAction(`staff-revoke:${userId}`, async () => {
+      const { error } = await supabase.rpc('admin_revoke_staff_access', { p_user_id: userId });
+      if (error) throw error;
+    }, 'Acceso de administrador revocado.');
+  }
+
   if (loading) {
     return <View style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando administración...</Text></View>;
   }
@@ -256,7 +321,7 @@ export function AdminScreen() {
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader eyebrow="ADMINISTRACIÓN" title="Panel de control" subtitle="Gestiona verificaciones, cuentas y parámetros de Klipp." />
       <View style={styles.sectionTabs}>
-        {sections.map((item) => (
+        {visibleSections.map((item) => (
           <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: section === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, section === item.key && styles.sectionTabSelected]}>
             <Text style={[styles.sectionTabText, section === item.key && styles.sectionTabTextSelected]}>{item.title}</Text>
           </Pressable>
@@ -264,6 +329,72 @@ export function AdminScreen() {
       </View>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
+
+      {section === 'staff' && isSuperAdmin && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Centro de control del propietario</Text>
+          <Text style={styles.body}>Solo tú puedes administrar empleados y permisos. Los cambios se aplican en el servidor y quedan registrados.</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Niveles de acceso</Text>
+            {staffTemplates.map((template) => (
+              <View key={template.template_key} style={styles.tierCard}>
+                <Text style={styles.label}>{template.name}</Text>
+                <Text style={styles.body}>{template.description}</Text>
+                <Text style={styles.body}>{template.permissions.length ? template.permissions.join(' · ') : 'Sin permisos predeterminados'}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.sectionTitle}>Administradores y empleados</Text>
+          <Text style={styles.body}>Para incorporar a alguien, primero debe registrarse en Klipp y después debes asignarle el rol de administrador desde Cuentas y roles.</Text>
+          {staffRows.filter((staff) => !staff.is_owner).map((staff) => (
+            <View key={staff.user_id} style={styles.card}>
+              <Text style={styles.cardTitle}>{staff.full_name || staff.email || 'Empleado'}</Text>
+              <Text style={styles.body}>{staff.email || 'Sin correo'}</Text>
+              <Text style={styles.label}>Plantilla de acceso</Text>
+              <View style={styles.actions}>
+                {staffTemplates.map((template) => (
+                  <Pressable key={template.template_key}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: staff.template_key === template.template_key }}
+                    onPress={() => void assignStaffTemplate(staff.user_id, template.template_key)}
+                    disabled={busyKey === `staff-template:${staff.user_id}`}
+                    style={[styles.roleOption, staff.template_key === template.template_key && styles.roleOptionSelected]}>
+                    <Text style={[styles.roleText, staff.template_key === template.template_key && styles.roleTextSelected]}>{template.name}</Text>
+                  </Pressable>
+                ))}
+              </View>
+              <Text style={styles.label}>Permisos personalizados</Text>
+              {staff.permissions.map((permission) => (
+                <View key={permission.code} style={styles.permissionRow}>
+                  <View style={styles.permissionCopy}>
+                    <Text style={styles.body}>{permission.description}{permission.sensitive ? ' · Sensible' : ''}</Text>
+                    <Text style={styles.permissionCode}>{permission.code} · {permission.overridden ? 'Personalizado' : 'Plantilla'}</Text>
+                  </View>
+                  <View style={styles.permissionActions}>
+                    <Pressable accessibilityRole="button" onPress={() => void setStaffPermission(staff.user_id, permission.code, true)}
+                      disabled={busyKey === `staff-permission:${staff.user_id}:${permission.code}`}
+                      style={[styles.permissionToggle, permission.allowed && styles.permissionToggleActive]}>
+                      <Text style={[styles.permissionToggleText, permission.allowed && styles.permissionToggleTextActive]}>Sí</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" onPress={() => void setStaffPermission(staff.user_id, permission.code, false)}
+                      disabled={busyKey === `staff-permission:${staff.user_id}:${permission.code}`}
+                      style={[styles.permissionToggle, !permission.allowed && styles.permissionToggleDenied]}>
+                      <Text style={[styles.permissionToggleText, !permission.allowed && styles.permissionToggleTextDenied]}>No</Text>
+                    </Pressable>
+                    <Pressable accessibilityRole="button" onPress={() => void setStaffPermission(staff.user_id, permission.code, null)}
+                      disabled={!permission.overridden || busyKey === `staff-permission:${staff.user_id}:${permission.code}`}
+                      style={[styles.permissionReset, !permission.overridden && styles.disabled]}>
+                      <Text style={styles.permissionCode}>Reset</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+              <ActionButton secondary label="Revocar acceso de empleado" disabled={busyKey === `staff-revoke:${staff.user_id}`} onPress={() => void revokeStaff(staff.user_id)} />
+            </View>
+          ))}
+          {staffRows.filter((staff) => !staff.is_owner).length === 0 && <Text style={styles.empty}>Aún no hay empleados con rol de administrador.</Text>}
+        </View>
+      )}
 
       {section === 'verification' && (
         <View style={styles.section}>
@@ -301,7 +432,7 @@ export function AdminScreen() {
       {section === 'accounts' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cuentas y roles</Text>
-          <Text style={styles.body}>Crea cuentas desde el registro habitual y luego asigna aquí client, pro o admin. El cambio a admin da control total sobre el panel.</Text>
+          <Text style={styles.body}>Crea las cuentas desde el registro habitual. El rol de administrador solo puede asignarlo el superadministrador; el empleado recibirá inicialmente permisos personalizados sin accesos concedidos.</Text>
           <TextInput accessibilityLabel="Buscar cuentas" onChangeText={setSearch} placeholder="Buscar por nombre, correo o teléfono" style={styles.input} value={search} />
           {filteredAccounts.map((account) => (
             <View key={account.user_id} style={styles.card}>
@@ -309,7 +440,7 @@ export function AdminScreen() {
               <Text style={styles.body}>{account.email || 'Sin correo'}{account.phone ? ` · ${account.phone}` : ''}</Text>
               <Text style={styles.label}>{account.role === 'admin' ? 'Administrador' : account.role === 'pro' ? 'Profesional' : 'Cliente'}</Text>
               <View style={styles.actions}>
-                {(['client', 'pro', 'admin'] as const).map((role) => (
+                {(['client', 'pro', ...(isSuperAdmin ? ['admin' as const] : [])] as const).map((role) => (
                   <Pressable
                     key={role}
                     accessibilityRole="radio"
@@ -328,16 +459,16 @@ export function AdminScreen() {
 
       {section === 'configuration' && (
         <>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Comisiones y solicitudes</Text>
+          {isSuperAdmin && <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Parámetros críticos · solo propietario</Text>
             <Text style={styles.body}>Estos valores se aplican al crear nuevas reservas y solicitudes profesionales.</Text>
             <Text style={styles.label}>Comisión de Klipp (%) · máximo 50</Text>
             <TextInput keyboardType="decimal-pad" onChangeText={setCommissionPct} style={styles.input} value={commissionPct} />
             <Text style={styles.label}>Vencimiento de una solicitud (minutos)</Text>
             <TextInput keyboardType="number-pad" onChangeText={setRequestExpiryMinutes} style={styles.input} value={requestExpiryMinutes} />
             <ActionButton disabled={busyKey === 'settings'} label={busyKey === 'settings' ? 'Guardando...' : 'Guardar parámetros'} onPress={() => void saveSettings()} />
-          </View>
-          <View style={styles.section}>
+          </View>}
+          {(isSuperAdmin || permissions.includes('catalog.manage')) && <View style={styles.section}>
             <Text style={styles.sectionTitle}>Catálogo y tarifas</Text>
             <Text style={styles.label}>Categorías</Text>
             {categories.map((category) => {
@@ -394,7 +525,7 @@ export function AdminScreen() {
                 </View>
               );
             })}
-          </View>
+          </View>}
         </>
       )}
       <ActionButton label="Cerrar sesión de administrador" onPress={() => void signOut()} secondary />
@@ -433,6 +564,17 @@ const styles = StyleSheet.create({
   roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
   roleText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
   roleTextSelected: { color: KlippColors.blueDark },
+  permissionRow: { flexDirection: 'column', gap: 7, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },
+  permissionCopy: { gap: 2 },
+  permissionCode: { color: KlippColors.muted, fontSize: 11 },
+  permissionActions: { flexDirection: 'row', gap: 6 },
+  permissionToggle: { minWidth: 48, minHeight: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8 },
+  permissionToggleActive: { backgroundColor: '#E8F7EE', borderColor: '#16A34A' },
+  permissionToggleDenied: { backgroundColor: '#FEECEB', borderColor: KlippColors.danger },
+  permissionToggleText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
+  permissionToggleTextActive: { color: '#067647' },
+  permissionToggleTextDenied: { color: KlippColors.danger },
+  permissionReset: { minWidth: 54, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
   actionButton: { minHeight: 42, flex: 1, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
   actionText: { color: KlippColors.white, fontWeight: '700', fontSize: 13, textAlign: 'center' },
   secondaryButton: { backgroundColor: '#FEECEB' },
