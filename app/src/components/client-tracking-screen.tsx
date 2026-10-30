@@ -15,6 +15,7 @@ type TrackingBooking = Pick<Booking,
   | 'scheduled_start' | 'est_minutes' | 'service_type_id' | 'started_at'
 > & { service_types: { name: string } | null };
 type Coordinate = { latitude: number; longitude: number };
+type BookingStatusEvent = { id: number; from_status: BookingStatus | null; to_status: BookingStatus; occurred_at: string };
 
 function distanceInKm(from: Coordinate, to: Coordinate) {
   const radians = (value: number) => (value * Math.PI) / 180;
@@ -24,6 +25,23 @@ function distanceInKm(from: Coordinate, to: Coordinate) {
     + Math.cos(radians(from.latitude)) * Math.cos(radians(to.latitude))
     * Math.sin(longitudeDelta / 2) ** 2;
   return 6371 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}
+
+function statusLabel(status: BookingStatus) {
+  const labels: Record<BookingStatus, string> = {
+    requested: 'Solicitud creada',
+    awaiting_payment: 'Pago pendiente',
+    scheduled: 'Reserva confirmada',
+    en_route: 'Profesional en camino',
+    arrived: 'Profesional llegó al domicilio',
+    in_progress: 'Servicio iniciado',
+    completed: 'Servicio terminado',
+    confirmed: 'Servicio confirmado por el cliente',
+    cancelled: 'Reserva cancelada',
+    disputed: 'Reserva en revisión',
+    expired: 'Solicitud expirada',
+  };
+  return labels[status];
 }
 
 function statusMessage(status: BookingStatus) {
@@ -41,6 +59,7 @@ export function ClientTrackingScreen() {
   const [booking, setBooking] = useState<TrackingBooking | null>(null);
   const [professional, setProfessional] = useState<ProCard | null>(null);
   const [professionalCoordinate, setProfessionalCoordinate] = useState<Coordinate | null>(null);
+  const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -67,6 +86,14 @@ export function ClientTrackingScreen() {
 
     const bookingRow = data as unknown as TrackingBooking;
     setBooking(bookingRow);
+    const { data: eventRows, error: eventsError } = await supabase
+      .from('booking_status_events')
+      .select('id, from_status, to_status, occurred_at')
+      .eq('booking_id', bookingRow.id)
+      .order('occurred_at', { ascending: true })
+      .order('id', { ascending: true });
+    if (eventsError) setError(eventsError.message);
+    else setStatusEvents((eventRows ?? []) as BookingStatusEvent[]);
     if (bookingRow.pro_id) {
       const { data: proData, error: proError } = await supabase.from('pro_cards')
         .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type')
@@ -105,6 +132,12 @@ export function ClientTrackingScreen() {
         schema: 'public',
         table: 'bookings',
         filter: `id=eq.${booking.id}`,
+      }, () => { void loadTrackingDetails(); })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'booking_status_events',
+        filter: `booking_id=eq.${booking.id}`,
       }, () => { void loadTrackingDetails(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
@@ -201,11 +234,18 @@ export function ClientTrackingScreen() {
               </View>
             )}
             <View style={styles.stepsCard}>
-              <Text style={styles.stepsTitle}>Tu servicio, paso a paso</Text>
-              <View style={styles.stepRow}><Text style={styles.stepDone}>✓</Text><Text style={styles.stepText}>Reserva confirmada</Text></View>
-              <View style={styles.stepRow}><Text style={booking.status === 'en_route' || ['arrived', 'in_progress', 'completed'].includes(booking.status) ? styles.stepDone : styles.stepPending}>{booking.status === 'en_route' || ['arrived', 'in_progress', 'completed'].includes(booking.status) ? '✓' : '2'}</Text><Text style={styles.stepText}>Profesional en camino</Text></View>
-              <View style={styles.stepRow}><Text style={booking.status === 'arrived' || ['in_progress', 'completed'].includes(booking.status) ? styles.stepDone : styles.stepPending}>{booking.status === 'arrived' || ['in_progress', 'completed'].includes(booking.status) ? '✓' : '3'}</Text><Text style={styles.stepText}>Llegada al domicilio</Text></View>
-              <View style={styles.stepRow}><Text style={booking.status === 'completed' ? styles.stepDone : styles.stepPending}>{booking.status === 'completed' ? '✓' : '4'}</Text><Text style={styles.stepText}>Servicio completado</Text></View>
+              <Text style={styles.stepsTitle}>Historial de tu orden</Text>
+              {statusEvents.length === 0 ? (
+                <Text style={styles.body}>Todavía no hay eventos registrados para esta reserva.</Text>
+              ) : statusEvents.map((event) => (
+                <View key={event.id} style={styles.stepRow}>
+                  <Text style={styles.stepDone}>✓</Text>
+                  <View style={styles.eventDetails}>
+                    <Text style={styles.stepText}>{statusLabel(event.to_status)}</Text>
+                    <Text style={styles.eventTime}>{new Date(event.occurred_at).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })}</Text>
+                  </View>
+                </View>
+              ))}
             </View>
           </>
         )}
@@ -249,6 +289,8 @@ const styles = StyleSheet.create({
   stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#DCFCE7', color: '#047857', fontSize: 13, fontWeight: '800' },
   stepPending: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#F1F5F9', color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
   stepText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
+  eventDetails: { flex: 1, gap: 2 },
+  eventTime: { color: KlippColors.muted, fontSize: 11 },
   error: { padding: 12, borderRadius: 12, backgroundColor: '#FEF3F2', color: KlippColors.danger, fontSize: 13 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
 });
