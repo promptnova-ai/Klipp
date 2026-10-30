@@ -8,15 +8,17 @@ import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { BookingRequest } from '@/lib/types';
+import { getKitReadiness, parseProKit } from '@/lib/pro-kit';
 
 type RequestBooking = {
   id: string;
+  service_type_id: number;
   scheduled_start: string;
   est_minutes: number;
   pro_payout_dop: number;
   address_text: string | null;
   landmark_notes: string | null;
-  service_types: { name: string } | null;
+  service_types: { code: string; name: string } | null;
   pricing_tiers: { label: string } | null;
 };
 
@@ -35,7 +37,7 @@ export function ProRequestsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('booking_requests')
-      .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(name), pricing_tiers(label))')
+      .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, service_type_id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(code, name), pricing_tiers(label))')
       .eq('pro_id', session.user.id)
       .eq('status', 'pending')
       .order('created_at', { ascending: false });
@@ -71,6 +73,7 @@ export function ProRequestsScreen() {
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#0F987A" /><Text style={styles.body}>Preparando tu bandeja...</Text></View>;
 
   const firstName = profile?.full_name?.trim().split(/\s+/)[0];
+  const professionalKit = parseProKit(session?.user.user_metadata?.klipp_work_kit);
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#0F987A" />}>
@@ -108,6 +111,10 @@ export function ProRequestsScreen() {
       {requests.map((request) => {
         const booking = request.bookings;
         const unavailable = !booking;
+        const kit = booking
+          ? getKitReadiness(booking.service_types?.code ?? '', booking.service_types?.name ?? '', professionalKit[String(booking.service_type_id)])
+          : null;
+        const kitReady = kit?.complete ?? false;
         return (
           <View key={request.id} style={styles.card}>
             {unavailable ? (
@@ -136,6 +143,16 @@ export function ProRequestsScreen() {
                   </View>
                 </View>
                 {!!booking.landmark_notes && <Text style={styles.landmark}>Referencia: {booking.landmark_notes}</Text>}
+                {kit && (
+                  <View style={[styles.kitStatus, kitReady && styles.kitStatusReady]}>
+                    <View style={styles.kitStatusTop}>
+                      <SymbolView name={{ ios: kitReady ? 'checkmark.shield.fill' : 'wrench.and.screwdriver.fill', android: kitReady ? 'verified_user' : 'build', web: kitReady ? 'verified_user' : 'build' }} tintColor={kitReady ? '#087A63' : '#946200'} size={17} />
+                      <Text style={[styles.kitStatusTitle, kitReady && styles.kitStatusTitleReady]}>Equipo propio · {kit.readyCount}/{kit.total}</Text>
+                    </View>
+                    <Text style={styles.kitStatusBody}>{kitReady ? 'Tu kit está completo para este servicio.' : 'Completa tu kit antes de aceptar. No debes utilizar herramientas ni productos del cliente.'}</Text>
+                    {!kitReady && <Pressable accessibilityRole="button" onPress={() => router.push('/(pro)/toolkit')} style={styles.kitManage}><Text style={styles.kitManageText}>Preparar mi equipo</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor="#087A63" size={13} /></Pressable>}
+                  </View>
+                )}
                 <View style={styles.payoutPanel}>
                   <View><Text style={styles.payoutLabel}>RECIBIRÍAS</Text><Text style={styles.payout}> {formatDop(booking.pro_payout_dop)}</Text></View>
                   <View style={styles.durationBadge}><SymbolView name={{ ios: 'clock', android: 'schedule', web: 'schedule' }} tintColor="#087A63" size={14} /><Text style={styles.durationText}>{booking.est_minutes} min</Text></View>
@@ -145,7 +162,7 @@ export function ProRequestsScreen() {
             <View style={styles.cardFooter}>
               <Text style={styles.expiration}>Expira: {formatBusinessDate(request.expires_at)}</Text>
               <View style={styles.actions}>
-                <ResponseButton disabled={unavailable || busyId === request.id} label={busyId === request.id ? 'Enviando...' : 'Aceptar servicio'} onPress={() => void respond(request.id, true)} />
+                <ResponseButton disabled={unavailable || !kitReady || busyId === request.id} label={busyId === request.id ? 'Enviando...' : 'Aceptar servicio'} onPress={() => void respond(request.id, true)} />
                 <ResponseButton secondary disabled={busyId === request.id} label="Rechazar" onPress={() => void respond(request.id, false)} />
               </View>
             </View>
@@ -218,4 +235,12 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 12, backgroundColor: '#FFF5D9' },
   error: { color: '#B42318', fontSize: 13, lineHeight: 19 },
+  kitStatus: { padding: 12, borderRadius: 14, backgroundColor: '#FFF7E5', gap: 5 },
+  kitStatusReady: { backgroundColor: '#EAF7F1' },
+  kitStatusTop: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  kitStatusTitle: { color: '#765515', fontSize: 11, fontWeight: '900' },
+  kitStatusTitleReady: { color: '#087A63' },
+  kitStatusBody: { color: '#765515', fontSize: 10, lineHeight: 15 },
+  kitManage: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5, paddingTop: 2 },
+  kitManageText: { color: '#087A63', fontSize: 10, fontWeight: '900' },
 });
