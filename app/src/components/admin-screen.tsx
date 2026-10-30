@@ -7,11 +7,11 @@ import { KlippColors } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type AdminSection = 'verification' | 'accounts' | 'configuration' | 'staff';
+type AdminSection = 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
-type AuditEntry = { id: number; actor_email: string | null; action: string; target_email: string | null; details: Record<string, unknown>; created_at: string };
+type AuditEntry = { id: number; actor_email: string | null; action: string; target_email: string | null; details: Record<string, unknown>; created_at: string };\ntype IssueRow = { issue_id: string; booking_id: string; reporter_id: string; reporter_name: string | null; reporter_email: string | null; professional_name: string | null; category: string; description: string | null; status: 'open' | 'in_review' | 'resolved'; created_at: string; updated_at: string; resolved_at: string | null; resolution_note: string | null; booking_status: string };
 type AdminAccount = {
   user_id: string;
   email: string | null;
@@ -41,7 +41,7 @@ type TierDraft = Pick<PricingTier, 'label' | 'price_dop' | 'est_minutes'>;
 
 const sections: { key: AdminSection; title: string }[] = [
   { key: 'verification', title: 'Verificaciones' },
-  { key: 'accounts', title: 'Cuentas y roles' },
+  { key: 'accounts', title: 'Cuentas y roles' },\n  { key: 'issues', title: 'Incidencias' },
   { key: 'configuration', title: 'Configuración' },
   { key: 'staff', title: 'Equipo y permisos' },
 ];
@@ -88,7 +88,7 @@ export function AdminScreen() {
   const [staffRows, setStaffRows] = useState<StaffRow[]>([]);
   const [staffTemplates, setStaffTemplates] = useState<StaffTemplate[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
-  const [accounts, setAccounts] = useState<AdminAccount[]>([]);
+  const [accounts, setAccounts] = useState<AdminAccount[]>([]);\n  const [issues, setIssues] = useState<IssueRow[]>([]);\n  const [issueNotes, setIssueNotes] = useState<Record<string, string>>({});
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -128,16 +128,16 @@ export function AdminScreen() {
 
       const canReadAccounts = owner || granted.includes('accounts.read') || granted.includes('verification.review');
       const canCatalog = owner || granted.includes('catalog.manage');
-      const canReadSettings = owner;
+      const canReadSettings = owner;\n      const canManageSupport = owner || granted.includes('support.manage');
 
-      const [accountResult, settingsResult, serviceResult, categoryResult, tierResult] = await Promise.all([
+      const [accountResult, settingsResult, serviceResult, categoryResult, tierResult, issueResult] = await Promise.all([
         canReadAccounts ? supabase.rpc('admin_list_accounts') : Promise.resolve({ data: [], error: null }),
         canReadSettings ? supabase.rpc('admin_get_platform_settings') : Promise.resolve({ data: {}, error: null }),
         canCatalog ? supabase.from('service_types').select('id, code, name, description, active, category_id').order('name') : Promise.resolve({ data: [], error: null }),
         canCatalog ? supabase.rpc('admin_list_service_categories') : Promise.resolve({ data: [], error: null }),
-        canCatalog ? supabase.from('pricing_tiers').select('id, service_type_id, label, price_dop, est_minutes').order('service_type_id').order('price_dop') : Promise.resolve({ data: [], error: null }),
+        canCatalog ? supabase.from('pricing_tiers').select('id, service_type_id, label, price_dop, est_minutes').order('service_type_id').order('price_dop') : Promise.resolve({ data: [], error: null }),\n        canManageSupport ? supabase.rpc('admin_list_issues') : Promise.resolve({ data: [], error: null }),
       ]);
-      const loadError = accountResult.error ?? settingsResult.error ?? serviceResult.error ?? categoryResult.error ?? tierResult.error;
+      const loadError = accountResult.error ?? settingsResult.error ?? serviceResult.error ?? categoryResult.error ?? tierResult.error ?? issueResult.error;
       if (loadError) throw loadError;
 
       const accountRows = (accountResult.data ?? []) as AdminAccount[];
@@ -145,7 +145,7 @@ export function AdminScreen() {
       const categoryRows = (categoryResult.data ?? []) as ServiceCategory[];
       const tierRows = (tierResult.data ?? []) as PricingTier[];
       const settings = (settingsResult.data ?? {}) as Record<string, unknown>;
-      setAccounts(accountRows);
+      setAccounts(accountRows);\n      setIssues((issueResult.data ?? []) as IssueRow[]);
       setServices(serviceRows);
       setCategories(categoryRows);
       setTiers(tierRows);
@@ -199,7 +199,7 @@ export function AdminScreen() {
   const visibleSections = sections.filter((item) => {
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
-    if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
+    if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');\n    if (item.key === 'issues') return isSuperAdmin || permissions.includes('support.manage');
     if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage');
     return false;
   });
@@ -262,6 +262,23 @@ export function AdminScreen() {
       });
       if (roleError) throw roleError;
     }, `Rol actualizado a ${role}.`);
+  }
+
+  async function updateIssue(issue: IssueRow, status: IssueRow['status']) {
+    const note = issueNotes[issue.issue_id]?.trim() ?? '';
+    if (status === 'resolved' && !note) {
+      setError('Añade una nota breve explicando cómo se ha resuelto la incidencia.');
+      return;
+    }
+    await runAction(`issue:${issue.issue_id}`, async () => {
+      const { error } = await supabase.rpc('admin_update_issue', {
+        p_issue_id: issue.issue_id,
+        p_status: status,
+        p_resolution_note: status === 'resolved' ? note : null,
+      });
+      if (error) throw error;
+    }, status === 'resolved' ? 'Incidencia resuelta y registrada.' : status === 'in_review' ? 'Incidencia asignada a revisión.' : 'Incidencia reabierta.');
+    if (status === 'resolved') setIssueNotes((current) => ({ ...current, [issue.issue_id]: '' }));
   }
 
   async function saveSettings() {
@@ -474,6 +491,44 @@ export function AdminScreen() {
         </View>
       )}
 
+      {activeSection === 'issues' && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Incidencias comunicadas por usuarios</Text>
+          <Text style={styles.body}>Revisa el motivo, consulta la reserva relacionada y actualiza el estado. Para cerrar un caso, deja constancia de la solución aplicada.</Text>
+          <View style={styles.issueSummary}>
+            <View style={styles.issueCount}><Text style={styles.issueCountValue}>{issues.filter((item) => item.status === 'open').length}</Text><Text style={styles.issueCountLabel}>Abiertas</Text></View>
+            <View style={styles.issueCount}><Text style={styles.issueCountValue}>{issues.filter((item) => item.status === 'in_review').length}</Text><Text style={styles.issueCountLabel}>En revisión</Text></View>
+            <View style={styles.issueCount}><Text style={styles.issueCountValue}>{issues.filter((item) => item.status === 'resolved').length}</Text><Text style={styles.issueCountLabel}>Resueltas</Text></View>
+          </View>
+          {issues.length === 0 ? <Text style={styles.empty}>No hay incidencias registradas.</Text> : issues.map((issue) => (
+            <View key={issue.issue_id} style={styles.card}>
+              <View style={styles.employeeHeader}>
+                <Text style={styles.cardTitle}>{issue.category.replaceAll('_', ' ')}</Text>
+                <View style={[styles.issueStatus, issue.status === 'resolved' && styles.issueStatusDone, issue.status === 'in_review' && styles.issueStatusReview]}>
+                  <Text style={styles.issueStatusText}>{issue.status === 'open' ? 'ABIERTA' : issue.status === 'in_review' ? 'EN REVISIÓN' : 'RESUELTA'}</Text>
+                </View>
+              </View>
+              <Text style={styles.body}>Reportada por: {issue.reporter_name || issue.reporter_email || 'Usuario'}{issue.reporter_email ? ` · ${issue.reporter_email}` : ''}</Text>
+              {issue.professional_name && <Text style={styles.body}>Profesional: {issue.professional_name}</Text>}
+              <Text style={styles.body}>Reserva: {issue.booking_id.slice(0, 8)} · Estado: {issue.booking_status}</Text>
+              <Text style={styles.body}>{issue.description || 'El usuario no añadió una descripción.'}</Text>
+              <Text style={styles.permissionCode}>Creada: {new Date(issue.created_at).toLocaleString()}</Text>
+              {issue.status !== 'resolved' ? (
+                <>
+                  <TextInput accessibilityLabel="Nota de resolución de la incidencia" multiline onChangeText={(value) => setIssueNotes((current) => ({ ...current, [issue.issue_id]: value }))} placeholder="Describe la solución aplicada antes de cerrar el caso" style={[styles.input, styles.multiline]} value={issueNotes[issue.issue_id] ?? ''} />
+                  <View style={styles.actions}>
+                    {issue.status === 'open' && <ActionButton secondary label="Marcar en revisión" disabled={busyKey === `issue:${issue.issue_id}`} onPress={() => void updateIssue(issue, 'in_review')} />}
+                    <ActionButton label="Resolver incidencia" disabled={busyKey === `issue:${issue.issue_id}` || !(issueNotes[issue.issue_id] ?? '').trim()} onPress={() => void updateIssue(issue, 'resolved')} />
+                  </View>
+                </>
+              ) : (
+                <View style={styles.resolutionBox}><Text style={styles.permissionName}>Solución registrada</Text><Text style={styles.body}>{issue.resolution_note}</Text><Text style={styles.permissionCode}>Resuelta: {issue.resolved_at ? new Date(issue.resolved_at).toLocaleString() : '—'}</Text><ActionButton secondary label="Reabrir incidencia" disabled={busyKey === `issue:${issue.issue_id}`} onPress={() => void updateIssue(issue, 'open')} /></View>
+              )}
+            </View>
+          ))}
+        </View>
+      )}
+
       {activeSection === 'verification' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Revisión de profesionales</Text>
@@ -624,6 +679,15 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  issueSummary: { flexDirection: 'row', gap: 8 },
+  issueCount: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#F3F6FA', gap: 3 },
+  issueCountValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
+  issueCountLabel: { color: KlippColors.muted, fontSize: 11, fontWeight: '600' },
+  issueStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20, backgroundColor: '#FFF4DB' },
+  issueStatusReview: { backgroundColor: '#EAF2FF' },
+  issueStatusDone: { backgroundColor: '#E8F7EE' },
+  issueStatusText: { color: KlippColors.slate, fontSize: 10, fontWeight: '800' },
+  resolutionBox: { padding: 12, gap: 8, borderRadius: 10, backgroundColor: '#F0F8F3' },
   heroCard: { padding: 19, gap: 12, borderRadius: 18, backgroundColor: KlippColors.navy },
   eyebrow: { color: '#B8D2FF', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
   heroTitle: { color: KlippColors.white, fontSize: 23, fontWeight: '800' },
