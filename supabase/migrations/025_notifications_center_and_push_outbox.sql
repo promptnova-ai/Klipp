@@ -113,7 +113,8 @@ create policy notification_devices_delete_own on public.notification_devices
   for delete to authenticated
   using (user_id = (select auth.uid()));
 
-grant select, update on public.notifications to authenticated;
+grant select on public.notifications to authenticated;
+grant update (read_at) on public.notifications to authenticated;
 grant select, insert, update on public.notification_preferences to authenticated;
 grant select, insert, update, delete on public.notification_devices to authenticated;
 revoke all on public.push_delivery_queue from anon, authenticated;
