@@ -453,13 +453,14 @@ export function AdminScreen() {
                 configuration: 'Actualiza categorías, servicios y tarifas.',
                 staff: 'Gestiona empleados y permisos internos.',
               };
-              const symbols: Record<string, { ios: string; android: string; web: string }> = {
+              const symbols = {
+                overview: { ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' },
                 verification: { ios: 'checkmark.shield', android: 'verified_user', web: 'verified_user' },
                 accounts: { ios: 'person.2', android: 'group', web: 'group' },
                 issues: { ios: 'bubble.left.and.bubble.right', android: 'forum', web: 'forum' },
                 configuration: { ios: 'slider.horizontal.3', android: 'tune', web: 'tune' },
                 staff: { ios: 'person.3', android: 'groups', web: 'groups' },
-              };
+              } as const;
               return (
                 <Pressable key={item.key} accessibilityRole="button" onPress={() => setSection(item.key)} style={({ pressed }) => [styles.shortcutCard, pressed && styles.shortcutPressed]}>
                   <View style={styles.shortcutIcon}><SymbolView name={symbols[item.key]} tintColor="#7051C8" size={20} /></View>
