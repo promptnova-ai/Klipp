@@ -10,6 +10,7 @@ import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, ServiceType, VerificationStatus } from '@/lib/types';
 
+type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type ProfessionalService = {
   service_type_id: number;
   base_price_dop: number;
@@ -81,6 +82,7 @@ export function ProProfileScreen() {
   const [transportType, setTransportType] = useState('');
   const [availability, setAvailability] = useState<ProAvailability[]>([]);
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
+  const [equipmentByService, setEquipmentByService] = useState<Record<number, EquipmentRequirement[]>>({});
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [servicePrices, setServicePrices] = useState<Record<number, string>>({});
   const [serviceDurations, setServiceDurations] = useState<Record<number, string>>({});
@@ -94,15 +96,16 @@ export function ProProfileScreen() {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    const [profileResult, availabilityResult, catalogResult, offeredResult] = await Promise.all([
+    const [profileResult, availabilityResult, catalogResult, offeredResult, equipmentResult] = await Promise.all([
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pro_services').select('service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
+      supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
     ]);
-    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error) {
+    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error) {
       setError(
-        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? 'No pudimos cargar tu perfil.',
+        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? 'No pudimos cargar tu perfil.',
       );
       setLoading(false);
       return;
@@ -138,6 +141,8 @@ export function ProProfileScreen() {
     const offered = (offeredResult.data ?? []) as ProfessionalService[];
     const configuredServices = offered.length ? offered : registrationDraft?.services ?? [];
     setCatalog(services);
+    const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
+    setEquipmentByService(Object.fromEntries(services.map((service) => [service.id, equipment.filter((item) => item.service_type_id === service.id)])));
     setSelectedServices(configuredServices.map((service) => service.service_type_id));
     setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
     setServiceDurations(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.est_minutes)])));
@@ -506,10 +511,25 @@ export function ProProfileScreen() {
         <Text style={styles.body}>Elige las especialidades que ofreces y define tu precio base en pesos dominicanos.</Text>
         {catalog.map((service) => {
           const selected = selectedServices.includes(service.id);
+          const requirements = equipmentByService[service.id] ?? [];
           const category = (service as ServiceType & { service_categories?: { name: string } | null }).service_categories?.name;
           return (
             <View key={service.id} style={styles.serviceEditor}>
               <Choice selected={selected} label={`${service.name}${category ? ` · ${category}` : ''}`} onPress={() => toggleService(service.id)} />
+              {selected && requirements.length > 0 && (
+                <View style={styles.serviceRequirements}>
+                  <Text style={styles.requirementsTitle}>Equipamiento que debes llevar:</Text>
+                  {requirements.map((item) => (
+                    <View key={item.id} style={styles.requirementRow}>
+                      <Text style={styles.requirementBullet}>✓</Text>
+                      <View style={styles.requirementCopy}>
+                        <Text style={styles.requirementName}>{item.item_name}</Text>
+                        {!!item.details && <Text style={styles.requirementDetails}>{item.details}</Text>}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
               {selected && (
                 <View style={styles.serviceFields}>
                   <View style={styles.priceField}>
@@ -612,6 +632,13 @@ const styles = StyleSheet.create({
   choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.blueDark },
+  serviceRequirements: { paddingHorizontal: 10, gap: 6 },
+  requirementsTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
+  requirementRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
+  requirementBullet: { color: '#047857', fontSize: 13, fontWeight: '800' },
+  requirementCopy: { flex: 1, gap: 1 },
+  requirementName: { color: KlippColors.slate, fontSize: 11, fontWeight: '700' },
+  requirementDetails: { color: KlippColors.muted, fontSize: 10, lineHeight: 14 },
   serviceEditor: { gap: 9 },
   serviceFields: { flexDirection: 'row', gap: 12, paddingHorizontal: 5 },
   priceField: { flex: 1 },
