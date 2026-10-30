@@ -19,10 +19,12 @@ import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
 
+type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type CatalogService = ServiceType & {
   tiers: PricingTier[];
   category_name: string | null;
   offers: ServiceOffer[];
+  equipmentRequirements: EquipmentRequirement[];
 };
 type SearchablePro = Pick<ProCard, 'pro_id' | 'full_name' | 'bio'>;
 type ServiceOffer = {
@@ -102,18 +104,20 @@ export default function ClientHomeScreen() {
   async function loadCatalog() {
     setLoading(true);
     setLoadError(null);
-    const [serviceResult, tierResult, categoryResult] = await Promise.all([
+    const [serviceResult, tierResult, categoryResult, equipmentResult] = await Promise.all([
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
       supabase.from('service_categories').select('id, name').eq('active', true).order('id'),
+      supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
     ]);
-    const error = serviceResult.error ?? tierResult.error ?? categoryResult.error;
+    const error = serviceResult.error ?? tierResult.error ?? categoryResult.error ?? equipmentResult.error;
     if (error) {
       setLoadError(error.message);
       setLoading(false);
       return;
     }
     const tiers = (tierResult.data ?? []) as PricingTier[];
+    const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
     const serviceRows = (serviceResult.data ?? []) as (ServiceType & {
       service_categories: { name: string } | { name: string }[] | null;
     })[];
@@ -123,6 +127,7 @@ export default function ClientHomeScreen() {
         category_name: (Array.isArray(service.service_categories) ? service.service_categories[0]?.name : service.service_categories?.name) ?? null,
         tiers: tiers.filter((tier) => tier.service_type_id === service.id),
         offers: [],
+        equipmentRequirements: equipment.filter((item) => item.service_type_id === service.id),
       })),
     );
     setServiceIds(serviceRows.map((service) => service.id));
@@ -449,6 +454,24 @@ export default function ClientHomeScreen() {
                 </View>
                 <Text style={styles.detailTitle}>{selectedService.name}</Text>
                 <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar limpio y cuidado.'}</Text>
+                <View style={styles.equipmentNotice}>
+                  <Text style={styles.equipmentNoticeTitle}>El profesional lleva sus propias herramientas</Text>
+                  <Text style={styles.equipmentNoticeBody}>No tendrás que prestar herramientas, equipos ni productos de limpieza. El profesional debe acudir con todo lo necesario para el servicio contratado.</Text>
+                  {selectedService.equipmentRequirements.length > 0 && (
+                    <View style={styles.equipmentItems}>
+                      <Text style={styles.equipmentItemsTitle}>Equipamiento previsto para este servicio</Text>
+                      {selectedService.equipmentRequirements.map((item) => (
+                        <View key={item.id} style={styles.equipmentItem}>
+                          <Text style={styles.equipmentBullet}>✓</Text>
+                          <View style={styles.equipmentItemCopy}>
+                            <Text style={styles.equipmentItemName}>{item.item_name}</Text>
+                            {!!item.details && <Text style={styles.equipmentItemDetails}>{item.details}</Text>}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
                 <View style={styles.benefitList}>
                   {['Profesionales verificados', 'Precio cerrado según el tamaño', 'Reserva en el horario que prefieras'].map((benefit) => (
                     <View key={benefit} style={styles.benefit}>
@@ -591,6 +614,16 @@ const styles = StyleSheet.create({
   detailIllustrationIcon: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.white },
   detailCategory: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   detailTitle: { color: KlippColors.navy, fontSize: 23, fontWeight: '700' },
+  equipmentNotice: { padding: 15, borderRadius: 14, borderWidth: 1, borderColor: '#C9DDF2', backgroundColor: '#F1F7FD', gap: 8 },
+  equipmentNoticeTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  equipmentNoticeBody: { color: KlippColors.slate, fontSize: 13, lineHeight: 19 },
+  equipmentItems: { marginTop: 4, gap: 9 },
+  equipmentItemsTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
+  equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  equipmentBullet: { color: '#047857', fontSize: 15, fontWeight: '800' },
+  equipmentItemCopy: { flex: 1, gap: 2 },
+  equipmentItemName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
+  equipmentItemDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   detailDescription: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   benefitList: { gap: 10, paddingVertical: 3 },
   benefit: { flexDirection: 'row', alignItems: 'center', gap: 9 },
