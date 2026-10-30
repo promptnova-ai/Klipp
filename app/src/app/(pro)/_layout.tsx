@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { RoleGuard } from '@/components/role-guard';
+import { NotificationTabIcon } from '@/components/notification-tab-icon';
 
 export default function ProLayout() {
   return (
@@ -16,7 +17,7 @@ export default function ProLayout() {
         }}>
         <Tabs.Screen name="index" options={{ title: 'Solicitudes', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'tray.full.fill', android: 'inbox', web: 'inbox' }} tintColor={color} size={20} /> }} />
         <Tabs.Screen name="agenda" options={{ title: 'Agenda', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'calendar', android: 'event_note', web: 'event_note' }} tintColor={color} size={20} /> }} />
-        <Tabs.Screen name="notifications" options={{ title: 'Avisos', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} tintColor={color} size={20} /> }} />
+        <Tabs.Screen name="notifications" options={{ title: 'Avisos', tabBarIcon: ({ color }) => <NotificationTabIcon color={color} /> }} />
         <Tabs.Screen name="profile" options={{ title: 'Mi perfil', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'person.crop.circle', android: 'person', web: 'person' }} tintColor={color} size={20} /> }} />
       </Tabs>
     </RoleGuard>
