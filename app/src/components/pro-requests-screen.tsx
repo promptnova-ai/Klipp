@@ -68,13 +68,13 @@ export function ProRequestsScreen() {
     setBusyId(null);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.teal} /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
 
   return (
     <ScrollView
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Nuevas oportunidades para tu agenda." />
+      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Nuevas oportunidades para tu agenda." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && requests.length === 0 && (
         <View style={styles.empty}>
@@ -134,11 +134,11 @@ const styles = StyleSheet.create({
   emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
   card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
-  payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
+  payout: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '700' },
   expiration: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
   warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
   actions: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.teal },
   secondaryButton: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#CBD5E1' },
   buttonText: { color: '#fff', fontWeight: '700' },
   secondaryText: { color: KlippColors.muted },
