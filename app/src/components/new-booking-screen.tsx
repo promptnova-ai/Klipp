@@ -448,11 +448,18 @@ export function NewBookingScreen() {
               selected={selectedOfferId === offer.id}
               label={offer.pro_name ?? 'Profesional Klipp'}
               secondary={`${formatDop(offer.base_price_dop)} · ${offer.est_minutes} min`}
-              onPress={() => { resetAppointmentSelection(); setSelectedOfferId(offer.id); setMode('manual'); }}
+              onPress={() => { resetAppointmentSelection(); setSelectedOfferId(offer.id); setMode('manual'); setTiming('scheduled'); }}
             />
           ))}
       </Section>}
-      <Section title="3. Ubicación del servicio">
+      {!selectedOffer && <Section title="3. ¿Cuándo necesitas el servicio?">
+        <View style={styles.modeOptions}>
+          <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); setMode('auto'); }} />
+          <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); }} />
+        </View>
+        {timing === 'now' && <Text style={styles.body}>Buscaremos inmediatamente un profesional conectado y disponible cerca de tu ubicación.</Text>}
+      </Section>}
+      <Section title="4. Ubicación del servicio">
         {locationLoading ? (
           <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Obteniendo tu ubicación...</Text></View>
         ) : coordinate ? (
@@ -488,7 +495,7 @@ export function NewBookingScreen() {
         )}
         {locationError && <Text accessibilityRole="alert" style={styles.error}>{locationError}</Text>}
       </Section>
-      <Section title="4. Fecha y hora">
+      {timing === 'scheduled' && <Section title="5. Fecha y hora">
         <Text style={styles.label}>Elige el día</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateList}>
           {dateOptions.map((option) => {
@@ -536,18 +543,18 @@ export function NewBookingScreen() {
             })}
           </View>
         )}
-      </Section>
-      <Section title="5. Profesional">
-        {!selectedOffer && <View style={styles.modeOptions}>
+      </Section>}
+      <Section title={timing === 'now' ? "5. Profesional" : "6. Profesional"}>
+        {timing === 'scheduled' && !selectedOffer && <View style={styles.modeOptions}>
           <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
           <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
-        {!selectedOffer && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales cercanos, revisar sus perfiles y seleccionar a quién contratar.</Text>}
+        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales cercanos, revisar sus perfiles y seleccionar a quién contratar.</Text>}
         {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
-        {!selectedOffer && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
-        {!selectedOffer && mode === 'manual' && pros.map((pro) => (
+        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
+        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
             <Pressable onPress={() => void showProProfile(pro)} style={({ pressed }) => [styles.proSummary, pressed && styles.choicePressed]}>
               {pro.avatar_url ? <Image source={{ uri: pro.avatar_url }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{pro.full_name?.[0] ?? 'K'}</Text></View>}
@@ -568,7 +575,8 @@ export function NewBookingScreen() {
             )}
           </View>
         ))}
-        {!selectedOffer && mode === 'auto' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
+        {!selectedOffer && mode === 'auto' && timing === 'now' && <Text style={styles.body}>Klipp enviará la solicitud a profesionales conectados y disponibles. Si uno acepta, podrás seguir su llegada desde la app.</Text>}
+        {!selectedOffer && mode === 'auto' && timing === 'scheduled' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
       {(selectedTier || selectedOffer) && coordinate && scheduledDate && scheduledTime && (
@@ -584,19 +592,19 @@ export function NewBookingScreen() {
           </View>
           {selectedTier && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Tamaño</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>}
           {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Duración</Text><Text style={styles.summaryValue}>{selectedOffer.est_minutes} min</Text></View>}
-          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Fecha y hora</Text><Text style={styles.summaryValue}>{scheduledDate} · {formatSlotTime(scheduledTime)}</Text></View>
+          <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Fecha y hora</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Lo antes posible' : `${scheduledDate} · ${formatSlotTime(scheduledTime)}`}</Text></View>
           <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Dirección</Text><Text numberOfLines={2} style={styles.summaryValue}>{addressText || 'Ubicación seleccionada'}</Text></View>
           {landmarkNotes.trim().length > 0 && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Referencia</Text><Text numberOfLines={2} style={styles.summaryValue}>{landmarkNotes}</Text></View>}
           {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{selectedOffer.pro_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
-          {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>Profesional disponible</Text></View>}
+          {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Solicitar ahora' : 'Asignación automática'}</Text></View>}
           <View style={styles.summaryDivider} />
           <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
       <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Solicitar servicio</Text>}
+        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
       </Pressable>
     </ScrollView>
   );
