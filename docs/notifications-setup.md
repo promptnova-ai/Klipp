@@ -73,11 +73,18 @@ select cron.schedule(
 
 Check the job in Supabase Dashboard → Integrations → Cron. The worker claims a limited batch, uses Expo Push Service and checks Expo receipts after 15 minutes. Invalid device tokens are removed when Expo reports `DeviceNotRegistered`.
 
-## 4. Register mobile push devices
+## 4. Configure mobile push credentials
 
-The database is ready to store Expo push tokens in `public.notification_devices`. The app still needs the `expo-notifications` native module, an EAS project ID, iOS APNs credentials and Android FCM v1 credentials before real devices can register and receive remote pushes.
+The app now includes `expo-notifications` and an explicit **Activate push notifications** control in the notification center. The token is registered only after the user grants OS permission and taps that control. On sign-out, the current device token is removed.
 
-Remote push notifications must be tested in a development or production build, not Expo Go on Android. The in-app inbox does not depend on push credentials.
+Before testing, link the Expo app to its real EAS project and provide its project ID through EAS configuration or `EXPO_PUBLIC_EAS_PROJECT_ID`. Configure Android FCM v1 credentials and the iOS APNs key in the EAS project, then create a new development build:
+
+```bash
+cd app
+eas build --profile development --platform all
+```
+
+Install that build on physical iOS and Android devices, sign in, open **Avisos** and activate push. Remote push is not available in Expo Go on Android; use a development or production build. The in-app inbox works without push credentials.
 
 ## 5. Current event coverage
 
