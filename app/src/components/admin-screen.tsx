@@ -92,7 +92,7 @@ export function AdminScreen() {
       const granted = permissionCodes.filter((_, index) => Boolean(permissionResults[index].data));
       setPermissions(granted);
 
-      const canReadAccounts = owner || granted.includes('accounts.read');
+      const canReadAccounts = owner || granted.includes('accounts.read') || granted.includes('verification.review');
       const canCatalog = owner || granted.includes('catalog.manage');
       const canReadSettings = owner;
 
