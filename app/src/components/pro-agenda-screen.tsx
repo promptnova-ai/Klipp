@@ -215,7 +215,7 @@ export function ProAgendaScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
+      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." role="pro" />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && (
         <View style={styles.empty}>
