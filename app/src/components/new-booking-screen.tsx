@@ -611,6 +611,8 @@ const styles = StyleSheet.create({
   addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
   notesInput: { minHeight: 84, paddingHorizontal: 13, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, textAlignVertical: 'top', backgroundColor: KlippColors.white },
   adjustLocation: { alignSelf: 'flex-start', paddingVertical: 7 },
+  locationIntro: { gap: 10, padding: 15, borderRadius: 16, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: KlippColors.border },
+  locationIntroTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   retryLocation: { minHeight: 46, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: '#F8FAFC' },
   adjustLocationText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
