@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import * as Location from 'expo-location';
 import { ActivityIndicator, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -10,9 +10,10 @@ import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import { getProLocationTaskError, updateActiveProTrackingBookings } from '@/lib/pro-location-task';
 import type { Booking, BookingStatus } from '@/lib/types';
+import { getKitReadiness, parseProKit } from '@/lib/pro-kit';
 
 type AgendaBooking = Booking & {
-  service_types: { name: string } | null;
+  service_types: { code: string; name: string } | null;
   pricing_tiers: { label: string } | null;
   addresses: { label: string | null; street: string | null; references_text: string | null } | null;
 };
@@ -27,6 +28,7 @@ const nextStep: Partial<Record<BookingStatus, { status: BookingStatus; label: st
 
 export function ProAgendaScreen() {
   const { session } = useAuth();
+  const router = useRouter();
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,6 +37,7 @@ export function ProAgendaScreen() {
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<AgendaMessage[]>([]);
   const [messageDraft, setMessageDraft] = useState('');
+  const [kitConfirmations, setKitConfirmations] = useState<Record<string, boolean>>({});
   const activeTripKey = bookings
     .filter((booking) => booking.status === 'en_route')
     .map((booking) => booking.id)
@@ -45,7 +48,7 @@ export function ProAgendaScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(code, name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('pro_id', session.user.id)
       .in('status', ['scheduled', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_start');
@@ -213,6 +216,7 @@ export function ProAgendaScreen() {
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#0F987A" /><Text style={styles.body}>Organizando tu agenda...</Text></View>;
 
+  const professionalKit = parseProKit(session?.user.user_metadata?.klipp_work_kit);
   const onRoute = bookings.filter((booking) => booking.status === 'en_route').length;
   const inProgress = bookings.filter((booking) => booking.status === 'in_progress' || booking.status === 'arrived').length;
 
@@ -250,6 +254,10 @@ export function ProAgendaScreen() {
       )}
       {bookings.map((booking) => {
         const step = nextStep[booking.status];
+        const kit = booking.status === 'scheduled'
+          ? getKitReadiness(booking.service_types?.code ?? '', booking.service_types?.name ?? '', professionalKit[String(booking.service_type_id)])
+          : null;
+        const kitReady = kit?.complete ?? false;
         const statusLabel = booking.status === 'scheduled' ? 'CONFIRMADO' : booking.status === 'en_route' ? 'EN CAMINO' : booking.status === 'arrived' ? 'EN EL LUGAR' : 'EN SERVICIO';
         const statusStyle = booking.status === 'scheduled' ? styles.statusScheduled : booking.status === 'en_route' ? styles.statusTravel : styles.statusWork;
         return (
@@ -273,6 +281,40 @@ export function ProAgendaScreen() {
               </View>
             </View>
             {(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.landmark}>Referencia: {booking.landmark_notes || booking.addresses?.references_text}</Text>}
+            {booking.status === 'scheduled' && kit && (
+              <View style={styles.preflightCard}>
+                <View style={styles.preflightHeading}>
+                  <View style={styles.preflightIcon}><SymbolView name={{ ios: 'backpack.fill', android: 'work', web: 'work' }} tintColor="#0F987A" size={18} /></View>
+                  <View style={styles.preflightCopy}>
+                    <Text style={styles.preflightTitle}>Antes de salir: revisa tu equipo</Text>
+                    <Text style={styles.preflightSubtitle}>{kit.readyCount} de {kit.total} elementos disponibles en tu kit</Text>
+                  </View>
+                </View>
+                {kit.items.map((item) => (
+                  <View key={item.id} style={styles.preflightItem}>
+                    <SymbolView name={{ ios: item.available ? 'checkmark.circle.fill' : 'circle', android: item.available ? 'check_circle' : 'radio_button_unchecked', web: item.available ? 'check_circle' : 'radio_button_unchecked' }} tintColor={item.available ? '#0F987A' : '#A8B2AD'} size={16} />
+                    <Text style={[styles.preflightItemText, item.available && styles.preflightItemTextReady]}>{item.label}</Text>
+                  </View>
+                ))}
+                {kit.customItems.map((item) => (
+                  <View key={item.id} style={styles.preflightItem}>
+                    <SymbolView name={{ ios: item.available ? 'checkmark.circle.fill' : 'circle', android: item.available ? 'check_circle' : 'radio_button_unchecked', web: item.available ? 'check_circle' : 'radio_button_unchecked' }} tintColor={item.available ? '#0F987A' : '#A8B2AD'} size={16} />
+                    <Text style={[styles.preflightItemText, item.available && styles.preflightItemTextReady]}>{item.label}</Text>
+                  </View>
+                ))}
+                {!kitReady ? (
+                  <View style={styles.preflightWarning}>
+                    <Text style={styles.preflightWarningText}>Completa tu kit antes de salir. No utilices herramientas ni productos del cliente.</Text>
+                    <Pressable accessibilityRole="button" onPress={() => router.push('/(pro)/toolkit')} style={styles.preflightLink}><Text style={styles.preflightLinkText}>Gestionar mi equipo</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor="#087A63" size={14} /></Pressable>
+                  </View>
+                ) : (
+                  <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: Boolean(kitConfirmations[booking.id]) }} onPress={() => setKitConfirmations((current) => ({ ...current, [booking.id]: !current[booking.id] }))} style={styles.kitConfirmRow}>
+                    <View style={[styles.kitConfirmBox, kitConfirmations[booking.id] && styles.kitConfirmBoxChecked]}>{kitConfirmations[booking.id] && <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#FFFFFF" size={13} />}</View>
+                    <Text style={styles.kitConfirmText}>Confirmo que llevo mis herramientas y productos para esta cita.</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
             {booking.status === 'en_route' && <View style={styles.liveNotice}><SymbolView name={{ ios: 'location.fill', android: 'my_location', web: 'my_location' }} tintColor="#087A63" size={15} /><Text style={styles.liveNoticeText}>Tu ubicación se comparte en vivo con el cliente.</Text></View>}
             {booking.status === 'en_route' && (
               <>
@@ -292,7 +334,7 @@ export function ProAgendaScreen() {
               </>
             )}
             <View style={styles.payoutPanel}><View><Text style={styles.payoutLabel}>TU INGRESO</Text><Text style={styles.payout}>{formatDop(booking.pro_payout_dop)}</Text></View><Text style={styles.durationText}>{booking.est_minutes} min</Text></View>
-            {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void advance(booking)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} /></Pressable>}
+            {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id || (booking.status === 'scheduled' && (!kitReady || !kitConfirmations[booking.id]))} onPress={() => void advance(booking)} style={[styles.button, (busyId === booking.id || (booking.status === 'scheduled' && (!kitReady || !kitConfirmations[booking.id]))) && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} /></Pressable>}
           </View>
         );
       })}
@@ -362,4 +404,21 @@ const styles = StyleSheet.create({
   buttonText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
   disabled: { opacity: 0.5 },
   error: { color: '#B42318', fontSize: 13, lineHeight: 19 },
+  preflightCard: { padding: 15, borderRadius: 18, borderWidth: 1, borderColor: '#DCECE6', backgroundColor: '#F8FCFA', gap: 9 },
+  preflightHeading: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 2 },
+  preflightIcon: { width: 37, height: 37, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#E2F4EC' },
+  preflightCopy: { flex: 1, gap: 2 },
+  preflightTitle: { color: '#173B34', fontSize: 13, fontWeight: '900' },
+  preflightSubtitle: { color: '#72827B', fontSize: 10, fontWeight: '700' },
+  preflightItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 3 },
+  preflightItemText: { flex: 1, color: '#8A9992', fontSize: 10, lineHeight: 15 },
+  preflightItemTextReady: { color: '#087A63', fontWeight: '700' },
+  preflightWarning: { padding: 11, borderRadius: 12, backgroundColor: '#FFF7E5', gap: 7, marginTop: 4 },
+  preflightWarningText: { color: '#765515', fontSize: 10, lineHeight: 15, fontWeight: '600' },
+  preflightLink: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 5 },
+  preflightLinkText: { color: '#087A63', fontSize: 11, fontWeight: '900' },
+  kitConfirmRow: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 10, marginTop: 4, borderRadius: 12, backgroundColor: '#E8F6F1' },
+  kitConfirmBox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 7, borderWidth: 1.5, borderColor: '#8DB7A3', backgroundColor: '#FFFFFF' },
+  kitConfirmBoxChecked: { borderColor: '#0F987A', backgroundColor: '#0F987A' },
+  kitConfirmText: { flex: 1, color: '#087A63', fontSize: 10, lineHeight: 15, fontWeight: '800' },
 });
