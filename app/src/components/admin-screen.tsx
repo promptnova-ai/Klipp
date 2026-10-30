@@ -130,14 +130,17 @@ export function AdminScreen() {
       if (Number.isInteger(expiry)) setRequestExpiryMinutes(String(expiry));
 
       if (owner) {
-        const [staffResult, templatesResult] = await Promise.all([
+        const [staffResult, templatesResult, auditResult] = await Promise.all([
           supabase.rpc('admin_list_staff_access'),
           supabase.rpc('admin_list_staff_templates'),
+          supabase.rpc('admin_list_audit_log', { p_limit: 100 }),
         ]);
         if (staffResult.error) throw staffResult.error;
         if (templatesResult.error) throw templatesResult.error;
+        if (auditResult.error) throw auditResult.error;
         setStaffRows((staffResult.data ?? []) as StaffRow[]);
         setStaffTemplates((templatesResult.data ?? []) as StaffTemplate[]);
+        setAuditEntries((auditResult.data ?? []) as AuditEntry[]);
       } else {
         setStaffRows([]);
         setStaffTemplates([]);
