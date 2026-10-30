@@ -452,7 +452,7 @@ export function NewBookingScreen() {
             />
           ))}
       </Section>}
-      {!selectedOffer && <Section title="3. ¿Cuándo necesitas el servicio?">
+      {!selectedOffer && selectedTier && <Section title="3. ¿Cuándo necesitas el servicio?">
         <View style={styles.modeOptions}>
           <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); setMode('auto'); }} />
           <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); }} />
