@@ -398,7 +398,7 @@ export function AdminScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
+      <BrandScreenHeader role="admin" eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
       <View style={styles.sectionTabs}>
         {visibleSections.map((item) => (
           <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: activeSection === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, activeSection === item.key && styles.sectionTabSelected]}>
