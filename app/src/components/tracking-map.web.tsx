@@ -7,10 +7,40 @@ import type { MapCoordinate } from '@/components/location-picker';
 import { KlippColors } from '@/lib/brand';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 
-export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordinate: MapCoordinate; proCoordinate: MapCoordinate }) {
+function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
+  const points: google.maps.LatLngLiteral[] = [];
+  let index = 0;
+  let latitude = 0;
+  let longitude = 0;
+  while (index < encoded.length) {
+    let result = 0;
+    let shift = 0;
+    let byte = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index < encoded.length);
+    latitude += (result & 1) ? ~(result >> 1) : (result >> 1);
+    result = 0;
+    shift = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20 && index < encoded.length);
+    longitude += (result & 1) ? ~(result >> 1) : (result >> 1);
+    points.push({ lat: latitude / 1e5, lng: longitude / 1e5 });
+  }
+  return points;
+}
+
+export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: { clientCoordinate: MapCoordinate; proCoordinate: MapCoordinate; routePolyline?: string | null }) {
   const mapElement = useRef<HTMLDivElement>(null);
   const map = useRef<google.maps.Map | null>(null);
   const professionalMarker = useRef<google.maps.Marker | null>(null);
+  const routeLine = useRef<google.maps.Polyline | null>(null);
+  const routePolylineValue = useRef(routePolyline ?? null);
   const [mapReady, setMapReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const destination = useRef(clientCoordinate);
@@ -19,7 +49,8 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
   useEffect(() => {
     destination.current = clientCoordinate;
     professional.current = proCoordinate;
-  }, [clientCoordinate, proCoordinate]);
+    routePolylineValue.current = routePolyline ?? null;
+  }, [clientCoordinate, proCoordinate, routePolyline]);
 
   useEffect(() => {
     let active = true;
@@ -45,13 +76,14 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
           strokeWeight: 3,
           scale: 9,
         } });
-        new Polyline({
+        const route = new Polyline({
           map: googleMap,
-          path: [proPosition, clientPosition],
+          path: routePolylineValue.current ? decodePolyline(routePolylineValue.current) : [proPosition, clientPosition],
           strokeColor: '#208AEF',
           strokeOpacity: 0.85,
           strokeWeight: 5,
         });
+        routeLine.current = route;
         const bounds = new google.maps.LatLngBounds();
         bounds.extend(clientPosition);
         bounds.extend(proPosition);
@@ -62,6 +94,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
         return () => {
           clientMarker.setMap(null);
           proMarker.setMap(null);
+          route.setMap(null);
         };
       })
       .catch((cause: unknown) => {
@@ -71,6 +104,8 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
       active = false;
       professionalMarker.current?.setMap(null);
       professionalMarker.current = null;
+      routeLine.current?.setMap(null);
+      routeLine.current = null;
       map.current = null;
     };
   }, []);
@@ -81,6 +116,15 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
     professionalMarker.current?.setPosition(position);
     map.current?.panTo(position);
   }, [proCoordinate.latitude, proCoordinate.longitude, mapReady]);
+
+  useEffect(() => {
+    if (!mapReady || !routeLine.current) return;
+    const fallbackPath = [
+      { lat: proCoordinate.latitude, lng: proCoordinate.longitude },
+      { lat: clientCoordinate.latitude, lng: clientCoordinate.longitude },
+    ];
+    routeLine.current.setPath(routePolyline ? decodePolyline(routePolyline) : fallbackPath);
+  }, [routePolyline, proCoordinate.latitude, proCoordinate.longitude, clientCoordinate.latitude, clientCoordinate.longitude, mapReady]);
 
   return (
     <View style={styles.container}>
