@@ -9,6 +9,7 @@ import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/cove
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, ServiceType, VerificationStatus } from '@/lib/types';
+import { getCatalogServiceName, isCatalogServiceVisible } from '@/lib/service-catalog';
 
 type ProfessionalService = {
   service_type_id: number;
@@ -134,9 +135,10 @@ export function ProProfileScreen() {
           id: -slot.weekday,
           pro_id: userId,
         })));
-    const services = (catalogResult.data ?? []) as ServiceType[];
-    const offered = (offeredResult.data ?? []) as ProfessionalService[];
-    const configuredServices = offered.length ? offered : registrationDraft?.services ?? [];
+    const services = ((catalogResult.data ?? []) as ServiceType[]).filter(isCatalogServiceVisible);
+    const allowedServiceIds = new Set(services.map((service) => service.id));
+    const offered = ((offeredResult.data ?? []) as ProfessionalService[]).filter((service) => allowedServiceIds.has(service.service_type_id));
+    const configuredServices = (offered.length ? offered : registrationDraft?.services ?? []).filter((service) => allowedServiceIds.has(service.service_type_id));
     setCatalog(services);
     setSelectedServices(configuredServices.map((service) => service.service_type_id));
     setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
@@ -491,7 +493,7 @@ export function ProProfileScreen() {
           const category = (service as ServiceType & { service_categories?: { name: string } | null }).service_categories?.name;
           return (
             <View key={service.id} style={styles.serviceEditor}>
-              <Choice selected={selected} label={`${service.name}${category ? ` · ${category}` : ''}`} onPress={() => toggleService(service.id)} />
+              <Choice selected={selected} label={getCatalogServiceName({ ...service, category_name: category ?? null })} onPress={() => toggleService(service.id)} />
               {selected && (
                 <View style={styles.serviceFields}>
                   <View style={styles.priceField}>
