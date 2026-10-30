@@ -19,10 +19,10 @@ Deploy the Edge Function:
 supabase functions deploy dispatch-notifications
 ```
 
-Set a long random secret (at least 32 bytes) in Supabase Edge Function secrets:
+Set a long random secret (at least 32 bytes) in Supabase Edge Function secrets. The background ETA monitor also requires the server-side Google Routes API key:
 
 ```bash
-supabase secrets set NOTIFICATION_CRON_SECRET="<random-secret>"
+supabase secrets set NOTIFICATION_CRON_SECRET="<random-secret>" GOOGLE_MAPS_SERVER_API_KEY="<server-google-routes-key>"
 ```
 
 The function has `verify_jwt = false` because scheduled calls authenticate using the dedicated `x-notification-cron-secret` header. Never put this secret in the mobile app or commit it to Git.
@@ -92,6 +92,6 @@ Install that build on physical iOS and Android devices, sign in, open **Avisos**
 - New booking request: assigned professional receives a notice.
 - New chat message: the other booking participant receives a notice. Message contents are not copied into push previews.
 - Scheduled service reminders: the dispatcher generates 24-hour and one-hour reminders for both booking participants, with deduplication keys.
-- ETA delays: when the traffic-aware ETA increases by at least 10 minutes from the last notification baseline, the client receives one update. Improvements of 10 minutes reset the baseline without sending a push, preventing repeated alerts.
+- ETA delays: the scheduled worker refreshes active-trip routes approximately every three minutes when the professional GPS is no older than two minutes. If the traffic-aware ETA increases by at least 10 minutes from the last notification baseline, the client receives one update. Improvements of 10 minutes reset the baseline without sending a push, preventing repeated alerts. Route refreshes incur Google Routes API usage; monitor the Google Cloud billing and quota.
 - User preferences: `booking_updates` and `chat_messages` can control in-app and push channels. Missing preferences default to enabled.
 - Every notification has a unique deduplication key. Push delivery is isolated in an outbox so a temporary push-provider outage does not lose the in-app notification.
