@@ -374,3 +374,64 @@ begin
   end if;
 end;
 $$;
+
+
+-- Track the last ETA baseline so meaningful delays can be notified without spamming.
+create table if not exists public.booking_eta_tracking (
+  booking_id uuid primary key references public.bookings(id) on delete cascade,
+  last_notified_eta_minutes integer not null check (last_notified_eta_minutes > 0),
+  updated_at timestamptz not null default now()
+);
+alter table public.booking_eta_tracking enable row level security;
+grant select, insert, update on public.booking_eta_tracking to service_role;
+
+create or replace function public.should_notify_booking_eta_delay(
+  p_booking_id uuid,
+  p_eta_minutes integer
+) returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_baseline integer;
+begin
+  if p_eta_minutes is null or p_eta_minutes < 1 then return false; end if;
+  perform 1 from public.bookings
+    where id = p_booking_id and status = 'en_route'
+    for update;
+  if not found then return false; end if;
+
+  select last_notified_eta_minutes into v_baseline
+    from public.booking_eta_tracking
+    where booking_id = p_booking_id
+    for update;
+
+  if not found then
+    insert into public.booking_eta_tracking (booking_id, last_notified_eta_minutes)
+    values (p_booking_id, p_eta_minutes)
+    on conflict (booking_id) do nothing;
+    return false;
+  end if;
+
+  if p_eta_minutes >= v_baseline + 10 then
+    update public.booking_eta_tracking
+      set last_notified_eta_minutes = p_eta_minutes, updated_at = now()
+      where booking_id = p_booking_id;
+    return true;
+  end if;
+
+  if p_eta_minutes <= v_baseline - 10 then
+    update public.booking_eta_tracking
+      set last_notified_eta_minutes = p_eta_minutes, updated_at = now()
+      where booking_id = p_booking_id;
+  else
+    update public.booking_eta_tracking
+      set updated_at = now()
+      where booking_id = p_booking_id;
+  end if;
+  return false;
+end;
+$$;
+revoke all on function public.should_notify_booking_eta_delay(uuid, integer) from public, anon, authenticated;
+grant execute on function public.should_notify_booking_eta_delay(uuid, integer) to service_role;
