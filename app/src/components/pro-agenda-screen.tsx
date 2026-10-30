@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
-import { ActivityIndicator, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -35,6 +35,8 @@ export function ProAgendaScreen() {
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<AgendaMessage[]>([]);
   const [messageDraft, setMessageDraft] = useState('');
+  const [isOnline, setIsOnline] = useState(false);
+  const [presenceBusy, setPresenceBusy] = useState(false);
   const activeTripKey = bookings
     .filter((booking) => booking.status === 'en_route')
     .map((booking) => booking.id)
@@ -54,7 +56,19 @@ export function ProAgendaScreen() {
     setLoading(false);
   }, [session?.user.id]);
 
-  useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
+  useFocusEffect(useCallback(() => {
+    void loadBookings();
+    if (!session?.user.id) return;
+    let active = true;
+    void supabase.from('pro_presence').select('is_online, last_seen_at')
+      .eq('pro_id', session.user.id).maybeSingle()
+      .then(({ data, error: presenceError }) => {
+        if (!active) return;
+        if (presenceError) setError(presenceError.message);
+        else setIsOnline(Boolean(data?.is_online && data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 90000));
+      });
+    return () => { active = false; };
+  }, [loadBookings, session?.user.id]));
 
   useEffect(() => {
     if (loading) return;
@@ -156,6 +170,63 @@ export function ProAgendaScreen() {
     return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
   }, [bookings, chatBookingId]);
 
+  async function togglePresence() {
+    if (presenceBusy) return;
+    setPresenceBusy(true);
+    setError(null);
+    try {
+      if (isOnline) {
+        const { error: offlineError } = await supabase.rpc('set_pro_presence', {
+          p_online: false, p_latitude: null, p_longitude: null,
+        });
+        if (offlineError) throw offlineError;
+        setIsOnline(false);
+      } else {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) throw new Error('Permite el acceso a tu ubicación para conectarte y recibir solicitudes cercanas.');
+        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+        const { error: onlineError } = await supabase.rpc('set_pro_presence', {
+          p_online: true,
+          p_latitude: position.coords.latitude,
+          p_longitude: position.coords.longitude,
+        });
+        if (onlineError) throw onlineError;
+        setIsOnline(true);
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar tu disponibilidad.');
+    } finally {
+      setPresenceBusy(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!isOnline) return;
+    let active = true;
+    let subscription: Location.LocationSubscription | null = null;
+    async function startPresenceHeartbeat() {
+      try {
+        const permission = await Location.requestForegroundPermissionsAsync();
+        if (!permission.granted) throw new Error('No podemos mantenerte disponible sin permiso de ubicación.');
+        subscription = await Location.watchPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+          distanceInterval: 25,
+          timeInterval: 15000,
+        }, async ({ coords }) => {
+          const { error: heartbeatError } = await supabase.rpc('heartbeat_pro_presence', {
+            p_latitude: coords.latitude,
+            p_longitude: coords.longitude,
+          });
+          if (heartbeatError && active) setError(heartbeatError.message);
+        });
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'No pudimos mantener tu conexión activa.');
+      }
+    }
+    void startPresenceHeartbeat();
+    return () => { active = false; subscription?.remove(); };
+  }, [isOnline]);
+
   async function refresh() {
     setRefreshing(true);
     await loadBookings();
@@ -216,6 +287,15 @@ export function ProAgendaScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
+      <View style={styles.presenceCard}>
+        <View style={styles.presenceCopy}>
+          <Text style={styles.presenceTitle}>{isOnline ? 'Estás disponible' : 'Estás desconectado'}</Text>
+          <Text style={styles.body}>{isOnline ? 'Klipp puede mostrarte solicitudes inmediatas mientras mantengas la app activa y tu ubicación actualizada.' : 'Conéctate cuando quieras recibir solicitudes inmediatas. Tus reservas programadas no cambian.'}</Text>
+        </View>
+        <Pressable accessibilityRole="switch" accessibilityState={{ checked: isOnline }} disabled={presenceBusy} onPress={() => void togglePresence()} style={[styles.presenceButton, isOnline && styles.presenceButtonOnline, presenceBusy && styles.disabled]}>
+          <Text style={styles.presenceButtonText}>{presenceBusy ? 'Actualizando…' : isOnline ? 'Desconectarme' : 'Conectarme'}</Text>
+        </Pressable>
+      </View>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && (
         <View style={styles.empty}>
@@ -272,6 +352,12 @@ export function ProAgendaScreen() {
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  presenceCard: { marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white, gap: 12 },
+  presenceCopy: { gap: 5 },
+  presenceTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '800' },
+  presenceButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
+  presenceButtonOnline: { backgroundColor: '#475569' },
+  presenceButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
