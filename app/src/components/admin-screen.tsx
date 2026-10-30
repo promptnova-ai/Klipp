@@ -169,11 +169,9 @@ export function AdminScreen() {
     if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage');
     return false;
   });
-  useEffect(() => {
-    if (visibleSections.length > 0 && !visibleSections.some((item) => item.key === section)) {
-      setSection(visibleSections[0].key);
-    }
-  }, [visibleSections, section]);
+  const activeSection = visibleSections.some((item) => item.key === section)
+    ? section
+    : visibleSections[0]?.key ?? section;
 
   const filteredAccounts = useMemo(() => {
     const normalized = search.trim().toLocaleLowerCase();
@@ -344,8 +342,8 @@ export function AdminScreen() {
       <BrandScreenHeader eyebrow="ADMINISTRACIÓN" title="Panel de control" subtitle="Gestiona verificaciones, cuentas y parámetros de Klipp." />
       <View style={styles.sectionTabs}>
         {visibleSections.map((item) => (
-          <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: section === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, section === item.key && styles.sectionTabSelected]}>
-            <Text style={[styles.sectionTabText, section === item.key && styles.sectionTabTextSelected]}>{item.title}</Text>
+          <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: activeSection === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, activeSection === item.key && styles.sectionTabSelected]}>
+            <Text style={[styles.sectionTabText, activeSection === item.key && styles.sectionTabTextSelected]}>{item.title}</Text>
           </Pressable>
         ))}
       </View>
@@ -353,7 +351,7 @@ export function AdminScreen() {
       {visibleSections.length === 0 && <Text style={styles.empty}>Tu cuenta no tiene permisos para acceder a las secciones de administración.</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
-      {section === 'staff' && isSuperAdmin && (
+      {activeSection === 'staff' && isSuperAdmin && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Centro de control del propietario</Text>
           <Text style={styles.body}>Solo tú puedes administrar empleados y permisos. Los cambios se aplican en el servidor y quedan registrados.</Text>
@@ -429,7 +427,7 @@ export function AdminScreen() {
         </View>
       )}
 
-      {section === 'verification' && (
+      {activeSection === 'verification' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Revisión de profesionales</Text>
           <Text style={styles.body}>Los documentos de identidad son privados. Los enlaces firmados caducan en 60 segundos.</Text>
@@ -462,7 +460,7 @@ export function AdminScreen() {
         </View>
       )}
 
-      {section === 'accounts' && (
+      {activeSection === 'accounts' && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Cuentas y roles</Text>
           <Text style={styles.body}>Crea las cuentas desde el registro habitual. El rol de administrador solo puede asignarlo el superadministrador; el empleado recibirá inicialmente permisos personalizados sin accesos concedidos.</Text>
@@ -490,7 +488,7 @@ export function AdminScreen() {
         </View>
       )}
 
-      {section === 'configuration' && (
+      {activeSection === 'configuration' && (
         <>
           {isSuperAdmin && <View style={styles.section}>
             <Text style={styles.sectionTitle}>Parámetros críticos · solo propietario</Text>
