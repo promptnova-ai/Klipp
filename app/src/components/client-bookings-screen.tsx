@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as Linking from 'expo-linking';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -44,7 +43,6 @@ export function ClientBookingsScreen() {
   const [comments, setComments] = useState<Record<string, string>>({});
   const [tracking, setTracking] = useState<Record<string, LocationPoint>>({});
   const [queueInfo, setQueueInfo] = useState<Record<string, QueueInfo>>({});
-  const [proPhones, setProPhones] = useState<Record<string, string>>({});
   const [messages, setMessages] = useState<Record<string, BookingMessage[]>>({});
   const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
   const [openChatId, setOpenChatId] = useState<string | null>(null);
@@ -98,18 +96,6 @@ export function ClientBookingsScreen() {
     if (firstQueueError) setError(firstQueueError);
     setQueueInfo(Object.fromEntries(queueResults.flatMap((result) =>
       'info' in result && result.info ? [[result.bookingId, result.info]] : [],
-    )));
-    const enRouteBookings = bookingRows.filter((booking) => booking.status === 'en_route');
-    const phoneResults = await Promise.all(enRouteBookings.map(async (booking) => {
-      const { data, error: phoneError } = await supabase.rpc('get_tracking_pro_phone', { p_booking_id: booking.id });
-      if (phoneError) return { bookingId: booking.id, error: phoneError.message };
-      const contact = (data ?? [])[0] as { phone: string | null } | undefined;
-      return { bookingId: booking.id, phone: contact?.phone };
-    }));
-    const firstPhoneError = phoneResults.find((result) => 'error' in result)?.error;
-    if (firstPhoneError) setError(firstPhoneError);
-    setProPhones(Object.fromEntries(phoneResults.flatMap((result) =>
-      'phone' in result && result.phone ? [[result.bookingId, result.phone]] : [],
     )));
     setLoading(false);
   }, [session?.user.id]);
@@ -240,19 +226,6 @@ export function ClientBookingsScreen() {
     setBusyId(null);
   }
 
-  async function callProfessional(bookingId: string) {
-    const phone = proPhones[bookingId]?.replace(/[^\d+]/g, '');
-    if (!phone || !/^\+?\d{7,15}$/.test(phone)) {
-      setError('Este profesional no tiene un teléfono disponible para llamadas.');
-      return;
-    }
-    try {
-      await Linking.openURL(`tel:${phone}`);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No pudimos abrir la aplicación de llamadas.');
-    }
-  }
-
   async function toggleChat(bookingId: string) {
     if (openChatId === bookingId) {
       setOpenChatId(null);
@@ -378,13 +351,11 @@ export function ClientBookingsScreen() {
                   <Text style={styles.followButtonText}>Ver seguimiento en vivo</Text>
                 </Pressable>
                 <View style={styles.contactActions}>
-                  {proPhones[booking.id] && <Pressable accessibilityRole="button" onPress={() => void callProfessional(booking.id)} style={({ pressed }) => [styles.contactButton, pressed && styles.buttonPressed]}>
-                    <Text style={styles.contactButtonText}>Llamar</Text>
-                  </Pressable>}
                   <Pressable accessibilityRole="button" onPress={() => void toggleChat(booking.id)} style={({ pressed }) => [styles.contactButton, styles.messageButton, pressed && styles.buttonPressed]}>
-                    <Text style={styles.contactButtonText}>{openChatId === booking.id ? 'Cerrar chat' : 'Mensaje'}</Text>
+                    <Text style={styles.contactButtonText}>{openChatId === booking.id ? 'Cerrar chat' : 'Abrir chat en Klipp'}</Text>
                   </Pressable>
                 </View>
+                <Text style={styles.body}>Toda la comunicación se realiza dentro de Klipp. No necesitas compartir tu número de teléfono.</Text>
                 {openChatId === booking.id && (
                   <View style={styles.chatPanel}>
                     {(messages[booking.id] ?? []).map((message) => (
