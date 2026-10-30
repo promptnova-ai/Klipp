@@ -10,7 +10,7 @@ import { supabase } from '../../lib/supabase';
 import { registerPushDeviceAsync } from '@/lib/push-notifications';
 
 type EventPreference = { in_app_enabled: boolean; push_enabled: boolean };
-type PreferenceMap = Record<'booking_updates' | 'chat_messages', EventPreference>;
+type PreferenceMap = Record<'booking_updates' | 'chat_messages' | 'reminders', EventPreference>;
 
 type AppNotification = {
   id: string;
@@ -40,6 +40,7 @@ export function NotificationsScreen() {
   const [preferences, setPreferences] = useState<PreferenceMap>({
     booking_updates: { in_app_enabled: true, push_enabled: true },
     chat_messages: { in_app_enabled: true, push_enabled: true },
+    reminders: { in_app_enabled: true, push_enabled: true },
   });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -81,9 +82,10 @@ export function NotificationsScreen() {
     const next: PreferenceMap = {
       booking_updates: { in_app_enabled: true, push_enabled: true },
       chat_messages: { in_app_enabled: true, push_enabled: true },
+      reminders: { in_app_enabled: true, push_enabled: true },
     };
     for (const row of data ?? []) {
-      if (row.event_type === 'booking_updates' || row.event_type === 'chat_messages') {
+      if (row.event_type === 'booking_updates' || row.event_type === 'chat_messages' || row.event_type === 'reminders') {
         next[row.event_type] = { in_app_enabled: row.in_app_enabled, push_enabled: row.push_enabled };
       }
     }
@@ -212,6 +214,7 @@ export function NotificationsScreen() {
           {([
             ['booking_updates', 'Reservas y servicios'],
             ['chat_messages', 'Mensajes del chat'],
+            ['reminders', 'Recordatorios de reservas'],
           ] as const).map(([eventType, label]) => (
             <View key={eventType} style={styles.preferenceRow}>
               <Text style={styles.preferenceLabel}>{label}</Text>
