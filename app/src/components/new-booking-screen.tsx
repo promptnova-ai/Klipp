@@ -107,7 +107,7 @@ export function NewBookingScreen() {
   );
   const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) ?? null;
   const getScheduledStart = useCallback(() => {
-    if (timing === 'now') return new Date(Date.now() + 2 * 60 * 1000).toISOString();
+    if (timing === 'now') return new Date(Date.now() + 15 * 60 * 1000).toISOString();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) return null;
     const value = new Date(`${scheduledDate}T${scheduledTime}:00-04:00`);
     return Number.isNaN(value.getTime()) || value.getTime() <= Date.now() ? null : value.toISOString();
