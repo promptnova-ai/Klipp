@@ -54,7 +54,9 @@ function getCategoryGlyph(category: string) {
   const value = category.toLocaleLowerCase();
   if (value.includes('todos')) return '✦';
   if (value.includes('limpieza')) return '✧';
-  if (value.includes('belleza') || value.includes('estét') || value.includes('barber')) return '✂';
+  if (value.includes('belleza') || value.includes('estét') || value.includes('barber') || value.includes('peluquer')) return '✂';
+  if (value.includes('carwash') || value.includes('vehículo') || value.includes('detailing') || value.includes('lavado')) return '🚗';
+  if (value.includes('mantenimiento') || value.includes('reparaciones')) return '🛠';
   if (value.includes('plomer') || value.includes('agua')) return '◉';
   if (value.includes('electric')) return 'ϟ';
   if (value.includes('jard')) return '❋';
