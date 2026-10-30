@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import type { Profile, UserRole } from '@/lib/types';
 import { updateActiveProTrackingBookings } from '@/lib/pro-location-task';
+import { unregisterPushDeviceAsync } from '@/lib/push-notifications';
 
 type AuthContextValue = {
   session: Session | null;
@@ -148,6 +149,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
+    if (session?.user.id) {
+      try {
+        await unregisterPushDeviceAsync(session.user.id);
+      } catch (cause) {
+        setAuthError(cause instanceof Error ? cause.message : 'No pudimos desactivar este dispositivo para las notificaciones.');
+      }
+    }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     if (Platform.OS !== 'web') {
