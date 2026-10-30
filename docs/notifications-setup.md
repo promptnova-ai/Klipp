@@ -91,5 +91,7 @@ Install that build on physical iOS and Android devices, sign in, open **Avisos**
 - Booking status transitions: client and professional receive role-specific notices.
 - New booking request: assigned professional receives a notice.
 - New chat message: the other booking participant receives a notice. Message contents are not copied into push previews.
+- Scheduled service reminders: the dispatcher generates 24-hour and one-hour reminders for both booking participants, with deduplication keys.
+- ETA delays: when the traffic-aware ETA increases by at least 10 minutes from the last notification baseline, the client receives one update. Improvements of 10 minutes reset the baseline without sending a push, preventing repeated alerts.
 - User preferences: `booking_updates` and `chat_messages` can control in-app and push channels. Missing preferences default to enabled.
 - Every notification has a unique deduplication key. Push delivery is isolated in an outbox so a temporary push-provider outage does not lose the in-app notification.
