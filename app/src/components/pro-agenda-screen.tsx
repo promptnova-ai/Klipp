@@ -271,13 +271,13 @@ export function ProAgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48, gap: 18, backgroundColor: '#F3F8F6', flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
-  card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
-  empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
-  cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
+  card: { padding: 21, borderWidth: 1, borderColor: '#DCECE6', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 12, shadowColor: '#124B3E', shadowOpacity: 0.06, shadowOffset: { width: 0, height: 9 }, shadowRadius: 18, elevation: 3 },
+  empty: { marginTop: 12, padding: 24, borderWidth: 1, borderColor: '#DCECE6', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 10 },
+  cardTitle: { color: '#173B34', fontSize: 19, fontWeight: '800', letterSpacing: -0.3 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700', marginTop: 3 },
   locationNotice: { color: '#047857', fontSize: 13, fontWeight: '700' },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   chatMessageOwn: { alignSelf: 'flex-end', backgroundColor: '#EAF2FF' },
   chatMessageText: { color: KlippColors.slate, fontSize: 13, lineHeight: 18 },
   messageInput: { minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 13 },
-  button: { minHeight: 46, marginTop: 7, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  button: { minHeight: 50, marginTop: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#0F987A' },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.5 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
