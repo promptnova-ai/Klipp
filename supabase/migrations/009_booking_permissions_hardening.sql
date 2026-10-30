@@ -19,7 +19,14 @@ grant select on table public.reviews to authenticated;
 -- enforces that it belongs to the client and to a completed/confirmed booking.
 grant insert on table public.reviews to authenticated;
 
+-- This legacy five-argument overload is not used by the current mobile app
+-- or by the repository migrations. It lacks address ownership and robust
+-- input validation, so keep the function for now but disable client execution.
+revoke execute on function public.create_booking(
+  uuid, uuid, timestamptz, integer, text
+) from PUBLIC, anon, authenticated;
+
 -- No direct INSERT/UPDATE/DELETE on bookings or booking_requests.
 -- No direct UPDATE/DELETE on reviews.
--- SECURITY DEFINER RPCs and service_role Edge Functions retain their ability
--- to perform the validated business operations.
+-- SECURITY DEFINER RPCs used by the app and service_role Edge Functions retain
+-- their ability to perform the validated business operations.
