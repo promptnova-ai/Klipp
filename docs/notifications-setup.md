@@ -89,7 +89,7 @@ Install that build on physical iOS and Android devices, sign in, open **Avisos**
 ## 5. Current event coverage
 
 - Booking status transitions: client and professional receive role-specific notices.
-- New booking request: assigned professional receives a notice.
+- New booking request: assigned professional receives a notice. For manual selection, a decline or timeout also notifies the client so they can choose another professional. Automatic dispatch declines stay quiet while Klipp tries the next candidate.
 - New chat message: the other booking participant receives a notice. Message contents are not copied into push previews.
 - Scheduled service reminders: the dispatcher generates 24-hour and one-hour reminders for both booking participants, with deduplication keys.
 - ETA delays: the scheduled worker refreshes active-trip routes approximately every three minutes when the professional GPS is no older than two minutes. If the traffic-aware ETA increases by at least 10 minutes from the last notification baseline, the client receives one update. Improvements of 10 minutes reset the baseline without sending a push, preventing repeated alerts. Route refreshes incur Google Routes API usage; monitor the Google Cloud billing and quota.
