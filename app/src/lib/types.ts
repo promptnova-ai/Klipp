@@ -147,6 +147,8 @@ export interface Booking {
   en_route_at: string | null;
   arrived_at: string | null;
   started_at: string | null;
+  equipment_confirmed_at?: string | null;
+  equipment_confirmed_by?: string | null;
   completed_at: string | null;
   confirmed_at: string | null;
   cancelled_at: string | null;
