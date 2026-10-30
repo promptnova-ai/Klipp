@@ -527,12 +527,12 @@ export function NewBookingScreen() {
       </Section>
       <Section title="5. Profesional">
         {!selectedOffer && <View style={styles.modeOptions}>
-          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
+          <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
           <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
-        {!selectedOffer && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para ver profesionales disponibles en tu zona.</Text>}
+        {!selectedOffer && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales cercanos, revisar sus perfiles y seleccionar a quién contratar.</Text>}
         {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
         {!selectedOffer && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
         {!selectedOffer && mode === 'manual' && pros.map((pro) => (
