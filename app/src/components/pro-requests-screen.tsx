@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -26,6 +26,7 @@ type IncomingRequest = BookingRequest & { bookings: RequestBooking | null };
 
 export function ProRequestsScreen() {
   const { session, profile } = useAuth();
+  const router = useRouter();
   const [requests, setRequests] = useState<IncomingRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
