@@ -586,8 +586,8 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   error: { padding: 12, borderRadius: 12, backgroundColor: '#FEF3F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
   noticeCard: { alignItems: 'center', padding: 18, borderRadius: 16, backgroundColor: '#ECFDF5', gap: 9 },
-  noticeIcon: { color: '#047857', fontSize: 22 },
+  noticeIcon: { color: '#067647', fontSize: 22 },
   noticeText: { color: '#065F46', fontSize: 13, lineHeight: 20, textAlign: 'center' },
   loginButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 11, backgroundColor: '#D1FAE5' },
-  loginButtonText: { color: '#047857', fontSize: 13, fontWeight: '700' },
+  loginButtonText: { color: '#067647', fontSize: 13, fontWeight: '700' },
 });

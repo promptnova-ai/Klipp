@@ -1,0 +1,19 @@
+ app/src/app/(client)/index.tsx                       |   6 [32m+[m[31m--[m
+ app/src/app/index.tsx                                | 133 [32m+++++++[m[31m-----------------------------------------------------[m
+ app/src/components/animated-icon.tsx                 |   2 [32m+[m[31m-[m
+ app/src/components/auth-screen.tsx                   |  10 [32m++[m[31m---[m
+ app/src/components/client-addresses-screen.tsx       |  16 [32m++++[m[31m----[m
+ app/src/components/client-bookings-screen.tsx        |  12 [32m+++[m[31m---[m
+ app/src/components/client-tracking-screen.tsx        |   2 [32m+[m[31m-[m
+ app/src/components/coverage-radius-picker.native.tsx |   2 [32m+[m[31m-[m
+ app/src/components/coverage-radius-picker.web.tsx    |   4 [32m+[m[31m-[m
+ app/src/components/new-booking-screen.tsx            |   8 [32m++[m[31m--[m
+ app/src/components/pro-agenda-screen.tsx             |  12 [32m+++[m[31m---[m
+ app/src/components/pro-profile-screen.tsx            |   6 [32m+[m[31m--[m
+ app/src/components/pro-registration-screen.tsx       |   4 [32m+[m[31m-[m
+ app/src/components/pro-requests-screen.tsx           |  12 [32m+++[m[31m---[m
+ app/src/components/role-guard.tsx                    |  10 [32m++[m[31m---[m
+ app/src/components/tracking-map.native.tsx           |   4 [32m+[m[31m-[m
+ app/src/components/tracking-map.web.tsx              |   2 [32m+[m[31m-[m
+ app/src/lib/pro-location-task.ts                     |   2 [32m+[m[31m-[m
+ 18 files changed, 71 insertions(+), 176 deletions(-)

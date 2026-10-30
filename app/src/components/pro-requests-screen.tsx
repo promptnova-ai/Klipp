@@ -68,12 +68,12 @@ export function ProRequestsScreen() {
     setBusyId(null);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
 
   return (
     <ScrollView
       contentContainerStyle={styles.page}
-      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#0052FF" />}>
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Nuevas oportunidades para tu agenda." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && requests.length === 0 && (
@@ -126,10 +126,10 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#FAFAFC' },
+  title: { color: '#0F172A', fontSize: 28, fontWeight: '700' },
+  subtitle: { color: '#475569', fontSize: 15, marginTop: -8 },
+  body: { color: '#475569', fontSize: 14, lineHeight: 21 },
   empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
   emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
   card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },

@@ -289,10 +289,10 @@ export function ClientBookingsScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#0052FF" />}>
       <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
@@ -426,7 +426,7 @@ export function ClientBookingsScreen() {
                 <View style={styles.ratingRow}>
                   {[1, 2, 3, 4, 5].map((rating) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: (ratings[booking.id] ?? 5) === rating }} key={rating} onPress={() => setRatings((current) => ({ ...current, [booking.id]: rating }))} style={styles.star}><Text style={styles.starText}>{(ratings[booking.id] ?? 5) >= rating ? '★' : '☆'}</Text></Pressable>)}
                 </View>
-                <TextInput multiline onChangeText={(value) => setComments((current) => ({ ...current, [booking.id]: value }))} placeholder="Comentario (opcional)" placeholderTextColor="#85918b" style={styles.commentInput} value={comments[booking.id] ?? ''} />
+                <TextInput multiline onChangeText={(value) => setComments((current) => ({ ...current, [booking.id]: value }))} placeholder="Comentario (opcional)" placeholderTextColor="#64748B" style={styles.commentInput} value={comments[booking.id] ?? ''} />
                 <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void submitReview(booking)} style={styles.reviewButton}><Text style={styles.buttonText}>Enviar reseña</Text></Pressable>
               </View>
             )}
@@ -465,10 +465,10 @@ const styles = StyleSheet.create({
   statusPillSuccess: { backgroundColor: '#ECFDF5' },
   statusPillNeutral: { backgroundColor: '#F1F5F9' },
   statusTextActive: { color: KlippColors.blueDark },
-  statusTextSuccess: { color: '#047857' },
+  statusTextSuccess: { color: '#067647' },
   statusTextNeutral: { color: KlippColors.muted },
   statusDotActive: { backgroundColor: KlippColors.blueDark },
-  statusDotSuccess: { backgroundColor: '#047857' },
+  statusDotSuccess: { backgroundColor: '#067647' },
   statusDotNeutral: { backgroundColor: KlippColors.muted },
   status: { fontSize: 11, fontWeight: '700' },
   cardDivider: { height: 1, backgroundColor: KlippColors.border },
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
   trackingPanel: { gap: 12 },
   followButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
   followButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
-  etaBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: '#ECFDF5', color: '#047857', fontSize: 14, fontWeight: '800' },
+  etaBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: '#ECFDF5', color: '#067647', fontSize: 14, fontWeight: '800' },
   trackingPro: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14 },
   contactActions: { flexDirection: 'row', gap: 9 },
   contactButton: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },

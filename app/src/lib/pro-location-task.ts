@@ -84,7 +84,7 @@ export async function updateActiveProTrackingBookings(bookingIds: string[]) {
       foregroundService: {
         notificationTitle: 'Klipp está en camino',
         notificationBody: 'Tu ubicación se comparte durante este servicio.',
-        notificationColor: '#208AEF',
+        notificationColor: '#0052FF',
       },
     });
   }

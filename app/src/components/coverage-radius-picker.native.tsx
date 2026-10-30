@@ -35,7 +35,7 @@ export function CoverageRadiusPicker({
           center={center}
           radius={radiusMeters}
           fillColor="rgba(32,138,239,0.16)"
-          strokeColor="#208AEF"
+          strokeColor="#0052FF"
           strokeWidth={2}
         />
         <Marker

@@ -86,7 +86,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   autoCapitalize="words"
                   onChangeText={setFullName}
                   placeholder="Tu nombre"
-                  placeholderTextColor="#85918b"
+                  placeholderTextColor="#64748B"
                   style={styles.input}
                   value={fullName}
                 />
@@ -117,7 +117,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               keyboardType="email-address"
               onChangeText={setEmail}
               placeholder="nombre@correo.com"
-              placeholderTextColor="#85918b"
+              placeholderTextColor="#64748B"
               style={styles.input}
               value={email}
             />
@@ -126,7 +126,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               autoComplete={isRegister ? 'new-password' : 'current-password'}
               onChangeText={setPassword}
               placeholder="Mínimo 6 caracteres"
-              placeholderTextColor="#85918b"
+              placeholderTextColor="#64748B"
               secureTextEntry
               style={styles.input}
               value={password}
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
   input: { minHeight: 50, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 14, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
   roleOptions: { flexDirection: 'row', gap: 10 },
-  roleOption: { flex: 1, minHeight: 46, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 7, backgroundColor: '#fff', paddingHorizontal: 8 },
+  roleOption: { flex: 1, minHeight: 46, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, backgroundColor: '#fff', paddingHorizontal: 8 },
   roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
   roleText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   roleTextSelected: { color: KlippColors.blueDark },
@@ -189,6 +189,6 @@ const styles = StyleSheet.create({
   submitPressed: { opacity: 0.85 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 14, flexWrap: 'wrap' },
-  switchText: { color: '#52615b', fontSize: 14 },
+  switchText: { color: '#475569', fontSize: 14 },
   link: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
 });

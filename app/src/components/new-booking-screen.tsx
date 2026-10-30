@@ -397,7 +397,7 @@ export function NewBookingScreen() {
     setSaving(false);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
@@ -520,7 +520,7 @@ export function NewBookingScreen() {
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
         {!selectedOffer && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para ver profesionales disponibles en tu zona.</Text>}
-        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
+        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#0052FF" />}
         {!selectedOffer && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
         {!selectedOffer && mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
@@ -554,7 +554,7 @@ export function NewBookingScreen() {
               <Text style={styles.summaryTitle}>{services.find((service) => service.id === selectedServiceId)?.name ?? 'Servicio'}</Text>
             </View>
             <View style={styles.summaryIcon}>
-              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#047857" size={18} />
+              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#067647" size={18} />
             </View>
           </View>
           {selectedTier && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Tamaño</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>}
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   dateMonth: { color: KlippColors.muted, fontSize: 10, textTransform: 'capitalize' },
   dateTextSelected: { color: KlippColors.white },
   slotHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 },
-  slotCount: { color: '#047857', fontSize: 12, fontWeight: '700' },
+  slotCount: { color: '#067647', fontSize: 12, fontWeight: '700' },
   slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   slotOption: { width: '31%', minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white },
   slotOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },

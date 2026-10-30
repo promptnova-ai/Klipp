@@ -391,7 +391,7 @@ export function ProProfileScreen() {
   }
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando perfil...</Text></View>;
+    return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando perfil...</Text></View>;
   }
 
   if (!proProfile) {
@@ -555,7 +555,7 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 40, gap: 16, backgroundColor: KlippColors.canvas },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#FAFAFC' },
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
   section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
-  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
+  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.blueDark },

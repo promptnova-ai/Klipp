@@ -48,7 +48,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
         new Polyline({
           map: googleMap,
           path: [proPosition, clientPosition],
-          strokeColor: '#208AEF',
+          strokeColor: '#0052FF',
           strokeOpacity: 0.85,
           strokeWeight: 5,
         });

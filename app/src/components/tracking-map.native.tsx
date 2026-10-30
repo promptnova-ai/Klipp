@@ -22,8 +22,8 @@ export function TrackingMap({ clientCoordinate, proCoordinate }: { clientCoordin
   return (
     <View style={styles.container}>
       <MapView ref={map} initialRegion={region} style={StyleSheet.absoluteFill}>
-        <Polyline coordinates={[proCoordinate, clientCoordinate]} strokeColor="#208AEF" strokeWidth={4} />
-        <Marker coordinate={clientCoordinate} title="Tu ubicación" pinColor="#208AEF" />
+        <Polyline coordinates={[proCoordinate, clientCoordinate]} strokeColor="#0052FF" strokeWidth={4} />
+        <Marker coordinate={clientCoordinate} title="Tu ubicación" pinColor="#0052FF" />
         <Marker ref={marker} coordinate={proCoordinate} title="Profesional" pinColor="#F59E0B" />
       </MapView>
     </View>

@@ -422,7 +422,7 @@ export default function ClientHomeScreen() {
 
       <View style={styles.trustRow}>
         <View style={styles.trustIcon}>
-          <SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor="#047857" size={19} />
+          <SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor="#067647" size={19} />
         </View>
         <View style={styles.trustCopy}>
           <Text style={styles.trustTitle}>Tu tranquilidad es primero</Text>
@@ -452,7 +452,7 @@ export default function ClientHomeScreen() {
                 <View style={styles.benefitList}>
                   {['Profesionales verificados', 'Precio cerrado según el tamaño', 'Reserva en el horario que prefieras'].map((benefit) => (
                     <View key={benefit} style={styles.benefit}>
-                      <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#047857" size={18} />
+                      <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#067647" size={18} />
                       <Text style={styles.benefitText}>{benefit}</Text>
                     </View>
                   ))}
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   trustIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' },
   trustCopy: { flex: 1, gap: 3 },
   trustTitle: { color: '#065F46', fontSize: 14, fontWeight: '700' },
-  trustText: { color: '#047857', fontSize: 12, lineHeight: 18 },
+  trustText: { color: '#067647', fontSize: 12, lineHeight: 18 },
   modalRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.42)' },
   modalBackdrop: { ...StyleSheet.absoluteFill },
   detailSheet: { maxHeight: '92%', paddingTop: 10, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: KlippColors.canvas },

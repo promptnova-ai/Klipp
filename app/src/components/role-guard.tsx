@@ -11,7 +11,7 @@ export function RoleGuard({ role, children }: { role: ExtractRole; children: Rea
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#16766c" />
+        <ActivityIndicator color="#0052FF" />
         <Text style={styles.message}>Cargando tu cuenta...</Text>
       </View>
     );
@@ -41,10 +41,10 @@ export function RoleGuard({ role, children }: { role: ExtractRole; children: Rea
 }
 
 const styles = StyleSheet.create({
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 20, fontWeight: '700', textAlign: 'center' },
-  message: { color: '#52615b', fontSize: 14, textAlign: 'center' },
-  button: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 7, backgroundColor: '#16766c' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#FAFAFC' },
+  title: { color: '#0F172A', fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  message: { color: '#475569', fontSize: 14, textAlign: 'center' },
+  button: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 7, backgroundColor: '#0052FF' },
   buttonText: { color: '#fff', fontWeight: '700' },
   link: { padding: 10 },
   linkText: { color: '#125e56', fontWeight: '700' },

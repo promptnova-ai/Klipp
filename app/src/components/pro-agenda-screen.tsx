@@ -211,10 +211,10 @@ export function ProAgendaScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando agenda...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando agenda...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#0052FF" />}>
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && (
@@ -272,15 +272,15 @@ export function ProAgendaScreen() {
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#FAFAFC' },
+  title: { color: '#0F172A', fontSize: 28, fontWeight: '700' },
+  subtitle: { color: '#475569', fontSize: 15, marginTop: -8 },
   card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
   empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700', marginTop: 3 },
-  locationNotice: { color: '#047857', fontSize: 13, fontWeight: '700' },
+  locationNotice: { color: '#067647', fontSize: 13, fontWeight: '700' },
   chatButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
   chatButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
   chatPanel: { padding: 12, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 8 },

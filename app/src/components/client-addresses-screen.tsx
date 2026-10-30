@@ -116,10 +116,10 @@ export function ClientAddressesScreen() {
     setSaving(false);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando direcciones...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color="#0052FF" /><Text style={styles.body}>Cargando direcciones...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#0052FF" />} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda ubicaciones con GPS para tus próximos servicios." />
       {addresses.length === 0 && <Text style={styles.body}>Todavía no has guardado una dirección.</Text>}
       {addresses.map((address) => (
@@ -133,12 +133,12 @@ export function ClientAddressesScreen() {
       <View style={styles.form}>
         <Text style={styles.sectionTitle}>Añadir dirección</Text>
         <Text style={styles.label}>Nombre para identificarla</Text>
-        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor="#85918b" style={styles.input} value={label} />
+        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor="#64748B" style={styles.input} value={label} />
         <Text style={styles.label}>Ubicación del servicio</Text>
         {coordinate ? (
           <>
             <LocationPicker coordinate={coordinate} onChange={setCoordinate} />
-            <TextInput onChangeText={setStreet} placeholder="Dirección aproximada" placeholderTextColor="#85918b" style={styles.input} value={street} />
+            <TextInput onChangeText={setStreet} placeholder="Dirección aproximada" placeholderTextColor="#64748B" style={styles.input} value={street} />
             <Pressable accessibilityRole="button" onPress={() => void locateCurrentPosition()} style={styles.locationButton}>
               <Text style={styles.locationButtonText}>Usar mi ubicación actual</Text>
             </Pressable>
@@ -149,7 +149,7 @@ export function ClientAddressesScreen() {
           </Pressable>
         )}
         <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
-        <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor="#85918b" style={[styles.input, styles.multiline]} value={references} />
+        <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor="#64748B" style={[styles.input, styles.multiline]} value={references} />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
         <Pressable accessibilityRole="button" disabled={saving} onPress={() => void saveAddress()} style={[styles.button, saving && styles.disabled]}>
@@ -162,9 +162,9 @@ export function ClientAddressesScreen() {
 
 const styles = StyleSheet.create({
   page: { paddingBottom: 36, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#FAFAFC' },
+  title: { color: '#0F172A', fontSize: 28, fontWeight: '700' },
+  body: { color: '#475569', fontSize: 14, lineHeight: 21 },
   addressCard: { padding: 16, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 5 },
   cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
   form: { marginTop: 8, padding: 17, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
