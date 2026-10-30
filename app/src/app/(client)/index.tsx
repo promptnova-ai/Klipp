@@ -17,6 +17,7 @@ import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
+import { getCatalogCategoryDescription, getCatalogCategoryName, getCatalogServiceName, isCatalogServiceVisible } from '@/lib/service-catalog';
 import { supabase } from '../../../lib/supabase';
 
 type CatalogService = ServiceType & {
@@ -33,7 +34,6 @@ type ServiceOffer = {
   est_minutes: number;
   pro?: SearchablePro;
 };
-type CatalogCategory = { id: number; name: string };
 type NearbyOffer = ServiceOffer & {
   pro_name: string | null;
   avatar_url: string | null;
@@ -46,13 +46,8 @@ type NearbyOffer = ServiceOffer & {
 };
 type HomeCoordinate = { latitude: number; longitude: number };
 
-function getCategory(service: ServiceType & { category_name?: string | null }) {
-  if (service.category_name) return service.category_name;
-  const description = `${service.code} ${service.name}`.toLocaleLowerCase();
-  if (description.includes('barber')) return 'Barbería';
-  if (description.includes('estet') || description.includes('belleza') || description.includes('uña')) return 'Estética';
-  if (description.includes('limpieza') || description.includes('clean')) return 'Limpieza';
-  return 'Otros';
+function getCategory(service: CatalogService) {
+  return getCatalogCategoryName(service);
 }
 
 function getCategoryGlyph(category: string) {
@@ -110,7 +105,6 @@ export default function ClientHomeScreen() {
   const { profile } = useAuth();
   const [services, setServices] = useState<CatalogService[]>([]);
   const [pros, setPros] = useState<SearchablePro[]>([]);
-  const [categoriesData, setCategoriesData] = useState<CatalogCategory[]>([]);
   const [serviceIds, setServiceIds] = useState<number[]>([]);
   const [coordinate, setCoordinate] = useState<HomeCoordinate | null>(null);
   const [locationLabel, setLocationLabel] = useState('Activa tu ubicación');
@@ -126,21 +120,21 @@ export default function ClientHomeScreen() {
   async function loadCatalog() {
     setLoading(true);
     setLoadError(null);
-    const [serviceResult, tierResult, categoryResult] = await Promise.all([
+    const [serviceResult, tierResult] = await Promise.all([
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
-      supabase.from('service_categories').select('id, name').eq('active', true).order('id'),
     ]);
-    const error = serviceResult.error ?? tierResult.error ?? categoryResult.error;
+    const error = serviceResult.error ?? tierResult.error;
     if (error) {
       setLoadError(error.message);
       setLoading(false);
       return;
     }
     const tiers = (tierResult.data ?? []) as PricingTier[];
-    const serviceRows = (serviceResult.data ?? []) as (ServiceType & {
+    const allServiceRows = (serviceResult.data ?? []) as (ServiceType & {
       service_categories: { name: string } | { name: string }[] | null;
     })[];
+    const serviceRows = allServiceRows.filter(isCatalogServiceVisible);
     setServices(
       serviceRows.map((service) => ({
         ...service,
@@ -151,7 +145,6 @@ export default function ClientHomeScreen() {
     );
     setServiceIds(serviceRows.map((service) => service.id));
     setPros([]);
-    setCategoriesData((categoryResult.data ?? []) as CatalogCategory[]);
     setLoading(false);
   }
 
@@ -223,8 +216,8 @@ export default function ClientHomeScreen() {
   }, [coordinate, serviceIds]);
 
   const categories = useMemo(
-    () => ['Todos', ...categoriesData.map((category) => category.name)],
-    [categoriesData],
+    () => ['Todos', ...Array.from(new Set(services.map(getCategory)))],
+    [services],
   );
   const normalizedSearch = search.trim().toLocaleLowerCase();
   const visibleServices = services.filter((service) => {
@@ -340,19 +333,20 @@ export default function ClientHomeScreen() {
         <View><Text style={styles.sectionEyebrow}>EXPLORA POR CATEGORÍA</Text><Text style={styles.sectionTitle}>¿Qué estás buscando?</Text></View>
         {selectedCategory !== 'Todos' && <Pressable accessibilityRole="button" onPress={() => setSelectedCategory('Todos')} style={styles.resetCategory}><Text style={styles.resetCategoryText}>Ver todas</Text></Pressable>}
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryTiles}>
+      <View style={styles.categoryGrid}>
         {categories.map((category) => {
           const selected = selectedCategory === category;
           const serviceCount = category === 'Todos' ? services.length : services.filter((service) => getCategory(service) === category).length;
           return (
             <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category} onPress={() => setSelectedCategory(category)} style={({ pressed }) => [styles.categoryTile, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
               <View style={[styles.categoryIcon, selected && styles.categoryIconSelected]}><Text style={styles.categoryGlyph}>{getCategoryGlyph(category)}</Text></View>
-              <Text numberOfLines={1} style={[styles.categoryTileTitle, selected && styles.categoryTileTitleSelected]}>{category}</Text>
+              <Text numberOfLines={2} style={[styles.categoryTileTitle, selected && styles.categoryTileTitleSelected]}>{category === 'Todos' ? 'Todos los servicios' : category}</Text>
+              {category !== 'Todos' && <Text numberOfLines={2} style={[styles.categoryTileDescription, selected && styles.categoryTileDescriptionSelected]}>{getCatalogCategoryDescription(category)}</Text>}
               <Text style={[styles.categoryTileCount, selected && styles.categoryTileCountSelected]}>{serviceCount} {serviceCount === 1 ? 'servicio' : 'servicios'}</Text>
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>lView>
       <View style={styles.sectionHeadingRow}>
         <View><Text style={styles.sectionEyebrow}>{coordinate ? 'DISPONIBLES PARA TU ZONA' : 'CATÁLOGO KLIPP'}</Text><Text style={styles.sectionTitle}>Servicios para ti</Text></View>
         <View style={styles.catalogCount}><Text style={styles.catalogCountText}>{visibleServices.length}</Text></View>
@@ -383,7 +377,7 @@ export default function ClientHomeScreen() {
                   <View style={styles.serviceVisualCaption}><Text style={styles.serviceVisualCaptionText}>{getCategory(service)}</Text></View>
                 </View>
                 <View style={styles.serviceCopy}>
-                  <View style={styles.serviceCardTop}><Text style={styles.serviceTitle}>{service.name}</Text><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#98A3B5" size={16} /></View>
+                  <View style={styles.serviceCardTop}><Text style={styles.serviceTitle}>{getCatalogServiceName(service)}</Text><SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#98A3B5" size={16} /></View>
                   <Text numberOfLines={2} style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
                   <View style={styles.serviceFooter}>
                     {lowestOption ? <View><Text style={styles.priceCaption}>DESDE</Text><Text style={styles.servicePrice}>{formatDop(lowestOption.price)}</Text></View> : <Text style={styles.servicePrice}>Consultar disponibilidad</Text>}
@@ -418,8 +412,15 @@ export default function ClientHomeScreen() {
               <View style={styles.sheetHandle} />
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.detailIllustration}><View style={styles.detailIllustrationIcon}><SymbolView name={getServiceSymbol(selectedService)} tintColor="#315BFF" size={34} /></View><Text style={styles.detailCategory}>{getCategory(selectedService)}</Text></View>
-                <Text style={styles.detailTitle}>{selectedService.name}</Text>
+                <Text style={styles.detailTitle}>{getCatalogServiceName(selectedService)}</Text>
                 <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar cuidado.'}</Text>
+                <View style={styles.equipmentNotice}>
+                  <View style={styles.equipmentNoticeIcon}><SymbolView name={{ ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' }} tintColor="#0F987A" size={18} /></View>
+                  <View style={styles.equipmentNoticeCopy}>
+                    <Text style={styles.equipmentNoticeTitle}>El profesional lleva su propio equipo</Text>
+                    <Text style={styles.equipmentNoticeText}>Herramientas, utensilios y productos de trabajo. No tendrás que prestar los tuyos.</Text>
+                  </View>
+                </View>
                 <View style={styles.benefitList}>
                   {['Profesionales verificados', 'Precio claro antes de reservar', 'Elige el horario que prefieras'].map((benefit) => (
                     <View key={benefit} style={styles.benefit}><SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#0F987A" size={18} /><Text style={styles.benefitText}>{benefit}</Text></View>
@@ -492,14 +493,16 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#14213D', fontSize: 22, fontWeight: '900', marginTop: 5, letterSpacing: -0.6 },
   resetCategory: { paddingVertical: 6, paddingHorizontal: 9 },
   resetCategoryText: { color: '#315BFF', fontSize: 12, fontWeight: '800' },
-  categoryTiles: { gap: 11, paddingVertical: 2, paddingRight: 5 },
-  categoryTile: { width: 112, minHeight: 126, padding: 12, alignItems: 'flex-start', justifyContent: 'space-between', borderRadius: 19, borderWidth: 1, borderColor: '#E5EAF3', backgroundColor: '#FFFFFF' },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10 },
+  categoryTile: { width: '48%', minHeight: 142, padding: 13, alignItems: 'flex-start', justifyContent: 'flex-start', borderRadius: 19, borderWidth: 1, borderColor: '#E5EAF3', backgroundColor: '#FFFFFF', gap: 5 },
   categoryTileSelected: { borderColor: '#315BFF', backgroundColor: '#315BFF' },
   categoryIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF2FF' },
   categoryIconSelected: { backgroundColor: '#FFFFFF24' },
   categoryGlyph: { color: '#315BFF', fontSize: 23, fontWeight: '800' },
-  categoryTileTitle: { color: '#24324D', fontSize: 12, fontWeight: '800', marginTop: 8 },
+  categoryTileTitle: { color: '#24324D', fontSize: 12, lineHeight: 16, fontWeight: '900', marginTop: 4 },
   categoryTileTitleSelected: { color: '#FFFFFF' },
+  categoryTileDescription: { color: '#7A879C', fontSize: 9, lineHeight: 13 },
+  categoryTileDescriptionSelected: { color: '#E2E9FF' },
   categoryTileCount: { color: '#8792A5', fontSize: 9, fontWeight: '600', marginTop: 2 },
   categoryTileCountSelected: { color: '#E0E7FF' },
   catalogCount: { minWidth: 29, height: 29, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#EEF2FF' },
@@ -554,6 +557,11 @@ const styles = StyleSheet.create({
   detailCategory: { color: '#315BFF', fontSize: 12, fontWeight: '900' },
   detailTitle: { color: '#15213B', fontSize: 25, fontWeight: '900', letterSpacing: -0.7 },
   detailDescription: { color: '#68758B', fontSize: 14, lineHeight: 21 },
+  equipmentNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 13, borderRadius: 16, borderWidth: 1, borderColor: '#CFE9DC', backgroundColor: '#EFF8F3' },
+  equipmentNoticeIcon: { width: 35, height: 35, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#DDF3E8' },
+  equipmentNoticeCopy: { flex: 1, gap: 3 },
+  equipmentNoticeTitle: { color: '#14634D', fontSize: 12, fontWeight: '900' },
+  equipmentNoticeText: { color: '#47816C', fontSize: 10, lineHeight: 15 },
   benefitList: { gap: 10, paddingVertical: 3 },
   benefit: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   benefitText: { color: '#334155', fontSize: 13, fontWeight: '600' },
