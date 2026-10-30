@@ -45,6 +45,7 @@ create table if not exists public.push_delivery_queue (
   notification_id uuid not null unique references public.notifications(id) on delete cascade,
   status text not null default 'pending' check (status in ('pending', 'processing', 'sent', 'failed')),
   attempts integer not null default 0,
+  claimed_at timestamptz,
   next_attempt_at timestamptz not null default now(),
   ticket_map jsonb not null default '[]'::jsonb,
   receipts_checked_at timestamptz,
@@ -335,8 +336,10 @@ as $$
   with picked as (
     select q.id
     from public.push_delivery_queue q
-    where q.status = 'pending'
-      and q.next_attempt_at <= now()
+    where (
+        (q.status = 'pending' and q.next_attempt_at <= now())
+        or (q.status = 'processing' and q.claimed_at < now() - interval '10 minutes')
+      )
       and q.attempts < 5
     order by q.created_at
     limit greatest(1, least(coalesce(p_limit, 50), 100))
@@ -345,6 +348,7 @@ as $$
   update public.push_delivery_queue q
   set status = 'processing',
       attempts = q.attempts + 1,
+      claimed_at = now(),
       last_error = null
   from picked
   where q.id = picked.id
