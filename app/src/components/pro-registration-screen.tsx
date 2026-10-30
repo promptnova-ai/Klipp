@@ -85,7 +85,7 @@ export function ProRegistrationScreen() {
       .eq('active', true)
       .order('name');
     if (queryError) throw queryError;
-    return (data ?? []) as ServiceType[];
+    return ((data ?? []) as ServiceType[]).filter(isCatalogServiceVisible);
   }, []);
 
   function retryCatalog() {
@@ -346,6 +346,10 @@ export function ProRegistrationScreen() {
 
             {step === 1 && (
               <View style={styles.serviceList}>
+                <View style={styles.equipmentPolicy}>
+                  <Text style={styles.equipmentPolicyTitle}>Trabajas con tu propio equipo</Text>
+                  <Text style={styles.equipmentPolicyText}>Cada profesional debe llevar sus herramientas, utensilios y productos. No se utilizan equipos ni consumibles del cliente.</Text>
+                </View>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
                 ) : catalogError ? (
@@ -373,7 +377,7 @@ export function ProRegistrationScreen() {
                       <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => toggleService(service.id)} style={styles.serviceRow}>
                         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Text style={styles.checkmark}>✓</Text>}</View>
                         <View style={styles.serviceCopy}>
-                          <Text style={styles.serviceName}>{service.name}</Text>
+                          <Text style={styles.serviceName}>{getCatalogServiceName(service)}</Text>
                           {!!service.description && <Text style={styles.serviceDescription}>{service.description}</Text>}
                         </View>
                       </Pressable>
@@ -534,6 +538,9 @@ const styles = StyleSheet.create({
   experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#EEF4FF' },
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '700' },
+  equipmentPolicy: { padding: 14, borderRadius: 15, borderWidth: 1, borderColor: '#CFE9DC', backgroundColor: '#EFF8F3', gap: 4 },
+  equipmentPolicyTitle: { color: '#14634D', fontSize: 12, fontWeight: '900' },
+  equipmentPolicyText: { color: '#47816C', fontSize: 11, lineHeight: 16 },
   serviceList: { gap: 12 },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
