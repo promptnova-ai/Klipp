@@ -41,8 +41,8 @@ Deno.serve(async (req) => {
         key: "24h",
         from: new Date(now + 23 * 60 * 60_000).toISOString(),
         to: new Date(now + 24 * 60 * 60_000).toISOString(),
-        title: "Tu servicio es mañana",
-        body: "Recuerda que tienes un servicio Klipp programado para las próximas 24 horas.",
+        title: "Tu servicio se acerca",
+        body: "Recuerda que tienes un servicio Klipp programado dentro de las próximas 24 horas.",
       },
       {
         key: "1h",
