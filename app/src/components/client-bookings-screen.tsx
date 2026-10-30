@@ -275,7 +275,7 @@ export function ClientBookingsScreen() {
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
         const canReview = ['completed', 'confirmed'].includes(booking.status) && !!booking.pro_id && !review;
-        const statusLabel = searching ? 'Buscando profesional' : statusLabels[booking.status];
+        const statusLabel = searching ? 'Reserva en espera' : statusLabels[booking.status];
         const livePoint = tracking[booking.id];
         const hasDestination = typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number';
         const queue = queueInfo[booking.id];
