@@ -50,6 +50,7 @@ export async function registerPushDeviceAsync(userId: string) {
 
 export async function unregisterPushDeviceAsync(userId: string) {
   if (Platform.OS === 'web') return;
+  await Notifications.clearLastNotificationResponseAsync();
   const token = await AsyncStorage.getItem(REGISTERED_TOKEN_KEY);
   if (!token) return;
   const { error } = await supabase
