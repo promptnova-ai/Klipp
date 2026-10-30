@@ -90,6 +90,7 @@ export function NewBookingScreen() {
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [mode, setMode] = useState<'manual' | 'auto'>('manual');
+  const [timing, setTiming] = useState<'now' | 'scheduled'>('scheduled');
   const [pros, setPros] = useState<ProCard[]>([]);
   const [selectedProId, setSelectedProId] = useState<string | null>(null);
   const [expandedProId, setExpandedProId] = useState<string | null>(null);
@@ -106,10 +107,11 @@ export function NewBookingScreen() {
   );
   const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) ?? null;
   const getScheduledStart = useCallback(() => {
+    if (timing === 'now') return new Date(Date.now() + 2 * 60 * 1000).toISOString();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) return null;
     const value = new Date(`${scheduledDate}T${scheduledTime}:00-04:00`);
     return Number.isNaN(value.getTime()) || value.getTime() <= Date.now() ? null : value.toISOString();
-  }, [scheduledDate, scheduledTime]);
+  }, [scheduledDate, scheduledTime, timing]);
 
   const resetAppointmentSelection = useCallback(() => {
     setError(null);
@@ -237,6 +239,12 @@ export function NewBookingScreen() {
   const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
 
   useEffect(() => {
+    if (timing === 'now') {
+      setAvailableSlots([]);
+      setScheduledTime('');
+      setLoadingSlots(false);
+      return;
+    }
     if (!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate) {
       return;
     }
@@ -280,10 +288,10 @@ export function NewBookingScreen() {
     return () => {
       active = false;
     };
-  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode]);
+  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode, timing]);
 
   useEffect(() => {
-    if (!coordinate || !scheduledTime || !selectedDuration) return;
+    if (!coordinate || !selectedDuration || (timing === 'scheduled' && !scheduledTime)) return;
     const currentCoordinate = coordinate;
     let active = true;
     async function loadPros() {
@@ -331,7 +339,7 @@ export function NewBookingScreen() {
     }
     void loadPros();
     return () => { active = false; };
-  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, mode, getScheduledStart]);
+  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, mode, timing, getScheduledStart]);
 
   async function showProProfile(pro: ProCard) {
     setExpandedProId((current) => current === pro.pro_id ? null : pro.pro_id);
@@ -356,7 +364,7 @@ export function NewBookingScreen() {
       setError('Elige una fecha y hora futura válidas.');
       return;
     }
-    if (!selectedOffer && mode === 'manual' && !selectedProId) {
+    if (timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) {
       setError('Selecciona un profesional disponible para continuar.');
       return;
     }
@@ -385,7 +393,11 @@ export function NewBookingScreen() {
     if (rpcError) setError(rpcError.message);
     else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
     else {
-      if (!selectedOffer && mode === 'auto') {
+      if (!selectedOffer && mode === 'auto' && timing === 'now') {
+        const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
+        if (assignmentError) setError('Solicitud creada. Klipp seguirá intentando encontrar un profesional; puedes consultar el estado en Mis reservas.');
+        else setSuccess('Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
+      } else if (!selectedOffer && mode === 'auto') {
         setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
       } else {
         setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
