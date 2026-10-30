@@ -11,7 +11,8 @@ type AdminSection = 'verification' | 'accounts' | 'issues' | 'configuration' | '
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
-type AuditEntry = { id: number; actor_email: string | null; action: string; target_email: string | null; details: Record<string, unknown>; created_at: string };\ntype IssueRow = { issue_id: string; booking_id: string; reporter_id: string; reporter_name: string | null; reporter_email: string | null; professional_name: string | null; category: string; description: string | null; status: 'open' | 'in_review' | 'resolved'; created_at: string; updated_at: string; resolved_at: string | null; resolution_note: string | null; booking_status: string };
+type AuditEntry = { id: number; actor_email: string | null; action: string; target_email: string | null; details: Record<string, unknown>; created_at: string };
+type IssueRow = { issue_id: string; booking_id: string; reporter_id: string; reporter_name: string | null; reporter_email: string | null; professional_name: string | null; category: string; description: string | null; status: 'open' | 'in_review' | 'resolved'; created_at: string; updated_at: string; resolved_at: string | null; resolution_note: string | null; booking_status: string };
 type AdminAccount = {
   user_id: string;
   email: string | null;
@@ -41,7 +42,8 @@ type TierDraft = Pick<PricingTier, 'label' | 'price_dop' | 'est_minutes'>;
 
 const sections: { key: AdminSection; title: string }[] = [
   { key: 'verification', title: 'Verificaciones' },
-  { key: 'accounts', title: 'Cuentas y roles' },\n  { key: 'issues', title: 'Incidencias' },
+  { key: 'accounts', title: 'Cuentas y roles' },
+  { key: 'issues', title: 'Incidencias' },
   { key: 'configuration', title: 'Configuración' },
   { key: 'staff', title: 'Equipo y permisos' },
 ];
@@ -88,7 +90,9 @@ export function AdminScreen() {
   const [staffRows, setStaffRows] = useState<StaffRow[]>([]);
   const [staffTemplates, setStaffTemplates] = useState<StaffTemplate[]>([]);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
-  const [accounts, setAccounts] = useState<AdminAccount[]>([]);\n  const [issues, setIssues] = useState<IssueRow[]>([]);\n  const [issueNotes, setIssueNotes] = useState<Record<string, string>>({});
+  const [accounts, setAccounts] = useState<AdminAccount[]>([]);
+  const [issues, setIssues] = useState<IssueRow[]>([]);
+  const [issueNotes, setIssueNotes] = useState<Record<string, string>>({});
   const [services, setServices] = useState<ServiceRow[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [categories, setCategories] = useState<ServiceCategory[]>([]);
@@ -128,14 +132,16 @@ export function AdminScreen() {
 
       const canReadAccounts = owner || granted.includes('accounts.read') || granted.includes('verification.review');
       const canCatalog = owner || granted.includes('catalog.manage');
-      const canReadSettings = owner;\n      const canManageSupport = owner || granted.includes('support.manage');
+      const canReadSettings = owner;
+      const canManageSupport = owner || granted.includes('support.manage');
 
       const [accountResult, settingsResult, serviceResult, categoryResult, tierResult, issueResult] = await Promise.all([
         canReadAccounts ? supabase.rpc('admin_list_accounts') : Promise.resolve({ data: [], error: null }),
         canReadSettings ? supabase.rpc('admin_get_platform_settings') : Promise.resolve({ data: {}, error: null }),
         canCatalog ? supabase.from('service_types').select('id, code, name, description, active, category_id').order('name') : Promise.resolve({ data: [], error: null }),
         canCatalog ? supabase.rpc('admin_list_service_categories') : Promise.resolve({ data: [], error: null }),
-        canCatalog ? supabase.from('pricing_tiers').select('id, service_type_id, label, price_dop, est_minutes').order('service_type_id').order('price_dop') : Promise.resolve({ data: [], error: null }),\n        canManageSupport ? supabase.rpc('admin_list_issues') : Promise.resolve({ data: [], error: null }),
+        canCatalog ? supabase.from('pricing_tiers').select('id, service_type_id, label, price_dop, est_minutes').order('service_type_id').order('price_dop') : Promise.resolve({ data: [], error: null }),
+        canManageSupport ? supabase.rpc('admin_list_issues') : Promise.resolve({ data: [], error: null }),
       ]);
       const loadError = accountResult.error ?? settingsResult.error ?? serviceResult.error ?? categoryResult.error ?? tierResult.error ?? issueResult.error;
       if (loadError) throw loadError;
@@ -145,7 +151,8 @@ export function AdminScreen() {
       const categoryRows = (categoryResult.data ?? []) as ServiceCategory[];
       const tierRows = (tierResult.data ?? []) as PricingTier[];
       const settings = (settingsResult.data ?? {}) as Record<string, unknown>;
-      setAccounts(accountRows);\n      setIssues((issueResult.data ?? []) as IssueRow[]);
+      setAccounts(accountRows);
+      setIssues((issueResult.data ?? []) as IssueRow[]);
       setServices(serviceRows);
       setCategories(categoryRows);
       setTiers(tierRows);
@@ -199,7 +206,8 @@ export function AdminScreen() {
   const visibleSections = sections.filter((item) => {
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
-    if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');\n    if (item.key === 'issues') return isSuperAdmin || permissions.includes('support.manage');
+    if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
+    if (item.key === 'issues') return isSuperAdmin || permissions.includes('support.manage');
     if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage');
     return false;
   });
