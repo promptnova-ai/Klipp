@@ -81,7 +81,7 @@ export function NewBookingScreen() {
   const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
   const [addressText, setAddressText] = useState('');
   const [landmarkNotes, setLandmarkNotes] = useState('');
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState(() => getDateOptions()[0]?.key ?? '');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -142,9 +142,6 @@ export function NewBookingScreen() {
     }
   }, [updateCoordinate]);
 
-  useEffect(() => {
-    void Promise.resolve().then(requestCurrentLocation);
-  }, [requestCurrentLocation]);
 
   useEffect(() => {
     if (!coordinate) return;
@@ -457,9 +454,13 @@ export function NewBookingScreen() {
             />
           </>
         ) : (
-          <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.retryLocation, pressed && styles.pressed]}>
-            <Text style={styles.adjustLocationText}>Compartir ubicación para continuar</Text>
-          </Pressable>
+          <View style={styles.locationIntro}>
+            <Text style={styles.locationIntroTitle}>Indica dónde necesitas el servicio</Text>
+            <Text style={styles.body}>Usaremos tu ubicación solo para localizar profesionales disponibles en tu zona. No se comparte hasta que continúes con la reserva.</Text>
+            <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.retryLocation, pressed && styles.pressed]}>
+              <Text style={styles.adjustLocationText}>Usar mi ubicación actual</Text>
+            </Pressable>
+          </View>
         )}
         {locationError && <Text accessibilityRole="alert" style={styles.error}>{locationError}</Text>}
       </Section>
