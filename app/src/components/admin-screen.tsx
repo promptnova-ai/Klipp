@@ -91,7 +91,6 @@ export function AdminScreen() {
       setPermissions(granted);
 
       const canReadAccounts = owner || granted.includes('accounts.read');
-      const canReview = owner || granted.includes('verification.review');
       const canCatalog = owner || granted.includes('catalog.manage');
       const canReadSettings = owner || granted.includes('settings.operational');
 
@@ -146,7 +145,7 @@ export function AdminScreen() {
     } finally {
       setLoading(false);
     }
-  }, [session?.user.id]);;
+  }, [session?.user.id]);
 
   useEffect(() => {
     void Promise.resolve().then(loadData);
@@ -160,7 +159,7 @@ export function AdminScreen() {
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
     if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
-    if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage') || permissions.includes('settings.operational');
+    if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage');
     return false;
   });
   const filteredAccounts = useMemo(() => {
