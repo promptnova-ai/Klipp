@@ -621,6 +621,44 @@ BEGIN
 END;
 $$;
 
+
+CREATE OR REPLACE FUNCTION public.admin_list_audit_log(p_limit integer DEFAULT 100)
+RETURNS TABLE (
+  id bigint,
+  actor_email text,
+  action text,
+  target_email text,
+  details jsonb,
+  created_at timestamptz
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $
+BEGIN
+  IF NOT public.is_super_admin() THEN
+    RAISE EXCEPTION 'only the platform owner can read the administrative audit log';
+  END IF;
+  IF p_limit IS NULL OR p_limit NOT BETWEEN 1 AND 200 THEN
+    RAISE EXCEPTION 'audit limit must be between 1 and 200';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    log.id,
+    actor.email::text,
+    log.action,
+    target.email::text,
+    log.details,
+    log.created_at
+  FROM public.admin_audit_log log
+  LEFT JOIN auth.users actor ON actor.id = log.actor_id
+  LEFT JOIN auth.users target ON target.id = log.target_id
+  ORDER BY log.created_at DESC
+  LIMIT p_limit;
+END;
+$;
+
 -- Keep direct table access closed; all staff administration uses owner-checked RPCs.
 REVOKE ALL ON TABLE
   public.platform_owner,
@@ -641,6 +679,7 @@ REVOKE ALL ON FUNCTION public.admin_list_service_categories() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_update_service_category(integer, text, text, boolean) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_update_service_type(integer, text, text, boolean, integer) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_update_pricing_tier(integer, text, numeric, integer) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.admin_list_audit_log(integer) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_list_staff_access() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_list_staff_templates() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_set_staff_template(uuid, text) FROM PUBLIC, anon;
@@ -656,6 +695,7 @@ GRANT EXECUTE ON FUNCTION public.admin_list_service_categories() TO authenticate
 GRANT EXECUTE ON FUNCTION public.admin_update_service_category(integer, text, text, boolean) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_service_type(integer, text, text, boolean, integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_update_pricing_tier(integer, text, numeric, integer) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_list_audit_log(integer) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_list_staff_access() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_list_staff_templates() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_staff_template(uuid, text) TO authenticated;
