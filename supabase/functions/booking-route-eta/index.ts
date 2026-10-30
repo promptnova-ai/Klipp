@@ -117,9 +117,30 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Invalid route duration" }, 502);
     }
 
+    const etaMinutes = Math.max(1, Math.ceil(durationSeconds / 60));
+    const { data: shouldNotifyDelay, error: etaTrackingError } = await admin.rpc("should_notify_booking_eta_delay", {
+      p_booking_id: bookingId,
+      p_eta_minutes: etaMinutes,
+    });
+    if (etaTrackingError) {
+      console.error("Could not evaluate ETA notification threshold", etaTrackingError);
+    } else if (shouldNotifyDelay === true) {
+      const { error: notificationError } = await admin.rpc("create_klipp_notification", {
+        p_user_id: booking.client_id,
+        p_booking_id: bookingId,
+        p_type: "eta_delay",
+        p_title: "Tu llegada estimada ha cambiado",
+        p_body: `El tiempo estimado de llegada ahora es de unos ${etaMinutes} minutos. Puede haber retrasos en el trayecto.`,
+        p_data: { bookingId, target: "client", etaMinutes },
+        p_dedupe_key: `booking:${bookingId}:eta-delay:${etaMinutes}`,
+        p_event_type: "booking_updates",
+      });
+      if (notificationError) console.error("Could not enqueue ETA delay notification", notificationError);
+    }
+
     return jsonResponse({
       bookingId,
-      etaMinutes: Math.max(1, Math.ceil(durationSeconds / 60)),
+      etaMinutes,
       durationSeconds: Math.round(durationSeconds),
       distanceMeters: route.distanceMeters,
       encodedPolyline: route.polyline?.encodedPolyline ?? null,
