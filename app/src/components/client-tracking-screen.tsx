@@ -64,6 +64,7 @@ export function ClientTrackingScreen() {
   const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
   const [routeEtaMinutes, setRouteEtaMinutes] = useState<number | null>(null);
   const [routeDistanceMeters, setRouteDistanceMeters] = useState<number | null>(null);
+  const [routePolyline, setRoutePolyline] = useState<string | null>(null);
   const [routeEtaUpdatedAt, setRouteEtaUpdatedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,6 +185,7 @@ export function ClientTrackingScreen() {
     if (!booking?.id || booking.status !== 'en_route') {
       setRouteEtaMinutes(null);
       setRouteDistanceMeters(null);
+      setRoutePolyline(null);
       setRouteEtaUpdatedAt(null);
       return;
     }
@@ -197,10 +199,12 @@ export function ClientTrackingScreen() {
       if (routeError || !data || typeof data.etaMinutes !== 'number') {
         setRouteEtaMinutes(null);
         setRouteDistanceMeters(null);
+        setRoutePolyline(null);
         return;
       }
       setRouteEtaMinutes(data.etaMinutes);
       setRouteDistanceMeters(typeof data.distanceMeters === 'number' ? data.distanceMeters : null);
+      setRoutePolyline(typeof data.encodedPolyline === 'string' ? data.encodedPolyline : null);
       setRouteEtaUpdatedAt(typeof data.calculatedAt === 'string' ? data.calculatedAt : null);
     };
 
@@ -257,7 +261,7 @@ export function ClientTrackingScreen() {
                   <Text style={styles.etaHint}>{locationFreshnessLabel} {routeEtaMinutes !== null ? `Ruta por carretera con tráfico estimado · ${routeDistanceMeters !== null ? (routeDistanceMeters / 1000).toFixed(1) + ' km' : ''} · Actualizado ${routeEtaUpdatedAt ? new Date(routeEtaUpdatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : ''}.` : 'Mostrando una estimación provisional en línea recta; la ruta con tráfico todavía no está disponible.'}</Text>
                 </View>
                 {professionalCoordinate && destination ? (
-                  <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} />
+                  <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} routePolyline={routePolyline} />
                 ) : (
                   <View style={styles.mapPlaceholder}>
                     <ActivityIndicator color={KlippColors.blue} />
