@@ -277,12 +277,12 @@ export function NewBookingScreen() {
       }
       let active = true;
       setLoadingSlots(true);
-      void supabase.rpc('get_available_variable_service_slots_at_location', {
+      void Promise.resolve(supabase.rpc('get_available_variable_service_slots_at_location', {
         p_lat: coordinate.latitude,
         p_lng: coordinate.longitude,
         p_date: scheduledDate,
         p_service_type_id: selectedServiceId,
-      }).then(({ data, error: slotsError }) => {
+      })).then(({ data, error: slotsError }) => {
         if (!active) return;
         if (slotsError) {
           setError(slotsError.message);
