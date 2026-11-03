@@ -276,3 +276,49 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 3. Aceptar desde un profesional elegible.
 
 **Resultado esperado:** La reserva se crea sin pricing_tier_id, el profesional recibe la solicitud y al aceptar se fija su tarifa base real antes del pago.
+
+
+### QA-PRO-REQ-01 — Alerta entrante tipo Uber
+
+**Prioridad:** Alta  
+**Precondición:** Profesional conectado, online y con push habilitado; cliente crea una reserva automática compatible.
+
+1. Enviar una solicitud desde un cliente.
+2. Con la app profesional abierta, comprobar que aparece el aviso a pantalla completa sin tener que entrar manualmente en Solicitudes.
+3. Verificar nombre del cliente, servicio, variante, dirección, referencia, fecha/hora, duración e importe neto estimado.
+4. Comprobar cuenta atrás desde el tiempo restante de la oferta.
+
+**Resultado esperado:** La oferta aparece como una alerta prioritaria, no como una tarjeta discreta ni una notificación genérica. Los datos corresponden a la reserva real y solo son visibles para el profesional destinatario.
+
+### QA-PRO-REQ-02 — Deslizar para aceptar
+
+**Prioridad:** Alta  
+**Precondición:** Oferta entrante pendiente y no expirada.
+
+1. Deslizar el control de aceptar hasta el extremo.
+2. Repetir soltándolo antes del umbral.
+3. Probar una respuesta después de expirar la oferta.
+
+**Resultado esperado:** Solo completar el gesto acepta la oferta. Si se suelta antes, el control vuelve al inicio. Una oferta expirada no se puede aceptar.
+
+### QA-PRO-REQ-03 — Rechazar y siguiente oferta
+
+**Prioridad:** Alta  
+**Precondición:** Dos o más solicitudes pendientes recibidas por el profesional.
+
+1. Rechazar la primera oferta.
+2. Revisar la siguiente solicitud disponible.
+3. Aceptar una oferta y comprobar que las demás se retiran cuando el servidor confirma al ganador.
+
+**Resultado esperado:** Rechazar no acepta la reserva. Las ofertas siguen la cuenta atrás del servidor y no se puede aceptar una reserva que otro profesional ya haya ganado.
+
+### QA-PRO-REQ-04 — Push con app en segundo plano
+
+**Prioridad:** Alta  
+**Precondición:** Dispositivo físico con permisos push y credenciales APNs/FCM configuradas; webhook inmediato o scheduler sub-minute habilitado.
+
+1. Poner la app en segundo plano y generar una solicitud.
+2. Comprobar sonido, vibración, prioridad y texto con cliente/servicio.
+3. Tocar la notificación y comprobar que abre el espacio de solicitudes.
+
+**Resultado esperado:** La alerta llega antes de que venza la ventana de 45 segundos. El canal de notificaciones urgente está habilitado en Android y la presentación de iOS se valida en un dispositivo real.
