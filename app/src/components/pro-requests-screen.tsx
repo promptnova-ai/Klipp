@@ -21,10 +21,12 @@ type RequestBooking = {
 };
 
 type IncomingRequest = BookingRequest & { bookings: RequestBooking | null };
+type IncomingReassignment = { request_id: string; booking_id: string; original_professional_name: string | null; scheduled_start: string; est_minutes: number; pro_payout_dop: number; address_text: string | null; landmark_notes: string | null; service_name: string | null; pricing_tier_label: string | null; expires_at: string };
 
 export function ProRequestsScreen() {
   const { session } = useAuth();
   const [requests, setRequests] = useState<IncomingRequest[]>([]);
+  const [reassignments, setReassignments] = useState<IncomingReassignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -33,14 +35,19 @@ export function ProRequestsScreen() {
   const loadRequests = useCallback(async () => {
     if (!session?.user.id) return;
     setError(null);
-    const { data, error: queryError } = await supabase
-      .from('booking_requests')
-      .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(name), pricing_tiers(label))')
-      .eq('pro_id', session.user.id)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-    if (queryError) setError(queryError.message);
-    else setRequests((data ?? []) as unknown as IncomingRequest[]);
+    const [requestResult, reassignmentResult] = await Promise.all([
+      supabase
+        .from('booking_requests')
+        .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(name), pricing_tiers(label))')
+        .eq('pro_id', session.user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false }),
+      supabase.rpc('pro_list_pending_booking_reassignments'),
+    ]);
+    if (requestResult.error) setError(requestResult.error.message);
+    else setRequests((requestResult.data ?? []) as unknown as IncomingRequest[]);
+    if (reassignmentResult.error) setError(reassignmentResult.error.message);
+    else setReassignments((reassignmentResult.data ?? []) as IncomingReassignment[]);
     setLoading(false);
   }, [session]);
 
@@ -85,20 +92,50 @@ export function ProRequestsScreen() {
     setBusyId(null);
   }
 
+  async function respondReassignment(requestId: string, accept: boolean) {
+    setBusyId(requestId);
+    setError(null);
+    const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
+      p_request_id: requestId,
+      p_accept: accept,
+    });
+    if (rpcError) setError(rpcError.message);
+    else await loadRequests();
+    setBusyId(null);
+  }
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
 
   return (
     <ScrollView
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Nuevas oportunidades para tu agenda." />
+      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-      {!error && requests.length === 0 && (
+      {!error && requests.length === 0 && reassignments.length === 0 && (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No tienes solicitudes pendientes</Text>
           <Text style={styles.body}>Cuando llegue una solicitud, aparecerá aquí.</Text>
         </View>
       )}
+      {reassignments.map((request) => (
+        <View key={request.request_id} style={styles.card}>
+          <Text style={styles.cardTitle}>Solicitud de sustitución</Text>
+          <Text style={styles.body}>Klipp te propone asumir una reserva confirmada que actualmente tiene otro profesional.</Text>
+          <Text style={styles.body}>Servicio: {request.service_name ?? 'Servicio Klipp'} · {request.pricing_tier_label ?? `${request.est_minutes} min`}</Text>
+          <Text style={styles.body}>Fecha: {formatBusinessDate(request.scheduled_start)}</Text>
+          <Text style={styles.body}>Ubicación: {request.address_text ?? 'No disponible'}</Text>
+          {!!request.landmark_notes && <Text style={styles.body}>Referencia: {request.landmark_notes}</Text>}
+          <Text style={styles.body}>Profesional actual: {request.original_professional_name ?? 'No disponible'}</Text>
+          <Text style={styles.payout}>Recibirías {formatDop(request.pro_payout_dop)}</Text>
+          <Text style={styles.expiration}>Debes responder antes de: {formatBusinessDate(request.expires_at)}</Text>
+          <View style={styles.actions}>
+            <ResponseButton disabled={busyId === request.request_id} label={busyId === request.request_id ? 'Enviando...' : 'Aceptar sustitución'} onPress={() => void respondReassignment(request.request_id, true)} />
+            <ResponseButton secondary disabled={busyId === request.request_id} label="Rechazar" onPress={() => void respondReassignment(request.request_id, false)} />
+          </View>
+        </View>
+      ))}
+      {requests.length > 0 && reassignments.length > 0 && <Text style={styles.sectionTitle}>Otras solicitudes</Text>}
       {requests.map((request) => {
         const booking = request.bookings;
         const unavailable = !booking;
@@ -149,6 +186,7 @@ const styles = StyleSheet.create({
   body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
   empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
   emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  sectionTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '800', marginTop: 6 },
   card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
