@@ -39,7 +39,8 @@ export function NotificationResponseHandler() {
     const data = request.content.data as Record<string, unknown>;
     const bookingId = typeof data.bookingId === 'string' ? data.bookingId : null;
     if (profile.role === 'pro') {
-      if (data.target === 'pro' && (typeof data.requestId === 'string' || typeof data.reassignmentId === 'string')) router.push('/(pro)/requests');
+      if (data.target === 'pro' && data.reassignmentRole === 'original') router.push('/(pro)/agenda');
+      else if (data.target === 'pro' && (typeof data.requestId === 'string' || typeof data.reassignmentId === 'string')) router.push('/(pro)/requests');
       else router.push('/(pro)/agenda');
     } else if (bookingId) {
       router.push({ pathname: '/tracking', params: { bookingId } });
