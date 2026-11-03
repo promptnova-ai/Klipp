@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   title: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
   caption: { color: KlippColors.muted, fontSize: 11 },
   map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: '#E8EEF7' },
-  overlay: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#FFFFFFD9' },
+  overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#FFFFFFD9' },
   error: { color: KlippColors.danger, fontSize: 12, textAlign: 'center' },
   legend: { color: KlippColors.muted, fontSize: 10 },
 });
