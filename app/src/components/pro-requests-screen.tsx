@@ -74,6 +74,24 @@ export function ProRequestsScreen() {
     return () => { void supabase.removeChannel(channel); };
   }, [loadRequests, session?.user.id]);
 
+  useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId) return;
+    const channel = supabase
+      .channel(`pro-reassignment-inbox:${userId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        const notification = payload.new as { type?: string };
+        if (notification.type === 'booking_reassignment') void loadRequests();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadRequests, session?.user.id]);
+
   async function refresh() {
     setRefreshing(true);
     await loadRequests();
