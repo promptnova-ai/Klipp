@@ -66,6 +66,7 @@ export function ClientTrackingScreen() {
   const [routeDistanceMeters, setRouteDistanceMeters] = useState<number | null>(null);
   const [routePolyline, setRoutePolyline] = useState<string | null>(null);
   const [routeEtaUpdatedAt, setRouteEtaUpdatedAt] = useState<string | null>(null);
+  const [professionalAcceptanceRate, setProfessionalAcceptanceRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -101,6 +102,12 @@ export function ClientTrackingScreen() {
     if (eventsError) setError(eventsError.message);
     else setStatusEvents((eventRows ?? []) as BookingStatusEvent[]);
     if (bookingRow.pro_id) {
+      const { data: acceptanceData, error: acceptanceError } = await supabase.rpc('get_client_visible_pro_acceptance_rate', { p_booking_id: bookingRow.id });
+      if (acceptanceError) setError(acceptanceError.message);
+      else {
+        const metric = Array.isArray(acceptanceData) ? acceptanceData[0] : acceptanceData;
+        setProfessionalAcceptanceRate(metric && typeof metric.acceptance_rate === 'number' ? metric.acceptance_rate : metric?.acceptance_rate == null ? null : Number(metric.acceptance_rate));
+      }
       const { data: proData, error: proError } = await supabase.from('pro_cards')
         .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type')
         .eq('pro_id', bookingRow.pro_id)
@@ -124,6 +131,7 @@ export function ClientTrackingScreen() {
       setProfessionalCoordinate(null);
       setLocationUpdatedAt(null);
     }
+    if (!bookingRow.pro_id) setProfessionalAcceptanceRate(null);
     setLoading(false);
   }, [bookingId, session]);
 
@@ -214,7 +222,7 @@ export function ClientTrackingScreen() {
       active = false;
       clearInterval(interval);
     };
-  }, [booking?.id, booking?.status]);
+  }, [booking?.id, booking?.status, professionalCoordinate?.latitude, professionalCoordinate?.longitude]);
 
   const destination = booking && typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number'
     ? { latitude: booking.client_lat, longitude: booking.client_lng }
@@ -273,6 +281,7 @@ export function ClientTrackingScreen() {
                   <View style={styles.professionalDetails}>
                     <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
                     <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
+                    <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
                   </View>
                   <Pressable accessibilityRole="button" onPress={() => router.push('/(client)/bookings')} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
                     <Text style={styles.callButtonText}>Contactar por el chat de Klipp</Text>
@@ -333,6 +342,7 @@ const styles = StyleSheet.create({
   avatarText: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '800' },
   professionalDetails: { flex: 1, gap: 3 },
   professionalName: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  acceptanceRate: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   callButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.blue },
   callButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
   destinationCard: { padding: 15, borderRadius: 16, backgroundColor: KlippColors.white, gap: 5 },
