@@ -536,14 +536,14 @@ language sql stable security definer set search_path = public, extensions as $
       where av.pro_id=pp.user_id
         and av.weekday=extract(isodow from (b.scheduled_start at time zone 'America/Santo_Domingo'))::smallint
         and av.start_time<=(b.scheduled_start at time zone 'America/Santo_Domingo')::time
-        and av.end_time>=((b.scheduled_start+make_interval(mins=>ps.est_minutes)) at time zone 'America/Santo_Domingo')::time)
+        and av.end_time>=((b.scheduled_start+make_interval(mins=>case when b.pricing_tier_id is not null then b.est_minutes else ps.est_minutes end)) at time zone 'America/Santo_Domingo')::time)
     and not exists (
       select 1 from public.bookings ob
       where ob.pro_id=pp.user_id
         and ob.status in ('awaiting_payment','scheduled','en_route','arrived','in_progress')
         and tstzrange(ob.scheduled_start-interval '60 minutes',
           ob.scheduled_start+make_interval(mins=>ob.est_minutes)+interval '60 minutes','[)')
-          && tstzrange(b.scheduled_start,b.scheduled_start+make_interval(mins=>ps.est_minutes),'[)'))
+          && tstzrange(b.scheduled_start,b.scheduled_start+make_interval(mins=>case when b.pricing_tier_id is not null then b.est_minutes else ps.est_minutes end),'[)'))
     and not exists (
       select 1 from public.booking_requests old
       where old.booking_id=b.id and old.pro_id=pp.user_id)
