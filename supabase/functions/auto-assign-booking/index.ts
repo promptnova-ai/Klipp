@@ -1,8 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const OFFER_TIMEOUT_MS = 45000;
-const POLL_INTERVAL_MS = 1500;
-const MAX_CANDIDATES = 5;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -108,64 +106,36 @@ async function runAssignment(
   bookingId: string,
   clientId: string,
 ) {
+  // Offer one professional per worker invocation. The database scheduler
+  // advances to the next eligible professional after the 45-second expiry.
+  // This avoids holding an Edge Function open for 5 x 45 seconds.
   const { data: candidates, error: candidatesError } = await admin.rpc(
     "find_auto_candidates",
-    { p_booking_id: bookingId, p_limit: MAX_CANDIDATES },
+    { p_booking_id: bookingId, p_limit: 1 },
   );
   if (candidatesError) throw candidatesError;
 
-  if (!candidates?.length) {
+  const candidate = candidates?.[0];
+  if (!candidate) {
     await notifyClientNoProfessional(admin, bookingId, clientId);
     return;
   }
 
-  for (const candidate of candidates) {
-    const { data: currentBooking, error: currentBookingError } = await admin
-      .from("bookings")
-      .select("status, pro_id")
-      .eq("id", bookingId)
-      .maybeSingle();
-    if (currentBookingError) throw currentBookingError;
-    if (!currentBooking || currentBooking.status !== "requested" || currentBooking.pro_id) return;
+  const { data: currentBooking, error: currentBookingError } = await admin
+    .from("bookings")
+    .select("status, pro_id")
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (currentBookingError) throw currentBookingError;
+  if (!currentBooking || currentBooking.status !== "requested" || currentBooking.pro_id) return;
 
-    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_MS).toISOString();
-    const { data: request, error: requestError } = await admin
-      .from("booking_requests")
-      .insert({ booking_id: bookingId, pro_id: candidate.pro_id, expires_at: expiresAt })
-      .select("id")
-      .single();
-    if (requestError) {
-      if (requestError.code === "23505") continue;
-      throw requestError;
-    }
+  const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_MS).toISOString();
+  const { error: requestError } = await admin
+    .from("booking_requests")
+    .insert({ booking_id: bookingId, pro_id: candidate.pro_id, expires_at: expiresAt });
 
-    const deadline = Date.now() + OFFER_TIMEOUT_MS;
-    let responseStatus = "pending";
-    while (Date.now() < deadline) {
-      const { data: latestRequest, error: latestRequestError } = await admin
-        .from("booking_requests")
-        .select("status")
-        .eq("id", request.id)
-        .maybeSingle();
-      if (latestRequestError) throw latestRequestError;
-      responseStatus = latestRequest?.status ?? "expired";
-
-      if (responseStatus === "accepted") return;
-      if (responseStatus !== "pending") break;
-
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    }
-
-    if (responseStatus === "pending") {
-      await admin
-        .from("booking_requests")
-        .update({ status: "expired", responded_at: new Date().toISOString() })
-        .eq("id", request.id)
-        .eq("status", "pending");
-    }
-  }
-
-  // Keep the booking requested so the client can retry or choose a professional.
-  // The client receives an in-app/push notification when this dispatch attempt is exhausted.
-  await notifyClientNoProfessional(admin, bookingId, clientId);
+  // A unique booking/professional pair means this professional was already
+  // invited. The scheduled dispatcher will select the next candidate.
+  if (requestError?.code === "23505") return;
+  if (requestError) throw requestError;
 }
