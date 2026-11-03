@@ -11,6 +11,9 @@ import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
 
 type ClientBooking = Booking & {
+  price_min_dop?: number | null;
+  price_max_dop?: number | null;
+  price_confirmed_at?: string | null;
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
   addresses: { label: string | null; street: string | null; references_text: string | null } | null;
@@ -58,7 +61,7 @@ export function ClientBookingsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, price_min_dop, price_max_dop, price_confirmed_at, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('client_id', session.user.id)
       .order('scheduled_start', { ascending: false });
     if (queryError) {
@@ -192,6 +195,18 @@ export function ClientBookingsScreen() {
     setRefreshing(true);
     await loadBookings();
     setRefreshing(false);
+  }
+
+  async function confirmBookingPrice(bookingId: string) {
+    setBusyId(bookingId);
+    setError(null);
+    const { error: confirmError } = await supabase.rpc('confirm_booking_price', { p_booking_id: bookingId });
+    if (confirmError) setError(confirmError.message);
+    else {
+      setNotice('Precio confirmado. La reserva ya puede continuar al pago cuando la pasarela esté habilitada.');
+      await loadBookings();
+    }
+    setBusyId(null);
   }
 
   async function confirmService(bookingId: string) {
@@ -391,7 +406,16 @@ export function ClientBookingsScreen() {
               <Text style={styles.priceLabel}>Total</Text>
               <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
             </View>
-            {booking.status === 'awaiting_payment' && <View style={styles.payment}><Text style={styles.paymentTitle}>Pago pendiente</Text><Text style={styles.body}>La integración de pagos estará disponible más adelante.</Text></View>}
+            {booking.status === 'awaiting_payment' && booking.pro_service_id && !booking.price_confirmed_at && (
+              <View style={styles.payment}>
+                <Text style={styles.paymentTitle}>Confirma el precio definitivo</Text>
+                <Text style={styles.body}>El profesional elegido ha confirmado este importe. No se realizará ningún cobro hasta que aceptes el precio.</Text>
+                <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void confirmBookingPrice(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
+                  <Text style={styles.buttonText}>{busyId === booking.id ? 'Confirmando...' : `Confirmar ${formatDop(booking.price_dop)}`}</Text>
+                </Pressable>
+              </View>
+            )}
+            {booking.status === 'awaiting_payment' && (!booking.pro_service_id || booking.price_confirmed_at) && <View style={styles.payment}><Text style={styles.paymentTitle}>Pago pendiente</Text><Text style={styles.body}>La integración de pagos estará disponible más adelante.</Text></View>}
             {booking.status === 'completed' && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void confirmService(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Confirmando...' : 'Confirmar servicio'}</Text></Pressable>}
             {canReview && (
               <View style={styles.reviewForm}>
