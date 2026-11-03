@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
 import { AdminOperationsMap } from '@/components/admin-operations-map';
@@ -32,6 +32,7 @@ type OpsBooking = {
 type TimelineEvent = { event_id: number; from_status: string | null; to_status: string; occurred_at: string; actor_name: string | null };
 type StatusFilter = 'active' | 'attention' | 'all';
 type RouteEta = { etaMinutes: number; distanceMeters: number; trafficAware: boolean };
+type BookingCandidate = { pro_id: string; professional_name: string | null; rating_avg: number | null; jobs_completed: number | null; distance_km: number | null; is_online: boolean; last_seen_at: string | null };
 
 const statusNames: Record<string, string> = {
   requested: 'Buscando profesional',
@@ -68,7 +69,7 @@ function attentionReason(booking: OpsBooking): string | null {
   return null;
 }
 
-export function AdminOperationsPanel() {
+export function AdminOperationsPanel({ canManage = false }: { canManage?: boolean }) {
   const [bookings, setBookings] = useState<OpsBooking[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
@@ -79,7 +80,7 @@ export function AdminOperationsPanel() {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [routeEta, setRouteEta] = useState<RouteEta | null>(null);
   const [etaLoading, setEtaLoading] = useState(false);
-  const [etaError, setEtaError] = useState<string | null>(null);
+  const [etaError, setEtaError] = useState<string | null>(null);\n  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);\n  const [candidateLoading, setCandidateLoading] = useState(false);\n  const [interventionReason, setInterventionReason] = useState('');\n  const [interventionBusy, setInterventionBusy] = useState(false);\n  const [interventionError, setInterventionError] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
     setError(null);
@@ -130,6 +131,70 @@ export function AdminOperationsPanel() {
     }
     setEtaLoading(false);
   }, []);
+
+  const loadCandidates = useCallback(async (bookingId: string) => {
+    setCandidateLoading(true);
+    setInterventionError(null);
+    const { data, error: candidateError } = await supabase.rpc('admin_list_booking_candidates', {
+      p_booking_id: bookingId,
+    });
+    if (candidateError) setInterventionError(candidateError.message);
+    else setCandidates((data ?? []) as BookingCandidate[]);
+    setCandidateLoading(false);
+  }, []);
+
+  const dispatchToProfessional = useCallback(async (bookingId: string, proId: string) => {
+    if (interventionReason.trim().length < 5) {
+      setInterventionError('Explica brevemente por qué se envía esta solicitud manual.');
+      return;
+    }
+    setInterventionBusy(true);
+    setInterventionError(null);
+    const { error: dispatchError } = await supabase.rpc('admin_dispatch_booking_request', {
+      p_booking_id: bookingId,
+      p_pro_id: proId,
+      p_reason: interventionReason.trim(),
+    });
+    if (dispatchError) setInterventionError(dispatchError.message);
+    else {
+      setCandidates([]);
+      setInterventionReason('');
+      await loadBookings();
+      await openTimeline(bookingId);
+    }
+    setInterventionBusy(false);
+  }, [interventionReason, loadBookings, openTimeline]);
+
+  const cancelUnassignedBooking = useCallback((bookingId: string) => {
+    if (interventionReason.trim().length < 5) {
+      setInterventionError('Indica un motivo de cancelación de al menos 5 caracteres.');
+      return;
+    }
+    Alert.alert(
+      'Cancelar solicitud sin asignar',
+      'La reserva se cancelará. Esta acción quedará registrada y no se puede deshacer desde este panel.',
+      [
+        { text: 'Volver', style: 'cancel' },
+        { text: 'Confirmar cancelación', style: 'destructive', onPress: () => {
+          void (async () => {
+            setInterventionBusy(true);
+            setInterventionError(null);
+            const { error: cancelError } = await supabase.rpc('admin_cancel_unassigned_booking', {
+              p_booking_id: bookingId,
+              p_reason: interventionReason.trim(),
+            });
+            if (cancelError) setInterventionError(cancelError.message);
+            else {
+              setInterventionReason('');
+              await loadBookings();
+              await openTimeline(bookingId);
+            }
+            setInterventionBusy(false);
+          })();
+        } },
+      ],
+    );
+  }, [interventionReason, loadBookings, openTimeline]);
 
   const attentionCount = useMemo(() => bookings.filter((item) => attentionReason(item)).length, [bookings]);
   const visibleBookings = useMemo(() => bookings.filter((item) => {
@@ -227,7 +292,46 @@ export function AdminOperationsPanel() {
               <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${selectedBooking.pro_latitude},${selectedBooking.pro_longitude}`)}><Text style={styles.link}>Abrir ubicación en mapa</Text></Pressable>
             </View>
           ) : <Text style={styles.caption}>Todavía no hay ubicación GPS registrada para esta reserva.</Text>}
-          <Text style={styles.sectionTitle}>Historial de estados</Text>
+          {canManage && selectedBooking.status === 'requested' && !selectedBooking.professional_name && (
+            <View style={styles.interventionBox}>
+              <Text style={styles.locationTitle}>Intervención administrativa</Text>
+              <Text style={styles.body}>Esta solicitud todavía no tiene profesional asignado. Puedes enviar una oferta a un profesional elegible; deberá aceptarla desde su aplicación.</Text>
+              <TextInput
+                value={interventionReason}
+                onChangeText={setInterventionReason}
+                placeholder="Motivo de la intervención (mínimo 5 caracteres)"
+                multiline
+                style={styles.reasonInput}
+                accessibilityLabel="Motivo de la intervención administrativa"
+              />
+              {interventionError && <Text accessibilityRole="alert" style={styles.error}>{interventionError}</Text>}
+              <Pressable accessibilityRole="button" disabled={candidateLoading || interventionBusy} onPress={() => void loadCandidates(selectedBooking.booking_id)} style={styles.etaButton}>
+                <Text style={styles.refreshText}>{candidateLoading ? 'Buscando…' : 'Buscar profesionales elegibles'}</Text>
+              </Pressable>
+              {candidates.map((candidate) => (
+                <View key={candidate.pro_id} style={styles.candidateRow}>
+                  <View style={styles.grow}>
+                    <Text style={styles.eventTitle}>{candidate.professional_name || 'Profesional Klipp'}</Text>
+                    <Text style={styles.caption}>
+                      {candidate.distance_km !== null ? `${candidate.distance_km} km aprox.` : 'Distancia no disponible'}
+                      {candidate.rating_avg !== null ? ` · ★ ${Number(candidate.rating_avg).toFixed(1)}` : ''}
+                      {candidate.jobs_completed !== null ? ` · ${candidate.jobs_completed} servicios` : ''}
+                    </Text>
+                    <Text style={styles.caption}>{candidate.is_online ? 'Conectado ahora' : 'Disponible según agenda'}</Text>
+                  </View>
+                  <Pressable accessibilityRole="button" disabled={interventionBusy || interventionReason.trim().length < 5} onPress={() => void dispatchToProfessional(selectedBooking.booking_id, candidate.pro_id)} style={[styles.dispatchButton, (interventionBusy || interventionReason.trim().length < 5) && styles.disabled]}>
+                    <Text style={styles.refreshText}>{interventionBusy ? 'Enviando…' : 'Enviar solicitud'}</Text>
+                  </Pressable>
+                </View>
+              ))}
+              {!candidateLoading && candidates.length === 0 && <Text style={styles.caption}>Pulsa «Buscar profesionales» para consultar candidatos disponibles.</Text>}
+              <Pressable accessibilityRole="button" disabled={interventionBusy || interventionReason.trim().length < 5} onPress={() => cancelUnassignedBooking(selectedBooking.booking_id)} style={[styles.cancelButton, (interventionBusy || interventionReason.trim().length < 5) && styles.disabled]}>
+                <Text style={styles.cancelButtonText}>{interventionBusy ? 'Procesando…' : 'Cancelar solicitud sin asignar'}</Text>
+              </Pressable>
+              <Text style={styles.caption}>Por seguridad, esta herramienta no cancela reservas con pagos retenidos ni reasigna servicios ya aceptados o en curso.</Text>
+            </View>
+          )}
+          {detailAnchor}
           {timelineLoading ? <ActivityIndicator color={KlippColors.blue} /> : timeline.length === 0 ? <Text style={styles.body}>No hay eventos disponibles.</Text> : timeline.map((event) => (
             <View key={event.event_id} style={styles.event}>
               <Text style={styles.eventTitle}>{event.from_status ? (statusNames[event.from_status] ?? event.from_status) + ' → ' : ''}{statusNames[event.to_status] ?? event.to_status}</Text>
@@ -288,7 +392,7 @@ const styles = StyleSheet.create({
   bookingTitle: { flex: 1, color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
   status: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '800' },
   detailCard: { padding: 15, gap: 10, borderWidth: 1, borderColor: KlippColors.blue, borderRadius: 14, backgroundColor: '#F8FBFF' },
-  locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: '#EEF4FF' },
+  locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: '#EEF4FF' },\n  interventionBox: { padding: 12, gap: 9, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: '#FFFFFF' },\n  reasonInput: { minHeight: 76, padding: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 9, color: KlippColors.navy, textAlignVertical: 'top', fontSize: 13 },\n  candidateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },\n  dispatchButton: { paddingHorizontal: 10, paddingVertical: 9, borderRadius: 8, backgroundColor: KlippColors.navy },\n  cancelButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.danger, alignItems: 'center' },\n  cancelButtonText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800' },\n  disabled: { opacity: 0.45 },
   locationTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
   etaValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
   etaButton: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: KlippColors.navy },
