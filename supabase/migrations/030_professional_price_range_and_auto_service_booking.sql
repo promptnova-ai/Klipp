@@ -386,14 +386,7 @@ begin
 
   v_client_point := extensions.st_setsrid(extensions.st_makepoint(p_lng,p_lat),4326)::extensions.geography;
   select min(ps.base_price_dop), max(ps.base_price_dop), max(ps.est_minutes),
-    count(*) filter (
-      where pp.accepts_auto_assign
-        and (not p_immediate or exists (
-          select 1 from public.pro_presence presence
-          where presence.pro_id=pp.user_id and presence.is_online
-            and presence.last_seen_at>=now()-interval '90 seconds'
-        ))
-    )
+    count(*) filter (where pp.accepts_auto_assign)
   into v_min,v_max,v_max_minutes,v_auto_eligible_count
   from public.pro_services ps
   join public.pro_profiles pp on pp.user_id=ps.pro_id
@@ -430,9 +423,16 @@ begin
     v_commission,v_min-v_commission,p_lat,p_lng,nullif(trim(p_address_text), ''),
     nullif(trim(p_landmark_notes), ''),v_min,v_max,null
   ) returning id into v_booking_id;
+
+  if p_immediate and not exists (
+    select 1 from public.find_auto_candidates(v_booking_id,1)
+  ) then
+    raise exception 'no online professional is currently available for this service and location; choose manually or try again';
+  end if;
+
   return v_booking_id;
 end;
-$$;
+$;
 
 -- Lock the booking row before accepting any request. For a professional-priced
 -- automatic booking, snapshot the accepting professional's exact offer atomically.
