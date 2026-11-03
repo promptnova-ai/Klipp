@@ -39,9 +39,16 @@ Deno.serve(async (req) => {
   }
   if (!isServiceRole && !isScheduledCall) return jsonResponse({ error: "Not authorized" }, 401);
 
-  const summary = { remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
+  const summary = { autoDispatchRoundsStarted: 0, remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
 
   try {
+    const { data: dispatchRounds, error: dispatchRoundsError } = await admin.rpc("process_scheduled_booking_dispatch");
+    if (dispatchRoundsError) {
+      console.error("Scheduled booking dispatch failed", dispatchRoundsError);
+    } else {
+      summary.autoDispatchRoundsStarted = typeof dispatchRounds === "number" ? dispatchRounds : 0;
+    }
+
     const now = Date.now();
     const reminderWindows = [
       {
