@@ -70,6 +70,78 @@ for each row execute function public.snapshot_request_professional_offer();
 -- Manual choice for professional-priced services. The exact price is already
 -- shown on the selected professional's card, so the customer has confirmed it
 -- by submitting the request.
+-- Scheduled time slots for professional-priced services are based on at least
+-- one nearby professional's own availability and published service duration.
+create or replace function public.get_available_variable_service_slots_at_location(
+  p_lat double precision,
+  p_lng double precision,
+  p_date date,
+  p_service_type_id integer
+) returns table(slot_time time)
+language plpgsql security definer
+set search_path = public, extensions
+as $
+declare
+  v_client_point extensions.geography;
+  v_local timestamp without time zone;
+  v_start timestamptz;
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  if p_lat is null or p_lng is null or p_lat not between -90 and 90 or p_lng not between -180 and 180 then
+    raise exception 'invalid client location';
+  end if;
+  if p_date is null or p_service_type_id is null then raise exception 'date and service are required'; end if;
+
+  v_client_point:=extensions.st_setsrid(extensions.st_makepoint(p_lng,p_lat),4326)::extensions.geography;
+  for v_local in
+    select p_date::timestamp+make_interval(mins=>minute_of_day)
+    from generate_series(480,1080,30) as slots(minute_of_day)
+  loop
+    v_start:=v_local at time zone 'America/Santo_Domingo';
+    if v_start>now() and exists (
+      select 1
+      from public.pro_profiles pp
+      join public.pro_services ps on ps.pro_id=pp.user_id and ps.service_type_id=p_service_type_id and ps.active
+      join public.service_types st on st.id=ps.service_type_id and st.active
+      where pp.active and pp.verification_status='approved'
+        and pp.equipment_policy_accepted_at is not null
+        and pp.service_area_latitude is not null and pp.service_area_longitude is not null
+        and extensions.st_dwithin(
+          extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude,pp.service_area_latitude),4326)::extensions.geography,
+          v_client_point,pp.service_area_radius_m)
+        and (v_local+make_interval(mins=>ps.est_minutes))::date=v_local::date
+        and exists (
+          select 1 from public.pro_availability av
+          where av.pro_id=pp.user_id
+            and av.weekday=extract(isodow from v_local)::smallint
+            and av.start_time<=v_local::time
+            and av.end_time>=(v_local+make_interval(mins=>ps.est_minutes))::time)
+        and not exists (
+          select 1 from public.bookings b
+          where b.pro_id=pp.user_id
+            and b.status in ('awaiting_payment','scheduled','en_route','arrived','in_progress')
+            and tstzrange(b.scheduled_start-interval '60 minutes',
+              b.scheduled_start+make_interval(mins=>b.est_minutes)+interval '60 minutes','[)')
+              && tstzrange(v_start,v_start+make_interval(mins=>ps.est_minutes),'[)'))
+        and not exists (
+          select 1 from public.booking_requests br
+          join public.bookings b on b.id=br.booking_id
+          where br.pro_id=pp.user_id and br.status='pending' and br.expires_at>now()
+            and b.status='requested'
+            and tstzrange(b.scheduled_start-interval '60 minutes',
+              b.scheduled_start+make_interval(mins=>b.est_minutes)+interval '60 minutes','[)')
+              && tstzrange(v_start,v_start+make_interval(mins=>ps.est_minutes),'[)'))
+    ) then
+      slot_time:=v_local::time;
+      return next;
+    end if;
+  end loop;
+end;
+$;
+
+revoke all on function public.get_available_variable_service_slots_at_location(double precision,double precision,date,integer) from public,anon;
+grant execute on function public.get_available_variable_service_slots_at_location(double precision,double precision,date,integer) to authenticated;
+
 -- Manual discovery for professional-priced services uses each professional's
 -- own published duration, rather than the longest duration in the whole area.
 create or replace function public.get_available_variable_service_pros_at_location(
