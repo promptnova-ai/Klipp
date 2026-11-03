@@ -255,12 +255,12 @@ export function NewBookingScreen() {
     }
     let active = true;
     setAutoPriceLoading(true);
-    void supabase.rpc('get_auto_service_price_estimate', {
+    void Promise.resolve(supabase.rpc('get_auto_service_price_estimate', {
       p_service_type_id: selectedServiceId,
       p_pricing_tier_id: selectedTier?.id ?? null,
       p_lat: coordinate.latitude,
       p_lng: coordinate.longitude,
-    }).then(({ data, error: estimateError }) => {
+    })).then(({ data, error: estimateError }) => {
       if (!active) return;
       if (estimateError) {
         setAutoPriceRange(null);
@@ -291,12 +291,12 @@ export function NewBookingScreen() {
     }
     let active = true;
     setManualPriceLoading(true);
-    void supabase.from('pro_services')
+    void Promise.resolve(supabase.from('pro_services')
       .select('id, base_price_dop')
       .eq('pro_id', selectedProId)
       .eq('service_type_id', selectedServiceId)
       .eq('active', true)
-      .maybeSingle()
+      .maybeSingle())
       .then(async ({ data: proService, error: serviceError }) => {
         if (!active) return;
         if (serviceError || !proService) {
