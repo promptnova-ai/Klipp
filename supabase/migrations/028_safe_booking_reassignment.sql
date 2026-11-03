@@ -669,7 +669,7 @@ RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 DECLARE
   v_expired_count integer;
 BEGIN
@@ -680,11 +680,11 @@ BEGIN
   GET DIAGNOSTICS v_expired_count = ROW_COUNT;
   RETURN v_expired_count;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.expire_booking_reassignment_requests() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.expire_booking_reassignment_requests() TO service_role;
 
-DO $
+DO $$
 BEGIN
   IF to_regnamespace('cron') IS NOT NULL
      AND to_regprocedure('cron.schedule(text,text,text)') IS NOT NULL THEN
@@ -702,7 +702,7 @@ BEGIN
     RAISE NOTICE 'pg_cron unavailable: reassignment requests are also expired lazily when a professional opens Solicitudes or an admin starts another reassignment.';
   END IF;
 END;
-$;
+$$;
 
 REVOKE ALL ON FUNCTION public.admin_list_booking_reassignment_candidates(uuid) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_create_booking_reassignment(uuid,uuid,text) FROM PUBLIC, anon;
