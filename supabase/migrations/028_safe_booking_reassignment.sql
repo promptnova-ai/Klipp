@@ -29,7 +29,8 @@ REVOKE ALL ON TABLE public.booking_reassignment_requests FROM PUBLIC, anon, auth
 
 CREATE OR REPLACE FUNCTION public.is_booking_reassignment_candidate(
   p_booking_id uuid,
-  p_pro_id uuid
+  p_pro_id uuid,
+  p_ignore_request_id uuid DEFAULT NULL
 )
 RETURNS boolean
 LANGUAGE sql
@@ -83,6 +84,7 @@ AS $$
         WHERE pending_request.replacement_pro_id = pp.user_id
           AND pending_request.status = 'pending'
           AND pending_request.expires_at > now()
+          AND pending_request.id IS DISTINCT FROM p_ignore_request_id
       )
       AND NOT EXISTS (
         SELECT 1 FROM public.bookings other_booking
@@ -112,7 +114,7 @@ AS $$
       )
   );
 $$;
-REVOKE ALL ON FUNCTION public.is_booking_reassignment_candidate(uuid,uuid) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.is_booking_reassignment_candidate(uuid,uuid,uuid) FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.admin_list_booking_reassignment_candidates(p_booking_id uuid)
 RETURNS TABLE (
@@ -176,7 +178,7 @@ BEGIN
   JOIN public.profiles profile ON profile.id = pp.user_id
   LEFT JOIN public.pro_presence presence ON presence.pro_id = pp.user_id
   WHERE pp.user_id <> v_booking.pro_id
-    AND public.is_booking_reassignment_candidate(p_booking_id, pp.user_id)
+    AND public.is_booking_reassignment_candidate(p_booking_id, pp.user_id, NULL)
     AND NOT EXISTS (
       SELECT 1 FROM public.booking_reassignment_requests existing
       WHERE existing.booking_id = p_booking_id
@@ -246,7 +248,7 @@ BEGIN
   ) THEN
     RAISE EXCEPTION 'a payout has already been processed or needs reconciliation';
   END IF;
-  IF NOT public.is_booking_reassignment_candidate(p_booking_id, p_replacement_pro_id) THEN
+  IF NOT public.is_booking_reassignment_candidate(p_booking_id, p_replacement_pro_id, NULL) THEN
     RAISE EXCEPTION 'replacement professional is no longer eligible or available';
   END IF;
 
@@ -368,7 +370,7 @@ BEGIN
   END IF;
 
   IF p_accept THEN
-    IF NOT public.is_booking_reassignment_candidate(v_booking.id, auth.uid()) THEN
+    IF NOT public.is_booking_reassignment_candidate(v_booking.id, auth.uid(), v_request.id) THEN
       RAISE EXCEPTION 'you are no longer eligible or available for this service';
     END IF;
     IF EXISTS (
