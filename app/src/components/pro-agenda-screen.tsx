@@ -28,6 +28,7 @@ const nextStep: Partial<Record<BookingStatus, { status: BookingStatus; label: st
 export function ProAgendaScreen() {
   const { session } = useAuth();
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
+  const [reassignmentLockedIds, setReassignmentLockedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -54,6 +55,9 @@ export function ProAgendaScreen() {
       .order('scheduled_start');
     if (queryError) setError(queryError.message);
     else setBookings((data ?? []) as unknown as AgendaBooking[]);
+    const { data: lockedData, error: lockedError } = await supabase.rpc('pro_list_pending_reassignment_locks');
+    if (lockedError) setError(lockedError.message);
+    else setReassignmentLockedIds((lockedData ?? []).map((row: { booking_id: string }) => row.booking_id));
     setLoading(false);
   }, [session?.user.id]);
 
@@ -356,6 +360,7 @@ export function ProAgendaScreen() {
             <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
             <Text style={styles.body}>Ubicación: {booking.address_text || booking.addresses?.label || booking.addresses?.street || 'No disponible'}</Text>
             {(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.body}>Referencia: {booking.landmark_notes || booking.addresses?.references_text}</Text>}
+            {reassignmentLockedIds.includes(booking.id) && <Text style={styles.reassignmentNotice}>Klipp está gestionando un posible cambio de profesional. No avances esta reserva hasta que se resuelva la solicitud.</Text>}
             {booking.status === 'en_route' && <Text style={styles.locationNotice}>Compartiendo ubicación en vivo con el cliente.</Text>}
             {booking.status === 'en_route' && (
               <>
@@ -386,7 +391,7 @@ export function ProAgendaScreen() {
               </>
             )}
             <Text style={styles.payout}>Pago al profesional: {formatDop(booking.pro_payout_dop)}</Text>
-            {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void advance(booking)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text></Pressable>}
+            {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id || reassignmentLockedIds.includes(booking.id)} onPress={() => void advance(booking)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text></Pressable>}
           </View>
         );
       })}
@@ -420,6 +425,7 @@ const styles = StyleSheet.create({
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700', marginTop: 3 },
+  reassignmentNotice: { color: '#8A5B00', backgroundColor: '#FFF4D6', borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: '700' },
   locationNotice: { color: '#047857', fontSize: 13, fontWeight: '700' },
   chatButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
   chatButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
