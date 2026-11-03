@@ -22,7 +22,7 @@
 - El cálculo de ETA desde administración envía `notifyDelay: false`: consultar una ETA no genera una notificación de retraso al cliente.
 - Las intervenciones requieren `bookings.manage`; consultar el panel solo requiere `bookings.read`.
 - Se puede enviar una solicitud manual a un profesional elegible cuando la reserva está en `requested` y aún no tiene profesional asignado. El profesional debe aceptarla desde su app.
-- Se puede cancelar desde el panel una solicitud `requested` sin profesional asignado y sin pagos retenidos, liberados o reembolsados. El motivo y el actor quedan registrados en `admin_audit_log`; el cambio de estado se añade al historial y dispara la notificación normal al cliente.
+- Se puede cancelar desde el panel una solicitud `requested` sin profesional asignado y sin pagos pendientes, retenidos, liberados o reembolsados. El motivo y el actor quedan registrados en `admin_audit_log`; el cambio de estado se añade al historial y dispara la notificación normal al cliente.
 - No se permite desde este control reasignar reservas ya aceptadas/pagadas, en camino o en curso, ni cancelar reservas con fondos retenidos/liberados. Esos casos requieren un flujo explícito de aceptación del profesional sustituto y tratamiento del pago/reembolso; no se fuerza el cambio de `pro_id`.
 
 ## Dependencias de base de datos
