@@ -262,9 +262,34 @@ export function NewBookingScreen() {
       return;
     }
     if (hasVariableService) {
-      setAvailableSlots(slotOptions);
-      setLoadingSlots(false);
-      return;
+      if (mode === 'auto') {
+        setAvailableSlots(slotOptions);
+        setLoadingSlots(false);
+        return;
+      }
+      let active = true;
+      setLoadingSlots(true);
+      void supabase.rpc('get_available_variable_service_slots_at_location', {
+        p_lat: coordinate.latitude,
+        p_lng: coordinate.longitude,
+        p_date: scheduledDate,
+        p_service_type_id: selectedServiceId,
+      }).then(({ data, error: slotsError }) => {
+        if (!active) return;
+        if (slotsError) {
+          setError(slotsError.message);
+          setAvailableSlots([]);
+        } else {
+          setAvailableSlots(((data ?? []) as { slot_time: string }[]).map((slot) => slot.slot_time.slice(0, 5)));
+        }
+        setLoadingSlots(false);
+      }).catch((cause: unknown) => {
+        if (!active) return;
+        setError(cause instanceof Error ? cause.message : 'No pudimos consultar los horarios disponibles.');
+        setAvailableSlots([]);
+        setLoadingSlots(false);
+      });
+      return () => { active = false; };
     }
 
     let active = true;
