@@ -59,7 +59,7 @@ export function ProAgendaScreen() {
     if (lockedError) setError(lockedError.message);
     else setReassignmentLockedIds((lockedData ?? []).map((row: { booking_id: string }) => row.booking_id));
     setLoading(false);
-  }, [session?.user.id]);
+  }, [session]);
 
   useFocusEffect(useCallback(() => {
     void loadBookings();
