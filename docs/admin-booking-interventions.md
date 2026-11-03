@@ -12,7 +12,7 @@
 - Los candidatos deben estar activos, aprobados, haber aceptado la política de herramientas propias, ofrecer el servicio, cubrir la zona, tener agenda compatible y no presentar conflictos de horario.
 - Para servicios que empiezan dentro de 20 minutos, el profesional debe estar conectado y tener GPS actualizado en los últimos 90 segundos.
 - Un profesional no puede recibir otra solicitud para la misma reserva si ya figura en su historial de solicitudes.
-- La cancelación solo admite reservas `requested` sin profesional asignado y bloquea pagos en estado `held`, `released` o `refunded`.
+- La cancelación solo admite reservas `requested` sin profesional asignado y bloquea pagos en estado `pending`, `held`, `released` o `refunded`.
 - Las acciones se guardan en `admin_audit_log`; el trigger de historial registra el cambio de estado y el sistema de notificaciones existente informa al cliente de la cancelación.
 
 ## Fuera de alcance
