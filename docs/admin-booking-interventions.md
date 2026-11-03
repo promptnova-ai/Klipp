@@ -19,10 +19,14 @@
 No se cambia directamente el profesional de una reserva ya aceptada, pagada, en camino o en curso. Ese proceso requiere que el profesional sustituto acepte primero, que el profesional anterior sea notificado y que el estado de los fondos retenidos permanezca correcto. Tampoco se cancelan desde aquí reservas con fondos retenidos o liberados.
 
 ## Despliegue
-1. Aplicar migraciones base y RBAC 013–014.
-2. Aplicar historial y notificaciones 024–025.
-3. Aplicar centro de operaciones 026.
-4. Aplicar `027_admin_booking_interventions.sql`.
-5. Desplegar frontend después de validar las RPC en staging.
+1. Aplicar migraciones base 001–007.
+2. Aplicar RBAC 013–014.
+3. Aplicar la política de equipamiento 015 y presencia profesional 018.
+4. Aplicar historial y notificaciones 024–025.
+5. Aplicar centro de operaciones 026.
+6. Aplicar `027_admin_booking_interventions.sql`.
+7. Desplegar frontend después de validar las RPC en staging.
+
+**Atención:** hay dos archivos con prefijo de versión `015` en el repositorio. Resolver la colisión de versión antes de ejecutar migraciones con Supabase CLI.
 
 No aplicar esta migración en producción sin probar antes las restricciones y la auditoría en un entorno de staging.
