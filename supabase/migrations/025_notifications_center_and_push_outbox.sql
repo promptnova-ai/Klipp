@@ -409,7 +409,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_booking public.bookings%rowtype;
 begin
@@ -468,7 +468,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   perform public.create_klipp_notification(
     new.pro_id, new.booking_id, 'review_received', 'Has recibido una valoración',
@@ -492,7 +492,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if new.status is distinct from old.status and new.status = 'resolved' then
     perform public.create_klipp_notification(
