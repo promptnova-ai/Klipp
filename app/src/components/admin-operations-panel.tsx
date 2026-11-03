@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
@@ -28,6 +28,7 @@ type OpsBooking = {
 };
 type TimelineEvent = { event_id: number; from_status: string | null; to_status: string; occurred_at: string; actor_name: string | null };
 type StatusFilter = 'active' | 'attention' | 'all';
+type RouteEta = { etaMinutes: number; distanceMeters: number; trafficAware: boolean };
 
 const statusNames: Record<string, string> = {
   requested: 'Buscando profesional',
@@ -72,6 +73,9 @@ export function AdminOperationsPanel() {
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [routeEta, setRouteEta] = useState<RouteEta | null>(null);
+  const [etaLoading, setEtaLoading] = useState(false);
+  const [etaError, setEtaError] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
     setError(null);
@@ -96,12 +100,31 @@ export function AdminOperationsPanel() {
 
   const openTimeline = useCallback(async (bookingId: string) => {
     setSelectedId(bookingId);
+    setRouteEta(null);
+    setEtaError(null);
     setTimelineLoading(true);
     setTimeline([]);
     const { data, error: requestError } = await supabase.rpc('admin_get_booking_timeline', { p_booking_id: bookingId });
     if (requestError) setError(requestError.message);
     else setTimeline((data ?? []) as TimelineEvent[]);
     setTimelineLoading(false);
+  }, []);
+
+  const calculateEta = useCallback(async (bookingId: string) => {
+    setEtaLoading(true);
+    setEtaError(null);
+    setRouteEta(null);
+    const { data, error: invokeError } = await supabase.functions.invoke('booking-route-eta', {
+      body: { bookingId, notifyDelay: false },
+    });
+    if (invokeError) {
+      setEtaError(invokeError.message);
+    } else if (data && typeof data.etaMinutes === 'number') {
+      setRouteEta({ etaMinutes: data.etaMinutes, distanceMeters: data.distanceMeters, trafficAware: data.trafficAware === true });
+    } else {
+      setEtaError(data?.error || 'ETA no disponible. Comprueba que el GPS sea reciente y que el servicio esté en camino.');
+    }
+    setEtaLoading(false);
   }, []);
 
   const attentionCount = useMemo(() => bookings.filter((item) => attentionReason(item)).length, [bookings]);
@@ -158,6 +181,16 @@ export function AdminOperationsPanel() {
           <Text style={styles.body}>Dirección: {selectedBooking.address_text || 'No disponible'}</Text>
           <Text style={styles.body}>Programada: {dateLabel(selectedBooking.scheduled_start)} · Estado: {statusNames[selectedBooking.status] ?? selectedBooking.status}</Text>
           <Text style={styles.body}>Creada: {dateLabel(selectedBooking.created_at)} · Eventos registrados: {selectedBooking.status_event_count}</Text>
+          {selectedBooking.status === 'en_route' && (
+            <View style={styles.locationBox}>
+              <Text style={styles.locationTitle}>ETA por carretera</Text>
+              {routeEta ? <Text style={styles.etaValue}>~{routeEta.etaMinutes} min · {(routeEta.distanceMeters / 1000).toFixed(1)} km</Text> : <Text style={styles.body}>Calcula el tiempo estimado con tráfico cuando la ubicación GPS tenga menos de 2 minutos.</Text>}
+              {etaError && <Text style={styles.warning}>{etaError}</Text>}
+              <Pressable accessibilityRole="button" disabled={etaLoading} onPress={() => void calculateEta(selectedBooking.booking_id)} style={styles.etaButton}>
+                <Text style={styles.refreshText}>{etaLoading ? 'Calculando…' : 'Calcular ETA actualizado'}</Text>
+              </Pressable>
+            </View>
+          )}
           {selectedBooking.pro_latitude !== null && selectedBooking.pro_longitude !== null ? (
             <View style={styles.locationBox}>
               <Text style={styles.locationTitle}>Última ubicación GPS del profesional</Text>
@@ -229,6 +262,8 @@ const styles = StyleSheet.create({
   detailCard: { padding: 15, gap: 10, borderWidth: 1, borderColor: KlippColors.blue, borderRadius: 14, backgroundColor: '#F8FBFF' },
   locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: '#EEF4FF' },
   locationTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
+  etaValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
+  etaButton: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: KlippColors.navy },
   event: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 3 },
   eventTitle: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   link: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '800' },
