@@ -213,7 +213,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
         <View style={styles.grow}>
           <Text style={styles.title}>Centro de operaciones</Text>
           <Text style={styles.body}>Supervisión de reservas, profesionales y tiempos de servicio.</Text>
-          <Text style={styles.caption}>Actualización automática cada 30 segundos{updatedAt ? ` · Última consulta ${new Date(updatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}</Text>
+          <Text style={styles.caption}>Actualización automática cada 15 segundos{updatedAt ? ` · Última consulta ${new Date(updatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}</Text>
         </View>
         <Pressable accessibilityRole="button" onPress={() => void loadBookings()} style={styles.refresh}><Text style={styles.refreshText}>Actualizar</Text></Pressable>
       </View>
