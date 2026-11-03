@@ -244,7 +244,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             <View style={styles.switchRow}>
               <Text style={[styles.switchText, !isRegister && styles.loginSwitchText]}>{isRegister ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</Text>
               <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild>
-                <Text style={[styles.link, !isRegister && styles.loginLink]}>{isRegister ? 'Inicia sesión' : 'Regístrate'}</Text>
+                <Text style={StyleSheet.flatten([styles.link, !isRegister && styles.loginLink])}>{isRegister ? 'Inicia sesión' : 'Regístrate'}</Text>
               </Link>
             </View>
           </View>
