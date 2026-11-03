@@ -497,7 +497,7 @@ LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_admin_permission('bookings.read') THEN
     RAISE EXCEPTION 'permission denied: bookings.read';
@@ -509,33 +509,38 @@ BEGIN
   END IF;
 
   RETURN QUERY
-  SELECT event.id, event.from_status::text, event.to_status::text,
-    event.occurred_at, actor.full_name
-  FROM public.booking_status_events event
-  LEFT JOIN public.profiles actor ON actor.id = event.actor_id
-  WHERE event.booking_id = p_booking_id
+  SELECT combined.event_id, combined.from_status, combined.to_status,
+    combined.occurred_at, combined.actor_name
+  FROM (
+    SELECT event.id AS event_id, event.from_status::text AS from_status,
+      event.to_status::text AS to_status, event.occurred_at,
+      actor.full_name AS actor_name
+    FROM public.booking_status_events event
+    LEFT JOIN public.profiles actor ON actor.id = event.actor_id
+    WHERE event.booking_id = p_booking_id
 
-  UNION ALL
+    UNION ALL
 
-  SELECT -audit.id, NULL::text,
-    CASE audit.action
-      WHEN 'booking.reassignment_requested' THEN 'Sustitución solicitada: ' || coalesce(audit.details->>'reason','sin motivo')
-      WHEN 'booking.reassignment_accepted' THEN 'Sustitución aceptada'
-      WHEN 'booking.reassignment_rejected' THEN 'Sustitución rechazada'
-      ELSE 'Sustitución cancelada o expirada'
-    END,
-    audit.created_at, actor.full_name
-  FROM public.admin_audit_log audit
-  LEFT JOIN public.profiles actor ON actor.id = audit.actor_id
-  WHERE audit.target_id = p_booking_id
-    AND audit.action IN (
-      'booking.reassignment_requested',
-      'booking.reassignment_accepted',
-      'booking.reassignment_rejected'
-    )
-  ORDER BY occurred_at ASC, event_id ASC;
+    SELECT -audit.id AS event_id, NULL::text AS from_status,
+      CASE audit.action
+        WHEN 'booking.reassignment_requested' THEN 'Sustitución solicitada: ' || coalesce(audit.details->>'reason','sin motivo')
+        WHEN 'booking.reassignment_accepted' THEN 'Sustitución aceptada'
+        WHEN 'booking.reassignment_rejected' THEN 'Sustitución rechazada'
+        ELSE 'Sustitución cancelada o expirada'
+      END AS to_status,
+      audit.created_at AS occurred_at, actor.full_name AS actor_name
+    FROM public.admin_audit_log audit
+    LEFT JOIN public.profiles actor ON actor.id = audit.actor_id
+    WHERE audit.target_id = p_booking_id
+      AND audit.action IN (
+        'booking.reassignment_requested',
+        'booking.reassignment_accepted',
+        'booking.reassignment_rejected'
+      )
+  ) combined
+  ORDER BY combined.occurred_at ASC, combined.event_id ASC;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.admin_get_booking_timeline(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_get_booking_timeline(uuid) TO authenticated;
 
