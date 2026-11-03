@@ -33,11 +33,12 @@ No se reasignan reservas en camino, con llegada registrada o en curso, ni se alt
 1. Aplicar migraciones base 001–007.
 2. Aplicar RBAC 013–014.
 3. Aplicar la política de equipamiento 015 y presencia profesional 018.
-4. Aplicar historial y notificaciones 024–025.
-5. Aplicar centro de operaciones 026.
-6. Aplicar `027_admin_booking_interventions.sql`.
-7. Aplicar `028_safe_booking_reassignment.sql`.
-8. Desplegar frontend después de validar las RPC en staging.
+4. Aplicar confirmación de equipamiento por reserva 023.
+5. Aplicar historial de estados 024 y notificaciones 025.
+6. Aplicar centro de operaciones 026.
+7. Aplicar `027_admin_booking_interventions.sql`.
+8. Aplicar `028_safe_booking_reassignment.sql`.
+9. Desplegar frontend después de validar las RPC en staging.
 
 **Atención:** hay dos archivos con prefijo de versión `015` en el repositorio. Resolver la colisión de versión antes de ejecutar migraciones con Supabase CLI.
 
