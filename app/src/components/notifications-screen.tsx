@@ -86,7 +86,7 @@ export function NotificationsScreen() {
     };
     for (const row of data ?? []) {
       if (row.event_type === 'booking_updates' || row.event_type === 'chat_messages' || row.event_type === 'reminders') {
-        next[row.event_type] = { in_app_enabled: row.in_app_enabled, push_enabled: row.push_enabled };
+        next[row.event_type as keyof PreferenceMap] = { in_app_enabled: row.in_app_enabled, push_enabled: row.push_enabled };
       }
     }
     setPreferences(next);
