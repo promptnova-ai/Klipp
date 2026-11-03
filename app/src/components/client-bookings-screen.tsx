@@ -101,7 +101,7 @@ export function ClientBookingsScreen() {
       'info' in result && result.info ? [[result.bookingId, result.info]] : [],
     )));
     setLoading(false);
-  }, [session?.user.id]);
+  }, [session]);
 
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
 
