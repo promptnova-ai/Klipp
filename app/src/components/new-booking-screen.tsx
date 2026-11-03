@@ -410,7 +410,7 @@ export function NewBookingScreen() {
     return () => {
       active = false;
     };
-  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode, timing]);
+  }, [coordinate, selectedTier, selectedOffer, selectedServiceId, selectedProId, scheduledDate, mode, timing]);
 
   useEffect(() => {
     if (!coordinate || !selectedDuration || (timing === 'scheduled' && !scheduledTime)) return;
