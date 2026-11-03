@@ -73,70 +73,82 @@ AS $$
       AND pro_id IS NULL
       AND client_lat IS NOT NULL
       AND client_lng IS NOT NULL
-  )
-  SELECT pp.user_id,
-    extensions.st_distance(
-      extensions.st_setsrid(extensions.st_makepoint(pr.longitude, pr.latitude), 4326)::extensions.geography,
-      b.point
-    ),
-    pp.rating_avg
-  FROM b
-  JOIN public.pro_profiles pp ON pp.active
-  JOIN public.pro_presence pr ON pr.pro_id = pp.user_id
-  WHERE pp.verification_status = 'approved'
-    AND pp.accepts_auto_assign
-    AND pp.equipment_policy_accepted_at IS NOT NULL
-    AND pp.service_area_latitude IS NOT NULL
-    AND pr.is_online
-    AND pr.last_seen_at >= now() - interval '90 seconds'
-    AND EXISTS (
-      SELECT 1 FROM public.pro_services ps
-      WHERE ps.pro_id = pp.user_id
-        AND ps.service_type_id = b.service_type_id
-        AND ps.active
-        AND (
-          b.pricing_tier_id IS NULL
-          OR EXISTS (
-            SELECT 1 FROM public.pro_service_tier_prices tp
-            WHERE tp.pro_service_id = ps.id
-              AND tp.pricing_tier_id = b.pricing_tier_id
-              AND tp.active
-          )
-        )
-    )
-    AND extensions.st_dwithin(
-      extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326)::extensions.geography,
+  ),
+  eligible AS (
+    SELECT
+      b.id AS booking_id,
+      b.scheduled_start,
+      b.service_type_id,
+      b.pricing_tier_id,
       b.point,
-      pp.service_area_radius_m
-    )
-    AND EXISTS (
-      SELECT 1 FROM public.pro_availability av
-      WHERE av.pro_id = pp.user_id
-        AND av.weekday = extract(isodow from (b.scheduled_start at time zone 'America/Santo_Domingo'))::smallint
-        AND av.start_time <= (b.scheduled_start at time zone 'America/Santo_Domingo')::time
-        AND av.end_time >= ((b.scheduled_start + make_interval(mins => b.est_minutes)) at time zone 'America/Santo_Domingo')::time
-    )
-    AND NOT EXISTS (
-      SELECT 1 FROM public.bookings ob
-      WHERE ob.pro_id = pp.user_id
-        AND ob.status IN ('awaiting_payment','scheduled','en_route','arrived','in_progress')
-        AND tstzrange(ob.scheduled_start - interval '60 minutes',
-          ob.scheduled_start + make_interval(mins => ob.est_minutes) + interval '60 minutes','[)')
-        && tstzrange(b.scheduled_start,b.scheduled_start + make_interval(mins => b.est_minutes),'[)')
-    )
-    AND NOT EXISTS (
-      SELECT 1 FROM public.booking_requests old
-      WHERE old.booking_id = b.id AND old.pro_id = pp.user_id
-    )
-    AND NOT EXISTS (
-      SELECT 1 FROM public.booking_requests pending
-      JOIN public.bookings ob ON ob.id = pending.booking_id
-      WHERE pending.pro_id = pp.user_id
-        AND pending.status = 'pending'
-        AND pending.expires_at > now()
-        AND ob.id <> b.id
-    )
-  ORDER BY 2, pp.rating_avg DESC, pp.jobs_completed DESC
+      pp.user_id,
+      pp.rating_avg,
+      pp.jobs_completed,
+      pp.service_area_latitude,
+      pp.service_area_longitude,
+      pp.service_area_radius_m,
+      pr.latitude AS pro_latitude,
+      pr.longitude AS pro_longitude,
+      coalesce(tp.est_minutes, b.est_minutes) AS service_minutes
+    FROM b
+    JOIN public.pro_profiles pp ON pp.active
+    JOIN public.pro_presence pr ON pr.pro_id = pp.user_id
+    JOIN public.pro_services ps
+      ON ps.pro_id = pp.user_id
+     AND ps.service_type_id = b.service_type_id
+     AND ps.active
+    LEFT JOIN public.pro_service_tier_prices tp
+      ON tp.pro_service_id = ps.id
+     AND tp.pricing_tier_id = b.pricing_tier_id
+     AND tp.active
+    WHERE pp.verification_status = 'approved'
+      AND pp.accepts_auto_assign
+      AND pp.equipment_policy_accepted_at IS NOT NULL
+      AND pp.service_area_latitude IS NOT NULL
+      AND pr.is_online
+      AND pr.last_seen_at >= now() - interval '90 seconds'
+      AND (b.pricing_tier_id IS NULL OR tp.price_dop IS NOT NULL)
+      AND extensions.st_dwithin(
+        extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326)::extensions.geography,
+        b.point,
+        pp.service_area_radius_m
+      )
+  )
+  SELECT e.user_id,
+    extensions.st_distance(
+      extensions.st_setsrid(extensions.st_makepoint(e.pro_longitude, e.pro_latitude), 4326)::extensions.geography,
+      e.point
+    ),
+    e.rating_avg
+  FROM eligible e
+  WHERE EXISTS (
+    SELECT 1 FROM public.pro_availability av
+    WHERE av.pro_id = e.user_id
+      AND av.weekday = extract(isodow from (e.scheduled_start at time zone 'America/Santo_Domingo'))::smallint
+      AND av.start_time <= (e.scheduled_start at time zone 'America/Santo_Domingo')::time
+      AND av.end_time >= ((e.scheduled_start + make_interval(mins => e.service_minutes)) at time zone 'America/Santo_Domingo')::time
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.bookings ob
+    WHERE ob.pro_id = e.user_id
+      AND ob.status IN ('awaiting_payment','scheduled','en_route','arrived','in_progress')
+      AND tstzrange(ob.scheduled_start - interval '60 minutes',
+        ob.scheduled_start + make_interval(mins => ob.est_minutes) + interval '60 minutes','[)')
+      && tstzrange(e.scheduled_start,e.scheduled_start + make_interval(mins => e.service_minutes),'[)')
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.booking_requests old
+    WHERE old.booking_id = e.booking_id AND old.pro_id = e.user_id
+  )
+  AND NOT EXISTS (
+    SELECT 1 FROM public.booking_requests pending
+    JOIN public.bookings ob ON ob.id = pending.booking_id
+    WHERE pending.pro_id = e.user_id
+      AND pending.status = 'pending'
+      AND pending.expires_at > now()
+      AND ob.id <> e.booking_id
+  )
+  ORDER BY 2, e.rating_avg DESC, e.jobs_completed DESC
   LIMIT greatest(1, least(coalesce(p_limit, 5), 20));
 $$;
 
@@ -289,6 +301,7 @@ BEGIN
   WHERE pp.active
     AND pp.verification_status = 'approved'
     AND pp.equipment_policy_accepted_at IS NOT NULL
+    AND pp.accepts_auto_assign
     AND pp.service_area_latitude IS NOT NULL
     AND extensions.st_dwithin(
       extensions.st_setsrid(
@@ -363,6 +376,7 @@ BEGIN
     AND pp.active
     AND pp.verification_status = 'approved'
     AND pp.equipment_policy_accepted_at IS NOT NULL
+    AND pp.accepts_auto_assign
     AND pp.service_area_latitude IS NOT NULL
     AND extensions.st_dwithin(
       extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326)::extensions.geography,
