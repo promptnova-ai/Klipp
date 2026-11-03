@@ -15,6 +15,7 @@ Apply migrations in order, including:
 - `031_uber_style_incoming_offer.sql`
 - `032_set_seven_percent_on_all_booking_creation_paths.sql`
 - `033_client_professional_acceptance_rate.sql`
+- `034_enable_pg_net_for_urgent_push.sql`
 - `034_urgent_push_dispatch_webhook.sql`
 - `035_schedule_notification_and_eta_worker.sql`
 
