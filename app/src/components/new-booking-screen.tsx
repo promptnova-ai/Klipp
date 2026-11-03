@@ -331,7 +331,7 @@ export function NewBookingScreen() {
     return () => {
       active = false;
     };
-  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode, timing, hasVariableService, slotOptions]);
+  }, [coordinate, selectedTier, selectedOffer, selectedServiceId, scheduledDate, mode, timing, hasVariableService, slotOptions]);
 
   useEffect(() => {
     if (!coordinate || !selectedDuration || (timing === 'scheduled' && !scheduledTime)) return;
