@@ -36,7 +36,8 @@ La migración 026 también requiere el esquema base de reservas, perfiles, servi
 
 ## Configuración necesaria para ETA
 - Configurar `GOOGLE_MAPS_SERVER_API_KEY` como secreto de la Edge Function.
-- Habilitar Google Routes API y restringir la clave a esa API.
+- Habilitar Google Routes API y restringir la clave de servidor a esa API.
+- Para el mapa en navegador, configurar también `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` y habilitar Maps JavaScript API; restringir esa clave por dominio y API. El mapa nativo usa `react-native-maps`.
 - Desplegar `booking-route-eta` después de aplicar las migraciones necesarias.
 - La ETA requiere que la reserva esté en `en_route` y que el GPS del profesional tenga menos de 120 segundos de antigüedad.
 - Si falta configuración, el GPS está desactualizado o no hay ruta, el panel debe mostrar que la ETA no está disponible; no debe inventar un tiempo.
