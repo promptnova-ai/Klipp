@@ -82,7 +82,8 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   const [routeEta, setRouteEta] = useState<RouteEta | null>(null);
   const [etaLoading, setEtaLoading] = useState(false);
   const [etaError, setEtaError] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);\n  const [candidatesLoaded, setCandidatesLoaded] = useState(false);
+  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);
+  const [candidatesLoaded, setCandidatesLoaded] = useState(false);
   const [candidateLoading, setCandidateLoading] = useState(false);
   const [interventionReason, setInterventionReason] = useState('');
   const [interventionBusy, setInterventionBusy] = useState(false);
