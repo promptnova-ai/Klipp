@@ -682,6 +682,98 @@ $;
 revoke all on function public.decline_booking_price(uuid) from public,anon;
 grant execute on function public.decline_booking_price(uuid) to authenticated;
 
+-- Tell clients to review the exact professional quote before payment.
+create or replace function public.notify_klipp_booking_status()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  v_booking public.bookings%rowtype;
+  v_client_title text;
+  v_client_body text;
+  v_pro_title text;
+  v_pro_body text;
+begin
+  select * into v_booking from public.bookings where id=new.booking_id;
+  if not found then return new; end if;
+
+  case new.to_status
+    when 'requested' then
+      v_client_title := 'Solicitud enviada';
+      v_client_body := 'Tu solicitud de servicio se ha registrado en Klipp.';
+    when 'awaiting_payment' then
+      if v_booking.pro_service_id is not null and v_booking.price_confirmed_at is null then
+        v_client_title := 'Confirma el precio definitivo';
+        v_client_body := 'Un profesional ha aceptado tu solicitud. Revisa el importe exacto y confírmalo antes de continuar al pago.';
+      else
+        v_client_title := 'Pago pendiente';
+        v_client_body := 'Un profesional ha aceptado tu solicitud. Completa el pago para confirmar la reserva.';
+      end if;
+      v_pro_title := 'Solicitud aceptada';
+      v_pro_body := 'Has aceptado el servicio. Estamos esperando la confirmación del cliente.';
+    when 'scheduled' then
+      v_client_title := 'Reserva confirmada';
+      v_client_body := 'Tu servicio está confirmado. Consulta los detalles en Mis reservas.';
+      v_pro_title := 'Servicio confirmado';
+      v_pro_body := 'La reserva está confirmada y aparece en tu agenda.';
+    when 'en_route' then
+      v_client_title := 'Tu profesional va en camino';
+      v_client_body := 'Ya puedes seguir su ubicación y consultar la llegada estimada en Klipp.';
+    when 'arrived' then
+      v_client_title := 'Tu profesional ha llegado';
+      v_client_body := 'El profesional ha indicado que llegó al domicilio.';
+    when 'in_progress' then
+      v_client_title := 'Tu servicio ha comenzado';
+      v_client_body := 'El profesional ha iniciado el trabajo.';
+      v_pro_title := 'Servicio iniciado';
+      v_pro_body := 'El servicio está en curso. Recuerda actualizar el estado al terminar.';
+    when 'completed' then
+      v_client_title := 'Servicio terminado';
+      v_client_body := 'El profesional ha marcado el servicio como terminado. Revisa y confirma cuando corresponda.';
+      v_pro_title := 'Servicio marcado como terminado';
+      v_pro_body := 'El cliente ya puede revisar y confirmar el servicio.';
+    when 'confirmed' then
+      v_pro_title := 'Servicio confirmado por el cliente';
+      v_pro_body := 'El cliente ha confirmado el servicio. Gracias por trabajar con Klipp.';
+    when 'cancelled' then
+      v_client_title := 'Reserva cancelada';
+      v_client_body := 'La reserva ha sido cancelada. Consulta el detalle para conocer el siguiente paso.';
+      v_pro_title := 'Reserva cancelada';
+      v_pro_body := 'Una reserva asignada a tu cuenta ha sido cancelada.';
+    when 'disputed' then
+      v_client_title := 'Incidencia registrada';
+      v_client_body := 'Hemos recibido una incidencia sobre este servicio. Te informaremos de los siguientes pasos.';
+      v_pro_title := 'Incidencia en una reserva';
+      v_pro_body := 'Se ha registrado una incidencia relacionada con este servicio.';
+    when 'expired' then
+      v_client_title := 'Solicitud expirada';
+      v_client_body := 'No se pudo confirmar un profesional para esta solicitud. Puedes volver a intentarlo.';
+    else
+      return new;
+  end case;
+
+  perform public.create_klipp_notification(
+    v_booking.client_id,v_booking.id,'booking_status',v_client_title,v_client_body,
+    jsonb_build_object('bookingId',v_booking.id,'status',new.to_status,'target','client'),
+    'booking:'||v_booking.id::text||':status:'||new.to_status::text||':client',
+    'booking_updates'
+  );
+
+  if v_booking.pro_id is not null and v_pro_title is not null then
+    perform public.create_klipp_notification(
+      v_booking.pro_id,v_booking.id,'booking_status',v_pro_title,v_pro_body,
+      jsonb_build_object('bookingId',v_booking.id,'status',new.to_status,'target','pro'),
+      'booking:'||v_booking.id::text||':status:'||new.to_status::text||':pro',
+      'booking_updates'
+    );
+  end if;
+  return new;
+end;
+$;
+revoke all on function public.notify_klipp_booking_status() from public,anon,authenticated;
+
 create or replace function public.guard_payment_price_confirmation()
 returns trigger
 language plpgsql
