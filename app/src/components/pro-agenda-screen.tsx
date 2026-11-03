@@ -76,6 +76,24 @@ export function ProAgendaScreen() {
   }, [loadBookings, session?.user.id]));
 
   useEffect(() => {
+    const userId = session?.user.id;
+    if (!userId) return;
+    const channel = supabase
+      .channel(`pro-reassignment-notifications:${userId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        const notification = payload.new as { type?: string };
+        if (notification.type === 'booking_reassignment') void loadBookings();
+      })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadBookings, session?.user.id]);
+
+  useEffect(() => {
     if (loading) return;
     const activeTripIds = activeTripKey ? activeTripKey.split(',') : [];
     let active = true;
@@ -241,6 +259,10 @@ export function ProAgendaScreen() {
   async function advance(booking: AgendaBooking) {
     const step = nextStep[booking.status];
     if (!step) return;
+    if (reassignmentLockedIds.includes(booking.id)) {
+      setError('Esta reserva está temporalmente bloqueada mientras Klipp espera la respuesta del profesional sustituto.');
+      return;
+    }
     if (booking.status === 'arrived') {
       setEquipmentConfirmationBooking(booking);
       return;
