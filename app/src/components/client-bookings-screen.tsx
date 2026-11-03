@@ -403,8 +403,18 @@ export function ClientBookingsScreen() {
               </View>
             )}
             <View style={styles.priceRow}>
-              <Text style={styles.priceLabel}>Total</Text>
-              <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
+              <Text style={styles.priceLabel}>
+                {booking.assignment_mode === 'auto' && booking.status === 'requested' && booking.pro_id === null && booking.price_min_dop != null && booking.price_max_dop != null
+                  ? 'Rango estimado'
+                  : 'Total'}
+              </Text>
+              <Text style={styles.price}>
+                {booking.assignment_mode === 'auto' && booking.status === 'requested' && booking.pro_id === null && booking.price_min_dop != null && booking.price_max_dop != null
+                  ? booking.price_min_dop === booking.price_max_dop
+                    ? formatDop(booking.price_min_dop)
+                    : `${formatDop(booking.price_min_dop)} – ${formatDop(booking.price_max_dop)}`
+                  : formatDop(booking.price_dop)}
+              </Text>
             </View>
             {booking.status === 'awaiting_payment' && booking.pro_service_id && !booking.price_confirmed_at && (
               <View style={styles.payment}>
