@@ -25,6 +25,8 @@ RETURNS TABLE (
   pro_latitude double precision,
   pro_longitude double precision,
   pro_location_updated_at timestamptz,
+  current_eta_minutes integer,
+  eta_updated_at timestamptz,
   status_event_count bigint
 )
 LANGUAGE plpgsql
@@ -61,6 +63,8 @@ BEGIN
     CASE WHEN pl.location IS NOT NULL THEN extensions.st_y(pl.location::extensions.geometry) END,
     CASE WHEN pl.location IS NOT NULL THEN extensions.st_x(pl.location::extensions.geometry) END,
     pl.updated_at,
+    eta.last_notified_eta_minutes,
+    eta.updated_at,
     (SELECT count(*) FROM public.booking_status_events event WHERE event.booking_id = b.id)
   FROM public.bookings b
   LEFT JOIN public.service_types st ON st.id = b.service_type_id
@@ -68,6 +72,7 @@ BEGIN
   LEFT JOIN public.profiles pro_profile ON pro_profile.id = b.pro_id
   LEFT JOIN public.addresses a ON a.id = b.address_id
   LEFT JOIN public.pro_locations pl ON pl.booking_id = b.id AND pl.pro_id = b.pro_id
+  LEFT JOIN public.booking_eta_tracking eta ON eta.booking_id = b.id
   WHERE b.status IN (
     'requested', 'awaiting_payment', 'scheduled',
     'en_route', 'arrived', 'in_progress', 'disputed'
