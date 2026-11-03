@@ -453,7 +453,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.notify_klipp_payment_status() from public, anon, authenticated;
 
 drop trigger if exists payment_status_create_notification on public.payments;
@@ -479,7 +479,7 @@ begin
   );
   return new;
 end;
-$;
+$$;
 revoke all on function public.notify_klipp_review_received() from public, anon, authenticated;
 
 drop trigger if exists review_create_notification on public.reviews;
@@ -505,7 +505,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.notify_klipp_issue_resolved() from public, anon, authenticated;
 
 drop trigger if exists issue_resolved_create_notification on public.issues;
