@@ -15,6 +15,8 @@ Apply migrations in order, including:
 - `031_uber_style_incoming_offer.sql`
 - `032_set_seven_percent_on_all_booking_creation_paths.sql`
 - `033_client_professional_acceptance_rate.sql`
+- `034_urgent_push_dispatch_webhook.sql`
+- `035_schedule_notification_and_eta_worker.sql`
 
 The connected Supabase project has received these migrations in dependency order: 015, 018, 024, 025, 029, 030, 031, 032 and 033. Back up the project before applying them to any other environment.
 
@@ -39,7 +41,7 @@ The function validates either the service-role bearer token or the dedicated `x-
 Migrations `034_urgent_push_dispatch_webhook.sql` and `035_schedule_notification_and_eta_worker.sql` automatically configure both delivery paths:
 
 - An `AFTER INSERT` trigger on `public.push_delivery_queue` invokes `dispatch-notifications` immediately for urgent offers.
-- A `pg_cron` job named `klipp-dispatch-notifications` runs every minute for scheduled reminders and background ETA checks.
+- A `pg_cron` job named `klipp-dispatch-notifications` runs every minute for scheduled reminders, background ETA checks and the next automatic-dispatch round when the previous 45-second offer group expires.
 - The credential is generated and stored in Vault by migration 034; the function validates it using a restricted server-only RPC.
 
 The cron job and trigger are installed in the connected Supabase project. Verify them in Database → Triggers and Integrations → Cron. Push delivery latency still needs physical-device testing; do not assume a closed-app push always arrives before the 45-second offer expiry.
