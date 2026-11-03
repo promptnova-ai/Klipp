@@ -21,12 +21,23 @@ export async function registerPushDeviceAsync(userId: string) {
   }
 
   if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('klipp-updates', {
-      name: 'Actualizaciones de Klipp',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#208AEF',
-    });
+    await Promise.all([
+      Notifications.setNotificationChannelAsync('klipp-updates', {
+        name: 'Actualizaciones de Klipp',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 150],
+        lightColor: '#208AEF',
+      }),
+      Notifications.setNotificationChannelAsync('klipp-requests', {
+        name: 'Solicitudes de servicios',
+        description: 'Alertas urgentes para aceptar o rechazar nuevos servicios.',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 400, 180, 400, 180, 700],
+        lightColor: '#E45D42',
+        sound: 'default',
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+      }),
+    ]);
   }
 
   let permission = await Notifications.getPermissionsAsync();
