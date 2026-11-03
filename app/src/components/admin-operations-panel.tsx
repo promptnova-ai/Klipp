@@ -82,7 +82,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   const [routeEta, setRouteEta] = useState<RouteEta | null>(null);
   const [etaLoading, setEtaLoading] = useState(false);
   const [etaError, setEtaError] = useState<string | null>(null);
-  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);
+  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);\n  const [candidatesLoaded, setCandidatesLoaded] = useState(false);
   const [candidateLoading, setCandidateLoading] = useState(false);
   const [interventionReason, setInterventionReason] = useState('');
   const [interventionBusy, setInterventionBusy] = useState(false);
@@ -331,7 +331,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
                   </Pressable>
                 </View>
               ))}
-              {!candidateLoading && candidates.length === 0 && <Text style={styles.caption}>Pulsa «Buscar profesionales» para consultar candidatos disponibles.</Text>}
+              {!candidateLoading && candidatesLoaded && candidates.length === 0 && <Text style={styles.caption}>No hay profesionales elegibles para esta reserva en este momento.</Text>}
               <Pressable accessibilityRole="button" disabled={interventionBusy || interventionReason.trim().length < 5} onPress={() => cancelUnassignedBooking(selectedBooking.booking_id)} style={[styles.cancelButton, (interventionBusy || interventionReason.trim().length < 5) && styles.disabled]}>
                 <Text style={styles.cancelButtonText}>{interventionBusy ? 'Procesando…' : 'Cancelar solicitud sin asignar'}</Text>
               </Pressable>
