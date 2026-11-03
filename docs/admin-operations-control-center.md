@@ -20,7 +20,10 @@
 - La app no consulta directamente reservas, ubicaciones ni eventos para este panel.
 - La función ETA admite al cliente de la reserva o a un empleado con `bookings.read`.
 - El cálculo de ETA desde administración envía `notifyDelay: false`: consultar una ETA no genera una notificación de retraso al cliente.
-- Esta fase es de supervisión; no habilita cancelar, reasignar ni editar reservas desde el panel.
+- Las intervenciones requieren `bookings.manage`; consultar el panel solo requiere `bookings.read`.
+- Se puede enviar una solicitud manual a un profesional elegible cuando la reserva está en `requested` y aún no tiene profesional asignado. El profesional debe aceptarla desde su app.
+- Se puede cancelar desde el panel una solicitud `requested` sin profesional asignado y sin pagos retenidos, liberados o reembolsados. El motivo y el actor quedan registrados en `admin_audit_log`; el cambio de estado se añade al historial y dispara la notificación normal al cliente.
+- No se permite desde este control reasignar reservas ya aceptadas/pagadas, en camino o en curso, ni cancelar reservas con fondos retenidos/liberados. Esos casos requieren un flujo explícito de aceptación del profesional sustituto y tratamiento del pago/reembolso; no se fuerza el cambio de `pro_id`.
 
 ## Dependencias de base de datos
 Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
@@ -29,6 +32,7 @@ Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
 3. Migración 024 — historial inmutable de estados.
 4. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
 5. Migración 026 — RPCs del centro de operaciones.
+6. Migración 027 — despacho administrativo auditado y cancelación segura de solicitudes sin asignar.
 
 La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 025 es necesaria para la columna de ETA que consume el panel; además instala el worker que recalcula el ETA y gestiona las notificaciones de retraso.
 
@@ -57,6 +61,10 @@ Estos umbrales son señales operativas para priorizar una revisión humana; no c
 - Verificar que un usuario cliente y un profesional reciben error de permiso al llamar ambos RPCs.
 - Verificar que el superadministrador y empleados con `bookings.read` pueden consultar órdenes.
 - Verificar que empleados sin `bookings.read` no ven la pestaña y reciben denegación en el RPC.
+- Verificar que empleados con `bookings.read` pero sin `bookings.manage` no ven las acciones y reciben denegación en las RPC de intervención.
+- Probar candidatos con equipamiento aceptado, servicio activo, cobertura, agenda, conflictos, presencia online reciente y ubicación GPS ausente.
+- Comprobar que el despacho crea una solicitud con caducidad, notifica al profesional y exige su aceptación.
+- Comprobar que la cancelación solo funciona para reservas solicitadas sin profesional y sin pagos protegidos, y que genera auditoría e historial.
 - Comprobar reservas sin profesional, sin ubicación GPS, con ubicación reciente y con ubicación antigua.
 - Comprobar todos los umbrales de alertas con fechas controladas.
 - Verificar el historial cuando el actor sea un usuario y cuando el cambio venga de backend sin `auth.uid()`.
@@ -68,4 +76,5 @@ Estos umbrales son señales operativas para priorizar una revisión humana; no c
 - El mapa muestra profesionales en camino con ubicación registrada; las reservas en otros estados no mantienen ubicación GPS porque el sistema la limpia al terminar el trayecto.
 - El worker `dispatch-notifications` ya recalcula ETA en segundo plano aproximadamente cada 3 minutos cuando la ubicación tiene menos de 2 minutos y Google Routes está configurado. El panel muestra ese último dato; el cálculo manual sigue disponible para una consulta puntual.
 - Las alertas se calculan en el cliente a partir de marcas temporales y umbrales fijos; no ejecutan acciones automáticas.
+- La reasignación de una reserva ya aceptada/pagada queda deliberadamente fuera de esta entrega para no romper la retención del pago ni el historial de aceptación del profesional.
 - El panel muestra como máximo 150 reservas operativas por consulta.
