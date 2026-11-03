@@ -72,11 +72,13 @@ Deno.serve(async (req) => {
     EdgeRuntime.waitUntil(
       runAssignment(admin, bookingId).catch(async (error: unknown) => {
         console.error("Automatic assignment failed", error);
+        // Keep the booking requested so the scheduled dispatcher can retry.
+        // Do not expire a customer's booking because one dispatch attempt failed.
         await admin
-          .from("bookings")
-          .update({ status: "expired" })
-          .eq("id", bookingId)
-          .eq("status", "requested");
+          .from("booking_requests")
+          .update({ status: "expired", responded_at: new Date().toISOString() })
+          .eq("booking_id", bookingId)
+          .eq("status", "pending");
       }),
     );
 
