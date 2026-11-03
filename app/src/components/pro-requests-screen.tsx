@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { ActivityIndicator, Animated, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -159,9 +159,13 @@ export function ProRequestsScreen() {
               <Text style={styles.offerSubtitle}>Revisa los datos y desliza para aceptar antes de que termine el tiempo.</Text>
 
               <View style={styles.customerCard}>
-                <View style={styles.avatarCircle}>
-                  <Text style={styles.avatarInitial}>{(activeRequest.client_name || 'C').trim().charAt(0).toUpperCase()}</Text>
-                </View>
+                {activeRequest.client_avatar_url ? (
+                  <Image source={{ uri: activeRequest.client_avatar_url }} style={styles.avatarCircle} />
+                ) : (
+                  <View style={styles.avatarCircle}>
+                    <Text style={styles.avatarInitial}>{(activeRequest.client_name || 'C').trim().charAt(0).toUpperCase()}</Text>
+                  </View>
+                )}
                 <View style={styles.customerInfo}>
                   <Text style={styles.detailLabel}>CLIENTE</Text>
                   <Text style={styles.customerName}>{activeRequest.client_name || 'Cliente Klipp'}</Text>
