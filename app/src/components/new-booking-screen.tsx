@@ -451,6 +451,7 @@ export function NewBookingScreen() {
             p_address_text: addressText,
             p_landmark_notes: landmarkNotes,
             p_scheduled_start: scheduledStart,
+            p_immediate: timing === 'now',
           })
         : await supabase.rpc('create_service_booking_for_professional', {
             p_service_type_id: selectedServiceId,
@@ -540,8 +541,8 @@ export function NewBookingScreen() {
               <Text style={styles.summaryTitle}>{servicePriceMin === servicePriceMax
                 ? formatDop(servicePriceMin!)
                 : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`}</Text>
-              <Text style={styles.body}>Rango orientativo según los profesionales que ofrecen este servicio cerca de tu ubicación. Si eliges «Cerca de mí», conocerás el precio exacto del profesional antes de confirmar el pago.</Text>
-              <Text style={styles.body}>{serviceOffers.length} ofertas cercanas · duración estimada hasta {selectedDuration} min</Text>
+              <Text style={styles.body}>Estimación calculada con las tarifas que los profesionales han publicado para este servicio y cuya zona de cobertura incluye tu ubicación. No es un precio fijo: antes del pago verás y confirmarás el importe exacto del profesional que acepte.</Text>
+              <Text style={styles.body}>{serviceOffers.length} tarifas profesionales publicadas · duración estimada hasta {selectedDuration} min</Text>
             </>}
       </Section>}
       {!selectedOffer && (selectedTier || hasVariableService) && <Section title="3. ¿Cuándo necesitas el servicio?">
@@ -654,6 +655,11 @@ export function NewBookingScreen() {
               <View style={styles.proMain}>
                 <Text style={styles.proName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
                 <Text style={styles.body}>{pro.years_experience ?? 0} años de experiencia</Text>
+                {serviceOffers.find((offer) => offer.pro_id === pro.pro_id) && (
+                  <Text style={styles.publicServicePrice}>
+                    {formatDop(serviceOffers.find((offer) => offer.pro_id === pro.pro_id)!.base_price_dop)} · {serviceOffers.find((offer) => offer.pro_id === pro.pro_id)!.est_minutes} min
+                  </Text>
+                )}
                 {typeof pro.distance_km === 'number' && <Text style={styles.body}>Zona de cobertura a {pro.distance_km.toFixed(1)} km aprox.</Text>}
                 <Text style={styles.rating}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.rating_count} reseñas</Text>
               </View>
