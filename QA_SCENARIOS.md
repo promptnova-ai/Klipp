@@ -217,3 +217,62 @@ pierden silenciosamente datos ya introducidos ni se duplican reservas al reinten
 Para un caso fallido, anotar el ID del caso, navegador/dispositivo, pasos,
 resultado esperado y resultado observado. Adjuntar capturas sin correos, teléfonos,
 tokens de sesión, enlaces de confirmación ni coordenadas privadas.
+
+
+### QA-PRC-01 — Precio independiente por variante
+
+**Prioridad:** Alta  
+**Precondición:** Profesional aprobado, con cobertura y equipamiento confirmados; servicio con dos o más variantes.
+
+1. En el perfil profesional, publicar un precio y duración diferentes para cada variante.
+2. Guardar, cerrar sesión y volver a entrar.
+3. Revisar que cada variante conserve su tarifa y duración.
+4. Repetir la consulta como cliente.
+
+**Resultado esperado:** Cada variante muestra la tarifa publicada por ese profesional. No se reutiliza automáticamente el precio base para otra variante.
+
+### QA-PRC-02 — Rango estimado de Cerca de mí
+
+**Prioridad:** Alta  
+**Precondición:** Al menos dos profesionales auto-asignables, aprobados y con cobertura del punto; ambos han publicado precio para la misma variante.
+
+1. Seleccionar el servicio, variante y ubicación.
+2. Elegir asignación automática.
+3. Comparar el rango mostrado con las tarifas publicadas de los profesionales de la zona.
+4. Repetir en una ubicación sin profesionales con tarifa configurada.
+
+**Resultado esperado:** El rango usa el mínimo y máximo de las tarifas publicadas que cubren el punto. Si no hay tarifas válidas, la app no inventa un precio ni crea una solicitud automática.
+
+### QA-PRC-03 — Precio definitivo al aceptar
+
+**Prioridad:** Alta  
+**Precondición:** Dos profesionales reciben una oferta de la misma reserva y tienen tarifas distintas.
+
+1. Hacer que ambos profesionales intenten aceptar casi simultáneamente.
+2. Consultar la reserva después de la aceptación.
+3. Revisar pro_id, pro_service_id, price_dop y est_minutes.
+4. Verificar que el cliente ve el precio definitivo antes de iniciar el pago.
+
+**Resultado esperado:** Solo un profesional queda asignado. El precio y duración guardados corresponden a su tarifa publicada; las otras ofertas quedan expiradas. El importe estimado inicial no prevalece sobre la tarifa aceptada.
+
+### QA-PRC-04 — Comisión de Klipp del 7%
+
+**Prioridad:** Alta  
+**Precondición:** Reserva aceptada con un precio definitivo conocido.
+
+1. Aceptar un servicio con precio de RD$ 1.000.
+2. Revisar commission_pct, commission_dop y pro_payout_dop.
+3. Repetir con un importe que produzca decimales.
+
+**Resultado esperado:** La comisión es el 7% del precio del servicio y el pago profesional es el 93% restante, con importes redondeados a dos decimales. Para RD$ 1.000, comisión RD$ 70 y pago profesional RD$ 930.
+
+### QA-PRC-05 — Servicio sin variantes en asignación automática
+
+**Prioridad:** Alta  
+**Precondición:** Servicio sin pricing_tiers y al menos un profesional auto-asignable con tarifa base publicada.
+
+1. Crear una reserva automática inmediata y otra programada.
+2. Comprobar el rango estimado, los horarios disponibles y las ofertas enviadas.
+3. Aceptar desde un profesional elegible.
+
+**Resultado esperado:** La reserva se crea sin pricing_tier_id, el profesional recibe la solicitud y al aceptar se fija su tarifa base real antes del pago.
