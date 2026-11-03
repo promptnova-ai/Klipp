@@ -20,7 +20,12 @@ type RequestBooking = {
   pricing_tiers: { label: string } | null;
 };
 
-type IncomingRequest = BookingRequest & { bookings: RequestBooking | null };
+type IncomingRequest = BookingRequest & {
+  offered_price_dop?: number | null;
+  offered_payout_dop?: number | null;
+  offered_est_minutes?: number | null;
+  bookings: RequestBooking | null;
+};
 type IncomingReassignment = { request_id: string; booking_id: string; original_professional_name: string | null; scheduled_start: string; est_minutes: number; pro_payout_dop: number; address_text: string | null; landmark_notes: string | null; service_name: string | null; pricing_tier_label: string | null; expires_at: string };
 
 function formatCountdown(expiresAt: string, now: number) {
@@ -51,7 +56,7 @@ export function ProRequestsScreen() {
     const [requestResult, reassignmentResult] = await Promise.all([
       supabase
         .from('booking_requests')
-        .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, bookings(id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(name), pricing_tiers(label))')
+        .select('id, booking_id, pro_id, status, created_at, expires_at, responded_at, offered_price_dop, offered_payout_dop, offered_est_minutes, bookings(id, scheduled_start, est_minutes, pro_payout_dop, address_text, landmark_notes, service_types(name), pricing_tiers(label))')
         .eq('pro_id', session.user.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false }),
@@ -188,7 +193,8 @@ export function ProRequestsScreen() {
                 <Text style={styles.body}>Ubicación: {booking.address_text ?? 'No disponible'}</Text>
                 {!!booking.landmark_notes && <Text style={styles.body}>Referencia: {booking.landmark_notes}</Text>}
                 <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
-                <Text style={styles.payout}>Recibirías {formatDop(booking.pro_payout_dop)}</Text>
+                <Text style={styles.payout}>Recibirías {formatDop(request.offered_payout_dop ?? booking.pro_payout_dop)}</Text>
+                {request.offered_price_dop != null && <Text style={styles.body}>Precio mostrado al cliente: {formatDop(request.offered_price_dop)}</Text>}
               </>
             )}
             <Text style={styles.expiration}>{expired ? 'Tiempo agotado' : `Tiempo para responder: ${formatCountdown(request.expires_at, clockNow)}`}</Text>
