@@ -138,8 +138,26 @@ BEGIN
 
   SELECT * INTO v_booking FROM public.bookings WHERE id = p_booking_id;
   IF NOT FOUND THEN RAISE EXCEPTION 'booking not found'; END IF;
-  IF v_booking.status <> 'scheduled' OR v_booking.pro_id IS NULL THEN
-    RAISE EXCEPTION 'only confirmed bookings with an assigned professional can be reassigned';
+  IF v_booking.status <> 'scheduled' OR v_booking.pro_id IS NULL OR v_booking.scheduled_start <= now() THEN
+    RAISE EXCEPTION 'only future confirmed bookings with an assigned professional can be reassigned';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.booking_reassignment_requests r
+    WHERE r.booking_id = p_booking_id AND r.status = 'pending' AND r.expires_at > now()
+  ) THEN
+    RAISE EXCEPTION 'this booking already has a pending reassignment request';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.payments
+    WHERE booking_id = p_booking_id AND status IN ('pending','released','refunded')
+  ) THEN
+    RAISE EXCEPTION 'payment state requires financial review before reassignment';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.payouts
+    WHERE booking_id = p_booking_id AND status <> 'pending'
+  ) THEN
+    RAISE EXCEPTION 'payout state requires reconciliation before reassignment';
   END IF;
 
   RETURN QUERY
