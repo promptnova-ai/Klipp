@@ -48,6 +48,12 @@ AS $$
       AND pp.user_id <> b.pro_id
       AND pp.active
       AND pp.verification_status = 'approved'
+      AND EXISTS (
+        SELECT 1 FROM public.service_types service
+        WHERE service.id = b.service_type_id AND service.active
+      )
+      AND (b.scheduled_start AT TIME ZONE 'America/Santo_Domingo')::date
+        = ((b.scheduled_start + make_interval(mins => b.est_minutes)) AT TIME ZONE 'America/Santo_Domingo')::date
       AND pp.equipment_policy_accepted_at IS NOT NULL
       AND pp.service_area_latitude IS NOT NULL
       AND pp.service_area_longitude IS NOT NULL
