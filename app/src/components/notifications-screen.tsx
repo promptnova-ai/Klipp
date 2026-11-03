@@ -99,7 +99,7 @@ export function NotificationsScreen() {
   }, [loadNotifications]);
 
   useEffect(() => {
-    void loadPreferences();
+    void Promise.resolve().then(loadPreferences);
   }, [loadPreferences]);
 
   useEffect(() => {
