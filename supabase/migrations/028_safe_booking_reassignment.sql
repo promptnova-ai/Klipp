@@ -539,7 +539,8 @@ BEGIN
         WHEN 'booking.reassignment_requested' THEN 'Sustitución solicitada: ' || coalesce(audit.details->>'reason','sin motivo')
         WHEN 'booking.reassignment_accepted' THEN 'Sustitución aceptada'
         WHEN 'booking.reassignment_rejected' THEN 'Sustitución rechazada'
-        ELSE 'Sustitución cancelada o expirada'
+        WHEN 'booking.reassignment_expired' THEN 'Solicitud de sustitución expirada'
+        ELSE 'Sustitución cancelada'
       END AS to_status,
       audit.created_at AS occurred_at, actor.full_name AS actor_name
     FROM public.admin_audit_log audit
@@ -556,6 +557,36 @@ END;
 $$;
 REVOKE ALL ON FUNCTION public.admin_get_booking_timeline(uuid) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_get_booking_timeline(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.audit_booking_reassignment_expiry()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $
+BEGIN
+  IF NEW.status = 'expired' AND OLD.status IS DISTINCT FROM NEW.status THEN
+    INSERT INTO public.admin_audit_log(actor_id, action, target_id, details)
+    VALUES (
+      NEW.created_by,
+      'booking.reassignment_expired',
+      NEW.booking_id,
+      jsonb_build_object(
+        'request_id', NEW.id,
+        'original_pro_id', NEW.original_pro_id,
+        'replacement_pro_id', NEW.replacement_pro_id,
+        'expired_by', auth.uid(),
+        'reason', NEW.reason
+      )
+    );
+  END IF;
+  RETURN NEW;
+END;
+$;
+CREATE TRIGGER booking_reassignment_expiry_audit
+AFTER UPDATE OF status ON public.booking_reassignment_requests
+FOR EACH ROW EXECUTE FUNCTION public.audit_booking_reassignment_expiry();
+REVOKE ALL ON FUNCTION public.audit_booking_reassignment_expiry() FROM PUBLIC, anon, authenticated;
 
 -- Prevent the currently assigned professional from advancing the booking while
 -- an unexpired replacement request is awaiting a decision.
