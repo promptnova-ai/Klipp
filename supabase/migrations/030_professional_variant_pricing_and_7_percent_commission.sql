@@ -245,3 +245,61 @@ BEGIN
     AND status = 'pending';
 END;
 $$;
+
+
+-- Indicative range from professionals who cover the requested location and
+-- have published the exact service/variant price. The final price is still
+-- locked only when a professional accepts the booking.
+CREATE OR REPLACE FUNCTION public.get_auto_service_price_estimate(
+  p_service_type_id integer,
+  p_pricing_tier_id integer,
+  p_lat double precision,
+  p_lng double precision
+)
+RETURNS TABLE(min_price_dop numeric, max_price_dop numeric, professional_count integer)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_point extensions.geography;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+  IF p_lat NOT BETWEEN -90 AND 90 OR p_lng NOT BETWEEN -180 AND 180 THEN
+    RAISE EXCEPTION 'invalid location';
+  END IF;
+
+  v_point := extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography;
+
+  RETURN QUERY
+  SELECT
+    min(CASE WHEN p_pricing_tier_id IS NULL THEN ps.base_price_dop ELSE tp.price_dop END)::numeric,
+    max(CASE WHEN p_pricing_tier_id IS NULL THEN ps.base_price_dop ELSE tp.price_dop END)::numeric,
+    count(DISTINCT pp.user_id)::integer
+  FROM public.pro_profiles pp
+  JOIN public.pro_services ps
+    ON ps.pro_id = pp.user_id
+   AND ps.service_type_id = p_service_type_id
+   AND ps.active
+  LEFT JOIN public.pro_service_tier_prices tp
+    ON tp.pro_service_id = ps.id
+   AND tp.pricing_tier_id = p_pricing_tier_id
+   AND tp.active
+  WHERE pp.active
+    AND pp.verification_status = 'approved'
+    AND pp.equipment_policy_accepted_at IS NOT NULL
+    AND pp.service_area_latitude IS NOT NULL
+    AND extensions.st_dwithin(
+      extensions.st_setsrid(
+        extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326
+      )::extensions.geography,
+      v_point,
+      pp.service_area_radius_m
+    )
+    AND (p_pricing_tier_id IS NULL OR tp.price_dop IS NOT NULL);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_auto_service_price_estimate(integer, integer, double precision, double precision) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_auto_service_price_estimate(integer, integer, double precision, double precision) TO authenticated;
