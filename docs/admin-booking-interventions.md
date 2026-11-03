@@ -4,6 +4,7 @@
 - Consultar candidatos elegibles para una reserva sin asignar.
 - Enviar una solicitud manual a un profesional; el profesional debe aceptarla desde Klipp PRO.
 - Cancelar una solicitud todavía no asignada, dejando motivo, actor y marca temporal en auditoría.
+- Reasignar una reserva confirmada en estado `scheduled`: administración envía una invitación a un sustituto elegible y el profesional actual conserva la asignación hasta que el sustituto acepte.
 - Las transiciones de estado se mantienen en el historial existente de reservas.
 
 ## Restricciones intencionales
@@ -15,8 +16,18 @@
 - La cancelación solo admite reservas `requested` sin profesional asignado y bloquea pagos en estado `pending`, `held`, `released` o `refunded`.
 - Las acciones se guardan en `admin_audit_log`; el trigger de historial registra el cambio de estado y el sistema de notificaciones existente informa al cliente de la cancelación.
 
+## Reasignación segura (migración 028)
+- Solo se permite en reservas confirmadas `scheduled`, antes de que el profesional marque `en_route`. No se reasignan reservas en camino, con llegada registrada o en curso.
+- El candidato debe estar activo, aprobado, haber aceptado la política de herramientas propias, ofrecer el servicio, cubrir la dirección, tener agenda compatible y no tener conflictos de horario.
+- Si faltan 20 minutos o menos para el inicio, el sustituto debe estar conectado y con GPS actualizado en los últimos 90 segundos.
+- La invitación expira en 15 minutos. Hasta la aceptación, `bookings.pro_id` no cambia; el profesional actual recibe aviso y la API bloquea sus transiciones de estado mientras la invitación siga pendiente.
+- Al aceptar, una transacción cambia el profesional asignado, actualiza el destinatario de un payout únicamente si sigue `pending`, limpia el GPS ligado a la reserva y restablece la confirmación de equipamiento. El profesional sustituto debe confirmar sus propias herramientas al iniciar el servicio.
+- Los pagos siguen vinculados a la misma reserva y no se reembolsan ni se vuelven a cobrar. Se bloquea el cambio si hay pagos `pending`, `released` o `refunded`, o si un payout ya no está `pending`.
+- El profesional actual, el sustituto y el cliente reciben notificaciones. El sustituto acepta o rechaza desde Klipp PRO > Solicitudes; el profesional actual ve el bloqueo en su agenda.
+- La petición, aceptación o rechazo quedan en `admin_audit_log` y aparecen en la cronología administrativa.
+
 ## Fuera de alcance
-No se cambia directamente el profesional de una reserva ya aceptada, pagada, en camino o en curso. Ese proceso requiere que el profesional sustituto acepte primero, que el profesional anterior sea notificado y que el estado de los fondos retenidos permanezca correcto. Tampoco se cancelan desde aquí reservas con fondos retenidos o liberados.
+No se reasignan reservas en camino, con llegada registrada o en curso, ni se alteran pagos o payouts ya procesados. Para esos casos hace falta una intervención financiera y operativa específica.
 
 ## Despliegue
 1. Aplicar migraciones base 001–007.
@@ -25,7 +36,8 @@ No se cambia directamente el profesional de una reserva ya aceptada, pagada, en 
 4. Aplicar historial y notificaciones 024–025.
 5. Aplicar centro de operaciones 026.
 6. Aplicar `027_admin_booking_interventions.sql`.
-7. Desplegar frontend después de validar las RPC en staging.
+7. Aplicar `028_safe_booking_reassignment.sql`.
+8. Desplegar frontend después de validar las RPC en staging.
 
 **Atención:** hay dos archivos con prefijo de versión `015` en el repositorio. Resolver la colisión de versión antes de ejecutar migraciones con Supabase CLI.
 
