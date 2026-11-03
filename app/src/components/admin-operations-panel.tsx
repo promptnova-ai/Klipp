@@ -192,8 +192,9 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
             if (cancelError) setInterventionError(cancelError.message);
             else {
               setInterventionReason('');
+              setSelectedId(null);
+              setTimeline([]);
               await loadBookings();
-              await openTimeline(bookingId);
             }
             setInterventionBusy(false);
           })();
