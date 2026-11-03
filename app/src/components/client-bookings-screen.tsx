@@ -162,7 +162,10 @@ export function ClientBookingsScreen() {
         });
       return channel;
     });
-    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
+    return () => {
+      active = false;
+      channels.forEach((channel) => { void supabase.removeChannel(channel); });
+    };
   }, [bookings]);
 
   useEffect(() => {
@@ -183,10 +186,7 @@ export function ClientBookingsScreen() {
         });
       })
       .subscribe());
-    return () => {
-      active = false;
-      channels.forEach((channel) => { void supabase.removeChannel(channel); });
-    };
+    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
   }, [bookings]);
 
   useEffect(() => {
