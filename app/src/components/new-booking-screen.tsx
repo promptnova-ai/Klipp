@@ -485,7 +485,7 @@ export function NewBookingScreen() {
   }
 
   async function createBooking() {
-    if ((!selectedTier && !selectedOffer) || !coordinate || !session?.user.id) {
+    if ((!selectedTier && !selectedOffer && !(mode === 'auto' && selectedServiceId)) || !coordinate || !session?.user.id) {
       setError('Selecciona el servicio y permite confirmar tu ubicación.');
       return;
     }
@@ -518,8 +518,9 @@ export function NewBookingScreen() {
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
         })
-      : await supabase.rpc('create_tier_booking_at_location', {
-          p_pricing_tier_id: selectedTier!.id,
+      : selectedTier
+        ? await supabase.rpc('create_tier_booking_at_location', {
+          p_pricing_tier_id: selectedTier.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
@@ -527,6 +528,14 @@ export function NewBookingScreen() {
           p_scheduled_start: scheduledStart,
           p_mode: mode,
           p_pro_id: mode === 'manual' ? selectedProId : null,
+        })
+        : await supabase.rpc('create_auto_service_booking_at_location', {
+          p_service_type_id: selectedServiceId!,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
         });
     if (rpcError) setError(rpcError.message);
     else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
@@ -740,7 +749,7 @@ export function NewBookingScreen() {
         {!selectedOffer && mode === 'auto' && timing === 'scheduled' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
-      {(selectedTier || selectedOffer) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
+      {(selectedTier || selectedOffer || (mode === 'auto' && selectedServiceId)) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeading}>
             <View>
