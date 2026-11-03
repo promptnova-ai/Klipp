@@ -37,6 +37,13 @@ BEGIN
   IF v_booking.client_lat IS NULL OR v_booking.client_lng IS NULL THEN
     RAISE EXCEPTION 'booking has no valid client coordinates';
   END IF;
+  IF v_booking.scheduled_start <= now() THEN
+    RAISE EXCEPTION 'booking start time has already passed';
+  END IF;
+  IF (v_booking.scheduled_start AT TIME ZONE 'America/Santo_Domingo')::date
+     <> ((v_booking.scheduled_start + make_interval(mins => v_booking.est_minutes)) AT TIME ZONE 'America/Santo_Domingo')::date THEN
+    RAISE EXCEPTION 'cross-midnight bookings are not eligible for manual dispatch';
+  END IF;
 
   RETURN QUERY
   SELECT
