@@ -28,7 +28,7 @@ BEGIN
   SELECT * INTO v_booking
   FROM public.bookings
   WHERE id = p_booking_id
-  FOR SHARE;
+  ;
 
   IF NOT FOUND THEN RAISE EXCEPTION 'booking not found'; END IF;
   IF v_booking.status <> 'requested' OR v_booking.pro_id IS NOT NULL THEN
@@ -170,10 +170,8 @@ BEGIN
     RAISE EXCEPTION 'this professional has already received a request for this booking';
   END IF;
 
-  SELECT coalesce((value #>> '{}')::integer, 120)
-    INTO v_expiry_minutes
-  FROM public.platform_settings
-  WHERE key = 'request_expiry_minutes';
+  SELECT coalesce((SELECT (value #>> '{}')::integer FROM public.platform_settings WHERE key = 'request_expiry_minutes'), 120)
+    INTO v_expiry_minutes;
 
   UPDATE public.booking_requests
   SET status = 'expired', responded_at = coalesce(responded_at, now())
