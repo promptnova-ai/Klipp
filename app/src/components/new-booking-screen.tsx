@@ -323,13 +323,25 @@ export function NewBookingScreen() {
           setPros([]);
           setSelectedProId(null);
         } else {
-          const { data, error: prosError } = await supabase.rpc('get_available_pros_at_location', {
-            p_lat: currentCoordinate.latitude,
-            p_lng: currentCoordinate.longitude,
-            p_scheduled_start: scheduledStart,
-            p_est_minutes: selectedDuration,
-            p_service_type_id: selectedTier?.service_type_id,
-          });
+          const rpcName = timing === 'now'
+            ? 'get_available_immediate_pros_at_location'
+            : 'get_available_pros_at_location';
+          const rpcArgs = timing === 'now'
+            ? {
+                p_lat: currentCoordinate.latitude,
+                p_lng: currentCoordinate.longitude,
+                p_scheduled_start: scheduledStart,
+                p_est_minutes: selectedDuration,
+                p_service_type_id: selectedTier?.service_type_id,
+              }
+            : {
+                p_lat: currentCoordinate.latitude,
+                p_lng: currentCoordinate.longitude,
+                p_scheduled_start: scheduledStart,
+                p_est_minutes: selectedDuration,
+                p_service_type_id: selectedTier?.service_type_id,
+              };
+          const { data, error: prosError } = await supabase.rpc(rpcName, rpcArgs);
           if (active && prosError) setError(prosError.message);
           else if (active) {
             setPros((data ?? []) as ProCard[]);
@@ -408,13 +420,14 @@ export function NewBookingScreen() {
       setError('Elige una fecha y hora futura válidas.');
       return;
     }
-    if (timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) {
+    if (!selectedOffer && mode === 'manual' && !selectedProId) {
       setError('Selecciona un profesional disponible para continuar.');
       return;
     }
     setSaving(true);
     setError(null);
     setSuccess(null);
+    const manualImmediate = !selectedOffer && timing === 'now' && mode === 'manual';
     const { data: bookingId, error: rpcError } = selectedOffer
       ? await supabase.rpc('create_booking_at_location', {
           p_pro_service_id: selectedOffer.id,
@@ -424,15 +437,16 @@ export function NewBookingScreen() {
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
         })
-      : await supabase.rpc('create_tier_booking_at_location', {
+      : await supabase.rpc(manualImmediate ? 'create_immediate_manual_tier_booking' : 'create_tier_booking_at_location', {
           p_pricing_tier_id: selectedTier!.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
-          p_mode: mode,
-          p_pro_id: mode === 'manual' ? selectedProId : null,
+          ...(manualImmediate
+            ? { p_pro_id: selectedProId }
+            : { p_mode: mode, p_pro_id: mode === 'manual' ? selectedProId : null }),
         });
     if (rpcError) setError(rpcError.message);
     else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
@@ -440,7 +454,9 @@ export function NewBookingScreen() {
       if (!selectedOffer && mode === 'auto' && timing === 'now') {
         const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
         if (assignmentError) setError('Solicitud creada. Klipp seguirá intentando encontrar un profesional; puedes consultar el estado en Mis reservas.');
-        else setSuccess('Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
+        else setSuccess('Buscando profesionales cercanos. Recibirán la solicitud por turnos y tendrán 45 segundos para aceptarla. Sigue el estado en Mis reservas.');
+      } else if (manualImmediate) {
+        setSuccess('Solicitud enviada al profesional elegido. Tiene 45 segundos para responder; te avisaremos cuando acepte o decline.');
       } else if (!selectedOffer && mode === 'auto') {
         setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
       } else {
@@ -498,7 +514,7 @@ export function NewBookingScreen() {
       </Section>}
       {!selectedOffer && selectedTier && <Section title="3. ¿Cuándo necesitas el servicio?">
         <View style={styles.modeOptions}>
-          <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); setMode('auto'); }} />
+          <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); }} />
           <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); }} />
         </View>
         {timing === 'now' && <Text style={styles.body}>Buscaremos inmediatamente un profesional conectado y disponible cerca de tu ubicación.</Text>}
@@ -588,17 +604,17 @@ export function NewBookingScreen() {
           </View>
         )}
       </Section>}
-      <Section title={timing === 'now' ? "5. Profesional" : "6. Profesional"}>
-        {timing === 'scheduled' && !selectedOffer && <View style={styles.modeOptions}>
-          <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
-          <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
+      <Section title={timing === 'now' ? "5. Cómo quieres encontrarlo" : "6. Cómo quieres encontrarlo"}>
+        {!selectedOffer && <View style={styles.modeOptions}>
+          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
+          <ModeOption label="Cerca de mí" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
-        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales cercanos, revisar sus perfiles y seleccionar a quién contratar.</Text>}
+        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales disponibles, revisar sus perfiles y seleccionar a quién contratar.</Text>}
         {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
-        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
-        {!selectedOffer && timing === 'scheduled' && mode === 'manual' && pros.map((pro) => (
+        {!selectedOffer && mode === 'manual' && coordinate && (timing === 'now' || scheduledTime) && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales conectados y disponibles para este servicio en tu zona. Puedes cambiar a «Cerca de mí» para que Klipp busque por ti.</Text>}
+        {!selectedOffer && mode === 'manual' && (timing === 'now' || scheduledTime) && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
             <Pressable onPress={() => void showProProfile(pro)} style={({ pressed }) => [styles.proSummary, pressed && styles.choicePressed]}>
               {pro.avatar_url ? <Image source={{ uri: pro.avatar_url }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{pro.full_name?.[0] ?? 'K'}</Text></View>}
@@ -642,7 +658,7 @@ export function NewBookingScreen() {
             )}
           </View>
         ))}
-        {!selectedOffer && mode === 'auto' && timing === 'now' && <Text style={styles.body}>Klipp enviará la solicitud a profesionales conectados y disponibles. Si uno acepta, podrás seguir su llegada desde la app.</Text>}
+        {!selectedOffer && mode === 'auto' && timing === 'now' && <Text style={styles.body}>Klipp avisará a profesionales cercanos, uno por uno. Cada profesional tendrá 45 segundos para aceptar o declinar; si no responde, la solicitud pasará al siguiente. Cuando alguien acepte, la reserva quedará confirmada y podrás seguir su llegada en el mapa.</Text>}
         {!selectedOffer && mode === 'auto' && timing === 'scheduled' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
@@ -664,14 +680,14 @@ export function NewBookingScreen() {
           {landmarkNotes.trim().length > 0 && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Referencia</Text><Text numberOfLines={2} style={styles.summaryValue}>{landmarkNotes}</Text></View>}
           {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{selectedOffer.pro_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
-          {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Solicitar ahora' : 'Asignación automática'}</Text></View>}
+          {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Búsqueda</Text><Text style={styles.summaryValue}>Cerca de mí</Text></View>}
           <View style={styles.summaryDivider} />
           <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
-      <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
+      <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading || (!selectedOffer && mode === 'manual' && !selectedProId)} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading || (!selectedOffer && mode === 'manual' && !selectedProId)) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
+        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{mode === 'auto' && timing === 'now' ? 'Buscar cerca de mí' : mode === 'manual' && !selectedOffer ? 'Enviar solicitud al profesional' : timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
       </Pressable>
     </ScrollView>
   );
