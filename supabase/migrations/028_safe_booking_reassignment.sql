@@ -683,16 +683,20 @@ DO $$
 BEGIN
   IF to_regnamespace('cron') IS NOT NULL
      AND to_regprocedure('cron.schedule(text,text,text)') IS NOT NULL THEN
-    IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'klipp-booking-reassignment-expiry') THEN
-      PERFORM cron.unschedule(jobid)
-      FROM cron.job
-      WHERE jobname = 'klipp-booking-reassignment-expiry';
-    END IF;
-    PERFORM cron.schedule(
-      'klipp-booking-reassignment-expiry',
-      '* * * * *',
-      'SELECT public.expire_booking_reassignment_requests();'
-    );
+    BEGIN
+      IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'klipp-booking-reassignment-expiry') THEN
+        PERFORM cron.unschedule(jobid)
+        FROM cron.job
+        WHERE jobname = 'klipp-booking-reassignment-expiry';
+      END IF;
+      PERFORM cron.schedule(
+        'klipp-booking-reassignment-expiry',
+        '* * * * *',
+        'SELECT public.expire_booking_reassignment_requests();'
+      );
+    EXCEPTION WHEN OTHERS THEN
+      RAISE NOTICE 'Could not schedule reassignment expiry worker; lazy expiry remains enabled: %', SQLERRM;
+    END;
   ELSE
     RAISE NOTICE 'pg_cron unavailable: reassignment requests are also expired lazily when a professional opens Solicitudes or an admin starts another reassignment.';
   END IF;
