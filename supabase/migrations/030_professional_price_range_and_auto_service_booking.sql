@@ -9,6 +9,12 @@ alter table public.bookings
   add column if not exists price_confirmed_at timestamptz;
 
 alter table public.bookings
+  add constraint bookings_price_range_check check (
+    (price_min_dop is null and price_max_dop is null)
+    or (price_min_dop > 0 and price_max_dop >= price_min_dop)
+  );
+
+alter table public.bookings
   drop constraint if exists bookings_service_source_check;
 
 alter table public.bookings
@@ -94,9 +100,10 @@ begin
   select ps.* into v_offer
   from public.pro_services ps
   join public.pro_profiles pp on pp.user_id = ps.pro_id
+  join public.service_types st on st.id = ps.service_type_id
   where ps.pro_id = p_pro_id
     and ps.service_type_id = p_service_type_id
-    and ps.active and pp.active and pp.verification_status = 'approved'
+    and ps.active and st.active and pp.active and pp.verification_status = 'approved'
     and pp.equipment_policy_accepted_at is not null
   for update of ps;
   if not found then raise exception 'professional service offer is unavailable'; end if;
@@ -209,7 +216,8 @@ begin
   into v_min,v_max,v_max_minutes
   from public.pro_services ps
   join public.pro_profiles pp on pp.user_id=ps.pro_id
-  where ps.service_type_id=p_service_type_id and ps.active
+  join public.service_types st on st.id=ps.service_type_id
+  where ps.service_type_id=p_service_type_id and ps.active and st.active
     and pp.active and pp.verification_status='approved'
     and pp.accepts_auto_assign
     and pp.equipment_policy_accepted_at is not null
