@@ -29,9 +29,7 @@ as $$
   with points as (
     select
       extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography as client_point,
-      p_scheduled_start at time zone 'America/Santo_Domingo' as local_start,
-      (p_scheduled_start + make_interval(mins => p_est_minutes))
-        at time zone 'America/Santo_Domingo' as local_end
+      p_scheduled_start at time zone 'America/Santo_Domingo' as local_start
   )
   select
     pc.pro_id,
@@ -54,18 +52,14 @@ as $$
   from points pt
   join public.pro_profiles pp on pp.active and pp.verification_status = 'approved'
   join public.pro_cards pc on pc.pro_id = pp.user_id
+  join public.pro_services ps on ps.pro_id = pp.user_id
+    and ps.service_type_id = p_service_type_id and ps.active
   where p_lat between -90 and 90
     and p_lng between -180 and 180
     and p_est_minutes > 0
     and pp.equipment_policy_accepted_at is not null
     and p_scheduled_start > now()
     and pp.service_area_latitude is not null
-    and exists (
-      select 1 from public.pro_services ps
-      where ps.pro_id = pp.user_id
-        and ps.service_type_id = p_service_type_id
-        and ps.active
-    )
     and extensions.st_dwithin(
       extensions.st_setsrid(
         extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326
@@ -73,13 +67,13 @@ as $$
       pt.client_point,
       pp.service_area_radius_m
     )
-    and pt.local_start::date = pt.local_end::date
+    and (pt.local_start + make_interval(mins => ps.est_minutes))::date = pt.local_start::date
     and exists (
       select 1 from public.pro_availability av
       where av.pro_id = pp.user_id
         and av.weekday = extract(isodow from pt.local_start)::smallint
         and av.start_time <= pt.local_start::time
-        and av.end_time >= pt.local_end::time
+        and av.end_time >= (pt.local_start + make_interval(mins => ps.est_minutes))::time
     )
     and not exists (
       select 1 from public.bookings b
@@ -89,7 +83,7 @@ as $$
           b.scheduled_start - interval '60 minutes',
           b.scheduled_start + make_interval(mins => b.est_minutes) + interval '60 minutes',
           '[)'
-        ) && tstzrange(p_scheduled_start, p_scheduled_start + make_interval(mins => p_est_minutes), '[)')
+        ) && tstzrange(p_scheduled_start, p_scheduled_start + make_interval(mins => ps.est_minutes), '[)')
     )
     and not exists (
       select 1 from public.booking_requests br
@@ -102,7 +96,7 @@ as $$
           b.scheduled_start - interval '60 minutes',
           b.scheduled_start + make_interval(mins => b.est_minutes) + interval '60 minutes',
           '[)'
-        ) && tstzrange(p_scheduled_start, p_scheduled_start + make_interval(mins => p_est_minutes), '[)')
+        ) && tstzrange(p_scheduled_start, p_scheduled_start + make_interval(mins => ps.est_minutes), '[)')
     )
   order by distance_km asc, pc.rating_avg desc, pc.jobs_completed desc;
 $$;
