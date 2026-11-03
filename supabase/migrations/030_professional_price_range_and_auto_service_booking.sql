@@ -364,6 +364,7 @@ declare
   v_min numeric(10,2);
   v_max numeric(10,2);
   v_max_minutes integer;
+  v_auto_eligible_count integer;
   v_address_id uuid;
   v_booking_id uuid;
   v_client_point extensions.geography;
@@ -384,8 +385,16 @@ begin
   end if;
 
   v_client_point := extensions.st_setsrid(extensions.st_makepoint(p_lng,p_lat),4326)::extensions.geography;
-  select min(ps.base_price_dop), max(ps.base_price_dop), max(ps.est_minutes)
-  into v_min,v_max,v_max_minutes
+  select min(ps.base_price_dop), max(ps.base_price_dop), max(ps.est_minutes),
+    count(*) filter (
+      where pp.accepts_auto_assign
+        and (not p_immediate or exists (
+          select 1 from public.pro_presence presence
+          where presence.pro_id=pp.user_id and presence.is_online
+            and presence.last_seen_at>=now()-interval '90 seconds'
+        ))
+    )
+  into v_min,v_max,v_max_minutes,v_auto_eligible_count
   from public.pro_services ps
   join public.pro_profiles pp on pp.user_id=ps.pro_id
   join public.service_types st on st.id=ps.service_type_id
@@ -398,7 +407,10 @@ begin
       v_client_point,pp.service_area_radius_m
     );
   if v_min is null or v_max is null or v_max_minutes is null then
-    raise exception 'no eligible professional offers this service in your area';
+    raise exception 'no professional has published a price for this service in your area';
+  end if;
+  if coalesce(v_auto_eligible_count,0)=0 then
+    raise exception 'no professional in your area currently accepts automatic requests; choose a professional manually';
   end if;
 
   insert into public.addresses(client_id,label,street,references_text,sector_id,location)
