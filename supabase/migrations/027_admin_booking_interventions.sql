@@ -157,9 +157,9 @@ BEGIN
   END IF;
   IF EXISTS (
     SELECT 1 FROM public.payments
-    WHERE booking_id = p_booking_id AND status IN ('held','released','refunded')
+    WHERE booking_id = p_booking_id AND status IN ('pending','held','released','refunded')
   ) THEN
-    RAISE EXCEPTION 'booking has a payment that requires the payment workflow; administrative dispatch is blocked';
+    RAISE EXCEPTION 'booking has a pending or protected payment; administrative dispatch is blocked';
   END IF;
 
   -- Reuse the exact candidate rules shown to the administrator.
@@ -237,7 +237,7 @@ BEGIN
     SELECT 1 FROM public.payments
     WHERE booking_id = p_booking_id AND status IN ('held','released','refunded')
   ) THEN
-    RAISE EXCEPTION 'booking has a payment that requires the payment/refund workflow; cancellation is blocked';
+    RAISE EXCEPTION 'booking has a pending or protected payment that requires the payment/refund workflow; cancellation is blocked';
   END IF;
 
   UPDATE public.booking_requests
