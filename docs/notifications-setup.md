@@ -8,6 +8,10 @@ Apply migrations in order, including:
 
 - `024_booking_status_event_history.sql`
 - `025_notifications_center_and_push_outbox.sql`
+- `029_simultaneous_auto_dispatch.sql`
+- `030_professional_variant_pricing_and_7_percent_commission.sql`
+- `031_uber_style_incoming_offer.sql`
+- `032_set_seven_percent_on_all_booking_creation_paths.sql`
 
 Do not apply them to production until the target Supabase project has been backed up and the migration order has been checked.
 
