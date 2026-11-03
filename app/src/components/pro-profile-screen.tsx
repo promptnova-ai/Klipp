@@ -429,18 +429,22 @@ export function ProProfileScreen() {
           return;
         }
         const offerIdByServiceId = new Map(((savedOffersResult.data ?? []) as { id: string; service_type_id: number }[]).map((item) => [item.service_type_id, item.id]));
-        const tierPriceRows = selectedServices.flatMap((serviceId) => pricingTiers
-          .filter((tier) => tier.service_type_id === serviceId)
-          .map((tier) => {
-            const key = `${serviceId}:${tier.id}`;
-            return {
-              pro_service_id: offerIdByServiceId.get(serviceId),
-              pricing_tier_id: tier.id,
-              price_dop: Number(tierPrices[key]),
-              est_minutes: Number(tierDurations[key]),
-              active: true,
-            };
-          })).filter((item) => Boolean(item.pro_service_id));
+        const tierPriceRows = selectedServices.flatMap((serviceId) => {
+          const proServiceId = offerIdByServiceId.get(serviceId);
+          if (!proServiceId) return [];
+          return pricingTiers
+            .filter((tier) => tier.service_type_id === serviceId)
+            .map((tier) => {
+              const key = `${serviceId}:${tier.id}`;
+              return {
+                pro_service_id: proServiceId,
+                pricing_tier_id: tier.id,
+                price_dop: Number(tierPrices[key]),
+                est_minutes: Number(tierDurations[key]),
+                active: true,
+              };
+            });
+        });
         if (tierPriceRows.length) {
           const { error: tierPriceError } = await supabase.from('pro_service_tier_prices').upsert(
             tierPriceRows,
