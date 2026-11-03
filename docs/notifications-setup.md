@@ -23,15 +23,28 @@ Deploy the Edge Function:
 supabase functions deploy dispatch-notifications
 ```
 
-Set a long random secret (at least 32 bytes) in Supabase Edge Function secrets. The background ETA monitor also requires the server-side Google Routes API key:
+Set a long random secret (at least 32 bytes) in Supabase Edge Function secrets. The traffic-aware arrival estimate also requires the server-side Google Routes API key:
 
 ```bash
 supabase secrets set NOTIFICATION_CRON_SECRET="<random-secret>" GOOGLE_MAPS_SERVER_API_KEY="<server-google-routes-key>"
 ```
 
-The function has `verify_jwt = false` because scheduled calls authenticate using the dedicated `x-notification-cron-secret` header. Never put this secret in the mobile app or commit it to Git.
+The function validates either the service-role bearer token or the dedicated `x-notification-cron-secret` header itself. It is deployed with JWT gateway verification disabled so scheduled calls can authenticate with that server-only header. Never put this secret in the mobile app or commit it to Git.
 
-## 3. Schedule delivery
+## 3. Trigger urgent offers immediately
+
+A once-per-minute worker is too slow for the 45-second professional offer. In Supabase Dashboard → Database → Webhooks, create a webhook with these settings:
+
+- Table: `public.push_delivery_queue`
+- Events: `INSERT`
+- Type: HTTP Request, method `POST`
+- URL: `https://<project-ref>.supabase.co/functions/v1/dispatch-notifications`
+- Headers: `Content-Type: application/json` and `x-notification-cron-secret: <same NOTIFICATION_CRON_SECRET>`
+- Body: send the inserted row payload (the dispatcher claims all pending queue rows; the body is not used).
+
+Keep the secret server-side. Do not put it in the app or a public environment variable. Test a new notification on a physical device with the app in background and closed, and confirm it arrives before the 45-second countdown expires.
+
+## 4. Schedule reminders and ETA monitoring
 
 Enable the `pg_cron`, `pg_net` and `vault` extensions in the Supabase project. In the SQL Editor, create two Vault secrets, replacing the placeholders with the project's URL and the same random secret configured above:
 
@@ -77,7 +90,7 @@ select cron.schedule(
 
 Check the job in Supabase Dashboard → Integrations → Cron. The worker claims a limited batch, uses Expo Push Service and checks Expo receipts after 15 minutes. Invalid device tokens are removed when Expo reports `DeviceNotRegistered`.
 
-## 4. Configure mobile push credentials
+## 5. Configure mobile push credentials
 
 The app now includes `expo-notifications` and an explicit **Activate push notifications** control in the notification center. The token is registered only after the user grants OS permission and taps that control. On sign-out, the current device token is removed.
 
@@ -90,7 +103,7 @@ eas build --profile development --platform all
 
 Install that build on physical iOS and Android devices, sign in, open **Avisos** and activate push. Remote push is not available in Expo Go on Android; use a development or production build. The in-app inbox works without push credentials.
 
-## 5. Current event coverage
+## 6. Current event coverage
 
 - Booking status transitions: client and professional receive role-specific notices.
 - Payment events: failed payments warn both parties not to proceed until confirmation; refunds notify the client; released payouts notify the professional.
@@ -104,7 +117,7 @@ Install that build on physical iOS and Android devices, sign in, open **Avisos**
 - Every notification has a unique deduplication key. Push delivery is isolated in an outbox so a temporary push-provider outage does not lose the in-app notification.
 
 
-## 6. Incoming professional offers (Uber-style)
+## 7. Incoming professional offers (Uber-style)
 
 When a professional receives a pending `booking_request`, the app displays a full-screen offer with a 45-second countdown. The screen includes the customer's display name, service and variant, service address and reference, scheduled time, estimated duration, and the professional's expected payout. The professional accepts by sliding the control to the end or declines using the separate reject action.
 
