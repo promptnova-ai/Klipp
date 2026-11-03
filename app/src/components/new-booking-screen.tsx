@@ -336,24 +336,20 @@ export function NewBookingScreen() {
           setPros([]);
           setSelectedProId(null);
         } else {
-          const rpcName = timing === 'now'
-            ? 'get_available_immediate_pros_at_location'
-            : 'get_available_pros_at_location';
-          const rpcArgs = timing === 'now'
-            ? {
-                p_lat: currentCoordinate.latitude,
-                p_lng: currentCoordinate.longitude,
-                p_scheduled_start: scheduledStart,
-                p_est_minutes: selectedDuration,
-                p_service_type_id: selectedServiceId,
-              }
-            : {
-                p_lat: currentCoordinate.latitude,
-                p_lng: currentCoordinate.longitude,
-                p_scheduled_start: scheduledStart,
-                p_est_minutes: selectedDuration,
-                p_service_type_id: selectedServiceId,
-              };
+          const rpcName = hasVariableService
+            ? timing === 'now'
+              ? 'get_available_immediate_variable_service_pros_at_location'
+              : 'get_available_variable_service_pros_at_location'
+            : timing === 'now'
+              ? 'get_available_immediate_pros_at_location'
+              : 'get_available_pros_at_location';
+          const rpcArgs = {
+            p_lat: currentCoordinate.latitude,
+            p_lng: currentCoordinate.longitude,
+            p_scheduled_start: scheduledStart,
+            p_service_type_id: selectedServiceId,
+            ...(!hasVariableService ? { p_est_minutes: selectedDuration } : {}),
+          };
           const { data, error: prosError } = await supabase.rpc(rpcName, rpcArgs);
           if (active && prosError) setError(prosError.message);
           else if (active) {
