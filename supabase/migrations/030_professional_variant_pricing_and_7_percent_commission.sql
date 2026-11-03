@@ -400,3 +400,85 @@ $$;
 
 REVOKE ALL ON FUNCTION public.create_auto_service_booking_at_location(integer, double precision, double precision, text, text, timestamptz) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.create_auto_service_booking_at_location(integer, double precision, double precision, text, text, timestamptz) TO authenticated;
+
+
+CREATE OR REPLACE FUNCTION public.get_available_auto_service_slots_at_location(
+  p_service_type_id integer,
+  p_lat double precision,
+  p_lng double precision,
+  p_date date
+)
+RETURNS TABLE(slot_time time)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_point extensions.geography;
+  v_local timestamp without time zone;
+  v_start timestamptz;
+  v_weekday smallint;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+  IF p_lat NOT BETWEEN -90 AND 90 OR p_lng NOT BETWEEN -180 AND 180 THEN
+    RAISE EXCEPTION 'invalid location';
+  END IF;
+
+  v_point := extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography;
+  v_weekday := extract(isodow from p_date)::smallint;
+
+  FOR v_local IN
+    SELECT p_date::timestamp + make_interval(mins => minute_of_day)
+    FROM generate_series(480, 1080, 30) AS slots(minute_of_day)
+  LOOP
+    v_start := v_local AT TIME ZONE 'America/Santo_Domingo';
+
+    IF v_start > now() AND EXISTS (
+      SELECT 1
+      FROM public.pro_profiles pp
+      JOIN public.pro_services ps ON ps.pro_id = pp.user_id
+      JOIN public.pro_availability av ON av.pro_id = pp.user_id
+      WHERE pp.active
+        AND pp.verification_status = 'approved'
+        AND pp.accepts_auto_assign
+        AND pp.equipment_policy_accepted_at IS NOT NULL
+        AND ps.service_type_id = p_service_type_id
+        AND ps.active
+        AND pp.service_area_latitude IS NOT NULL
+        AND extensions.st_dwithin(
+          extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326)::extensions.geography,
+          v_point,
+          pp.service_area_radius_m
+        )
+        AND av.weekday = v_weekday
+        AND av.start_time <= v_local::time
+        AND av.end_time >= (v_local + make_interval(mins => ps.est_minutes))::time
+        AND NOT EXISTS (
+          SELECT 1 FROM public.bookings b
+          WHERE b.pro_id = pp.user_id
+            AND b.status IN ('awaiting_payment','scheduled','en_route','arrived','in_progress')
+            AND tstzrange(b.scheduled_start - interval '60 minutes',
+              b.scheduled_start + make_interval(mins => b.est_minutes) + interval '60 minutes','[)')
+            && tstzrange(v_start, v_start + make_interval(mins => ps.est_minutes),'[)')
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM public.booking_requests br
+          JOIN public.bookings b ON b.id = br.booking_id
+          WHERE br.pro_id = pp.user_id
+            AND br.status = 'pending'
+            AND br.expires_at > now()
+            AND b.status = 'requested'
+            AND tstzrange(b.scheduled_start - interval '60 minutes',
+              b.scheduled_start + make_interval(mins => b.est_minutes) + interval '60 minutes','[)')
+            && tstzrange(v_start, v_start + make_interval(mins => ps.est_minutes),'[)')
+        )
+    ) THEN
+      slot_time := v_local::time;
+      RETURN NEXT;
+    END IF;
+  END LOOP;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_available_auto_service_slots_at_location(integer, double precision, double precision, date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_available_auto_service_slots_at_location(integer, double precision, double precision, date) TO authenticated;
