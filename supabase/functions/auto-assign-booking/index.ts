@@ -2,7 +2,6 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const OFFER_TIMEOUT_MS = 45000;
 const POLL_INTERVAL_MS = 1500;
-const MAX_CANDIDATES = 5;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -90,38 +89,13 @@ Deno.serve(async (req) => {
 });
 
 async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: string) {
-  const { data: candidates, error: candidatesError } = await admin.rpc(
-    "find_auto_candidates",
-    { p_booking_id: bookingId, p_limit: MAX_CANDIDATES },
-  );
-  if (candidatesError) throw candidatesError;
-  if (!candidates?.length) return;
-
-  // Create one 45-second offer for every eligible professional. The existing
-  // respond_to_request RPC locks the booking and lets only the first valid
-  // acceptance win; it expires the other pending requests atomically.
-  const offerResults = await Promise.all(candidates.map(async (candidate: { pro_id: string }) => {
-    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_MS).toISOString();
-    const { data, error } = await admin
-      .from("booking_requests")
-      .insert({
-        booking_id: bookingId,
-        pro_id: candidate.pro_id,
-        expires_at: expiresAt,
-      })
-      .select("id")
-      .single();
-
-    if (error) {
-      // Another dispatch worker may have inserted this same booking/pro pair.
-      if (error.code === "23505") return null;
-      throw error;
-    }
-    return data?.id ? { id: data.id as string } : null;
-  }));
-
-  const requestIds = offerResults.flatMap((result) => result ? [result.id] : []);
-  if (!requestIds.length) return;
+  // This RPC takes a booking-scoped advisory lock and creates one 45-second
+  // request per eligible nearby professional. It is shared with the scheduled
+  // dispatcher, preventing two workers from creating competing dispatch rounds.
+  const { error: dispatchError } = await admin.rpc("dispatch_auto_booking", {
+    p_booking_id: bookingId,
+  });
+  if (dispatchError) throw dispatchError;
 
   const deadline = Date.now() + OFFER_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -136,7 +110,7 @@ async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: 
     const { data: requests, error: requestsError } = await admin
       .from("booking_requests")
       .select("status")
-      .in("id", requestIds);
+      .eq("booking_id", bookingId);
     if (requestsError) throw requestsError;
 
     const hasPending = (requests ?? []).some((request) => request.status === "pending");
@@ -146,11 +120,9 @@ async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: 
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  // Expire only still-pending offers. A concurrent acceptance is protected by
-  // the conditional update and by respond_to_request's booking row lock.
   await admin
     .from("booking_requests")
     .update({ status: "expired", responded_at: new Date().toISOString() })
-    .in("id", requestIds)
+    .eq("booking_id", bookingId)
     .eq("status", "pending");
 }
