@@ -398,6 +398,7 @@ BEGIN
     WHERE booking_id = v_booking.id AND status = 'pending';
 
     DELETE FROM public.pro_locations WHERE booking_id = v_booking.id;
+    DELETE FROM public.booking_eta_tracking WHERE booking_id = v_booking.id;
   END IF;
 
   UPDATE public.booking_reassignment_requests
