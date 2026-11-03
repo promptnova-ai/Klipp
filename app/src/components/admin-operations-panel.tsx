@@ -120,6 +120,15 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
 
   const openTimeline = useCallback(async (bookingId: string) => {
     setSelectedId(bookingId);
+    setCandidates([]);
+    setCandidatesLoaded(false);
+    setInterventionReason('');
+    setInterventionError(null);
+    setReassignmentCandidates([]);
+    setReassignmentCandidatesLoaded(false);
+    setReassignmentReason('');
+    setReassignmentError(null);
+    setReassignmentNotice(null);
     setRouteEta(null);
     setEtaError(null);
     setTimelineLoading(true);
@@ -189,9 +198,10 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
       setReassignmentReason('');
       setReassignmentNotice('Solicitud enviada. El profesional actual conserva la asignación hasta que el sustituto acepte.');
       await loadBookings();
+      await openTimeline(bookingId);
     }
     setReassignmentBusy(false);
-  }, [reassignmentReason, loadBookings]);
+  }, [reassignmentReason, loadBookings, openTimeline]);
 
   const dispatchToProfessional = useCallback(async (bookingId: string, proId: string) => {
     if (interventionReason.trim().length < 5) {
