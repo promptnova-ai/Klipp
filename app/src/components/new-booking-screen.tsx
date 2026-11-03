@@ -342,7 +342,7 @@ export function NewBookingScreen() {
       setLoadingSlots(false);
       return;
     }
-    if (!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate) {
+    if (!coordinate || (!selectedTier && !selectedOffer && !(mode === 'auto' && selectedServiceId)) || !scheduledDate) {
       return;
     }
 
@@ -357,12 +357,19 @@ export function NewBookingScreen() {
           p_lng: coordinate.longitude,
           p_date: scheduledDate,
         })
-      : supabase.rpc('get_available_booking_slots_at_location', {
-          p_pricing_tier_id: selectedTier?.id,
+      : selectedTier
+        ? supabase.rpc('get_available_booking_slots_at_location', {
+          p_pricing_tier_id: selectedTier.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_date: scheduledDate,
           p_mode: mode,
+        })
+        : supabase.rpc('get_available_auto_service_slots_at_location', {
+          p_service_type_id: selectedServiceId!,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_date: scheduledDate,
         });
     void Promise.resolve(result)
       .then(({ data, error: slotsError }) => {
