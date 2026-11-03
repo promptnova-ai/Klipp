@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance, AndroidNotificationVisibility } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { supabase } from '../../lib/supabase';
@@ -13,18 +14,18 @@ export async function configureNotificationChannelsAsync() {
   await Promise.all([
       Notifications.setNotificationChannelAsync('klipp-updates', {
         name: 'Actualizaciones de Klipp',
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: AndroidImportance.DEFAULT,
         vibrationPattern: [0, 150],
         lightColor: '#208AEF',
       }),
       Notifications.setNotificationChannelAsync('klipp-requests', {
         name: 'Solicitudes de servicios',
         description: 'Alertas urgentes para aceptar o rechazar nuevos servicios.',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: AndroidImportance.MAX,
         vibrationPattern: [0, 400, 180, 400, 180, 700],
         lightColor: '#E45D42',
         sound: 'default',
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
+        lockscreenVisibility: AndroidNotificationVisibility.PRIVATE,
       }),
   ]);
 }
