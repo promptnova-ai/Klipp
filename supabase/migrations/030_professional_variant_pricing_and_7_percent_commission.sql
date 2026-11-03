@@ -352,6 +352,8 @@ DECLARE
   v_booking_id uuid;
   v_estimated_price numeric(10,2);
   v_estimated_minutes integer;
+  v_commission_pct numeric(5,2) := 7.00;
+  v_estimated_commission numeric(10,2);
 BEGIN
   IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
   IF p_lat NOT BETWEEN -90 AND 90 OR p_lng NOT BETWEEN -180 AND 180 THEN
@@ -388,6 +390,8 @@ BEGIN
     RAISE EXCEPTION 'no professional with a published price covers this location';
   END IF;
 
+  v_estimated_commission := round(v_estimated_price * v_commission_pct / 100, 2);
+
   INSERT INTO public.addresses (client_id, label, street, references_text, sector_id, location)
   VALUES (
     auth.uid(), 'Ubicación de reserva', nullif(trim(p_address_text), ''),
@@ -398,11 +402,13 @@ BEGIN
   INSERT INTO public.bookings (
     client_id, service_type_id, pricing_tier_id, pro_service_id, address_id,
     assignment_mode, status, scheduled_start, est_minutes, price_dop,
+    commission_pct, commission_dop, pro_payout_dop,
     notes, client_lat, client_lng, address_text, landmark_notes
   )
   VALUES (
     auth.uid(), p_service_type_id, null, null, v_address_id,
     'auto', 'requested', p_scheduled_start, v_estimated_minutes, v_estimated_price,
+    v_commission_pct, v_estimated_commission, v_estimated_price - v_estimated_commission,
     nullif(trim(p_landmark_notes), ''), p_lat, p_lng,
     nullif(trim(p_address_text), ''), nullif(trim(p_landmark_notes), '')
   )
