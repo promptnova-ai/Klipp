@@ -245,7 +245,7 @@ export function NewBookingScreen() {
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
   const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
-  const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' && selectedProId ? manualProPrice ?? undefined : selectedTier?.price_dop);
+  const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' ? (selectedProId ? manualProPrice ?? undefined : undefined) : selectedTier?.price_dop);
 
   useEffect(() => {
     if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
@@ -769,7 +769,10 @@ export function NewBookingScreen() {
               <Text style={styles.body}>Estimación basada en las tarifas publicadas por profesionales de la zona. El precio definitivo será el del profesional que acepte y se mostrará antes del pago.</Text>
             </View>
           ) : (
-            <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>{mode === 'manual' && !selectedOffer ? 'Precio del profesional' : 'Total del servicio'}</Text>
+              <Text style={styles.priceLine}>{mode === 'manual' && !selectedOffer && !selectedProId ? 'Elige profesional' : manualPriceLoading ? 'Consultando…' : selectedPrice ? formatDop(selectedPrice) : mode === 'manual' && !selectedOffer ? 'Tarifa no disponible' : formatDop(0)}</Text>
+            </View>
           )}
         </View>
       )}
