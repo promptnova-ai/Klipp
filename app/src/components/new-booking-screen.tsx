@@ -246,7 +246,10 @@ export function NewBookingScreen() {
   const hasVariableService = !selectedTier && !selectedOffer && selectedServiceId !== null && serviceOffers.length > 0;
   const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes
     ?? (serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.est_minutes)) : undefined);
-  const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
+  const selectedProOffer = selectedProId
+    ? serviceOffers.find((offer) => offer.pro_id === selectedProId) ?? null
+    : null;
+  const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop ?? selectedProOffer?.base_price_dop;
 
   useEffect(() => {
     if (timing === 'now') {
@@ -713,8 +716,8 @@ export function NewBookingScreen() {
           {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Búsqueda</Text><Text style={styles.summaryValue}>Cerca de mí</Text></View>}
           <View style={styles.summaryDivider} />
           <View style={styles.priceRow}>
-            <Text style={styles.priceLabel}>{hasVariableService ? 'Rango estimado' : 'Total del servicio'}</Text>
-            <Text style={styles.priceLine}>{hasVariableService
+            <Text style={styles.priceLabel}>{hasVariableService && mode === 'auto' ? 'Rango estimado' : 'Total del servicio'}</Text>
+            <Text style={styles.priceLine}>{hasVariableService && mode === 'auto'
               ? servicePriceMin === servicePriceMax
                 ? formatDop(servicePriceMin!)
                 : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`
