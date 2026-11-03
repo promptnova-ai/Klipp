@@ -2,6 +2,15 @@ const appConfig = require('./app.json').expo;
 
 module.exports = {
   ...appConfig,
+
+  extra: {
+    ...appConfig.extra,
+    eas: {
+      ...appConfig.extra?.eas,
+      projectId: '8ee9b5e8-bf8f-45a7-b322-e7be62a62c42',
+    },
+  },
+
   plugins: [
     ...appConfig.plugins,
     [
