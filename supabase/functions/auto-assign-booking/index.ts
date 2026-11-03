@@ -72,11 +72,9 @@ Deno.serve(async (req) => {
     EdgeRuntime.waitUntil(
       runAssignment(admin, bookingId, booking.client_id).catch(async (error: unknown) => {
         console.error("Automatic assignment failed", error);
-        await admin
-          .from("bookings")
-          .update({ status: "expired" })
-          .eq("id", bookingId)
-          .eq("status", "requested");
+        // A transient worker failure must not expire a valid customer booking.
+        // Keep it requested so the customer can retry or choose a professional.
+        await notifyClientNoProfessional(admin, bookingId, booking.client_id);
       }),
     );
 
