@@ -491,14 +491,6 @@ BEGIN
         'booking_updates'
       );
       PERFORM public.create_klipp_notification(
-        NEW.created_by, NEW.booking_id, 'booking_reassignment',
-        'Resultado de la sustitución',
-        'La solicitud de sustitución ha terminado sin cambiar el profesional asignado.',
-        jsonb_build_object('bookingId', NEW.booking_id, 'target', 'client'),
-        'booking-reassignment:' || NEW.id::text || ':admin-' || NEW.status,
-        'booking_updates'
-      );
-      PERFORM public.create_klipp_notification(
         v_booking.client_id, NEW.booking_id, 'booking_update',
         'Actualización de tu reserva',
         'El cambio de profesional no se ha completado. Tu reserva sigue asignada al profesional original.',
