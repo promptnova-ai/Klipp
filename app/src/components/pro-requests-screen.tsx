@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
@@ -265,8 +265,10 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
   const translateX = useRef(new Animated.Value(0)).current;
   const trackWidth = useRef(0);
   const acceptRef = useRef(onAccept);
-  acceptRef.current = onAccept;
-  const responder = useRef(PanResponder.create({
+  useEffect(() => {
+    acceptRef.current = onAccept;
+  }, [onAccept]);
+  const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => !disabled,
     onMoveShouldSetPanResponder: (_, gesture) => !disabled && Math.abs(gesture.dx) > 4,
     onPanResponderMove: (_, gesture) => {
@@ -283,7 +285,7 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
     onPanResponderTerminate: () => {
       Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
     },
-  })).current;
+  }), [disabled, translateX]);
 
   useEffect(() => {
     if (disabled) translateX.setValue(0);
