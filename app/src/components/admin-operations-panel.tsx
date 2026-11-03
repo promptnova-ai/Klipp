@@ -63,7 +63,7 @@ function attentionReason(booking: OpsBooking): string | null {
   if (booking.status === 'awaiting_payment' && minutesSince(booking.accepted_at ?? booking.created_at) >= 15) return 'Aceptada hace más de 15 min; revisar pago';
   if (booking.status === 'scheduled' && Date.now() > new Date(booking.scheduled_start).getTime() + 15 * 60000) return 'La hora programada pasó hace más de 15 min';
   if (booking.status === 'en_route' && minutesSince(booking.en_route_at) >= 45) return 'Profesional en camino durante más de 45 min';
-  if (booking.status === 'en_route' && minutesSince(booking.pro_location_updated_at) >= 2) return 'GPS sin actualizar en más de 2 min';
+  if (booking.status === 'en_route' && (!booking.pro_location_updated_at || minutesSince(booking.pro_location_updated_at) >= 2)) return 'GPS sin actualizar en más de 2 min';
   if (booking.status === 'in_progress' && booking.started_at && minutesSince(booking.started_at) > booking.est_minutes + 30) return 'Servicio supera la duración estimada en más de 30 min';
   return null;
 }
