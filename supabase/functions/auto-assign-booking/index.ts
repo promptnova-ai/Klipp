@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
     if (pendingRequests?.length) return jsonResponse({ success: true, status: "searching" }, 202);
 
     EdgeRuntime.waitUntil(
-      runAssignment(admin, bookingId).catch(async (error: unknown) => {
+      runAssignment(admin, bookingId, booking.client_id).catch(async (error: unknown) => {
         console.error("Automatic assignment failed", error);
         await admin
           .from("bookings")
@@ -87,14 +87,39 @@ Deno.serve(async (req) => {
   }
 });
 
-async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: string) {
+async function notifyClientNoProfessional(
+  admin: ReturnType<typeof createClient>,
+  bookingId: string,
+  clientId: string,
+) {
+  const { error } = await admin.rpc("create_klipp_notification", {
+    p_user_id: clientId,
+    p_booking_id: bookingId,
+    p_type: "booking_search_unavailable",
+    p_title: "Aún no encontramos un profesional",
+    p_body: "No hay profesionales cercanos disponibles en este momento. Puedes volver a intentarlo o elegir uno manualmente desde Klipp.",
+    p_data: { bookingId, target: "client", action: "retry_or_choose_professional" },
+    p_dedupe_key: `booking-search-unavailable:${bookingId}`,
+    p_event_type: "booking_updates",
+  });
+  if (error) console.error("Could not notify client that no professional was found", error);
+}
+
+async function runAssignment(
+  admin: ReturnType<typeof createClient>,
+  bookingId: string,
+  clientId: string,
+) {
   const { data: candidates, error: candidatesError } = await admin.rpc(
     "find_auto_candidates",
     { p_booking_id: bookingId, p_limit: MAX_CANDIDATES },
   );
   if (candidatesError) throw candidatesError;
 
-  if (!candidates?.length) return;
+  if (!candidates?.length) {
+    await notifyClientNoProfessional(admin, bookingId, clientId);
+    return;
+  }
 
   for (const candidate of candidates) {
     const { data: currentBooking, error: currentBookingError } = await admin
@@ -142,5 +167,7 @@ async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: 
     }
   }
 
-  // Leave the booking requested; the scheduled dispatcher will retry with fresh presence data.
+  // Keep the booking requested so the client can retry or choose a professional.
+  // The client receives an in-app/push notification when this dispatch attempt is exhausted.
+  await notifyClientNoProfessional(admin, bookingId, clientId);
 }
