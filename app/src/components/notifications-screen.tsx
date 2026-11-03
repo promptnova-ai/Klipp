@@ -95,7 +95,7 @@ export function NotificationsScreen() {
   }, [session]);
 
   useEffect(() => {
-    void loadNotifications();
+    void Promise.resolve().then(loadNotifications);
   }, [loadNotifications]);
 
   useEffect(() => {
