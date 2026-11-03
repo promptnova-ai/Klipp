@@ -84,6 +84,8 @@ export function NewBookingScreen() {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [autoPriceRange, setAutoPriceRange] = useState<{ min_price_dop: number; max_price_dop: number; professional_count: number } | null>(null);
   const [autoPriceLoading, setAutoPriceLoading] = useState(false);
+  const [manualProPrice, setManualProPrice] = useState<number | null>(null);
+  const [manualPriceLoading, setManualPriceLoading] = useState(false);
   const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
   const [addressText, setAddressText] = useState('');
   const [landmarkNotes, setLandmarkNotes] = useState('');
@@ -243,7 +245,7 @@ export function NewBookingScreen() {
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
   const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
-  const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
+  const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' && selectedProId ? manualProPrice ?? undefined : selectedTier?.price_dop);
 
   useEffect(() => {
     if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
@@ -280,6 +282,52 @@ export function NewBookingScreen() {
     });
     return () => { active = false; };
   }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
+
+  useEffect(() => {
+    if (mode !== 'manual' || !selectedProId || !selectedServiceId || !selectedTier || selectedOffer) {
+      setManualProPrice(null);
+      setManualPriceLoading(false);
+      return;
+    }
+    let active = true;
+    setManualPriceLoading(true);
+    void supabase.from('pro_services')
+      .select('id, base_price_dop')
+      .eq('pro_id', selectedProId)
+      .eq('service_type_id', selectedServiceId)
+      .eq('active', true)
+      .maybeSingle()
+      .then(async ({ data: proService, error: serviceError }) => {
+        if (!active) return;
+        if (serviceError || !proService) {
+          setManualProPrice(null);
+          setError(serviceError?.message ?? 'Este profesional no tiene una tarifa activa para el servicio.');
+          setManualPriceLoading(false);
+          return;
+        }
+        const { data: tierPrice, error: tierPriceError } = await supabase.from('pro_service_tier_prices')
+          .select('price_dop')
+          .eq('pro_service_id', proService.id)
+          .eq('pricing_tier_id', selectedTier.id)
+          .eq('active', true)
+          .maybeSingle();
+        if (!active) return;
+        if (tierPriceError || !tierPrice) {
+          setManualProPrice(null);
+          setError(tierPriceError?.message ?? 'Este profesional todavía no ha configurado el precio de esta variante.');
+        } else {
+          setManualProPrice(Number(tierPrice.price_dop));
+          setError(null);
+        }
+        setManualPriceLoading(false);
+      }).catch((cause: unknown) => {
+        if (!active) return;
+        setManualProPrice(null);
+        setManualPriceLoading(false);
+        setError(cause instanceof Error ? cause.message : 'No pudimos consultar la tarifa del profesional.');
+      });
+    return () => { active = false; };
+  }, [mode, selectedProId, selectedServiceId, selectedTier?.id, selectedOffer]);
 
   useEffect(() => {
     if (timing === 'now') {
@@ -452,6 +500,10 @@ export function NewBookingScreen() {
     }
     if (timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) {
       setError('Selecciona un profesional disponible para continuar.');
+      return;
+    }
+    if (timing === 'scheduled' && mode === 'manual' && !selectedOffer && (!manualProPrice || manualPriceLoading)) {
+      setError('El profesional seleccionado no tiene un precio publicado para esta variante. Elige otro profesional.');
       return;
     }
     setSaving(true);
