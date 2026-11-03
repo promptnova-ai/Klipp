@@ -66,6 +66,10 @@ export function ProRequestsScreen() {
   }, []);
 
   useEffect(() => {
+    if (activeRequest && secondsLeft <= 0) void loadRequests();
+  }, [activeRequest?.id, secondsLeft, loadRequests]);
+
+  useEffect(() => {
     const proId = session?.user.id;
     if (!proId) return;
     const channel = supabase
