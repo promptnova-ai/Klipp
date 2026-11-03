@@ -236,36 +236,22 @@ export function ProRequestsScreen() {
         </View>
       ))}
       {requests.length > 0 && reassignments.length > 0 && <Text style={styles.sectionTitle}>Otras solicitudes</Text>}
-      {requests.map((request) => {
-        const booking = request.bookings;
-        const unavailable = !booking;
-        return (
-          <View key={request.id} style={styles.card}>
-            {unavailable ? (
-              <>
-                <Text style={styles.cardTitle}>Solicitud recibida</Text>
-                <Text style={styles.warning}>
-                  La base de datos no permite leer los detalles de esta reserva antes de aceptarla. No la aceptes sin poder revisar servicio, ubicación y horario.
-                </Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
-                <Text style={styles.body}>{booking.pricing_tiers?.label ?? 'Tamaño no disponible'}</Text>
-                <Text style={styles.body}>Ubicación: {booking.address_text ?? 'No disponible'}</Text>
-                {!!booking.landmark_notes && <Text style={styles.body}>Referencia: {booking.landmark_notes}</Text>}
-                <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
-                <Text style={styles.payout}>Recibirías {formatDop(booking.pro_payout_dop)}</Text>
-              </>
-            )}
-            <Text style={styles.expiration}>Expira: {formatBusinessDate(request.expires_at)}</Text>
-            <View style={styles.actions}>
-              <ResponseButton disabled={unavailable || busyId === request.id} label={busyId === request.id ? 'Enviando...' : 'Aceptar'} onPress={() => void respond(request.id, true)} />
-              <ResponseButton secondary disabled={busyId === request.id} label="Rechazar" onPress={() => void respond(request.id, false)} />
-            </View>
+      {requests.map((request) => (
+        <View key={request.id} style={styles.card}>
+          <Text style={styles.cardTitle}>{request.service_name}</Text>
+          {!!request.pricing_tier_label && <Text style={styles.body}>{request.pricing_tier_label}</Text>}
+          <Text style={styles.body}>Cliente: {request.client_name}</Text>
+          <Text style={styles.body}>Ubicación: {request.address_text ?? 'No disponible'}</Text>
+          {!!request.landmark_notes && <Text style={styles.body}>Referencia: {request.landmark_notes}</Text>}
+          <Text style={styles.body}>Fecha: {formatBusinessDate(request.scheduled_start)} · {request.est_minutes} min</Text>
+          <Text style={styles.payout}>Recibirías {formatDop(request.pro_payout_dop)}</Text>
+          <Text style={styles.expiration}>Expira: {formatBusinessDate(request.expires_at)}</Text>
+          <View style={styles.actions}>
+            <ResponseButton disabled={busyId === request.id || new Date(request.expires_at).getTime() <= nowMs} label={busyId === request.id ? 'Enviando...' : 'Aceptar'} onPress={() => void respond(request.id, true)} />
+            <ResponseButton secondary disabled={busyId === request.id || new Date(request.expires_at).getTime() <= nowMs} label="Rechazar" onPress={() => void respond(request.id, false)} />
           </View>
-        );
-      })}
+        </View>
+      ))}
     </ScrollView>
     </>
   );
