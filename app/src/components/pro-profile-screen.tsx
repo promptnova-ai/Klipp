@@ -667,7 +667,7 @@ export function ProProfileScreen() {
       </Section>
 
       <Section title="Servicios y tarifas">
-        <Text style={styles.body}>Elige las especialidades que ofreces y define tu precio base en pesos dominicanos.</Text>
+        <Text style={styles.body}>Elige las especialidades y publica tus tarifas en pesos dominicanos. Klipp retiene una comisión del 7% del precio del servicio; recibirás el 93% restante antes de posibles impuestos o costes de pago.</Text>
         {catalog.map((service) => {
           const selected = selectedServices.includes(service.id);
           const requirements = equipmentByService[service.id] ?? [];
