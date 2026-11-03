@@ -80,7 +80,12 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [routeEta, setRouteEta] = useState<RouteEta | null>(null);
   const [etaLoading, setEtaLoading] = useState(false);
-  const [etaError, setEtaError] = useState<string | null>(null);\n  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);\n  const [candidateLoading, setCandidateLoading] = useState(false);\n  const [interventionReason, setInterventionReason] = useState('');\n  const [interventionBusy, setInterventionBusy] = useState(false);\n  const [interventionError, setInterventionError] = useState<string | null>(null);
+  const [etaError, setEtaError] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<BookingCandidate[]>([]);
+  const [candidateLoading, setCandidateLoading] = useState(false);
+  const [interventionReason, setInterventionReason] = useState('');
+  const [interventionBusy, setInterventionBusy] = useState(false);
+  const [interventionError, setInterventionError] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
     setError(null);
@@ -392,7 +397,14 @@ const styles = StyleSheet.create({
   bookingTitle: { flex: 1, color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
   status: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '800' },
   detailCard: { padding: 15, gap: 10, borderWidth: 1, borderColor: KlippColors.blue, borderRadius: 14, backgroundColor: '#F8FBFF' },
-  locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: '#EEF4FF' },\n  interventionBox: { padding: 12, gap: 9, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: '#FFFFFF' },\n  reasonInput: { minHeight: 76, padding: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 9, color: KlippColors.navy, textAlignVertical: 'top', fontSize: 13 },\n  candidateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },\n  dispatchButton: { paddingHorizontal: 10, paddingVertical: 9, borderRadius: 8, backgroundColor: KlippColors.navy },\n  cancelButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.danger, alignItems: 'center' },\n  cancelButtonText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800' },\n  disabled: { opacity: 0.45 },
+  locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: '#EEF4FF' },
+  interventionBox: { padding: 12, gap: 9, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: '#FFFFFF' },
+  reasonInput: { minHeight: 76, padding: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 9, color: KlippColors.navy, textAlignVertical: 'top', fontSize: 13 },
+  candidateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },
+  dispatchButton: { paddingHorizontal: 10, paddingVertical: 9, borderRadius: 8, backgroundColor: KlippColors.navy },
+  cancelButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.danger, alignItems: 'center' },
+  cancelButtonText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800' },
+  disabled: { opacity: 0.45 },
   locationTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
   etaValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
   etaButton: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: KlippColors.navy },
