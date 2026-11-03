@@ -466,6 +466,7 @@ BEGIN
         )
         AND av.weekday = v_weekday
         AND av.start_time <= v_local::time
+        AND v_local::date = (v_local + make_interval(mins => ps.est_minutes))::date
         AND av.end_time >= (v_local + make_interval(mins => ps.est_minutes))::time
         AND NOT EXISTS (
           SELECT 1 FROM public.bookings b
