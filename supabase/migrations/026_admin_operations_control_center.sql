@@ -2,6 +2,8 @@
 -- Read-only RPCs: staff can inspect orders only with bookings.read.
 -- No direct table grants, booking mutations, or service-role key in the client.
 
+DROP FUNCTION IF EXISTS public.admin_list_operational_bookings(integer);
+
 CREATE OR REPLACE FUNCTION public.admin_list_operational_bookings(
   p_limit integer DEFAULT 150
 )
