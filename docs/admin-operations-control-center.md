@@ -32,13 +32,14 @@ Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
 3. Migración 014 — enforcement de permisos y gestión de personal.
 4. Migración 015 de política de equipamiento — aceptación obligatoria del profesional.
 5. Migración 018 — presencia profesional y GPS online.
-6. Migración 024 — historial inmutable de estados.
-7. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
-8. Migración 026 — RPCs del centro de operaciones.
-9. Migración 027 — despacho administrativo auditado y cancelación segura de solicitudes sin asignar.
-10. Migración 028 — reasignación segura de reservas confirmadas.
+6. Migración 023 — confirmación de equipamiento por reserva.
+7. Migración 024 — historial inmutable de estados.
+8. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
+9. Migración 026 — RPCs del centro de operaciones.
+10. Migración 027 — despacho administrativo auditado y cancelación segura de solicitudes sin asignar.
+11. Migración 028 — reasignación segura de reservas confirmadas.
 
-La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 028 requiere además pagos/payouts, presencia profesional y la función de notificaciones creada en 025. La migración 027 requiere además la política de equipamiento de la migración 015, las áreas de cobertura de la 005 y la presencia GPS de la 018. Revisa los nombres/versiones de migración del repositorio antes de aplicarlas: actualmente existen dos archivos con prefijo `015` (`015_equipment_policy_and_remove_massage.sql` y `015_staff_issue_resolution.sql`), por lo que hay que resolver esa colisión de versión antes de ejecutar el conjunto con Supabase CLI. La migración 025 es necesaria para la columna de ETA que consume el panel; además instala el worker que recalcula el ETA y gestiona las notificaciones de retraso.
+La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 028 requiere además pagos/payouts, presencia profesional, columnas de confirmación de equipamiento creadas en 023, historial 024 y la función de notificaciones creada en 025. La migración 027 requiere además la política de equipamiento de la migración 015, las áreas de cobertura de la 005 y la presencia GPS de la 018. Revisa los nombres/versiones de migración del repositorio antes de aplicarlas: actualmente existen dos archivos con prefijo `015` (`015_equipment_policy_and_remove_massage.sql` y `015_staff_issue_resolution.sql`), por lo que hay que resolver esa colisión de versión antes de ejecutar el conjunto con Supabase CLI. La migración 025 es necesaria para la columna de ETA que consume el panel; además instala el worker que recalcula el ETA y gestiona las notificaciones de retraso.
 
 **Estado:** la migración 026 está guardada en GitHub, pero no se ha aplicado a Supabase. La Edge Function modificada tampoco se ha desplegado.
 
