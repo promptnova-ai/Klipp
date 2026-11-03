@@ -430,7 +430,6 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
               <Text style={styles.caption}>Solo se permite antes de iniciar el desplazamiento. No se cambia una reserva en camino, llegada o servicio.</Text>
             </View>
           )}
-          {detailAnchor}
           {timelineLoading ? <ActivityIndicator color={KlippColors.blue} /> : timeline.length === 0 ? <Text style={styles.body}>No hay eventos disponibles.</Text> : timeline.map((event) => (
             <View key={event.event_id} style={styles.event}>
               <Text style={styles.eventTitle}>{event.from_status ? (statusNames[event.from_status] ?? event.from_status) + ' → ' : ''}{statusNames[event.to_status] ?? event.to_status}</Text>
