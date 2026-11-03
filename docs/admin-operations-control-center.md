@@ -27,14 +27,17 @@
 
 ## Dependencias de base de datos
 Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
-1. Migración 013 — identidad del superadministrador y RBAC.
-2. Migración 014 — enforcement de permisos y gestión de personal.
-3. Migración 024 — historial inmutable de estados.
-4. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
-5. Migración 026 — RPCs del centro de operaciones.
-6. Migración 027 — despacho administrativo auditado y cancelación segura de solicitudes sin asignar.
+1. Esquema base 001–007 — perfiles, reservas, pagos, direcciones, áreas de servicio y auditoría.
+2. Migración 013 — identidad del superadministrador y RBAC.
+3. Migración 014 — enforcement de permisos y gestión de personal.
+4. Migración 015 de política de equipamiento — aceptación obligatoria del profesional.
+5. Migración 018 — presencia profesional y GPS online.
+6. Migración 024 — historial inmutable de estados.
+7. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
+8. Migración 026 — RPCs del centro de operaciones.
+9. Migración 027 — despacho administrativo auditado y cancelación segura de solicitudes sin asignar.
 
-La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 025 es necesaria para la columna de ETA que consume el panel; además instala el worker que recalcula el ETA y gestiona las notificaciones de retraso.
+La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 027 requiere además la política de equipamiento de la migración 015, las áreas de cobertura de la 005 y la presencia GPS de la 018. Revisa los nombres/versiones de migración del repositorio antes de aplicarlas: actualmente existen dos archivos con prefijo `015` (`015_equipment_policy_and_remove_massage.sql` y `015_staff_issue_resolution.sql`), por lo que hay que resolver esa colisión de versión antes de ejecutar el conjunto con Supabase CLI. La migración 025 es necesaria para la columna de ETA que consume el panel; además instala el worker que recalcula el ETA y gestiona las notificaciones de retraso.
 
 **Estado:** la migración 026 está guardada en GitHub, pero no se ha aplicado a Supabase. La Edge Function modificada tampoco se ha desplegado.
 
