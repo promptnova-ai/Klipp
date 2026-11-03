@@ -196,9 +196,9 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
     else {
       setReassignmentCandidates([]);
       setReassignmentReason('');
-      setReassignmentNotice('Solicitud enviada. El profesional actual conserva la asignación hasta que el sustituto acepte.');
       await loadBookings();
       await openTimeline(bookingId);
+      setReassignmentNotice('Solicitud enviada. El profesional actual conserva la asignación hasta que el sustituto acepte.');
     }
     setReassignmentBusy(false);
   }, [reassignmentReason, loadBookings, openTimeline]);
