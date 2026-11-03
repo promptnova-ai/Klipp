@@ -158,7 +158,7 @@ export function ProAgendaScreen() {
       active = false;
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, [activeTripKey, loading]);
+  }, [activeTripKey, loading, loadBookings]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
