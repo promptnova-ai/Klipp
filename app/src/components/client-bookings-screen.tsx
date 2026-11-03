@@ -49,7 +49,7 @@ export function ClientBookingsScreen() {
   const [messages, setMessages] = useState<Record<string, BookingMessage[]>>({});
   const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
   const [openChatId, setOpenChatId] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -120,10 +120,11 @@ export function ClientBookingsScreen() {
   }, [session?.user.id, loadBookings]);
 
   useEffect(() => {
+    let active = true;
     const activeBookings = bookings.filter((booking) => booking.status === 'en_route');
     if (activeBookings.length === 0) {
-      setTracking({});
-      return;
+      void Promise.resolve().then(() => { if (active) setTracking({}); });
+      return () => { active = false; };
     }
     const channels = activeBookings.map((booking) => {
       const channel = supabase
@@ -182,13 +183,22 @@ export function ClientBookingsScreen() {
         });
       })
       .subscribe());
-    return () => { channels.forEach((channel) => { void supabase.removeChannel(channel); }); };
+    return () => {
+      active = false;
+      channels.forEach((channel) => { void supabase.removeChannel(channel); });
+    };
   }, [bookings]);
 
   useEffect(() => {
-    if (!bookings.some((booking) => booking.status === 'in_progress')) return;
+    let active = true;
+    void Promise.resolve().then(() => { if (active) setCurrentTime(Date.now()); });
+    const needsClock = bookings.some((booking) =>
+      booking.status === 'in_progress'
+      || (booking.assignment_mode === 'auto' && booking.status === 'requested')
+    );
+    if (!needsClock) return () => { active = false; };
     const interval = setInterval(() => setCurrentTime(Date.now()), 30_000);
-    return () => clearInterval(interval);
+    return () => { active = false; clearInterval(interval); };
   }, [bookings]);
 
   async function refresh() {
@@ -318,7 +328,8 @@ export function ClientBookingsScreen() {
         const pro = booking.pro_id ? pros[booking.pro_id] : undefined;
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
-        const immediateSearch = searching && new Date(booking.scheduled_start).getTime() <= Date.now() + 60 * 60 * 1000;
+        const immediateSearch = searching && currentTime > 0
+          && new Date(booking.scheduled_start).getTime() <= currentTime + 60 * 60 * 1000;
         const canReview = ['completed', 'confirmed'].includes(booking.status) && !!booking.pro_id && !review;
         const statusLabel = searching ? (immediateSearch ? 'Buscando profesional' : 'Reserva en espera') : statusLabels[booking.status];
         const livePoint = tracking[booking.id];
