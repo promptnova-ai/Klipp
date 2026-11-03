@@ -45,6 +45,7 @@ AS $$
       AND b.status = 'scheduled'
       AND b.pro_id IS NOT NULL
       AND b.scheduled_start > now()
+      AND pp.user_id <> b.pro_id
       AND pp.active
       AND pp.verification_status = 'approved'
       AND pp.equipment_policy_accepted_at IS NOT NULL
@@ -70,6 +71,12 @@ AS $$
           AND av.weekday = extract(isodow from (b.scheduled_start at time zone 'America/Santo_Domingo'))::smallint
           AND av.start_time <= (b.scheduled_start at time zone 'America/Santo_Domingo')::time
           AND av.end_time >= ((b.scheduled_start + make_interval(mins => b.est_minutes)) at time zone 'America/Santo_Domingo')::time
+      )
+      AND NOT EXISTS (
+        SELECT 1 FROM public.booking_reassignment_requests pending_request
+        WHERE pending_request.replacement_pro_id = pp.user_id
+          AND pending_request.status = 'pending'
+          AND pending_request.expires_at > now()
       )
       AND NOT EXISTS (
         SELECT 1 FROM public.bookings other_booking
