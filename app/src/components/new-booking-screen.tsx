@@ -214,7 +214,7 @@ export function NewBookingScreen() {
       return;
     }
     let active = true;
-    setOffersLoading(true);
+    void Promise.resolve().then(() => { if (active) setOffersLoading(true); });
     void Promise.all(serviceIds.map((serviceId) => supabase.rpc('get_nearby_service_offers', {
       p_service_type_id: serviceId,
       p_latitude: coordinate.latitude,
@@ -260,23 +260,29 @@ export function NewBookingScreen() {
   const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop ?? selectedProOffer?.base_price_dop;
 
   useEffect(() => {
+    let active = true;
     if (timing === 'now') {
-      setAvailableSlots([]);
-      setScheduledTime('');
-      setLoadingSlots(false);
-      return;
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setAvailableSlots([]);
+        setScheduledTime('');
+        setLoadingSlots(false);
+      });
+      return () => { active = false; };
     }
     if (!coordinate || (!selectedTier && !selectedOffer && !hasVariableService) || !scheduledDate) {
-      return;
+      return () => { active = false; };
     }
     if (hasVariableService) {
       if (mode === 'auto') {
-        setAvailableSlots(slotOptions);
-        setLoadingSlots(false);
-        return;
+        void Promise.resolve().then(() => {
+          if (!active) return;
+          setAvailableSlots(slotOptions);
+          setLoadingSlots(false);
+        });
+        return () => { active = false; };
       }
-      let active = true;
-      setLoadingSlots(true);
+      void Promise.resolve().then(() => { if (active) setLoadingSlots(true); });
       void Promise.resolve(supabase.rpc('get_available_variable_service_slots_at_location', {
         p_lat: coordinate.latitude,
         p_lng: coordinate.longitude,
@@ -300,7 +306,6 @@ export function NewBookingScreen() {
       return () => { active = false; };
     }
 
-    let active = true;
     void Promise.resolve().then(() => {
       if (active) setLoadingSlots(true);
     });
