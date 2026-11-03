@@ -1,6 +1,9 @@
--- Immediate "Cerca de mí" discovery and direct booking with a live professional.
--- A professional is discoverable only when approved, equipped, online with a fresh
--- heartbeat, within service coverage, scheduled to work, and free of active work/offers.
+-- Immediate "Elegir profesional" discovery for on-demand bookings.
+-- Uses the repository's real public profile tables (profiles + pro_profiles);
+-- no denormalized pro_cards table is assumed.
+-- A candidate must be approved, equipped, online with a fresh GPS heartbeat,
+-- inside the professional's coverage area, available for the full service,
+-- and free of active work or another pending offer.
 
 create or replace function public.get_available_immediate_pros_at_location(
   p_lat double precision,
@@ -58,34 +61,38 @@ begin
 
   return query
   select
-    pc.pro_id,
-    pc.full_name,
-    pc.avatar_url,
-    pc.bio,
-    pc.years_experience,
-    pc.base_sector_id,
-    pc.rating_avg,
-    pc.rating_count,
-    pc.jobs_completed,
+    pp.user_id,
+    profile.full_name,
+    profile.avatar_url,
+    pp.bio,
+    pp.years_experience,
+    pp.base_sector_id,
+    pp.rating_avg,
+    pp.rating_count,
+    pp.jobs_completed,
     round((
       extensions.st_distance(
         extensions.st_setsrid(
-          extensions.st_makepoint(pr.longitude, pr.latitude), 4326
+          extensions.st_makepoint(presence.longitude, presence.latitude), 4326
         )::extensions.geography,
         v_client_point
       ) / 1000.0
-    )::numeric, 1) as distance_km
-  from public.pro_presence pr
-  join public.pro_profiles pp on pp.user_id = pr.pro_id
-  join public.pro_cards pc on pc.pro_id = pr.pro_id
-  where pr.is_online
-    and pr.last_seen_at >= now() - interval '90 seconds'
-    and pr.latitude is not null
-    and pr.longitude is not null
+    )::numeric, 1)
+  from public.pro_presence presence
+  join public.pro_profiles pp on pp.user_id = presence.pro_id
+  join public.profiles profile on profile.id = pp.user_id
+  join public.service_types service on service.id = p_service_type_id
+  where service.active
+    and presence.is_online
+    and presence.last_seen_at >= now() - interval '90 seconds'
+    and presence.latitude is not null
+    and presence.longitude is not null
     and pp.active
     and pp.verification_status = 'approved'
     and pp.equipment_policy_accepted_at is not null
     and pp.service_area_latitude is not null
+    and pp.service_area_longitude is not null
+    and pp.service_area_radius_m is not null
     and extensions.st_dwithin(
       extensions.st_setsrid(
         extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326
@@ -107,7 +114,8 @@ begin
         and av.end_time >= v_local_end::time
     )
     and not exists (
-      select 1 from public.bookings b
+      select 1
+      from public.bookings b
       where b.pro_id = pp.user_id
         and (
           b.status in ('en_route', 'arrived', 'in_progress')
@@ -134,7 +142,15 @@ begin
         and br.expires_at > now()
         and b.status = 'requested'
     )
-  order by distance_km asc, pc.rating_avg desc, pc.jobs_completed desc;
+  order by
+    extensions.st_distance(
+      extensions.st_setsrid(
+        extensions.st_makepoint(presence.longitude, presence.latitude), 4326
+      )::extensions.geography,
+      v_client_point
+    ) asc,
+    pp.rating_avg desc,
+    pp.jobs_completed desc;
 end;
 $$;
 
@@ -168,8 +184,8 @@ begin
   where id = p_pricing_tier_id;
   if not found then raise exception 'invalid pricing tier'; end if;
 
-  -- Serialize booking creation for this professional and recheck live presence
-  -- inside the same transaction that creates the booking request.
+  -- Match the lock used by create_tier_booking_at_location, then recheck
+  -- live presence and availability before creating the targeted request.
   perform pg_advisory_xact_lock(hashtext('klipp_booking_pro'), hashtext(p_pro_id::text));
 
   if not exists (
@@ -193,8 +209,6 @@ begin
     p_pro_id
   );
 
-  -- Direct immediate requests must expire quickly, not inherit the two-hour
-  -- window used for ordinary scheduled requests.
   update public.booking_requests
   set expires_at = now() + interval '45 seconds'
   where booking_id = v_booking_id
