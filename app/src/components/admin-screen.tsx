@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { AdminOperationsPanel } from '@/components/admin-operations-panel';
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type AdminSection = 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
+type AdminSection = 'operations' | 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
@@ -41,6 +42,7 @@ type ServiceDraft = Pick<ServiceRow, 'name' | 'description' | 'active' | 'catego
 type TierDraft = Pick<PricingTier, 'label' | 'price_dop' | 'est_minutes'>;
 
 const sections: { key: AdminSection; title: string }[] = [
+  { key: 'operations', title: 'Operaciones' },
   { key: 'verification', title: 'Verificaciones' },
   { key: 'accounts', title: 'Cuentas y roles' },
   { key: 'issues', title: 'Incidencias' },
@@ -120,7 +122,7 @@ export function AdminScreen() {
 
       const permissionCodes = [
         'accounts.read', 'accounts.manage_clients', 'verification.review',
-        'catalog.manage',
+        'catalog.manage', 'bookings.read', 'bookings.manage',
       ];
       const permissionResults = owner
         ? permissionCodes.map(() => ({ data: true, error: null }))
@@ -204,6 +206,7 @@ export function AdminScreen() {
   const canManageAccounts = isSuperAdmin || permissions.includes('accounts.manage_clients');
   const canReviewProfessionals = isSuperAdmin || permissions.includes('verification.review');
   const visibleSections = sections.filter((item) => {
+    if (item.key === 'operations') return isSuperAdmin || permissions.includes('bookings.read');
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
     if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
@@ -410,7 +413,7 @@ export function AdminScreen() {
       {visibleSections.length === 0 && <Text style={styles.empty}>Tu cuenta no tiene permisos para acceder a las secciones de administración.</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
-      {activeSection === 'staff' && isSuperAdmin && (
+      {activeSection === 'operations' && (\n        <View style={styles.section}>\n          <AdminOperationsPanel />\n        </View>\n      )}\n\n      {activeSection === 'staff' && isSuperAdmin && (
         <View style={styles.section}>
           <View style={styles.heroCard}>
             <Text style={styles.eyebrow}>ÁREA EXCLUSIVA DEL PROPIETARIO</Text>
