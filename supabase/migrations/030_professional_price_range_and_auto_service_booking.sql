@@ -66,6 +66,7 @@ drop trigger if exists booking_requests_snapshot_professional_offer on public.bo
 create trigger booking_requests_snapshot_professional_offer
 before insert on public.booking_requests
 for each row execute function public.snapshot_request_professional_offer();
+revoke all on function public.snapshot_request_professional_offer() from public,anon,authenticated;
 
 -- Manual choice for professional-priced services. The exact price is already
 -- shown on the selected professional's card, so the customer has confirmed it
