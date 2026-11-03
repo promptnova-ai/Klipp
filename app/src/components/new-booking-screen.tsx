@@ -434,6 +434,10 @@ export function NewBookingScreen() {
       setError('Selecciona un profesional disponible para continuar.');
       return;
     }
+    if (variableService && mode === 'manual' && !selectedProOffer) {
+      setError('No pudimos validar la tarifa de ese profesional. Actualiza la lista y vuelve a seleccionarlo.');
+      return;
+    }
     setSaving(true);
     setError(null);
     setSuccess(null);
