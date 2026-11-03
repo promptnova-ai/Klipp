@@ -82,6 +82,8 @@ export function NewBookingScreen() {
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const [autoPriceRange, setAutoPriceRange] = useState<{ min_price_dop: number; max_price_dop: number; professional_count: number } | null>(null);
+  const [autoPriceLoading, setAutoPriceLoading] = useState(false);
   const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
   const [addressText, setAddressText] = useState('');
   const [landmarkNotes, setLandmarkNotes] = useState('');
@@ -242,6 +244,42 @@ export function NewBookingScreen() {
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
   const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
   const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
+
+  useEffect(() => {
+    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
+      setAutoPriceRange(null);
+      setAutoPriceLoading(false);
+      return;
+    }
+    let active = true;
+    setAutoPriceLoading(true);
+    void supabase.rpc('get_auto_service_price_estimate', {
+      p_service_type_id: selectedServiceId,
+      p_pricing_tier_id: selectedTier?.id ?? null,
+      p_lat: coordinate.latitude,
+      p_lng: coordinate.longitude,
+    }).then(({ data, error: estimateError }) => {
+      if (!active) return;
+      if (estimateError) {
+        setAutoPriceRange(null);
+        setError(estimateError.message);
+      } else {
+        const row = (data?.[0] ?? null) as { min_price_dop: number; max_price_dop: number; professional_count: number } | null;
+        setAutoPriceRange(row && Number(row.professional_count) > 0 ? {
+          min_price_dop: Number(row.min_price_dop),
+          max_price_dop: Number(row.max_price_dop),
+          professional_count: Number(row.professional_count),
+        } : null);
+      }
+      setAutoPriceLoading(false);
+    }).catch((cause: unknown) => {
+      if (!active) return;
+      setAutoPriceRange(null);
+      setAutoPriceLoading(false);
+      setError(cause instanceof Error ? cause.message : 'No pudimos calcular el precio estimado.');
+    });
+    return () => { active = false; };
+  }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
 
   useEffect(() => {
     if (timing === 'now') {
@@ -406,6 +444,10 @@ export function NewBookingScreen() {
     const scheduledStart = getScheduledStart();
     if (!scheduledStart) {
       setError('Elige una fecha y hora futura válidas.');
+      return;
+    }
+    if (mode === 'auto' && !selectedOffer && (!autoPriceRange || autoPriceLoading)) {
+      setError('Todavía no hay tarifas publicadas suficientes para estimar este servicio en la zona seleccionada.');
       return;
     }
     if (timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) {
@@ -666,7 +708,17 @@ export function NewBookingScreen() {
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Solicitar ahora' : 'Asignación automática'}</Text></View>}
           <View style={styles.summaryDivider} />
-          <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
+          {mode === 'auto' && !selectedOffer ? (
+            <View>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Precio estimado</Text>
+                <Text style={styles.priceLine}>{autoPriceLoading ? 'Calculando…' : autoPriceRange ? `${formatDop(autoPriceRange.min_price_dop)} – ${formatDop(autoPriceRange.max_price_dop)}` : 'Sin tarifas disponibles'}</Text>
+              </View>
+              <Text style={styles.body}>Estimación basada en las tarifas publicadas por profesionales de la zona. El precio definitivo será el del profesional que acepte y se mostrará antes del pago.</Text>
+            </View>
+          ) : (
+            <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
+          )}
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
