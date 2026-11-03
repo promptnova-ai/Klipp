@@ -34,6 +34,7 @@ type TimelineEvent = { event_id: number; from_status: string | null; to_status: 
 type StatusFilter = 'active' | 'attention' | 'all';
 type RouteEta = { etaMinutes: number; distanceMeters: number; trafficAware: boolean };
 type BookingCandidate = { pro_id: string; professional_name: string | null; rating_avg: number | null; jobs_completed: number | null; distance_km: number | null; is_online: boolean; last_seen_at: string | null };
+type ReassignmentCandidate = BookingCandidate;
 
 const statusNames: Record<string, string> = {
   requested: 'Buscando profesional',
@@ -88,6 +89,13 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   const [interventionReason, setInterventionReason] = useState('');
   const [interventionBusy, setInterventionBusy] = useState(false);
   const [interventionError, setInterventionError] = useState<string | null>(null);
+  const [reassignmentCandidates, setReassignmentCandidates] = useState<ReassignmentCandidate[]>([]);
+  const [reassignmentCandidatesLoaded, setReassignmentCandidatesLoaded] = useState(false);
+  const [reassignmentCandidateLoading, setReassignmentCandidateLoading] = useState(false);
+  const [reassignmentReason, setReassignmentReason] = useState('');
+  const [reassignmentBusy, setReassignmentBusy] = useState(false);
+  const [reassignmentError, setReassignmentError] = useState<string | null>(null);
+  const [reassignmentNotice, setReassignmentNotice] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
     setError(null);
@@ -149,6 +157,41 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
     else setCandidates((data ?? []) as BookingCandidate[]);
     setCandidateLoading(false);
   }, []);
+
+  const loadReassignmentCandidates = useCallback(async (bookingId: string) => {
+    setReassignmentCandidateLoading(true);
+    setReassignmentCandidatesLoaded(false);
+    setReassignmentError(null);
+    const { data, error: candidateError } = await supabase.rpc('admin_list_booking_reassignment_candidates', {
+      p_booking_id: bookingId,
+    });
+    if (candidateError) setReassignmentError(candidateError.message);
+    else setReassignmentCandidates((data ?? []) as ReassignmentCandidate[]);
+    setReassignmentCandidatesLoaded(true);
+    setReassignmentCandidateLoading(false);
+  }, []);
+
+  const requestBookingReassignment = useCallback(async (bookingId: string, proId: string) => {
+    if (reassignmentReason.trim().length < 5) {
+      setReassignmentError('Indica el motivo operativo de la sustitución (mínimo 5 caracteres).');
+      return;
+    }
+    setReassignmentBusy(true);
+    setReassignmentError(null);
+    const { error: requestError } = await supabase.rpc('admin_create_booking_reassignment', {
+      p_booking_id: bookingId,
+      p_replacement_pro_id: proId,
+      p_reason: reassignmentReason.trim(),
+    });
+    if (requestError) setReassignmentError(requestError.message);
+    else {
+      setReassignmentCandidates([]);
+      setReassignmentReason('');
+      setReassignmentNotice('Solicitud enviada. El profesional actual conserva la asignación hasta que el sustituto acepte.');
+      await loadBookings();
+    }
+    setReassignmentBusy(false);
+  }, [reassignmentReason, loadBookings]);
 
   const dispatchToProfessional = useCallback(async (bookingId: string, proId: string) => {
     if (interventionReason.trim().length < 5) {
@@ -339,6 +382,44 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
               <Text style={styles.caption}>Por seguridad, esta herramienta no cancela reservas con pagos retenidos ni reasigna servicios ya aceptados o en curso.</Text>
             </View>
           )}
+          {canManage && selectedBooking.status === 'scheduled' && selectedBooking.pro_id !== null && (
+            <View style={styles.interventionBox}>
+              <Text style={styles.locationTitle}>Reasignar profesional</Text>
+              <Text style={styles.body}>Profesional actual: {selectedBooking.professional_name || 'Asignado'}. La reserva solo cambiará cuando el sustituto acepte. Mientras tanto, el profesional actual no podrá avanzar el servicio.</Text>
+              <Text style={styles.body}>El pago permanece ligado a la reserva. Klipp solo cambia el destinatario de un pago al profesional si el payout sigue pendiente.</Text>
+              <TextInput
+                value={reassignmentReason}
+                onChangeText={setReassignmentReason}
+                placeholder="Motivo de la sustitución (mínimo 5 caracteres)"
+                multiline
+                style={styles.reasonInput}
+                accessibilityLabel="Motivo de la reasignación administrativa"
+              />
+              {reassignmentError && <Text accessibilityRole="alert" style={styles.error}>{reassignmentError}</Text>}
+              {reassignmentNotice && <Text style={styles.reassignmentSuccess}>{reassignmentNotice}</Text>}
+              <Pressable accessibilityRole="button" disabled={reassignmentCandidateLoading || reassignmentBusy} onPress={() => void loadReassignmentCandidates(selectedBooking.booking_id)} style={styles.etaButton}>
+                <Text style={styles.refreshText}>{reassignmentCandidateLoading ? 'Buscando…' : 'Buscar sustitutos elegibles'}</Text>
+              </Pressable>
+              {reassignmentCandidates.map((candidate) => (
+                <View key={candidate.pro_id} style={styles.candidateRow}>
+                  <View style={styles.grow}>
+                    <Text style={styles.eventTitle}>{candidate.professional_name || 'Profesional Klipp'}</Text>
+                    <Text style={styles.caption}>
+                      {candidate.distance_km !== null ? `Zona de cobertura: ${candidate.distance_km} km aprox.` : 'Zona de cobertura no disponible'}
+                      {candidate.rating_avg !== null ? ` · ★ ${Number(candidate.rating_avg).toFixed(1)}` : ''}
+                      {candidate.jobs_completed !== null ? ` · ${candidate.jobs_completed} servicios` : ''}
+                    </Text>
+                    <Text style={styles.caption}>{candidate.is_online ? 'Conectado ahora' : 'Disponible según agenda'}</Text>
+                  </View>
+                  <Pressable accessibilityRole="button" disabled={reassignmentBusy || reassignmentReason.trim().length < 5} onPress={() => void requestBookingReassignment(selectedBooking.booking_id, candidate.pro_id)} style={[styles.dispatchButton, (reassignmentBusy || reassignmentReason.trim().length < 5) && styles.disabled]}>
+                    <Text style={styles.refreshText}>{reassignmentBusy ? 'Enviando…' : 'Solicitar sustitución'}</Text>
+                  </Pressable>
+                </View>
+              ))}
+              {!reassignmentCandidateLoading && reassignmentCandidatesLoaded && reassignmentCandidates.length === 0 && <Text style={styles.caption}>No hay sustitutos elegibles en este momento.</Text>}
+              <Text style={styles.caption}>Solo se permite antes de iniciar el desplazamiento. No se cambia una reserva en camino, llegada o servicio.</Text>
+            </View>
+          )}
           {detailAnchor}
           {timelineLoading ? <ActivityIndicator color={KlippColors.blue} /> : timeline.length === 0 ? <Text style={styles.body}>No hay eventos disponibles.</Text> : timeline.map((event) => (
             <View key={event.event_id} style={styles.event}>
@@ -408,6 +489,7 @@ const styles = StyleSheet.create({
   cancelButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.danger, alignItems: 'center' },
   cancelButtonText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800' },
   disabled: { opacity: 0.45 },
+  reassignmentSuccess: { color: '#067647', fontSize: 12, lineHeight: 18, fontWeight: '700' },
   locationTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
   etaValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
   etaButton: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: KlippColors.navy },
