@@ -262,7 +262,7 @@ export function ProRequestsScreen() {
 }
 
 // PanResponder requires mutable refs for gesture state; refs are only read in gesture callbacks.
-// eslint-disable-next-line react-hooks/refs
+/* eslint-disable react-hooks/refs */
 function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label: string; onAccept: () => void }) {
   // eslint-disable-next-line react-hooks/refs
   const translateX = useRef(new Animated.Value(0)).current;
@@ -310,6 +310,8 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
     </View>
   );
 }
+
+/* eslint-enable react-hooks/refs */
 
 function ResponseButton({ label, onPress, disabled, secondary = false }: { label: string; onPress: () => void; disabled: boolean; secondary?: boolean }) {
   return (
