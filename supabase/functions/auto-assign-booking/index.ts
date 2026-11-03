@@ -93,54 +93,62 @@ async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: 
     { p_booking_id: bookingId, p_limit: MAX_CANDIDATES },
   );
   if (candidatesError) throw candidatesError;
-
   if (!candidates?.length) return;
 
-  for (const candidate of candidates) {
-    const { data: currentBooking, error: currentBookingError } = await admin
+  // Create one 45-second offer for every eligible professional. The existing
+  // respond_to_request RPC locks the booking and lets only the first valid
+  // acceptance win; it expires the other pending requests atomically.
+  const offerResults = await Promise.all(candidates.map(async (candidate: { pro_id: string }) => {
+    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_MS).toISOString();
+    const { data, error } = await admin
+      .from("booking_requests")
+      .insert({
+        booking_id: bookingId,
+        pro_id: candidate.pro_id,
+        expires_at: expiresAt,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      // Another dispatch worker may have inserted this same booking/pro pair.
+      if (error.code === "23505") return null;
+      throw error;
+    }
+    return data?.id ? { id: data.id as string } : null;
+  }));
+
+  const requestIds = offerResults.flatMap((result) => result ? [result.id] : []);
+  if (!requestIds.length) return;
+
+  const deadline = Date.now() + OFFER_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const { data: currentBooking, error: bookingError } = await admin
       .from("bookings")
       .select("status, pro_id")
       .eq("id", bookingId)
       .maybeSingle();
-    if (currentBookingError) throw currentBookingError;
+    if (bookingError) throw bookingError;
     if (!currentBooking || currentBooking.status !== "requested" || currentBooking.pro_id) return;
 
-    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_MS).toISOString();
-    const { data: request, error: requestError } = await admin
+    const { data: requests, error: requestsError } = await admin
       .from("booking_requests")
-      .insert({ booking_id: bookingId, pro_id: candidate.pro_id, expires_at: expiresAt })
-      .select("id")
-      .single();
-    if (requestError) {
-      if (requestError.code === "23505") continue;
-      throw requestError;
-    }
+      .select("status")
+      .in("id", requestIds);
+    if (requestsError) throw requestsError;
 
-    const deadline = Date.now() + OFFER_TIMEOUT_MS;
-    let responseStatus = "pending";
-    while (Date.now() < deadline) {
-      const { data: latestRequest, error: latestRequestError } = await admin
-        .from("booking_requests")
-        .select("status")
-        .eq("id", request.id)
-        .maybeSingle();
-      if (latestRequestError) throw latestRequestError;
-      responseStatus = latestRequest?.status ?? "expired";
+    const hasPending = (requests ?? []).some((request) => request.status === "pending");
+    const hasAccepted = (requests ?? []).some((request) => request.status === "accepted");
+    if (hasAccepted || !hasPending) return;
 
-      if (responseStatus === "accepted") return;
-      if (responseStatus !== "pending") break;
-
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    }
-
-    if (responseStatus === "pending") {
-      await admin
-        .from("booking_requests")
-        .update({ status: "expired", responded_at: new Date().toISOString() })
-        .eq("id", request.id)
-        .eq("status", "pending");
-    }
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  // Leave the booking requested; the scheduled dispatcher will retry with fresh presence data.
+  // Expire only still-pending offers. A concurrent acceptance is protected by
+  // the conditional update and by respond_to_request's booking row lock.
+  await admin
+    .from("booking_requests")
+    .update({ status: "expired", responded_at: new Date().toISOString() })
+    .in("id", requestIds)
+    .eq("status", "pending");
 }
