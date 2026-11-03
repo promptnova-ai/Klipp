@@ -318,7 +318,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
                   <View style={styles.grow}>
                     <Text style={styles.eventTitle}>{candidate.professional_name || 'Profesional Klipp'}</Text>
                     <Text style={styles.caption}>
-                      {candidate.distance_km !== null ? `${candidate.distance_km} km aprox.` : 'Distancia no disponible'}
+                      {candidate.distance_km !== null ? `Zona de cobertura: ${candidate.distance_km} km aprox.` : 'Zona de cobertura no disponible'}
                       {candidate.rating_avg !== null ? ` · ★ ${Number(candidate.rating_avg).toFixed(1)}` : ''}
                       {candidate.jobs_completed !== null ? ` · ${candidate.jobs_completed} servicios` : ''}
                     </Text>
