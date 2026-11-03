@@ -70,6 +70,162 @@ for each row execute function public.snapshot_request_professional_offer();
 -- Manual choice for professional-priced services. The exact price is already
 -- shown on the selected professional's card, so the customer has confirmed it
 -- by submitting the request.
+-- Manual discovery for professional-priced services uses each professional's
+-- own published duration, rather than the longest duration in the whole area.
+create or replace function public.get_available_variable_service_pros_at_location(
+  p_lat double precision,
+  p_lng double precision,
+  p_scheduled_start timestamptz,
+  p_service_type_id integer
+) returns table(
+  pro_id uuid,
+  full_name text,
+  avatar_url text,
+  bio text,
+  years_experience integer,
+  base_sector_id integer,
+  rating_avg numeric,
+  rating_count integer,
+  jobs_completed integer,
+  distance_km numeric
+)
+language sql stable security definer
+set search_path = public, extensions
+as $
+  with point as (
+    select extensions.st_setsrid(extensions.st_makepoint(p_lng,p_lat),4326)::extensions.geography client_point,
+      p_scheduled_start at time zone 'America/Santo_Domingo' local_start
+  )
+  select pp.user_id,profile.full_name,profile.avatar_url,pp.bio,pp.years_experience,
+    pp.base_sector_id,pp.rating_avg,pp.rating_count,pp.jobs_completed,
+    round((extensions.st_distance(
+      extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude,pp.service_area_latitude),4326)::extensions.geography,
+      point.client_point)/1000.0)::numeric,1)
+  from point
+  join public.pro_profiles pp on pp.active and pp.verification_status='approved'
+  join public.profiles profile on profile.id=pp.user_id
+  join public.pro_services ps on ps.pro_id=pp.user_id and ps.service_type_id=p_service_type_id and ps.active
+  join public.service_types st on st.id=ps.service_type_id and st.active
+  where auth.uid() is not null
+    and p_lat between -90 and 90 and p_lng between -180 and 180
+    and p_scheduled_start>now() and ps.est_minutes>0
+    and pp.equipment_policy_accepted_at is not null
+    and pp.service_area_latitude is not null and pp.service_area_longitude is not null
+    and extensions.st_dwithin(
+      extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude,pp.service_area_latitude),4326)::extensions.geography,
+      point.client_point,pp.service_area_radius_m)
+    and (point.local_start+make_interval(mins=>ps.est_minutes))::date=point.local_start::date
+    and exists (
+      select 1 from public.pro_availability av
+      where av.pro_id=pp.user_id
+        and av.weekday=extract(isodow from point.local_start)::smallint
+        and av.start_time<=point.local_start::time
+        and av.end_time>=(point.local_start+make_interval(mins=>ps.est_minutes))::time)
+    and not exists (
+      select 1 from public.bookings b
+      where b.pro_id=pp.user_id
+        and b.status in ('awaiting_payment','scheduled','en_route','arrived','in_progress')
+        and tstzrange(b.scheduled_start-interval '60 minutes',
+          b.scheduled_start+make_interval(mins=>b.est_minutes)+interval '60 minutes','[)')
+          && tstzrange(p_scheduled_start,p_scheduled_start+make_interval(mins=>ps.est_minutes),'[)'))
+    and not exists (
+      select 1 from public.booking_requests br
+      join public.bookings b on b.id=br.booking_id
+      where br.pro_id=pp.user_id and br.status='pending' and br.expires_at>now()
+        and b.status='requested'
+        and tstzrange(b.scheduled_start-interval '60 minutes',
+          b.scheduled_start+make_interval(mins=>b.est_minutes)+interval '60 minutes','[)')
+          && tstzrange(p_scheduled_start,p_scheduled_start+make_interval(mins=>ps.est_minutes),'[)'))
+  order by 10 asc,pp.rating_avg desc,pp.jobs_completed desc;
+$;
+
+create or replace function public.get_available_immediate_variable_service_pros_at_location(
+  p_lat double precision,
+  p_lng double precision,
+  p_scheduled_start timestamptz,
+  p_service_type_id integer
+) returns table(
+  pro_id uuid,
+  full_name text,
+  avatar_url text,
+  bio text,
+  years_experience integer,
+  base_sector_id integer,
+  rating_avg numeric,
+  rating_count integer,
+  jobs_completed integer,
+  distance_km numeric
+)
+language plpgsql stable security definer
+set search_path = public, extensions
+as $
+declare
+  v_client_point extensions.geography;
+  v_local_start timestamp without time zone;
+begin
+  if auth.uid() is null then raise exception 'not authenticated'; end if;
+  if p_lat is null or p_lng is null or p_lat not between -90 and 90 or p_lng not between -180 and 180 then
+    raise exception 'invalid client location';
+  end if;
+  if p_scheduled_start is null or p_scheduled_start<=now()
+    or p_scheduled_start>now()+interval '30 minutes' then
+    raise exception 'immediate booking must start within 30 minutes';
+  end if;
+  if p_service_type_id is null then raise exception 'service is required'; end if;
+
+  v_client_point:=extensions.st_setsrid(extensions.st_makepoint(p_lng,p_lat),4326)::extensions.geography;
+  v_local_start:=p_scheduled_start at time zone 'America/Santo_Domingo';
+
+  return query
+  select pp.user_id,profile.full_name,profile.avatar_url,pp.bio,pp.years_experience,
+    pp.base_sector_id,pp.rating_avg,pp.rating_count,pp.jobs_completed,
+    round((extensions.st_distance(
+      extensions.st_setsrid(extensions.st_makepoint(presence.longitude,presence.latitude),4326)::extensions.geography,
+      v_client_point)/1000.0)::numeric,1)
+  from public.pro_presence presence
+  join public.pro_profiles pp on pp.user_id=presence.pro_id
+  join public.profiles profile on profile.id=pp.user_id
+  join public.pro_services ps on ps.pro_id=pp.user_id and ps.service_type_id=p_service_type_id and ps.active
+  join public.service_types st on st.id=ps.service_type_id and st.active
+  where presence.is_online and presence.last_seen_at>=now()-interval '90 seconds'
+    and presence.latitude is not null and presence.longitude is not null
+    and pp.active and pp.verification_status='approved'
+    and pp.equipment_policy_accepted_at is not null
+    and pp.service_area_latitude is not null and pp.service_area_longitude is not null
+    and extensions.st_dwithin(
+      extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude,pp.service_area_latitude),4326)::extensions.geography,
+      v_client_point,pp.service_area_radius_m)
+    and (v_local_start+make_interval(mins=>ps.est_minutes))::date=v_local_start::date
+    and exists (
+      select 1 from public.pro_availability av
+      where av.pro_id=pp.user_id
+        and av.weekday=extract(isodow from v_local_start)::smallint
+        and av.start_time<=v_local_start::time
+        and av.end_time>=(v_local_start+make_interval(mins=>ps.est_minutes))::time)
+    and not exists (
+      select 1 from public.bookings b
+      where b.pro_id=pp.user_id
+        and (b.status in ('en_route','arrived','in_progress')
+          or (b.status in ('awaiting_payment','scheduled')
+            and tstzrange(b.scheduled_start-interval '60 minutes',
+              b.scheduled_start+make_interval(mins=>b.est_minutes)+interval '60 minutes','[)')
+              && tstzrange(p_scheduled_start,p_scheduled_start+make_interval(mins=>ps.est_minutes),'[)'))))
+    and not exists (
+      select 1 from public.booking_requests br
+      join public.bookings b on b.id=br.booking_id
+      where br.pro_id=pp.user_id and br.status='pending' and br.expires_at>now()
+        and b.status='requested')
+  order by extensions.st_distance(
+    extensions.st_setsrid(extensions.st_makepoint(presence.longitude,presence.latitude),4326)::extensions.geography,
+    v_client_point) asc,pp.rating_avg desc,pp.jobs_completed desc;
+end;
+$;
+
+revoke all on function public.get_available_variable_service_pros_at_location(double precision,double precision,timestamptz,integer) from public,anon;
+grant execute on function public.get_available_variable_service_pros_at_location(double precision,double precision,timestamptz,integer) to authenticated;
+revoke all on function public.get_available_immediate_variable_service_pros_at_location(double precision,double precision,timestamptz,integer) from public,anon;
+grant execute on function public.get_available_immediate_variable_service_pros_at_location(double precision,double precision,timestamptz,integer) to authenticated;
+
 create or replace function public.create_service_booking_for_professional(
   p_service_type_id integer,
   p_pro_id uuid,
