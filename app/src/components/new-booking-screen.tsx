@@ -243,6 +243,7 @@ export function NewBookingScreen() {
   const serviceOffers = offers.filter((offer) => offer.service_type_id === selectedServiceId);
   const servicePriceMin = serviceOffers.length ? Math.min(...serviceOffers.map((offer) => offer.base_price_dop)) : null;
   const servicePriceMax = serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.base_price_dop)) : null;
+  const hasVariableService = !selectedTier && !selectedOffer && selectedServiceId !== null && serviceOffers.length > 0;
   const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes
     ?? (serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.est_minutes)) : undefined);
   const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
@@ -254,7 +255,12 @@ export function NewBookingScreen() {
       setLoadingSlots(false);
       return;
     }
-    if (!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate) {
+    if (!coordinate || (!selectedTier && !selectedOffer && !hasVariableService) || !scheduledDate) {
+      return;
+    }
+    if (hasVariableService) {
+      setAvailableSlots(slotOptions);
+      setLoadingSlots(false);
       return;
     }
 
@@ -297,7 +303,7 @@ export function NewBookingScreen() {
     return () => {
       active = false;
     };
-  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode, timing]);
+  }, [coordinate, selectedTier, selectedOffer, scheduledDate, mode, timing, hasVariableService, slotOptions]);
 
   useEffect(() => {
     if (!coordinate || !selectedDuration || (timing === 'scheduled' && !scheduledTime)) return;
@@ -360,7 +366,7 @@ export function NewBookingScreen() {
     }
     void loadPros();
     return () => { active = false; };
-  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, mode, timing, getScheduledStart]);
+  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, selectedServiceId, mode, timing, getScheduledStart]);
 
   async function showProProfile(pro: ProCard) {
     if (expandedProId === pro.pro_id) {
@@ -535,7 +541,7 @@ export function NewBookingScreen() {
               <Text style={styles.body}>{serviceOffers.length} ofertas cercanas · duración estimada hasta {selectedDuration} min</Text>
             </>}
       </Section>}
-      {!selectedOffer && selectedTier && <Section title="3. ¿Cuándo necesitas el servicio?">
+      {!selectedOffer && (selectedTier || hasVariableService) && <Section title="3. ¿Cuándo necesitas el servicio?">
         <View style={styles.modeOptions}>
           <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); }} />
           <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); }} />
@@ -601,7 +607,7 @@ export function NewBookingScreen() {
           <Text style={styles.label}>Horarios disponibles</Text>
           {scheduledDate && !loadingSlots && availableSlots.length > 0 && <Text style={styles.slotCount}>{availableSlots.length} horarios</Text>}
         </View>
-        {!coordinate || (!selectedTier && !selectedOffer) || !scheduledDate ? (
+        {!coordinate || (!selectedTier && !selectedOffer && !hasVariableService) || !scheduledDate ? (
           <Text style={styles.body}>Selecciona un servicio, ubicación y día para consultar horarios disponibles.</Text>
         ) : loadingSlots ? (
           <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Buscando horarios disponibles...</Text></View>
@@ -626,6 +632,7 @@ export function NewBookingScreen() {
             })}
           </View>
         )}
+        {hasVariableService && <Text style={styles.body}>En servicios con precio por profesional, el horario se verifica al enviar la solicitud.</Text>}
       </Section>}
       <Section title={timing === 'now' ? "5. Cómo quieres encontrarlo" : "6. Cómo quieres encontrarlo"}>
         {!selectedOffer && <View style={styles.modeOptions}>
@@ -685,7 +692,7 @@ export function NewBookingScreen() {
         {!selectedOffer && mode === 'auto' && timing === 'scheduled' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
-      {(selectedTier || selectedOffer) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
+      {(selectedTier || selectedOffer || hasVariableService) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeading}>
             <View>
@@ -705,7 +712,14 @@ export function NewBookingScreen() {
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Búsqueda</Text><Text style={styles.summaryValue}>Cerca de mí</Text></View>}
           <View style={styles.summaryDivider} />
-          <View style={styles.priceRow}><Text style={styles.priceLabel}>Total del servicio</Text><Text style={styles.priceLine}>{formatDop(selectedPrice ?? 0)}</Text></View>
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>{hasVariableService ? 'Rango estimado' : 'Total del servicio'}</Text>
+            <Text style={styles.priceLine}>{hasVariableService
+              ? servicePriceMin === servicePriceMax
+                ? formatDop(servicePriceMin!)
+                : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`
+              : formatDop(selectedPrice ?? 0)}</Text>
+          </View>
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
