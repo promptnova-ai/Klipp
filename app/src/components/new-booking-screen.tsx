@@ -342,7 +342,7 @@ export function NewBookingScreen() {
       setLoadingSlots(false);
       return;
     }
-    if (!coordinate || (!selectedTier && !selectedOffer && !(mode === 'auto' && selectedServiceId)) || !scheduledDate) {
+    if (!coordinate || (!selectedTier && !selectedOffer && !(selectedServiceId && (mode === 'auto' || selectedProId))) || !scheduledDate) {
       return;
     }
 
@@ -365,12 +365,30 @@ export function NewBookingScreen() {
           p_date: scheduledDate,
           p_mode: mode,
         })
-        : supabase.rpc('get_available_auto_service_slots_at_location', {
-          p_service_type_id: selectedServiceId!,
-          p_lat: coordinate.latitude,
-          p_lng: coordinate.longitude,
-          p_date: scheduledDate,
-        });
+        : mode === 'auto'
+          ? supabase.rpc('get_available_auto_service_slots_at_location', {
+              p_service_type_id: selectedServiceId!,
+              p_lat: coordinate.latitude,
+              p_lng: coordinate.longitude,
+              p_date: scheduledDate,
+            })
+          : supabase.from('pro_services')
+              .select('id')
+              .eq('pro_id', selectedProId!)
+              .eq('service_type_id', selectedServiceId!)
+              .eq('active', true)
+              .maybeSingle()
+              .then(({ data: proService, error: lookupError }) => {
+                if (lookupError || !proService) {
+                  return { data: null, error: lookupError ?? new Error('El profesional no tiene publicado este servicio.') };
+                }
+                return supabase.rpc('get_available_service_slots', {
+                  p_pro_service_id: proService.id,
+                  p_lat: coordinate.latitude,
+                  p_lng: coordinate.longitude,
+                  p_date: scheduledDate,
+                });
+              });
     void Promise.resolve(result)
       .then(({ data, error: slotsError }) => {
         if (!active) return;
