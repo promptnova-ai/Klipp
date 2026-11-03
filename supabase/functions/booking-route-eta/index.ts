@@ -34,9 +34,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const bookingId = body?.bookingId;
+    const notifyDelay = body?.notifyDelay !== false;
     if (typeof bookingId !== "string") return jsonResponse({ error: "bookingId is required" }, 400);
 
-    const userClient = createClient(supabaseUrl, anonKey);
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
     const { data: authResult, error: authError } = await userClient.auth.getUser(accessToken);
     if (authError || !authResult.user) return jsonResponse({ error: "Invalid session" }, 401);
 
@@ -48,7 +51,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (bookingError) throw bookingError;
     if (!booking) return jsonResponse({ error: "Booking not found" }, 404);
-    if (booking.client_id !== authResult.user.id) return jsonResponse({ error: "Not allowed" }, 403);
+    const { data: canReadBookings, error: permissionError } = await userClient.rpc("has_admin_permission", {
+      p_permission_code: "bookings.read",
+    });
+    if (permissionError) console.error("Could not check admin booking permission", permissionError);
+    const isBookingAdmin = canReadBookings === true;
+    if (booking.client_id !== authResult.user.id && !isBookingAdmin) return jsonResponse({ error: "Not allowed" }, 403);
     if (booking.status !== "en_route") return jsonResponse({ error: "Booking is not en route" }, 409);
     if (typeof booking.client_lat !== "number" || typeof booking.client_lng !== "number") {
       return jsonResponse({ error: "Booking destination is unavailable" }, 422);
@@ -124,7 +132,7 @@ Deno.serve(async (req) => {
     });
     if (etaTrackingError) {
       console.error("Could not evaluate ETA notification threshold", etaTrackingError);
-    } else if (shouldNotifyDelay === true) {
+    } else if (notifyDelay && shouldNotifyDelay === true) {
       const { error: notificationError } = await admin.rpc("create_klipp_notification", {
         p_user_id: booking.client_id,
         p_booking_id: bookingId,
