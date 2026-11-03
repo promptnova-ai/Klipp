@@ -461,6 +461,7 @@ export function NewBookingScreen() {
             p_address_text: addressText,
             p_landmark_notes: landmarkNotes,
             p_scheduled_start: scheduledStart,
+            p_expected_price_dop: selectedProOffer?.base_price_dop,
             p_immediate: timing === 'now',
           })
       : selectedOffer
