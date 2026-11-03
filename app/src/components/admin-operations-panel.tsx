@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
+import { AdminOperationsMap } from '@/components/admin-operations-map';
 import { supabase } from '../../lib/supabase';
 
 type OpsBooking = {
@@ -24,6 +25,8 @@ type OpsBooking = {
   pro_latitude: number | null;
   pro_longitude: number | null;
   pro_location_updated_at: string | null;
+  current_eta_minutes: number | null;
+  eta_updated_at: string | null;
   status_event_count: number;
 };
 type TimelineEvent = { event_id: number; from_status: string | null; to_status: string; occurred_at: string; actor_name: string | null };
@@ -60,6 +63,7 @@ function attentionReason(booking: OpsBooking): string | null {
   if (booking.status === 'awaiting_payment' && minutesSince(booking.accepted_at ?? booking.created_at) >= 15) return 'Aceptada hace más de 15 min; revisar pago';
   if (booking.status === 'scheduled' && Date.now() > new Date(booking.scheduled_start).getTime() + 15 * 60000) return 'La hora programada pasó hace más de 15 min';
   if (booking.status === 'en_route' && minutesSince(booking.en_route_at) >= 45) return 'Profesional en camino durante más de 45 min';
+  if (booking.status === 'en_route' && minutesSince(booking.pro_location_updated_at) >= 2) return 'GPS sin actualizar en más de 2 min';
   if (booking.status === 'in_progress' && booking.started_at && minutesSince(booking.started_at) > booking.est_minutes + 30) return 'Servicio supera la duración estimada en más de 30 min';
   return null;
 }
@@ -92,7 +96,7 @@ export function AdminOperationsPanel() {
     let active = true;
     setLoading(true);
     void loadBookings().finally(() => { if (active) setLoading(false); });
-    const interval = setInterval(() => { void loadBookings(); }, 30000);
+    const interval = setInterval(() => { void loadBookings(); }, 15000);
     return () => { active = false; clearInterval(interval); };
   }, [loadBookings]);
 
@@ -156,6 +160,23 @@ export function AdminOperationsPanel() {
         <Metric label="En servicio" value={bookings.filter((item) => item.status === 'in_progress').length} />
       </View>
 
+      <AdminOperationsMap
+        points={bookings
+          .filter((booking) => booking.status === 'en_route'
+            && booking.pro_latitude !== null && booking.pro_longitude !== null)
+          .map((booking) => ({
+            bookingId: booking.booking_id,
+            professionalName: booking.professional_name,
+            serviceName: booking.service_name,
+            status: booking.status,
+            latitude: booking.pro_latitude as number,
+            longitude: booking.pro_longitude as number,
+            updatedAt: booking.pro_location_updated_at,
+            selected: selectedId === booking.booking_id,
+            onSelect: () => void openTimeline(booking.booking_id),
+          }))}
+      />
+
       <View style={styles.filters}>
         {([
           ['active', 'Activas'],
@@ -181,6 +202,13 @@ export function AdminOperationsPanel() {
           <Text style={styles.body}>Dirección: {selectedBooking.address_text || 'No disponible'}</Text>
           <Text style={styles.body}>Programada: {dateLabel(selectedBooking.scheduled_start)} · Estado: {statusNames[selectedBooking.status] ?? selectedBooking.status}</Text>
           <Text style={styles.body}>Creada: {dateLabel(selectedBooking.created_at)} · Eventos registrados: {selectedBooking.status_event_count}</Text>
+          {selectedBooking.current_eta_minutes !== null && (
+            <View style={styles.locationBox}>
+              <Text style={styles.locationTitle}>ETA automático de Klipp</Text>
+              <Text style={styles.etaValue}>~{selectedBooking.current_eta_minutes} min</Text>
+              <Text style={styles.caption}>Último cálculo: {dateLabel(selectedBooking.eta_updated_at)}{minutesSince(selectedBooking.eta_updated_at) > 5 ? ' · Dato posiblemente desactualizado' : ' · Actualizado recientemente'}</Text>
+            </View>
+          )}
           {selectedBooking.status === 'en_route' && (
             <View style={styles.locationBox}>
               <Text style={styles.locationTitle}>ETA por carretera</Text>
@@ -221,7 +249,7 @@ export function AdminOperationsPanel() {
             <Text style={styles.body}>{booking.client_name || 'Cliente'} · {booking.professional_name || 'Buscando profesional'}</Text>
             <Text style={styles.body}>{dateLabel(booking.scheduled_start)} · {booking.address_text || 'Dirección no disponible'}</Text>
             <View style={styles.headerRow}>
-              <Text style={styles.caption}>GPS: {booking.pro_location_updated_at ? `hace ${locationAge} min` : 'sin señal'}</Text>
+              <Text style={styles.caption}>GPS: {booking.pro_location_updated_at ? `hace ${locationAge} min` : 'sin señal'} · ETA: {booking.current_eta_minutes !== null ? `~${booking.current_eta_minutes} min` : 'pendiente'}</Text>
               {reason ? <Text style={styles.warning}>{reason}</Text> : <Text style={styles.ok}>Sin alertas detectadas</Text>}
             </View>
             <Text style={styles.link}>Ver detalle e historial →</Text>
