@@ -364,7 +364,7 @@ as $$
   picked as (
     select q.id
     from public.push_delivery_queue q
-    cross join (select count(*) from exhausted) cleanup
+    -- The cleanup CTE executes once before claiming new deliveries.
     where (
         (q.status = 'pending' and q.next_attempt_at <= now())
         or (q.status = 'processing' and q.claimed_at < now() - interval '10 minutes')
