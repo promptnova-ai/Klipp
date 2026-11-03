@@ -537,7 +537,7 @@ export function NewBookingScreen() {
         {serviceOffers.length === 0
           ? <Text style={styles.body}>Aún no hay profesionales con este servicio disponible en tu zona.</Text>
           : <>
-              <Text style={styles.cardTitle}>{servicePriceMin === servicePriceMax
+              <Text style={styles.summaryTitle}>{servicePriceMin === servicePriceMax
                 ? formatDop(servicePriceMin!)
                 : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`}</Text>
               <Text style={styles.body}>Rango orientativo según los profesionales que ofrecen este servicio cerca de tu ubicación. Si eliges «Cerca de mí», conocerás el precio exacto del profesional antes de confirmar el pago.</Text>
