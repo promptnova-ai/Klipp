@@ -49,6 +49,10 @@ begin
       and ps.active and pp.active and pp.verification_status='approved'
       and pp.accepts_auto_assign and pp.equipment_policy_accepted_at is not null;
     if not found then raise exception 'professional no longer offers this service'; end if;
+    if v_offer.base_price_dop < v_booking.price_min_dop
+      or v_offer.base_price_dop > v_booking.price_max_dop then
+      raise exception 'professional tariff is outside the estimate shown to the customer';
+    end if;
     new.offered_price_dop := v_offer.base_price_dop;
     new.offered_est_minutes := v_offer.est_minutes;
     new.offered_payout_dop := v_offer.base_price_dop
@@ -359,18 +363,15 @@ language sql stable security definer set search_path = public, extensions as $
   from b
   join public.pro_profiles pp on pp.active
   join public.pro_presence pr on pr.pro_id=pp.user_id
+  join public.pro_services ps on ps.pro_id=pp.user_id and ps.service_type_id=b.service_type_id and ps.active
   join public.service_types st on st.id=b.service_type_id and st.active
   where pp.verification_status='approved'
     and pp.accepts_auto_assign
     and pp.equipment_policy_accepted_at is not null
     and pp.service_area_latitude is not null
     and pr.is_online and pr.last_seen_at>=now()-interval '90 seconds'
-    and exists (
-      select 1 from public.pro_services ps
-      where ps.pro_id=pp.user_id and ps.service_type_id=b.service_type_id and ps.active
-        and (b.pricing_tier_id is not null
-          or (ps.base_price_dop>=b.price_min_dop and ps.base_price_dop<=b.price_max_dop))
-    )
+    and (b.pricing_tier_id is not null
+      or (ps.base_price_dop>=b.price_min_dop and ps.base_price_dop<=b.price_max_dop))
     and extensions.st_dwithin(
       extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude,pp.service_area_latitude),4326)::extensions.geography,
       b.point,pp.service_area_radius_m)
@@ -379,14 +380,14 @@ language sql stable security definer set search_path = public, extensions as $
       where av.pro_id=pp.user_id
         and av.weekday=extract(isodow from (b.scheduled_start at time zone 'America/Santo_Domingo'))::smallint
         and av.start_time<=(b.scheduled_start at time zone 'America/Santo_Domingo')::time
-        and av.end_time>=((b.scheduled_start+make_interval(mins=>b.est_minutes)) at time zone 'America/Santo_Domingo')::time)
+        and av.end_time>=((b.scheduled_start+make_interval(mins=>ps.est_minutes)) at time zone 'America/Santo_Domingo')::time)
     and not exists (
       select 1 from public.bookings ob
       where ob.pro_id=pp.user_id
         and ob.status in ('awaiting_payment','scheduled','en_route','arrived','in_progress')
         and tstzrange(ob.scheduled_start-interval '60 minutes',
           ob.scheduled_start+make_interval(mins=>ob.est_minutes)+interval '60 minutes','[)')
-          && tstzrange(b.scheduled_start,b.scheduled_start+make_interval(mins=>b.est_minutes),'[)'))
+          && tstzrange(b.scheduled_start,b.scheduled_start+make_interval(mins=>ps.est_minutes),'[)'))
     and not exists (
       select 1 from public.booking_requests old
       where old.booking_id=b.id and old.pro_id=pp.user_id)
