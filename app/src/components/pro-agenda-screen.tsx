@@ -73,7 +73,7 @@ export function ProAgendaScreen() {
         else setIsOnline(Boolean(data?.is_online && data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 90000));
       });
     return () => { active = false; };
-  }, [loadBookings, session?.user.id]));
+  }, [loadBookings, session]));
 
   useEffect(() => {
     const userId = session?.user.id;
