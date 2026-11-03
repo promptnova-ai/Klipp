@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION public.admin_list_operational_bookings(
 )
 RETURNS TABLE (
   booking_id uuid,
+  pro_id uuid,
   status text,
   assignment_mode text,
   scheduled_start timestamptz,
@@ -47,6 +48,7 @@ BEGIN
   RETURN QUERY
   SELECT
     b.id,
+    b.pro_id,
     b.status::text,
     b.assignment_mode::text,
     b.scheduled_start,
