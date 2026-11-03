@@ -387,23 +387,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.pro_list_pending_reassignment_locks()
-RETURNS TABLE (booking_id uuid)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-  SELECT DISTINCT r.booking_id
-  FROM public.booking_reassignment_requests r
-  JOIN public.bookings b ON b.id = r.booking_id
-  WHERE r.original_pro_id = auth.uid()
-    AND r.status = 'pending'
-    AND r.expires_at > now()
-    AND b.pro_id = r.original_pro_id
-    AND b.status = 'scheduled';
-$$;
-
 CREATE OR REPLACE FUNCTION public.notify_booking_reassignment()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -421,7 +404,7 @@ BEGIN
       NEW.original_pro_id, NEW.booking_id, 'booking_reassignment',
       'Cambio de profesional en revisión',
       'Klipp está gestionando un posible cambio de profesional para esta reserva. No avances el servicio mientras la solicitud esté pendiente.',
-      jsonb_build_object('bookingId', NEW.booking_id, 'target', 'pro', 'reassignmentId', NEW.id),
+      jsonb_build_object('bookingId', NEW.booking_id, 'target', 'pro', 'reassignmentId', NEW.id, 'reassignmentRole', 'original'),
       'booking-reassignment:' || NEW.id::text || ':original',
       'booking_updates'
     );
@@ -429,7 +412,7 @@ BEGIN
       NEW.replacement_pro_id, NEW.booking_id, 'booking_reassignment',
       'Solicitud de sustitución',
       'Klipp te invita a asumir una reserva confirmada. Revisa los detalles y acepta o rechaza desde Solicitudes.',
-      jsonb_build_object('bookingId', NEW.booking_id, 'target', 'pro', 'reassignmentId', NEW.id),
+      jsonb_build_object('bookingId', NEW.booking_id, 'target', 'pro', 'reassignmentId', NEW.id, 'reassignmentRole', 'replacement'),
       'booking-reassignment:' || NEW.id::text || ':replacement',
       'booking_updates'
     );
@@ -501,6 +484,60 @@ $$;
 CREATE TRIGGER booking_reassignment_notifications
 AFTER INSERT OR UPDATE OF status ON public.booking_reassignment_requests
 FOR EACH ROW EXECUTE FUNCTION public.notify_booking_reassignment();
+
+CREATE OR REPLACE FUNCTION public.admin_get_booking_timeline(p_booking_id uuid)
+RETURNS TABLE (
+  event_id bigint,
+  from_status text,
+  to_status text,
+  occurred_at timestamptz,
+  actor_name text
+)
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = ''
+AS $
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.has_admin_permission('bookings.read') THEN
+    RAISE EXCEPTION 'permission denied: bookings.read';
+  END IF;
+  IF p_booking_id IS NULL OR NOT EXISTS (
+    SELECT 1 FROM public.bookings WHERE id = p_booking_id
+  ) THEN
+    RAISE EXCEPTION 'booking not found';
+  END IF;
+
+  RETURN QUERY
+  SELECT event.id, event.from_status::text, event.to_status::text,
+    event.occurred_at, actor.full_name
+  FROM public.booking_status_events event
+  LEFT JOIN public.profiles actor ON actor.id = event.actor_id
+  WHERE event.booking_id = p_booking_id
+
+  UNION ALL
+
+  SELECT -audit.id, NULL::text,
+    CASE audit.action
+      WHEN 'booking.reassignment_requested' THEN 'Sustitución solicitada: ' || coalesce(audit.details->>'reason','sin motivo')
+      WHEN 'booking.reassignment_accepted' THEN 'Sustitución aceptada'
+      WHEN 'booking.reassignment_rejected' THEN 'Sustitución rechazada'
+      ELSE 'Sustitución cancelada o expirada'
+    END,
+    audit.created_at, actor.full_name
+  FROM public.admin_audit_log audit
+  LEFT JOIN public.profiles actor ON actor.id = audit.actor_id
+  WHERE audit.target_id = p_booking_id
+    AND audit.action IN (
+      'booking.reassignment_requested',
+      'booking.reassignment_accepted',
+      'booking.reassignment_rejected'
+    )
+  ORDER BY occurred_at ASC, event_id ASC;
+END;
+$;
+REVOKE ALL ON FUNCTION public.admin_get_booking_timeline(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_get_booking_timeline(uuid) TO authenticated;
 
 -- Prevent the currently assigned professional from advancing the booking while
 -- an unexpired replacement request is awaiting a decision.
