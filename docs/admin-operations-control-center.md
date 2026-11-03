@@ -30,7 +30,7 @@ Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
 4. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
 5. Migración 026 — RPCs del centro de operaciones.
 
-La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 025 de notificaciones no es una dependencia funcional de este panel.
+La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 025 es necesaria para la columna de ETA que consume el panel; además instala el worker que recalcula el ETA y gestiona las notificaciones de retraso.
 
 **Estado:** la migración 026 está guardada en GitHub, pero no se ha aplicado a Supabase. La Edge Function modificada tampoco se ha desplegado.
 
