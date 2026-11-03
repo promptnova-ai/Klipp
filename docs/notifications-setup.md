@@ -6,14 +6,17 @@ This change adds an in-app notification inbox, database-generated booking/chat n
 
 Apply migrations in order, including:
 
+- `015_equipment_policy_and_remove_massage.sql`
+- `018_realtime_professional_presence.sql`
 - `024_booking_status_event_history.sql`
 - `025_notifications_center_and_push_outbox.sql`
 - `029_simultaneous_auto_dispatch.sql`
 - `030_professional_variant_pricing_and_7_percent_commission.sql`
 - `031_uber_style_incoming_offer.sql`
 - `032_set_seven_percent_on_all_booking_creation_paths.sql`
+- `033_client_professional_acceptance_rate.sql`
 
-Do not apply them to production until the target Supabase project has been backed up and the migration order has been checked.
+The connected Supabase project has received these migrations in dependency order: 015, 018, 024, 025, 029, 030, 031, 032 and 033. Back up the project before applying them to any other environment.
 
 ## 2. Deploy the dispatcher
 
