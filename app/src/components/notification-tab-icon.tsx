@@ -24,7 +24,7 @@ export function NotificationTabIcon({ color }: { color: string }) {
   }, [session]);
 
   useEffect(() => {
-    void loadUnread();
+    void Promise.resolve().then(loadUnread);
   }, [loadUnread]);
 
   useEffect(() => {
