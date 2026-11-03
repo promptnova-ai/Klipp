@@ -24,7 +24,7 @@
 - Al aceptar, una transacción cambia el profesional asignado, actualiza el destinatario de un payout únicamente si sigue `pending`, limpia el GPS ligado a la reserva y restablece la confirmación de equipamiento. El profesional sustituto debe confirmar sus propias herramientas al iniciar el servicio.
 - Los pagos siguen vinculados a la misma reserva y no se reembolsan ni se vuelven a cobrar. Se bloquea el cambio si hay pagos `pending`, `released` o `refunded`, o si un payout ya no está `pending`.
 - El profesional actual, el sustituto y el cliente reciben notificaciones. El sustituto acepta o rechaza desde Klipp PRO > Solicitudes; el profesional actual ve el bloqueo en su agenda.
-- La petición, aceptación o rechazo quedan en `admin_audit_log` y aparecen en la cronología administrativa.
+- La petición, aceptación, rechazo y expiración quedan en `admin_audit_log` y aparecen en la cronología administrativa.
 
 ## Fuera de alcance
 No se reasignan reservas en camino, con llegada registrada o en curso, ni se alteran pagos o payouts ya procesados. Para esos casos hace falta una intervención financiera y operativa específica.
