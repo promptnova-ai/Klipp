@@ -193,7 +193,7 @@ BEGIN
   FROM public.bookings
   WHERE id = v_req.booking_id
     AND status = 'requested'
-    AND pro_id IS NULL
+    AND (pro_id IS NULL OR pro_id = v_req.pro_id)
   FOR UPDATE;
 
   IF NOT FOUND THEN RAISE EXCEPTION 'booking no longer available'; END IF;
@@ -242,7 +242,7 @@ BEGIN
       accepted_at = now()
   WHERE id = v_booking.id
     AND status = 'requested'
-    AND pro_id IS NULL;
+    AND (pro_id IS NULL OR pro_id = v_req.pro_id);
 
   IF NOT FOUND THEN RAISE EXCEPTION 'booking no longer available'; END IF;
 
