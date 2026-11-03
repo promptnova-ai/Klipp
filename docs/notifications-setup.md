@@ -34,34 +34,17 @@ supabase secrets set NOTIFICATION_CRON_SECRET="<random-secret>" GOOGLE_MAPS_SERV
 
 The function validates either the service-role bearer token or the dedicated `x-notification-cron-secret` header itself. It is deployed with JWT gateway verification disabled so scheduled calls can authenticate with that server-only header. Never put this secret in the mobile app or commit it to Git.
 
-## 3. Trigger urgent offers immediately
+## 3. Urgent offers, reminders and ETA monitoring
 
-A once-per-minute worker is too slow for the 45-second professional offer. In Supabase Dashboard → Database → Webhooks, create a webhook with these settings:
+Migrations `034_urgent_push_dispatch_webhook.sql` and `035_schedule_notification_and_eta_worker.sql` automatically configure both delivery paths:
 
-- Table: `public.push_delivery_queue`
-- Events: `INSERT`
-- Type: HTTP Request, method `POST`
-- URL: `https://<project-ref>.supabase.co/functions/v1/dispatch-notifications`
-- Headers: `Content-Type: application/json` and `x-notification-cron-secret: <same NOTIFICATION_CRON_SECRET>`
-- Body: send the inserted row payload (the dispatcher claims all pending queue rows; the body is not used).
+- An `AFTER INSERT` trigger on `public.push_delivery_queue` invokes `dispatch-notifications` immediately for urgent offers.
+- A `pg_cron` job named `klipp-dispatch-notifications` runs every minute for scheduled reminders and background ETA checks.
+- The credential is generated and stored in Vault by migration 034; the function validates it using a restricted server-only RPC.
 
-Keep the secret server-side. Do not put it in the app or a public environment variable. Test a new notification on a physical device with the app in background and closed, and confirm it arrives before the 45-second countdown expires.
+The cron job and trigger are installed in the connected Supabase project. Verify them in Database → Triggers and Integrations → Cron. Push delivery latency still needs physical-device testing; do not assume a closed-app push always arrives before the 45-second offer expiry.
 
-## 4. Schedule reminders and ETA monitoring
 
-Enable the `pg_cron`, `pg_net` and `vault` extensions in the Supabase project. In the SQL Editor, create two Vault secrets, replacing the placeholders with the project's URL and the same random secret configured above:
-
-```sql
-select vault.create_secret(
-  'https://<project-ref>.supabase.co',
-  'klipp_project_url'
-);
-
-select vault.create_secret(
-  '<same-random-secret>',
-  'klipp_notification_cron_secret'
-);
-```
 
 Then schedule the dispatcher once per minute:
 
