@@ -18,6 +18,41 @@ alter table public.bookings
     or (assignment_mode = 'auto' and status in ('requested','expired','cancelled'))
   );
 
+alter table public.booking_requests
+  add column if not exists offered_price_dop numeric(10,2),
+  add column if not exists offered_payout_dop numeric(10,2),
+  add column if not exists offered_est_minutes integer;
+
+create or replace function public.snapshot_request_professional_offer()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $
+declare
+  v_booking public.bookings%rowtype;
+  v_offer public.pro_services%rowtype;
+begin
+  select * into v_booking from public.bookings where id=new.booking_id;
+  if found and v_booking.assignment_mode='auto'
+    and v_booking.pricing_tier_id is null and v_booking.pro_service_id is null then
+    select * into v_offer from public.pro_services
+    where pro_id=new.pro_id and service_type_id=v_booking.service_type_id and active;
+    if not found then raise exception 'professional no longer offers this service'; end if;
+    new.offered_price_dop := v_offer.base_price_dop;
+    new.offered_est_minutes := v_offer.est_minutes;
+    new.offered_payout_dop := v_offer.base_price_dop
+      - round(v_offer.base_price_dop*v_booking.commission_pct/100,2);
+  end if;
+  return new;
+end;
+$;
+
+drop trigger if exists booking_requests_snapshot_professional_offer on public.booking_requests;
+create trigger booking_requests_snapshot_professional_offer
+before insert on public.booking_requests
+for each row execute function public.snapshot_request_professional_offer();
+
 -- Manual choice for professional-priced services. The exact price is already
 -- shown on the selected professional's card, so the customer has confirmed it
 -- by submitting the request.
@@ -243,11 +278,15 @@ begin
         or v_offer.base_price_dop > v_booking.price_max_dop then
         raise exception 'your current price is outside the range shown to the customer';
       end if;
-      v_commission := round(v_offer.base_price_dop*v_booking.commission_pct/100,2);
+      if v_req.offered_price_dop is null or v_req.offered_est_minutes is null
+        or v_offer.base_price_dop is distinct from v_req.offered_price_dop then
+        raise exception 'professional price changed; the customer must receive an updated offer';
+      end if;
+      v_commission := round(v_req.offered_price_dop*v_booking.commission_pct/100,2);
       update public.bookings set
         pro_id=auth.uid(),pro_service_id=v_offer.id,
-        est_minutes=v_offer.est_minutes,price_dop=v_offer.base_price_dop,
-        commission_dop=v_commission,pro_payout_dop=v_offer.base_price_dop-v_commission,
+        est_minutes=v_req.offered_est_minutes,price_dop=v_req.offered_price_dop,
+        commission_dop=v_commission,pro_payout_dop=v_req.offered_payout_dop,
         price_confirmed_at=null,status='awaiting_payment',accepted_at=now()
       where id=v_booking.id and status='requested'
         and (pro_id is null or pro_id=auth.uid());
