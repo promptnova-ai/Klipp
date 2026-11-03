@@ -79,6 +79,7 @@ export function NewBookingScreen() {
   const [serviceIds, setServiceIds] = useState<number[]>([]);
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [offers, setOffers] = useState<ServiceOffer[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
@@ -213,6 +214,7 @@ export function NewBookingScreen() {
       return;
     }
     let active = true;
+    setOffersLoading(true);
     void Promise.all(serviceIds.map((serviceId) => supabase.rpc('get_nearby_service_offers', {
       p_service_type_id: serviceId,
       p_latitude: coordinate.latitude,
@@ -223,6 +225,7 @@ export function NewBookingScreen() {
       if (failed?.error) {
         setError(failed.error.message);
         setOffers([]);
+        setOffersLoading(false);
         return;
       }
       const nearby = results.flatMap((result) => (result.data ?? []) as (ServiceOffer & {
@@ -231,9 +234,13 @@ export function NewBookingScreen() {
         distance_m: number;
       })[]);
       setOffers(nearby);
+      setOffersLoading(false);
       if (offerIdParam && nearby.some((offer) => offer.id === offerIdParam)) setSelectedOfferId(offerIdParam);
     }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
+      if (active) {
+        setError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
+        setOffersLoading(false);
+      }
     });
     return () => { active = false; };
   }, [coordinate, serviceIds, offerIdParam]);
@@ -243,9 +250,10 @@ export function NewBookingScreen() {
   const serviceOffers = offers.filter((offer) => offer.service_type_id === selectedServiceId);
   const servicePriceMin = serviceOffers.length ? Math.min(...serviceOffers.map((offer) => offer.base_price_dop)) : null;
   const servicePriceMax = serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.base_price_dop)) : null;
+  const serviceDurationMin = serviceOffers.length ? Math.min(...serviceOffers.map((offer) => offer.est_minutes)) : null;
+  const serviceDurationMax = serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.est_minutes)) : null;
   const hasVariableService = !selectedTier && !selectedOffer && selectedServiceId !== null && serviceOffers.length > 0;
-  const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes
-    ?? (serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.est_minutes)) : undefined);
+  const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes ?? serviceDurationMax ?? undefined;
   const selectedProOffer = selectedProId
     ? serviceOffers.find((offer) => offer.pro_id === selectedProId) ?? null
     : null;
@@ -561,15 +569,17 @@ export function NewBookingScreen() {
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Precio estimado">
-        {serviceOffers.length === 0
-          ? <Text style={styles.body}>Aún no hay profesionales con este servicio disponible en tu zona.</Text>
-          : <>
-              <Text style={styles.summaryTitle}>{servicePriceMin === servicePriceMax
-                ? formatDop(servicePriceMin!)
-                : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`}</Text>
-              <Text style={styles.body}>Estimación calculada con las tarifas que los profesionales han publicado para este servicio y cuya zona de cobertura incluye tu ubicación. No es un precio fijo: antes del pago verás y confirmarás el importe exacto del profesional que acepte.</Text>
-              <Text style={styles.body}>{serviceOffers.length} tarifas profesionales publicadas · duración estimada hasta {selectedDuration} min</Text>
-            </>}
+        {offersLoading
+          ? <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Calculando estimación con las tarifas profesionales...</Text></View>
+          : serviceOffers.length === 0
+            ? <Text style={styles.body}>Todavía no hay tarifas profesionales publicadas para este servicio en tu zona.</Text>
+            : <>
+                <Text style={styles.summaryTitle}>{servicePriceMin === servicePriceMax
+                  ? formatDop(servicePriceMin!)
+                  : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`}</Text>
+                <Text style={styles.body}>Estimación calculada con las tarifas que los profesionales han publicado para este servicio y cuya zona de cobertura incluye tu ubicación. No es un precio fijo: antes del pago verás y confirmarás el importe exacto del profesional que acepte.</Text>
+                <Text style={styles.body}>{serviceOffers.length} tarifas profesionales · duración publicada {serviceDurationMin === serviceDurationMax ? `${serviceDurationMax} min` : `entre ${serviceDurationMin} y ${serviceDurationMax} min`}</Text>
+              </>}
       </Section>}
       {!selectedOffer && (selectedTier || hasVariableService) && <Section title="3. ¿Cuándo necesitas el servicio?">
         <View style={styles.modeOptions}>
