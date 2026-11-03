@@ -98,3 +98,14 @@ Install that build on physical iOS and Android devices, sign in, open **Avisos**
 - ETA delays: the scheduled worker refreshes active-trip routes approximately every three minutes when the professional GPS is no older than two minutes. If the traffic-aware ETA increases by at least 10 minutes from the last notification baseline, the client receives one update. Improvements of 10 minutes reset the baseline without sending a push, preventing repeated alerts. Route refreshes incur Google Routes API usage; monitor the Google Cloud billing and quota.
 - User preferences: `booking_updates` and `chat_messages` can control in-app and push channels. Missing preferences default to enabled.
 - Every notification has a unique deduplication key. Push delivery is isolated in an outbox so a temporary push-provider outage does not lose the in-app notification.
+
+
+## 6. Incoming professional offers (Uber-style)
+
+When a professional receives a pending `booking_request`, the app displays a full-screen offer with a 45-second countdown. The screen includes the customer's display name, service and variant, service address and reference, scheduled time, estimated duration, and the professional's expected payout. The professional accepts by sliding the control to the end or declines using the separate reject action.
+
+The request details are returned by `pro_list_incoming_booking_requests()`. This is a security-definer RPC that only returns pending, unexpired requests belonging to the signed-in professional. Do not loosen the general `profiles` or `bookings` row-level security policies to expose client details globally.
+
+Android devices register a dedicated `klipp-requests` notification channel with maximum importance, sound and vibration. The app also presents notifications while in the foreground.
+
+**Important delivery timing:** the existing example dispatcher schedule above runs once per minute. That schedule is not fast enough to guarantee delivery of a push notification before a 45-second offer expires. Realtime updates display the offer promptly while the professional app is connected. For reliable background/closed-app alerts, configure an immediate Database Webhook (or another supported sub-minute trigger) on new `push_delivery_queue` rows to invoke `dispatch-notifications`, authenticated with the same server-only secret. Do not rely on the once-per-minute reminder schedule for urgent offers. Verify delivery latency on physical Android and iOS devices before launch.
