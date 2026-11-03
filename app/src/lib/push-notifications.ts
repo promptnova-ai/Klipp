@@ -8,20 +8,9 @@ import { supabase } from '../../lib/supabase';
 
 const REGISTERED_TOKEN_KEY = 'klipp.registered-expo-push-token';
 
-export async function registerPushDeviceAsync(userId: string) {
-  if (Platform.OS === 'web') return null;
-  if (!Device.isDevice) throw new Error('Las notificaciones push requieren un dispositivo físico.');
-
-  const projectId =
-    Constants.easConfig?.projectId ??
-    Constants.expoConfig?.extra?.eas?.projectId ??
-    process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
-  if (!projectId) {
-    throw new Error('Falta configurar el identificador EAS del proyecto para registrar las notificaciones push.');
-  }
-
-  if (Platform.OS === 'android') {
-    await Promise.all([
+export async function configureNotificationChannelsAsync() {
+  if (Platform.OS !== 'android') return;
+  await Promise.all([
       Notifications.setNotificationChannelAsync('klipp-updates', {
         name: 'Actualizaciones de Klipp',
         importance: Notifications.AndroidImportance.DEFAULT,
@@ -37,8 +26,22 @@ export async function registerPushDeviceAsync(userId: string) {
         sound: 'default',
         lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
       }),
-    ]);
+  ]);
+}
+
+export async function registerPushDeviceAsync(userId: string) {
+  if (Platform.OS === 'web') return null;
+  if (!Device.isDevice) throw new Error('Las notificaciones push requieren un dispositivo físico.');
+
+  const projectId =
+    Constants.easConfig?.projectId ??
+    Constants.expoConfig?.extra?.eas?.projectId ??
+    process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+  if (!projectId) {
+    throw new Error('Falta configurar el identificador EAS del proyecto para registrar las notificaciones push.');
   }
+
+  await configureNotificationChannelsAsync();
 
   let permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) permission = await Notifications.requestPermissionsAsync();
