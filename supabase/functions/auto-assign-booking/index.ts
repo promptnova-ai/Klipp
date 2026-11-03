@@ -2,7 +2,6 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const OFFER_TIMEOUT_MS = 45000;
 const POLL_INTERVAL_MS = 1500;
-const MAX_CANDIDATES = 5;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,11 +71,13 @@ Deno.serve(async (req) => {
     EdgeRuntime.waitUntil(
       runAssignment(admin, bookingId).catch(async (error: unknown) => {
         console.error("Automatic assignment failed", error);
+        // Keep the booking requested so the scheduled dispatcher can retry.
+        // Do not expire a customer's booking because one dispatch attempt failed.
         await admin
-          .from("bookings")
-          .update({ status: "expired" })
-          .eq("id", bookingId)
-          .eq("status", "requested");
+          .from("booking_requests")
+          .update({ status: "expired", responded_at: new Date().toISOString() })
+          .eq("booking_id", bookingId)
+          .eq("status", "pending");
       }),
     );
 
@@ -88,59 +89,40 @@ Deno.serve(async (req) => {
 });
 
 async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: string) {
-  const { data: candidates, error: candidatesError } = await admin.rpc(
-    "find_auto_candidates",
-    { p_booking_id: bookingId, p_limit: MAX_CANDIDATES },
-  );
-  if (candidatesError) throw candidatesError;
+  // This RPC takes a booking-scoped advisory lock and creates one 45-second
+  // request per eligible nearby professional. It is shared with the scheduled
+  // dispatcher, preventing two workers from creating competing dispatch rounds.
+  const { error: dispatchError } = await admin.rpc("dispatch_auto_booking", {
+    p_booking_id: bookingId,
+  });
+  if (dispatchError) throw dispatchError;
 
-  if (!candidates?.length) return;
-
-  for (const candidate of candidates) {
-    const { data: currentBooking, error: currentBookingError } = await admin
+  const deadline = Date.now() + OFFER_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const { data: currentBooking, error: bookingError } = await admin
       .from("bookings")
       .select("status, pro_id")
       .eq("id", bookingId)
       .maybeSingle();
-    if (currentBookingError) throw currentBookingError;
+    if (bookingError) throw bookingError;
     if (!currentBooking || currentBooking.status !== "requested" || currentBooking.pro_id) return;
 
-    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_MS).toISOString();
-    const { data: request, error: requestError } = await admin
+    const { data: requests, error: requestsError } = await admin
       .from("booking_requests")
-      .insert({ booking_id: bookingId, pro_id: candidate.pro_id, expires_at: expiresAt })
-      .select("id")
-      .single();
-    if (requestError) {
-      if (requestError.code === "23505") continue;
-      throw requestError;
-    }
+      .select("status")
+      .eq("booking_id", bookingId);
+    if (requestsError) throw requestsError;
 
-    const deadline = Date.now() + OFFER_TIMEOUT_MS;
-    let responseStatus = "pending";
-    while (Date.now() < deadline) {
-      const { data: latestRequest, error: latestRequestError } = await admin
-        .from("booking_requests")
-        .select("status")
-        .eq("id", request.id)
-        .maybeSingle();
-      if (latestRequestError) throw latestRequestError;
-      responseStatus = latestRequest?.status ?? "expired";
+    const hasPending = (requests ?? []).some((request) => request.status === "pending");
+    const hasAccepted = (requests ?? []).some((request) => request.status === "accepted");
+    if (hasAccepted || !hasPending) return;
 
-      if (responseStatus === "accepted") return;
-      if (responseStatus !== "pending") break;
-
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-    }
-
-    if (responseStatus === "pending") {
-      await admin
-        .from("booking_requests")
-        .update({ status: "expired", responded_at: new Date().toISOString() })
-        .eq("id", request.id)
-        .eq("status", "pending");
-    }
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  // Leave the booking requested; the scheduled dispatcher will retry with fresh presence data.
+  await admin
+    .from("booking_requests")
+    .update({ status: "expired", responded_at: new Date().toISOString() })
+    .eq("booking_id", bookingId)
+    .eq("status", "pending");
 }

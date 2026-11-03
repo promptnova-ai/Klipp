@@ -364,7 +364,7 @@ as $$
   picked as (
     select q.id
     from public.push_delivery_queue q
-    cross join (select count(*) from exhausted) cleanup
+    -- The cleanup CTE executes once before claiming new deliveries.
     where (
         (q.status = 'pending' and q.next_attempt_at <= now())
         or (q.status = 'processing' and q.claimed_at < now() - interval '10 minutes')
@@ -409,7 +409,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   v_booking public.bookings%rowtype;
 begin
@@ -453,7 +453,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.notify_klipp_payment_status() from public, anon, authenticated;
 
 drop trigger if exists payment_status_create_notification on public.payments;
@@ -468,7 +468,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   perform public.create_klipp_notification(
     new.pro_id, new.booking_id, 'review_received', 'Has recibido una valoración',
@@ -479,7 +479,7 @@ begin
   );
   return new;
 end;
-$;
+$$;
 revoke all on function public.notify_klipp_review_received() from public, anon, authenticated;
 
 drop trigger if exists review_create_notification on public.reviews;
@@ -492,7 +492,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 begin
   if new.status is distinct from old.status and new.status = 'resolved' then
     perform public.create_klipp_notification(
@@ -505,7 +505,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function public.notify_klipp_issue_resolved() from public, anon, authenticated;
 
 drop trigger if exists issue_resolved_create_notification on public.issues;

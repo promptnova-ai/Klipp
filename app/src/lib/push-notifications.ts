@@ -2,11 +2,33 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { AndroidImportance, AndroidNotificationVisibility } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { supabase } from '../../lib/supabase';
 
 const REGISTERED_TOKEN_KEY = 'klipp.registered-expo-push-token';
+
+export async function configureNotificationChannelsAsync() {
+  if (Platform.OS !== 'android') return;
+  await Promise.all([
+      Notifications.setNotificationChannelAsync('klipp-updates', {
+        name: 'Actualizaciones de Klipp',
+        importance: AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 150],
+        lightColor: '#208AEF',
+      }),
+      Notifications.setNotificationChannelAsync('klipp-requests', {
+        name: 'Solicitudes de servicios',
+        description: 'Alertas urgentes para aceptar o rechazar nuevos servicios.',
+        importance: AndroidImportance.MAX,
+        vibrationPattern: [0, 400, 180, 400, 180, 700],
+        lightColor: '#E45D42',
+        sound: 'default',
+        lockscreenVisibility: AndroidNotificationVisibility.PRIVATE,
+      }),
+  ]);
+}
 
 export async function registerPushDeviceAsync(userId: string) {
   if (Platform.OS === 'web') return null;
@@ -20,14 +42,7 @@ export async function registerPushDeviceAsync(userId: string) {
     throw new Error('Falta configurar el identificador EAS del proyecto para registrar las notificaciones push.');
   }
 
-  if (Platform.OS === 'android') {
-    await Notifications.setNotificationChannelAsync('klipp-updates', {
-      name: 'Actualizaciones de Klipp',
-      importance: Notifications.AndroidImportance.MAX,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#208AEF',
-    });
-  }
+  await configureNotificationChannelsAsync();
 
   let permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) permission = await Notifications.requestPermissionsAsync();

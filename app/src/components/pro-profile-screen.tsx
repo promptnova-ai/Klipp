@@ -9,11 +9,12 @@ import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
-import type { ProAvailability, ProProfile, ServiceType, VerificationStatus } from '@/lib/types';
+import type { ProAvailability, ProProfile, PricingTier, ServiceType, VerificationStatus } from '@/lib/types';
 
 type PortfolioPhoto = { id: string; pro_id: string; object_path: string; caption: string | null; sort_order: number; created_at: string };
 type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type ProfessionalService = {
+  id?: string;
   service_type_id: number;
   base_price_dop: number;
   est_minutes: number;
@@ -88,6 +89,9 @@ export function ProProfileScreen() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [servicePrices, setServicePrices] = useState<Record<number, string>>({});
   const [serviceDurations, setServiceDurations] = useState<Record<number, string>>({});
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [tierPrices, setTierPrices] = useState<Record<string, string>>({});
+  const [tierDurations, setTierDurations] = useState<Record<string, string>>({});
   const [weekday, setWeekday] = useState(1);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('12:00');
@@ -100,17 +104,18 @@ export function ProProfileScreen() {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    const [profileResult, availabilityResult, catalogResult, offeredResult, equipmentResult, portfolioResult] = await Promise.all([
+    const [profileResult, availabilityResult, catalogResult, offeredResult, equipmentResult, portfolioResult, tiersResult] = await Promise.all([
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
-      supabase.from('pro_services').select('service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
+      supabase.from('pro_services').select('id, service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
       supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
       supabase.from('pro_portfolio').select('id, pro_id, object_path, caption, sort_order, created_at').eq('pro_id', userId).order('sort_order').order('created_at', { ascending: false }),
+      supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('id'),
     ]);
-    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error || portfolioResult.error) {
+    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error || portfolioResult.error || tiersResult.error) {
       setError(
-        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? portfolioResult.error?.message ?? 'No pudimos cargar tu perfil.',
+        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? portfolioResult.error?.message ?? tiersResult.error?.message ?? 'No pudimos cargar tu perfil.',
       );
       setLoading(false);
       return;
@@ -145,6 +150,26 @@ export function ProProfileScreen() {
         })));
     const services = (catalogResult.data ?? []) as ServiceType[];
     const offered = (offeredResult.data ?? []) as ProfessionalService[];
+    const tiers = (tiersResult.data ?? []) as PricingTier[];
+    setPricingTiers(tiers);
+    const offeredIds = offered.map((item) => item.id).filter((id): id is string => Boolean(id));
+    if (offeredIds.length) {
+      const tierPriceResult = await supabase.from('pro_service_tier_prices')
+        .select('pro_service_id, pricing_tier_id, price_dop, est_minutes')
+        .in('pro_service_id', offeredIds);
+      if (tierPriceResult.error) {
+        setError(tierPriceResult.error.message);
+        setLoading(false);
+        return;
+      }
+      const serviceIdByOfferId = new Map(offered.map((item) => [item.id, item.service_type_id]));
+      const savedTierPrices = (tierPriceResult.data ?? []) as { pro_service_id: string; pricing_tier_id: number; price_dop: number; est_minutes: number }[];
+      setTierPrices(Object.fromEntries(savedTierPrices.map((item) => [`${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`, String(item.price_dop)])));
+      setTierDurations(Object.fromEntries(savedTierPrices.map((item) => [`${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`, String(item.est_minutes)])));
+    } else {
+      setTierPrices({});
+      setTierDurations({});
+    }
     const configuredServices = offered.length ? offered : registrationDraft?.services ?? [];
     setCatalog(services);
     const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
@@ -301,6 +326,17 @@ export function ProProfileScreen() {
       return;
     }
 
+    const invalidTierPrice = selectedServices.some((serviceId) => pricingTiers.filter((tier) => tier.service_type_id === serviceId).some((tier) => {
+      const key = `${serviceId}:${tier.id}`;
+      const price = Number(tierPrices[key]);
+      const duration = Number(tierDurations[key]);
+      return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
+    }));
+    if (invalidTierPrice) {
+      setError('Configura un precio y una duración válidos para cada variante del servicio.');
+      return;
+    }
+
     const invalidService = selectedServices.find((serviceId) => {
       const price = Number(servicePrices[serviceId]);
       const duration = Number(serviceDurations[serviceId]);
@@ -385,6 +421,40 @@ export function ProProfileScreen() {
           setError(`El perfil se guardó, pero no se pudieron guardar tus servicios: ${serviceError.message}`);
           setSaving(false);
           return;
+        }
+        const savedOffersResult = await supabase.from('pro_services').select('id, service_type_id').eq('pro_id', userId).eq('active', true);
+        if (savedOffersResult.error) {
+          setError(`Servicios guardados, pero no pudimos preparar sus variantes: ${savedOffersResult.error.message}`);
+          setSaving(false);
+          return;
+        }
+        const offerIdByServiceId = new Map(((savedOffersResult.data ?? []) as { id: string; service_type_id: number }[]).map((item) => [item.service_type_id, item.id]));
+        const tierPriceRows = selectedServices.flatMap((serviceId) => {
+          const proServiceId = offerIdByServiceId.get(serviceId);
+          if (!proServiceId) return [];
+          return pricingTiers
+            .filter((tier) => tier.service_type_id === serviceId)
+            .map((tier) => {
+              const key = `${serviceId}:${tier.id}`;
+              return {
+                pro_service_id: proServiceId,
+                pricing_tier_id: tier.id,
+                price_dop: Number(tierPrices[key]),
+                est_minutes: Number(tierDurations[key]),
+                active: true,
+              };
+            });
+        });
+        if (tierPriceRows.length) {
+          const { error: tierPriceError } = await supabase.from('pro_service_tier_prices').upsert(
+            tierPriceRows,
+            { onConflict: 'pro_service_id,pricing_tier_id' },
+          );
+          if (tierPriceError) {
+            setError(`Servicios guardados, pero no se pudieron guardar los precios por variante: ${tierPriceError.message}`);
+            setSaving(false);
+            return;
+          }
         }
       }
       const draftAvailability = availability.filter((slot) => slot.id < 0);
@@ -597,7 +667,7 @@ export function ProProfileScreen() {
       </Section>
 
       <Section title="Servicios y tarifas">
-        <Text style={styles.body}>Elige las especialidades que ofreces y define tu precio base en pesos dominicanos.</Text>
+        <Text style={styles.body}>Elige las especialidades y publica tus tarifas en pesos dominicanos. Klipp retiene una comisión del 7% del precio del servicio; recibirás el 93% restante antes de posibles impuestos o costes de pago.</Text>
         {catalog.map((service) => {
           const selected = selectedServices.includes(service.id);
           const requirements = equipmentByService[service.id] ?? [];
@@ -641,6 +711,26 @@ export function ProProfileScreen() {
                       value={serviceDurations[service.id] ?? ''}
                     />
                   </View>
+                </View>
+              )}
+              {selected && pricingTiers.some((tier) => tier.service_type_id === service.id) && (
+                <View style={styles.serviceRequirements}>
+                  <Text style={styles.requirementsTitle}>Precios por variante (RD$):</Text>
+                  {pricingTiers.filter((tier) => tier.service_type_id === service.id).map((tier) => {
+                    const key = `${service.id}:${tier.id}`;
+                    return (
+                      <View key={tier.id} style={styles.serviceFields}>
+                        <View style={styles.priceField}>
+                          <Text style={styles.label}>{tier.label}</Text>
+                          <TextInput keyboardType="decimal-pad" onChangeText={(value) => setTierPrices((current) => ({ ...current, [key]: value }))} placeholder="Precio RD$" style={styles.input} value={tierPrices[key] ?? ''} />
+                        </View>
+                        <View style={styles.durationField}>
+                          <Text style={styles.label}>Minutos</Text>
+                          <TextInput keyboardType="number-pad" onChangeText={(value) => setTierDurations((current) => ({ ...current, [key]: value }))} placeholder="60" style={styles.input} value={tierDurations[key] ?? ''} />
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
