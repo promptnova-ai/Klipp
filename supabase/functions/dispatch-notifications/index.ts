@@ -246,7 +246,7 @@ Deno.serve(async (req) => {
         body: notification.body,
         data: { ...(notification.data ?? {}), notificationId: notification.id },
         priority: "high",
-        channelId: "klipp-updates",
+        channelId: notification.type === "booking_request" ? "klipp-requests" : "klipp-updates",
       }));
 
       try {
