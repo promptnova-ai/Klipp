@@ -413,7 +413,7 @@ export function AdminScreen() {
       {visibleSections.length === 0 && <Text style={styles.empty}>Tu cuenta no tiene permisos para acceder a las secciones de administración.</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
-      {activeSection === 'operations' && (\n        <View style={styles.section}>\n          <AdminOperationsPanel />\n        </View>\n      )}\n\n      {activeSection === 'staff' && isSuperAdmin && (
+      {activeSection === 'operations' && (\n        <View style={styles.section}>\n          <AdminOperationsPanel canManage={isSuperAdmin || permissions.includes('bookings.manage')} />\n        </View>\n      )}\n\n      {activeSection === 'staff' && isSuperAdmin && (
         <View style={styles.section}>
           <View style={styles.heroCard}>
             <Text style={styles.eyebrow}>ÁREA EXCLUSIVA DEL PROPIETARIO</Text>
