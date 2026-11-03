@@ -284,7 +284,7 @@ export function NewBookingScreen() {
   }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
 
   useEffect(() => {
-    if (mode !== 'manual' || !selectedProId || !selectedServiceId || !selectedTier || selectedOffer) {
+    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
       setManualProPrice(null);
       setManualPriceLoading(false);
       return;
@@ -302,6 +302,12 @@ export function NewBookingScreen() {
         if (serviceError || !proService) {
           setManualProPrice(null);
           setError(serviceError?.message ?? 'Este profesional no tiene una tarifa activa para el servicio.');
+          setManualPriceLoading(false);
+          return;
+        }
+        if (!selectedTier) {
+          setManualProPrice(Number(proService.base_price_dop));
+          setError(null);
           setManualPriceLoading(false);
           return;
         }
@@ -509,34 +515,66 @@ export function NewBookingScreen() {
     setSaving(true);
     setError(null);
     setSuccess(null);
-    const { data: bookingId, error: rpcError } = selectedOffer
-      ? await supabase.rpc('create_booking_at_location', {
-          p_pro_service_id: selectedOffer.id,
-          p_lat: coordinate.latitude,
-          p_lng: coordinate.longitude,
-          p_address_text: addressText,
-          p_landmark_notes: landmarkNotes,
-          p_scheduled_start: scheduledStart,
-        })
-      : selectedTier
-        ? await supabase.rpc('create_tier_booking_at_location', {
-          p_pricing_tier_id: selectedTier.id,
-          p_lat: coordinate.latitude,
-          p_lng: coordinate.longitude,
-          p_address_text: addressText,
-          p_landmark_notes: landmarkNotes,
-          p_scheduled_start: scheduledStart,
-          p_mode: mode,
-          p_pro_id: mode === 'manual' ? selectedProId : null,
-        })
-        : await supabase.rpc('create_auto_service_booking_at_location', {
-          p_service_type_id: selectedServiceId!,
-          p_lat: coordinate.latitude,
-          p_lng: coordinate.longitude,
-          p_address_text: addressText,
-          p_landmark_notes: landmarkNotes,
-          p_scheduled_start: scheduledStart,
-        });
+    let bookingId: unknown = null;
+    let rpcError: { message: string } | null = null;
+    if (selectedOffer) {
+      const result = await supabase.rpc('create_booking_at_location', {
+        p_pro_service_id: selectedOffer.id,
+        p_lat: coordinate.latitude,
+        p_lng: coordinate.longitude,
+        p_address_text: addressText,
+        p_landmark_notes: landmarkNotes,
+        p_scheduled_start: scheduledStart,
+      });
+      bookingId = result.data;
+      rpcError = result.error;
+    } else if (selectedTier) {
+      const result = await supabase.rpc('create_tier_booking_at_location', {
+        p_pricing_tier_id: selectedTier.id,
+        p_lat: coordinate.latitude,
+        p_lng: coordinate.longitude,
+        p_address_text: addressText,
+        p_landmark_notes: landmarkNotes,
+        p_scheduled_start: scheduledStart,
+        p_mode: mode,
+        p_pro_id: mode === 'manual' ? selectedProId : null,
+      });
+      bookingId = result.data;
+      rpcError = result.error;
+    } else if (mode === 'auto') {
+      const result = await supabase.rpc('create_auto_service_booking_at_location', {
+        p_service_type_id: selectedServiceId!,
+        p_lat: coordinate.latitude,
+        p_lng: coordinate.longitude,
+        p_address_text: addressText,
+        p_landmark_notes: landmarkNotes,
+        p_scheduled_start: scheduledStart,
+      });
+      bookingId = result.data;
+      rpcError = result.error;
+    } else {
+      const { data: proService, error: serviceLookupError } = await supabase.from('pro_services')
+        .select('id')
+        .eq('pro_id', selectedProId!)
+        .eq('service_type_id', selectedServiceId!)
+        .eq('active', true)
+        .maybeSingle();
+      if (serviceLookupError || !proService) {
+        setError(serviceLookupError?.message ?? 'El profesional no tiene publicado este servicio.');
+        setSaving(false);
+        return;
+      }
+      const result = await supabase.rpc('create_booking_at_location', {
+        p_pro_service_id: proService.id,
+        p_lat: coordinate.latitude,
+        p_lng: coordinate.longitude,
+        p_address_text: addressText,
+        p_landmark_notes: landmarkNotes,
+        p_scheduled_start: scheduledStart,
+      });
+      bookingId = result.data;
+      rpcError = result.error;
+    }
     if (rpcError) setError(rpcError.message);
     else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
     else {
