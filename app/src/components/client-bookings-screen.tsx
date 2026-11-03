@@ -197,6 +197,35 @@ export function ClientBookingsScreen() {
     setRefreshing(false);
   }
 
+  async function retryAutoAssignment(bookingId: string) {
+    setBusyId(bookingId);
+    setError(null);
+    setNotice(null);
+    const { data, error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', {
+      body: { bookingId },
+    });
+    if (assignmentError) setError(assignmentError.message);
+    else {
+      setNotice(data?.status === 'on_hold'
+        ? 'Tu reserva está guardada. Klipp buscará profesionales cuando se acerque la hora.'
+        : 'Hemos reactivado la búsqueda de profesionales cercanos.');
+      await loadBookings();
+    }
+    setBusyId(null);
+  }
+
+  async function declineBookingPrice(bookingId: string) {
+    setBusyId(bookingId);
+    setError(null);
+    const { error: declineError } = await supabase.rpc('decline_booking_price', { p_booking_id: bookingId });
+    if (declineError) setError(declineError.message);
+    else {
+      setNotice('Has rechazado el precio y la reserva se ha cancelado. No se realizará ningún cobro.');
+      await loadBookings();
+    }
+    setBusyId(null);
+  }
+
   async function confirmBookingPrice(bookingId: string) {
     setBusyId(bookingId);
     setError(null);
@@ -338,6 +367,9 @@ export function ClientBookingsScreen() {
               <Text style={styles.body}>{formatBusinessDate(booking.scheduled_start)}</Text>
             </View>
             {searching && <Text style={styles.body}>{immediateSearch ? 'Estamos buscando un profesional conectado y disponible. Recibirás la actualización aquí en Klipp.' : 'Klipp buscará un profesional conectado y disponible cuando se acerque la hora del servicio.'}</Text>}
+            {searching && immediateSearch && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void retryAutoAssignment(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
+              <Text style={styles.buttonText}>{busyId === booking.id ? 'Buscando...' : 'Volver a buscar profesionales'}</Text>
+            </Pressable>}
             <View style={styles.detailRow}>
               <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.muted} size={17} />
               <Text style={styles.body}>{booking.address_text || booking.addresses?.label || booking.addresses?.street || 'Dirección no disponible'}</Text>
@@ -422,6 +454,9 @@ export function ClientBookingsScreen() {
                 <Text style={styles.body}>El profesional elegido ha confirmado este importe. No se realizará ningún cobro hasta que aceptes el precio.</Text>
                 <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void confirmBookingPrice(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
                   <Text style={styles.buttonText}>{busyId === booking.id ? 'Confirmando...' : `Confirmar ${formatDop(booking.price_dop)}`}</Text>
+                </Pressable>
+                <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void declineBookingPrice(booking.id)} style={[styles.secondaryButton, busyId === booking.id && styles.disabled]}>
+                  <Text style={styles.secondaryButtonText}>No aceptar este precio y cancelar</Text>
                 </Pressable>
               </View>
             )}
@@ -512,6 +547,8 @@ const styles = StyleSheet.create({
   paymentTitle: { color: '#8A5B00', fontSize: 14, fontWeight: '700' },
   button: { minHeight: 48, marginTop: 2, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  secondaryButton: { minHeight: 44, marginTop: 2, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  secondaryButtonText: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   disabled: { opacity: 0.55 },
   reviewForm: { marginTop: 3, paddingTop: 15, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 10 },
   reviewTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
