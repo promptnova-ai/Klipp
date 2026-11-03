@@ -42,8 +42,12 @@ begin
   select * into v_booking from public.bookings where id=new.booking_id;
   if found and v_booking.assignment_mode='auto'
     and v_booking.pricing_tier_id is null and v_booking.pro_service_id is null then
-    select * into v_offer from public.pro_services
-    where pro_id=new.pro_id and service_type_id=v_booking.service_type_id and active;
+    select ps.* into v_offer
+    from public.pro_services ps
+    join public.pro_profiles pp on pp.user_id=ps.pro_id
+    where ps.pro_id=new.pro_id and ps.service_type_id=v_booking.service_type_id
+      and ps.active and pp.active and pp.verification_status='approved'
+      and pp.accepts_auto_assign and pp.equipment_policy_accepted_at is not null;
     if not found then raise exception 'professional no longer offers this service'; end if;
     new.offered_price_dop := v_offer.base_price_dop;
     new.offered_est_minutes := v_offer.est_minutes;
@@ -185,7 +189,8 @@ create or replace function public.create_auto_service_booking(
   p_lng double precision,
   p_address_text text,
   p_landmark_notes text,
-  p_scheduled_start timestamptz
+  p_scheduled_start timestamptz,
+  p_immediate boolean default false
 ) returns uuid
 language plpgsql
 security definer
@@ -207,6 +212,9 @@ begin
     raise exception 'invalid service or client location';
   end if;
   if p_scheduled_start is null or p_scheduled_start <= now() then raise exception 'start must be in the future'; end if;
+  if p_immediate and p_scheduled_start > now() + interval '30 minutes' then
+    raise exception 'immediate booking must start within 30 minutes';
+  end if;
   if not exists(select 1 from public.service_types where id=p_service_type_id and active) then
     raise exception 'service is inactive';
   end if;
@@ -219,7 +227,6 @@ begin
   join public.service_types st on st.id=ps.service_type_id
   where ps.service_type_id=p_service_type_id and ps.active and st.active
     and pp.active and pp.verification_status='approved'
-    and pp.accepts_auto_assign
     and pp.equipment_policy_accepted_at is not null
     and pp.service_area_latitude is not null
     and extensions.st_dwithin(
@@ -286,9 +293,8 @@ begin
         or v_offer.base_price_dop > v_booking.price_max_dop then
         raise exception 'your current price is outside the range shown to the customer';
       end if;
-      if v_req.offered_price_dop is null or v_req.offered_est_minutes is null
-        or v_offer.base_price_dop is distinct from v_req.offered_price_dop then
-        raise exception 'professional price changed; the customer must receive an updated offer';
+      if v_req.offered_price_dop is null or v_req.offered_est_minutes is null then
+        raise exception 'the professional price was not snapshotted when the offer was sent';
       end if;
       v_commission := round(v_req.offered_price_dop*v_booking.commission_pct/100,2);
       update public.bookings set
@@ -344,6 +350,30 @@ begin
 end;
 $$;
 
+create or replace function public.decline_booking_price(p_booking_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $
+begin
+  update public.bookings
+  set status='cancelled',
+      cancelled_at=now(),
+      cancelled_by=auth.uid(),
+      cancel_reason='client_declined_professional_price'
+  where id=p_booking_id
+    and client_id=auth.uid()
+    and status='awaiting_payment'
+    and pro_service_id is not null
+    and price_confirmed_at is null;
+  if not found then raise exception 'booking price cannot be declined in its current state'; end if;
+end;
+$;
+
+revoke all on function public.decline_booking_price(uuid) from public,anon;
+grant execute on function public.decline_booking_price(uuid) to authenticated;
+
 create or replace function public.guard_payment_price_confirmation()
 returns trigger
 language plpgsql
@@ -374,8 +404,8 @@ for each row execute function public.guard_payment_price_confirmation();
 
 revoke all on function public.create_service_booking_for_professional(integer,uuid,double precision,double precision,text,text,timestamptz,boolean) from public,anon;
 grant execute on function public.create_service_booking_for_professional(integer,uuid,double precision,double precision,text,text,timestamptz,boolean) to authenticated;
-revoke all on function public.create_auto_service_booking(integer,double precision,double precision,text,text,timestamptz) from public,anon;
-grant execute on function public.create_auto_service_booking(integer,double precision,double precision,text,text,timestamptz) to authenticated;
+revoke all on function public.create_auto_service_booking(integer,double precision,double precision,text,text,timestamptz,boolean) from public,anon;
+grant execute on function public.create_auto_service_booking(integer,double precision,double precision,text,text,timestamptz,boolean) to authenticated;
 revoke all on function public.respond_to_request(uuid,boolean) from public,anon;
 grant execute on function public.respond_to_request(uuid,boolean) to authenticated;
 revoke all on function public.confirm_booking_price(uuid) from public,anon;
