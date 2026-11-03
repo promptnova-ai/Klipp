@@ -8,7 +8,10 @@
 - Consulta de cliente, profesional, servicio, dirección, precio, hora programada y número de eventos.
 - Última ubicación GPS del profesional, antigüedad de la señal y enlace para abrir las coordenadas en Google Maps.
 - Historial cronológico de estados y actor cuando está disponible.
-- Actualización del listado cada 30 segundos y actualización manual.
+- Actualización del listado cada 15 segundos y actualización manual.
+- Mapa multiprofesional para órdenes en camino, con marcadores seleccionables y señal visual para GPS desactualizado.
+- Visualización del último ETA calculado por el worker de notificaciones, con fecha de actualización.
+- Alertas de GPS sin señal o sin actualización durante más de 2 minutos.
 - Cálculo manual de ETA por carretera con tráfico mediante la Edge Function `booking-route-eta`, solo para reservas `en_route`.
 
 ## Permisos y seguridad
@@ -24,7 +27,8 @@ Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
 1. Migración 013 — identidad del superadministrador y RBAC.
 2. Migración 014 — enforcement de permisos y gestión de personal.
 3. Migración 024 — historial inmutable de estados.
-4. Migración 026 — RPCs del centro de operaciones.
+4. Migración 025 — tabla de seguimiento de ETA y notificaciones (requerida para mostrar el último ETA calculado).
+5. Migración 026 — RPCs del centro de operaciones.
 
 La migración 026 también requiere el esquema base de reservas, perfiles, servicios, direcciones y ubicaciones GPS. La migración 025 de notificaciones no es una dependencia funcional de este panel.
 
@@ -60,7 +64,7 @@ Estos umbrales son señales operativas para priorizar una revisión humana; no c
 - Validar build web y development build iOS/Android.
 
 ## Limitaciones conocidas de esta entrega
-- La vista de ubicación muestra la última coordenada registrada y permite abrirla en Google Maps; no es todavía un mapa multiprofesional embebido.
-- El ETA se calcula bajo demanda para una reserva seleccionada; no se recalcula automáticamente para todas las órdenes.
+- El mapa muestra profesionales en camino con ubicación registrada; las reservas en otros estados no mantienen ubicación GPS porque el sistema la limpia al terminar el trayecto.
+- El worker `dispatch-notifications` ya recalcula ETA en segundo plano aproximadamente cada 3 minutos cuando la ubicación tiene menos de 2 minutos y Google Routes está configurado. El panel muestra ese último dato; el cálculo manual sigue disponible para una consulta puntual.
 - Las alertas se calculan en el cliente a partir de marcas temporales y umbrales fijos; no ejecutan acciones automáticas.
 - El panel muestra como máximo 150 reservas operativas por consulta.
