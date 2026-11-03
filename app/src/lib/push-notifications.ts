@@ -35,7 +35,7 @@ export async function registerPushDeviceAsync(userId: string) {
         vibrationPattern: [0, 400, 180, 400, 180, 700],
         lightColor: '#E45D42',
         sound: 'default',
-        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+        lockscreenVisibility: Notifications.AndroidNotificationVisibility.PRIVATE,
       }),
     ]);
   }
