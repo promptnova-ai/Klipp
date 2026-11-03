@@ -300,7 +300,11 @@ begin
         and (pro_id is null or pro_id=auth.uid());
     else
       update public.bookings set
-        pro_id=auth.uid(),status='awaiting_payment',accepted_at=now()
+        pro_id=auth.uid(),status='awaiting_payment',accepted_at=now(),
+        price_confirmed_at=case
+          when pro_service_id is not null then coalesce(price_confirmed_at,now())
+          else price_confirmed_at
+        end
       where id=v_booking.id and status='requested'
         and (pro_id is null or pro_id=auth.uid());
     end if;
