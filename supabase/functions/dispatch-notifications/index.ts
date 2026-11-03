@@ -23,15 +23,22 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const cronSecret = Deno.env.get("NOTIFICATION_CRON_SECRET");
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: "Server configuration error" }, 500);
 
-  const bearer = req.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const bearer = req.headers.get("Authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
   const isServiceRole = bearer === serviceRoleKey;
-  const isScheduledCall = Boolean(cronSecret) && req.headers.get("x-notification-cron-secret") === cronSecret;
+  const admin = createClient(supabaseUrl, serviceRoleKey);
+  const suppliedCronSecret = req.headers.get("x-notification-cron-secret");
+  let isScheduledCall = false;
+  if (suppliedCronSecret) {
+    const { data: secretValid, error: secretValidationError } = await admin.rpc(
+      "verify_notification_cron_secret",
+      { p_secret: suppliedCronSecret },
+    );
+    isScheduledCall = !secretValidationError && secretValid === true;
+  }
   if (!isServiceRole && !isScheduledCall) return jsonResponse({ error: "Not authorized" }, 401);
 
-  const admin = createClient(supabaseUrl, serviceRoleKey);
   const summary = { remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
 
   try {
