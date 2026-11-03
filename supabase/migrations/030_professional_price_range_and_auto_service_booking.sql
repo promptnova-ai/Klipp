@@ -74,12 +74,13 @@ create or replace function public.create_service_booking_for_professional(
   p_address_text text,
   p_landmark_notes text,
   p_scheduled_start timestamptz,
+  p_expected_price_dop numeric,
   p_immediate boolean default false
 ) returns uuid
 language plpgsql
 security definer
 set search_path = public, extensions
-as $$
+as $
 declare
   v_offer public.pro_services%rowtype;
   v_booking_id uuid;
@@ -111,6 +112,9 @@ begin
     and pp.equipment_policy_accepted_at is not null
   for update of ps;
   if not found then raise exception 'professional service offer is unavailable'; end if;
+  if p_expected_price_dop is null or v_offer.base_price_dop is distinct from p_expected_price_dop then
+    raise exception 'the professional tariff changed; refresh the list and confirm the updated price';
+  end if;
 
   perform pg_advisory_xact_lock(hashtext('klipp_booking_pro'), hashtext(p_pro_id::text));
   v_client_point := extensions.st_setsrid(extensions.st_makepoint(p_lng,p_lat),4326)::extensions.geography;
@@ -289,12 +293,12 @@ begin
       where pro_id=auth.uid() and service_type_id=v_booking.service_type_id and active
       for update;
       if not found then raise exception 'your service offer is no longer available'; end if;
-      if v_offer.base_price_dop < v_booking.price_min_dop
-        or v_offer.base_price_dop > v_booking.price_max_dop then
-        raise exception 'your current price is outside the range shown to the customer';
-      end if;
       if v_req.offered_price_dop is null or v_req.offered_est_minutes is null then
         raise exception 'the professional price was not snapshotted when the offer was sent';
+      end if;
+      if v_req.offered_price_dop < v_booking.price_min_dop
+        or v_req.offered_price_dop > v_booking.price_max_dop then
+        raise exception 'the quoted price is outside the estimate shown to the customer';
       end if;
       v_commission := round(v_req.offered_price_dop*v_booking.commission_pct/100,2);
       update public.bookings set
@@ -330,6 +334,141 @@ begin
   end if;
 end;
 $$;
+
+
+-- Keep automatic offers aligned with the range shown to the client. The
+-- candidate's current tariff must remain inside the estimate stored at booking time.
+create or replace function public.find_auto_candidates(p_booking_id uuid, p_limit integer default 5)
+returns table(pro_id uuid, distance_m double precision, rating_avg numeric)
+language sql stable security definer set search_path = public, extensions as $
+  with b as (
+    select bk.id, bk.scheduled_start, bk.est_minutes, bk.service_type_id,
+      bk.pricing_tier_id, bk.price_min_dop, bk.price_max_dop,
+      extensions.st_setsrid(extensions.st_makepoint(bk.client_lng,bk.client_lat),4326)::extensions.geography point
+    from public.bookings bk
+    where bk.id=p_booking_id and bk.assignment_mode='auto'
+      and bk.status='requested' and bk.pro_id is null
+      and bk.client_lat is not null and bk.client_lng is not null
+  )
+  select pp.user_id,
+    extensions.st_distance(
+      extensions.st_setsrid(extensions.st_makepoint(pr.longitude,pr.latitude),4326)::extensions.geography,
+      b.point
+    ),
+    pp.rating_avg
+  from b
+  join public.pro_profiles pp on pp.active
+  join public.pro_presence pr on pr.pro_id=pp.user_id
+  join public.service_types st on st.id=b.service_type_id and st.active
+  where pp.verification_status='approved'
+    and pp.accepts_auto_assign
+    and pp.equipment_policy_accepted_at is not null
+    and pp.service_area_latitude is not null
+    and pr.is_online and pr.last_seen_at>=now()-interval '90 seconds'
+    and exists (
+      select 1 from public.pro_services ps
+      where ps.pro_id=pp.user_id and ps.service_type_id=b.service_type_id and ps.active
+        and (b.pricing_tier_id is not null
+          or (ps.base_price_dop>=b.price_min_dop and ps.base_price_dop<=b.price_max_dop))
+    )
+    and extensions.st_dwithin(
+      extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude,pp.service_area_latitude),4326)::extensions.geography,
+      b.point,pp.service_area_radius_m)
+    and exists (
+      select 1 from public.pro_availability av
+      where av.pro_id=pp.user_id
+        and av.weekday=extract(isodow from (b.scheduled_start at time zone 'America/Santo_Domingo'))::smallint
+        and av.start_time<=(b.scheduled_start at time zone 'America/Santo_Domingo')::time
+        and av.end_time>=((b.scheduled_start+make_interval(mins=>b.est_minutes)) at time zone 'America/Santo_Domingo')::time)
+    and not exists (
+      select 1 from public.bookings ob
+      where ob.pro_id=pp.user_id
+        and ob.status in ('awaiting_payment','scheduled','en_route','arrived','in_progress')
+        and tstzrange(ob.scheduled_start-interval '60 minutes',
+          ob.scheduled_start+make_interval(mins=>ob.est_minutes)+interval '60 minutes','[)')
+          && tstzrange(b.scheduled_start,b.scheduled_start+make_interval(mins=>b.est_minutes),'[)'))
+    and not exists (
+      select 1 from public.booking_requests old
+      where old.booking_id=b.id and old.pro_id=pp.user_id)
+    and not exists (
+      select 1 from public.booking_requests pending
+      join public.bookings ob on ob.id=pending.booking_id
+      where pending.pro_id=pp.user_id and pending.status='pending'
+        and pending.expires_at>now() and ob.id<>b.id)
+  order by 2,pp.rating_avg desc,pp.jobs_completed desc
+  limit greatest(1,least(coalesce(p_limit,5),20));
+$;
+
+revoke all on function public.find_auto_candidates(uuid,integer) from public,anon,authenticated;
+grant execute on function public.find_auto_candidates(uuid,integer) to service_role;
+
+-- The cron dispatcher advances to the next professional after each 45-second
+-- request expires and informs the client only when no eligible candidate remains.
+create or replace function public.process_scheduled_booking_dispatch()
+returns integer
+language plpgsql
+security definer
+set search_path = public, extensions
+as $
+declare
+  b record;
+  candidate_pro_id uuid;
+  lead_minutes integer;
+  dispatched integer := 0;
+begin
+  update public.booking_requests
+  set status='expired',responded_at=coalesce(responded_at,now())
+  where status='pending' and expires_at<=now();
+
+  for b in
+    select bk.id,bk.client_id,bk.scheduled_start,near.distance_m
+    from public.bookings bk
+    left join lateral (
+      select c.distance_m from public.find_auto_candidates(bk.id,1) c limit 1
+    ) near on true
+    where bk.assignment_mode='auto' and bk.status='requested' and bk.pro_id is null
+      and not exists (
+        select 1 from public.booking_requests r
+        where r.booking_id=bk.id and r.status='pending' and r.expires_at>now())
+    order by bk.scheduled_start
+    limit 100
+  loop
+    lead_minutes := case when b.distance_m is null then 60
+      else greatest(15,ceil(b.distance_m/350.0)::integer+12) end;
+
+    if b.scheduled_start<=now()+make_interval(mins=>lead_minutes) then
+      candidate_pro_id := null;
+      select c.pro_id into candidate_pro_id
+      from public.find_auto_candidates(b.id,1) c limit 1;
+
+      if candidate_pro_id is not null then
+        insert into public.booking_requests(booking_id,pro_id,expires_at)
+        values(b.id,candidate_pro_id,now()+interval '45 seconds')
+        on conflict (booking_id,pro_id) do nothing;
+        if found then dispatched := dispatched+1; end if;
+      else
+        if b.scheduled_start<=now()+interval '15 minutes' then
+          perform public.create_klipp_notification(
+            b.client_id,b.id,'booking_search_unavailable',
+            'Aún estamos buscando un profesional',
+            'Los profesionales disponibles no han podido aceptar todavía. Klipp seguirá buscando; también puedes volver a intentarlo o elegir uno manualmente.',
+            jsonb_build_object('bookingId',b.id,'target','client','action','retry_or_choose_professional'),
+            'booking-search-unavailable:'||b.id::text,'booking_updates'
+          );
+        end if;
+        if b.scheduled_start<=now()-interval '10 minutes' then
+          update public.bookings set status='expired'
+          where id=b.id and status='requested' and pro_id is null;
+        end if;
+      end if;
+    end if;
+  end loop;
+  return dispatched;
+end;
+$;
+
+revoke all on function public.process_scheduled_booking_dispatch() from public,anon,authenticated;
+grant execute on function public.process_scheduled_booking_dispatch() to service_role;
 
 create or replace function public.confirm_booking_price(p_booking_id uuid)
 returns void
@@ -402,8 +541,8 @@ create trigger payments_guard_confirmed_booking_price
 before insert or update of booking_id,amount_dop on public.payments
 for each row execute function public.guard_payment_price_confirmation();
 
-revoke all on function public.create_service_booking_for_professional(integer,uuid,double precision,double precision,text,text,timestamptz,boolean) from public,anon;
-grant execute on function public.create_service_booking_for_professional(integer,uuid,double precision,double precision,text,text,timestamptz,boolean) to authenticated;
+revoke all on function public.create_service_booking_for_professional(integer,uuid,double precision,double precision,text,text,timestamptz,numeric,boolean) from public,anon;
+grant execute on function public.create_service_booking_for_professional(integer,uuid,double precision,double precision,text,text,timestamptz,numeric,boolean) to authenticated;
 revoke all on function public.create_auto_service_booking(integer,double precision,double precision,text,text,timestamptz,boolean) from public,anon;
 grant execute on function public.create_auto_service_booking(integer,double precision,double precision,text,text,timestamptz,boolean) to authenticated;
 revoke all on function public.respond_to_request(uuid,boolean) from public,anon;
