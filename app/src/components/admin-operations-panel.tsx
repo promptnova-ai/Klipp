@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabase';
 
 type OpsBooking = {
   booking_id: string;
+  pro_id: string | null;
   status: string;
   assignment_mode: string;
   scheduled_start: string;
@@ -297,7 +298,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
               <Pressable accessibilityRole="button" onPress={() => void Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${selectedBooking.pro_latitude},${selectedBooking.pro_longitude}`)}><Text style={styles.link}>Abrir ubicación en mapa</Text></Pressable>
             </View>
           ) : <Text style={styles.caption}>Todavía no hay ubicación GPS registrada para esta reserva.</Text>}
-          {canManage && selectedBooking.status === 'requested' && !selectedBooking.professional_name && (
+          {canManage && selectedBooking.status === 'requested' && selectedBooking.pro_id === null && (
             <View style={styles.interventionBox}>
               <Text style={styles.locationTitle}>Intervención administrativa</Text>
               <Text style={styles.body}>Esta solicitud todavía no tiene profesional asignado. Puedes enviar una oferta a un profesional elegible; deberá aceptarla desde su aplicación.</Text>
