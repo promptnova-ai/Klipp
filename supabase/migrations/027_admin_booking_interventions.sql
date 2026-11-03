@@ -16,7 +16,7 @@ RETURNS TABLE (
 LANGUAGE plpgsql
 STABLE
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = ''
 AS $$
 DECLARE
   v_booking public.bookings%rowtype;
@@ -132,7 +132,7 @@ CREATE OR REPLACE FUNCTION public.admin_dispatch_booking_request(
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, extensions
+SET search_path = ''
 AS $$
 DECLARE
   v_booking public.bookings%rowtype;
@@ -212,8 +212,8 @@ CREATE OR REPLACE FUNCTION public.admin_cancel_unassigned_booking(
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
-AS $$
+SET search_path = ''
+AS $
 DECLARE
   v_booking public.bookings%rowtype;
 BEGIN
