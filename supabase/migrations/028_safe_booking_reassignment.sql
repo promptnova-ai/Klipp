@@ -549,7 +549,8 @@ BEGIN
       AND audit.action IN (
         'booking.reassignment_requested',
         'booking.reassignment_accepted',
-        'booking.reassignment_rejected'
+        'booking.reassignment_rejected',
+        'booking.reassignment_expired'
       )
   ) combined
   ORDER BY combined.occurred_at ASC, combined.event_id ASC;
@@ -563,7 +564,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 BEGIN
   IF NEW.status = 'expired' AND OLD.status IS DISTINCT FROM NEW.status THEN
     INSERT INTO public.admin_audit_log(actor_id, action, target_id, details)
@@ -582,7 +583,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 CREATE TRIGGER booking_reassignment_expiry_audit
 AFTER UPDATE OF status ON public.booking_reassignment_requests
 FOR EACH ROW EXECUTE FUNCTION public.audit_booking_reassignment_expiry();
