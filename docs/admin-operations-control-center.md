@@ -23,7 +23,7 @@
 - Las intervenciones requieren `bookings.manage`; consultar el panel solo requiere `bookings.read`.
 - Se puede enviar una solicitud manual a un profesional elegible cuando la reserva está en `requested` y aún no tiene profesional asignado. El profesional debe aceptarla desde su app.
 - Se puede cancelar desde el panel una solicitud `requested` sin profesional asignado y sin pagos pendientes, retenidos, liberados o reembolsados. El motivo y el actor quedan registrados en `admin_audit_log`; el cambio de estado se añade al historial y dispara la notificación normal al cliente.
-- No se permite desde este control reasignar reservas ya aceptadas/pagadas, en camino o en curso, ni cancelar reservas con fondos retenidos/liberados. Esos casos requieren un flujo explícito de aceptación del profesional sustituto y tratamiento del pago/reembolso; no se fuerza el cambio de `pro_id`.
+- La migración 028 permite reasignar reservas confirmadas en estado `scheduled` mediante invitación al sustituto y aceptación expresa; el cambio de profesional y el payout pendiente se actualizan de forma transaccional. No se reasignan servicios en camino, con llegada registrada o en curso, ni se alteran pagos/payouts ya procesados.
 
 ## Dependencias de base de datos
 Aplicar en el proyecto de Supabase, en orden y solo después de revisar el SQL:
