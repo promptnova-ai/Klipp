@@ -261,13 +261,17 @@ export function ProRequestsScreen() {
   );
 }
 
+// PanResponder requires mutable refs for gesture state; refs are only read in gesture callbacks.
+// eslint-disable-next-line react-hooks/refs
 function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label: string; onAccept: () => void }) {
+  // eslint-disable-next-line react-hooks/refs
   const translateX = useRef(new Animated.Value(0)).current;
   const trackWidth = useRef(0);
   const acceptRef = useRef(onAccept);
   useEffect(() => {
     acceptRef.current = onAccept;
   }, [onAccept]);
+  // eslint-disable-next-line react-hooks/refs
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => !disabled,
     onMoveShouldSetPanResponder: (_, gesture) => !disabled && Math.abs(gesture.dx) > 4,
@@ -295,6 +299,7 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
     <View style={[styles.slideTrack, disabled && styles.slideDisabled]} onLayout={(event) => { trackWidth.current = event.nativeEvent.layout.width; }}>
       <Text style={styles.slideLabel}>{label}</Text>
       <Animated.View
+        // eslint-disable-next-line react-hooks/refs
         {...responder.panHandlers}
         accessibilityRole="button"
         accessibilityLabel={label}
