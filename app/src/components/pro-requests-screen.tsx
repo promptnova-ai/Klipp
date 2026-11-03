@@ -23,6 +23,13 @@ type RequestBooking = {
 type IncomingRequest = BookingRequest & { bookings: RequestBooking | null };
 type IncomingReassignment = { request_id: string; booking_id: string; original_professional_name: string | null; scheduled_start: string; est_minutes: number; pro_payout_dop: number; address_text: string | null; landmark_notes: string | null; service_name: string | null; pricing_tier_label: string | null; expires_at: string };
 
+function formatCountdown(expiresAt: string, now: number) {
+  const seconds = Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / 1000));
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+}
+
 export function ProRequestsScreen() {
   const { session } = useAuth();
   const [requests, setRequests] = useState<IncomingRequest[]>([]);
@@ -31,6 +38,12 @@ export function ProRequestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [clockNow, setClockNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setClockNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const loadRequests = useCallback(async () => {
     if (!session?.user.id) return;
@@ -157,6 +170,8 @@ export function ProRequestsScreen() {
       {requests.map((request) => {
         const booking = request.bookings;
         const unavailable = !booking;
+        const secondsLeft = Math.max(0, Math.ceil((new Date(request.expires_at).getTime() - clockNow) / 1000));
+        const expired = secondsLeft <= 0;
         return (
           <View key={request.id} style={styles.card}>
             {unavailable ? (
@@ -176,10 +191,10 @@ export function ProRequestsScreen() {
                 <Text style={styles.payout}>Recibirías {formatDop(booking.pro_payout_dop)}</Text>
               </>
             )}
-            <Text style={styles.expiration}>Expira: {formatBusinessDate(request.expires_at)}</Text>
+            <Text style={styles.expiration}>{expired ? 'Tiempo agotado' : `Tiempo para responder: ${formatCountdown(request.expires_at, clockNow)}`}</Text>
             <View style={styles.actions}>
-              <ResponseButton disabled={unavailable || busyId === request.id} label={busyId === request.id ? 'Enviando...' : 'Aceptar'} onPress={() => void respond(request.id, true)} />
-              <ResponseButton secondary disabled={busyId === request.id} label="Rechazar" onPress={() => void respond(request.id, false)} />
+              <ResponseButton disabled={unavailable || expired || busyId === request.id} label={busyId === request.id ? 'Enviando...' : 'Aceptar'} onPress={() => void respond(request.id, true)} />
+              <ResponseButton secondary disabled={expired || busyId === request.id} label="Rechazar" onPress={() => void respond(request.id, false)} />
             </View>
           </View>
         );
