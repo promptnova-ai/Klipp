@@ -303,3 +303,100 @@ $$;
 
 REVOKE ALL ON FUNCTION public.get_auto_service_price_estimate(integer, integer, double precision, double precision) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_auto_service_price_estimate(integer, integer, double precision, double precision) TO authenticated;
+
+
+-- Services without catalog variants can also be booked in automatic mode.
+-- The initial price is the local minimum only as a provisional estimate; the
+-- acceptance RPC replaces it with the accepting professional's exact tariff.
+ALTER TABLE public.bookings
+  DROP CONSTRAINT IF EXISTS bookings_service_source_check;
+
+ALTER TABLE public.bookings
+  ADD CONSTRAINT bookings_service_source_check
+  CHECK (
+    pricing_tier_id IS NOT NULL
+    OR pro_service_id IS NOT NULL
+    OR assignment_mode = 'auto'
+  );
+
+CREATE OR REPLACE FUNCTION public.create_auto_service_booking_at_location(
+  p_service_type_id integer,
+  p_lat double precision,
+  p_lng double precision,
+  p_address_text text,
+  p_landmark_notes text,
+  p_scheduled_start timestamptz
+)
+RETURNS uuid
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_service public.service_types%rowtype;
+  v_point extensions.geography;
+  v_address_id uuid;
+  v_booking_id uuid;
+  v_estimated_price numeric(10,2);
+  v_estimated_minutes integer;
+BEGIN
+  IF auth.uid() IS NULL THEN RAISE EXCEPTION 'not authenticated'; END IF;
+  IF p_lat NOT BETWEEN -90 AND 90 OR p_lng NOT BETWEEN -180 AND 180 THEN
+    RAISE EXCEPTION 'invalid location';
+  END IF;
+  IF p_scheduled_start <= now() THEN RAISE EXCEPTION 'start must be in the future'; END IF;
+
+  SELECT * INTO v_service
+  FROM public.service_types
+  WHERE id = p_service_type_id AND active;
+
+  IF NOT FOUND THEN RAISE EXCEPTION 'invalid service'; END IF;
+
+  v_point := extensions.st_setsrid(extensions.st_makepoint(p_lng, p_lat), 4326)::extensions.geography;
+
+  SELECT min(ps.base_price_dop), max(ps.est_minutes)
+  INTO v_estimated_price, v_estimated_minutes
+  FROM public.pro_services ps
+  JOIN public.pro_profiles pp ON pp.user_id = ps.pro_id
+  WHERE ps.service_type_id = p_service_type_id
+    AND ps.active
+    AND pp.active
+    AND pp.verification_status = 'approved'
+    AND pp.equipment_policy_accepted_at IS NOT NULL
+    AND pp.service_area_latitude IS NOT NULL
+    AND extensions.st_dwithin(
+      extensions.st_setsrid(extensions.st_makepoint(pp.service_area_longitude, pp.service_area_latitude), 4326)::extensions.geography,
+      v_point,
+      pp.service_area_radius_m
+    );
+
+  IF v_estimated_price IS NULL OR v_estimated_minutes IS NULL THEN
+    RAISE EXCEPTION 'no professional with a published price covers this location';
+  END IF;
+
+  INSERT INTO public.addresses (client_id, label, street, references_text, sector_id, location)
+  VALUES (
+    auth.uid(), 'Ubicación de reserva', nullif(trim(p_address_text), ''),
+    nullif(trim(p_landmark_notes), ''), null, v_point
+  )
+  RETURNING id INTO v_address_id;
+
+  INSERT INTO public.bookings (
+    client_id, service_type_id, pricing_tier_id, pro_service_id, address_id,
+    assignment_mode, status, scheduled_start, est_minutes, price_dop,
+    notes, client_lat, client_lng, address_text, landmark_notes
+  )
+  VALUES (
+    auth.uid(), p_service_type_id, null, null, v_address_id,
+    'auto', 'requested', p_scheduled_start, v_estimated_minutes, v_estimated_price,
+    nullif(trim(p_landmark_notes), ''), p_lat, p_lng,
+    nullif(trim(p_address_text), ''), nullif(trim(p_landmark_notes), '')
+  )
+  RETURNING id INTO v_booking_id;
+
+  RETURN v_booking_id;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.create_auto_service_booking_at_location(integer, double precision, double precision, text, text, timestamptz) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.create_auto_service_booking_at_location(integer, double precision, double precision, text, text, timestamptz) TO authenticated;
