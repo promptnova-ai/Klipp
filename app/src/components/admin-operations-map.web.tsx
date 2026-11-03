@@ -5,7 +5,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
-import type { OperationsMapPoint } from './admin-operations-map.native';
+import type { OperationsMapPoint } from './admin-operations-map.types';
 
 function isStale(updatedAt: string | null) {
   return !updatedAt || Date.now() - new Date(updatedAt).getTime() > 120_000;
