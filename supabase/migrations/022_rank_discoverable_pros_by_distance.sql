@@ -57,6 +57,7 @@ as $$
   where p_lat between -90 and 90
     and p_lng between -180 and 180
     and p_est_minutes > 0
+    and pp.equipment_policy_accepted_at is not null
     and p_scheduled_start > now()
     and pp.service_area_latitude is not null
     and exists (
