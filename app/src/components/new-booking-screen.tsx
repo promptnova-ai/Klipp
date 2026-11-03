@@ -240,7 +240,11 @@ export function NewBookingScreen() {
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
-  const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
+  const serviceOffers = offers.filter((offer) => offer.service_type_id === selectedServiceId);
+  const servicePriceMin = serviceOffers.length ? Math.min(...serviceOffers.map((offer) => offer.base_price_dop)) : null;
+  const servicePriceMax = serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.base_price_dop)) : null;
+  const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes
+    ?? (serviceOffers.length ? Math.max(...serviceOffers.map((offer) => offer.est_minutes)) : undefined);
   const selectedPrice = selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
 
   useEffect(() => {
@@ -332,14 +336,14 @@ export function NewBookingScreen() {
                 p_lng: currentCoordinate.longitude,
                 p_scheduled_start: scheduledStart,
                 p_est_minutes: selectedDuration,
-                p_service_type_id: selectedTier?.service_type_id,
+                p_service_type_id: selectedServiceId,
               }
             : {
                 p_lat: currentCoordinate.latitude,
                 p_lng: currentCoordinate.longitude,
                 p_scheduled_start: scheduledStart,
                 p_est_minutes: selectedDuration,
-                p_service_type_id: selectedTier?.service_type_id,
+                p_service_type_id: selectedServiceId,
               };
           const { data, error: prosError } = await supabase.rpc(rpcName, rpcArgs);
           if (active && prosError) setError(prosError.message);
@@ -411,7 +415,8 @@ export function NewBookingScreen() {
   }
 
   async function createBooking() {
-    if ((!selectedTier && !selectedOffer) || !coordinate || !session?.user.id) {
+    const variableService = !selectedTier && !selectedOffer && selectedServiceId !== null && serviceOffers.length > 0;
+    if ((!selectedTier && !selectedOffer && !variableService) || !coordinate || !session?.user.id) {
       setError('Selecciona el servicio y permite confirmar tu ubicación.');
       return;
     }
@@ -428,7 +433,27 @@ export function NewBookingScreen() {
     setError(null);
     setSuccess(null);
     const manualImmediate = !selectedOffer && timing === 'now' && mode === 'manual';
-    const { data: bookingId, error: rpcError } = selectedOffer
+    const { data: bookingId, error: rpcError } = variableService
+      ? mode === 'auto'
+        ? await supabase.rpc('create_auto_service_booking', {
+            p_service_type_id: selectedServiceId,
+            p_lat: coordinate.latitude,
+            p_lng: coordinate.longitude,
+            p_address_text: addressText,
+            p_landmark_notes: landmarkNotes,
+            p_scheduled_start: scheduledStart,
+          })
+        : await supabase.rpc('create_service_booking_for_professional', {
+            p_service_type_id: selectedServiceId,
+            p_pro_id: selectedProId,
+            p_lat: coordinate.latitude,
+            p_lng: coordinate.longitude,
+            p_address_text: addressText,
+            p_landmark_notes: landmarkNotes,
+            p_scheduled_start: scheduledStart,
+            p_immediate: timing === 'now',
+          })
+      : selectedOffer
       ? await supabase.rpc('create_booking_at_location', {
           p_pro_service_id: selectedOffer.id,
           p_lat: coordinate.latitude,
@@ -499,18 +524,16 @@ export function NewBookingScreen() {
           <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
-      {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
-        {offers.filter((offer) => offer.service_type_id === selectedServiceId).length === 0
-          ? <Text style={styles.body}>Aún no hay profesionales con este servicio disponible.</Text>
-          : offers.filter((offer) => offer.service_type_id === selectedServiceId).map((offer) => (
-            <Choice
-              key={offer.id}
-              selected={selectedOfferId === offer.id}
-              label={offer.pro_name ?? 'Profesional Klipp'}
-              secondary={`${formatDop(offer.base_price_dop)} · ${offer.est_minutes} min`}
-              onPress={() => { resetAppointmentSelection(); setSelectedOfferId(offer.id); setMode('manual'); setTiming('scheduled'); }}
-            />
-          ))}
+      {visibleTiers.length === 0 && <Section title="2. Precio estimado">
+        {serviceOffers.length === 0
+          ? <Text style={styles.body}>Aún no hay profesionales con este servicio disponible en tu zona.</Text>
+          : <>
+              <Text style={styles.cardTitle}>{servicePriceMin === servicePriceMax
+                ? formatDop(servicePriceMin!)
+                : `${formatDop(servicePriceMin!)} – ${formatDop(servicePriceMax!)}`}</Text>
+              <Text style={styles.body}>Rango orientativo según los profesionales que ofrecen este servicio cerca de tu ubicación. Si eliges «Cerca de mí», conocerás el precio exacto del profesional antes de confirmar el pago.</Text>
+              <Text style={styles.body}>{serviceOffers.length} ofertas cercanas · duración estimada hasta {selectedDuration} min</Text>
+            </>}
       </Section>}
       {!selectedOffer && selectedTier && <Section title="3. ¿Cuándo necesitas el servicio?">
         <View style={styles.modeOptions}>
