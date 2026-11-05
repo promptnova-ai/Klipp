@@ -36,7 +36,7 @@ export function ProRequestsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [nowMs, setNowMs] = useState(0);
+  const [nowMs, setNowMs] = useState(Date.now());
   const activeRequest = requests[0] ?? null;
   const secondsLeft = activeRequest ? Math.max(0, Math.ceil((new Date(activeRequest.expires_at).getTime() - nowMs) / 1000)) : 0;
 
