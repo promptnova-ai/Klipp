@@ -360,6 +360,7 @@ export function NewBookingScreen() {
           p_lng: coordinate.longitude,
           p_date: scheduledDate,
           p_mode: mode,
+          p_pro_id: mode === 'manual' ? selectedProId : null,
         })
         : mode === 'auto'
           ? supabase.rpc('get_available_auto_service_slots_at_location', {
@@ -645,7 +646,7 @@ export function NewBookingScreen() {
       )}
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={tier.price_dop > 0 ? formatDop(tier.price_dop) : 'Precio según tarifa del profesional'} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
