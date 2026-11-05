@@ -546,7 +546,7 @@ const styles = StyleSheet.create({
   clearSearch: { padding: 5 },
   hero: { minHeight: 310, overflow: 'hidden', padding: 26, borderRadius: 28, justifyContent: 'flex-end', backgroundColor: '#24191B', gap: 14, shadowColor: KlippColors.navy, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 12 }, shadowRadius: 22, elevation: 5 },
   heroImage: { borderRadius: 28 },
-  heroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(24, 16, 18, 0.57)' },
+  heroScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(24, 16, 18, 0.57)' },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.34)', backgroundColor: 'rgba(255,255,255,0.14)' },
   heroBadgeText: { color: KlippColors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   heroTitle: { color: KlippColors.white, fontSize: 31, lineHeight: 37, fontWeight: '900', letterSpacing: -0.9, marginTop: 4 },
