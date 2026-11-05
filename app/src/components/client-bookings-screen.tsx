@@ -421,7 +421,7 @@ function distanceInKm(from: LocationPoint, to: LocationPoint) {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 42, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingBottom: 42, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   empty: { marginTop: 4, marginHorizontal: 20, padding: 22, borderRadius: 24, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 9 },
