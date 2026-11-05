@@ -114,7 +114,7 @@ export function ClientAddressesScreen() {
     setSaving(false);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando direcciones...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando direcciones...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.blue} />} keyboardShouldPersistTaps="handled">
@@ -131,12 +131,12 @@ export function ClientAddressesScreen() {
       <View style={styles.form}>
         <Text style={styles.sectionTitle}>Añadir dirección</Text>
         <Text style={styles.label}>Nombre para identificarla</Text>
-        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor="#85918b" style={styles.input} value={label} />
+        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor={KlippColors.muted} style={styles.input} value={label} />
         <Text style={styles.label}>Ubicación del servicio</Text>
         {coordinate ? (
           <>
             <LocationPicker coordinate={coordinate} onChange={setCoordinate} />
-            <TextInput onChangeText={setStreet} placeholder="Dirección aproximada" placeholderTextColor="#85918b" style={styles.input} value={street} />
+            <TextInput onChangeText={setStreet} placeholder="Dirección aproximada" placeholderTextColor={KlippColors.muted} style={styles.input} value={street} />
             <Pressable accessibilityRole="button" onPress={() => void locateCurrentPosition()} style={styles.locationButton}>
               <Text style={styles.locationButtonText}>Usar mi ubicación actual</Text>
             </Pressable>
@@ -147,7 +147,7 @@ export function ClientAddressesScreen() {
           </Pressable>
         )}
         <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
-        <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor="#85918b" style={[styles.input, styles.multiline]} value={references} />
+        <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={references} />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
         <Pressable accessibilityRole="button" disabled={saving} onPress={() => void saveAddress()} style={[styles.button, saving && styles.disabled]}>
