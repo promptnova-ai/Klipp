@@ -117,7 +117,7 @@ export function ClientAddressesScreen() {
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando direcciones...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.blue} />} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda tus ubicaciones para reservar servicios más rápido." />
       {addresses.length === 0 && <Text style={styles.body}>Todavía no has guardado una dirección.</Text>}
       {addresses.map((address) => (
@@ -159,20 +159,20 @@ export function ClientAddressesScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 36, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
-  body: { color: '#52615b', fontSize: 14, lineHeight: 21 },
-  addressCard: { padding: 16, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 5 },
-  cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
-  form: { marginTop: 8, padding: 17, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700', marginBottom: 3 },
-  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 3 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
-  multiline: { minHeight: 78, paddingVertical: 10, textAlignVertical: 'top' },
-  locationButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#EEF4FF' },
+  page: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24, backgroundColor: KlippColors.canvas },
+  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '800', letterSpacing: -0.5 },
+  body: { color: KlippColors.muted, fontSize: 14, lineHeight: 22 },
+  addressCard: { padding: 18, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 7, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
+  cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '800' },
+  form: { marginTop: 4, padding: 20, borderRadius: 22, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 12, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 16, elevation: 1 },
+  sectionTitle: { color: KlippColors.navy, fontSize: 19, fontWeight: '800', letterSpacing: -0.25, marginBottom: 3 },
+  label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800', marginTop: 4 },
+  input: { minHeight: 50, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 13, paddingHorizontal: 14, color: KlippColors.navy, backgroundColor: '#FBFCFE', fontSize: 15 },
+  multiline: { minHeight: 88, paddingVertical: 12, textAlignVertical: 'top' },
+  locationButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 14, backgroundColor: '#EEF4FF', borderWidth: 1, borderColor: '#DCE8FF' },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
-  button: { minHeight: 48, marginTop: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 7, backgroundColor: KlippColors.blue },
+  button: { minHeight: 52, marginTop: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.16, shadowOffset: { width: 0, height: 5 }, shadowRadius: 10, elevation: 2 },
   buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.55 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
