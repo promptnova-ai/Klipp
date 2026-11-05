@@ -92,6 +92,7 @@ export function ProProfileScreen() {
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [tierPrices, setTierPrices] = useState<Record<string, string>>({});
   const [tierDurations, setTierDurations] = useState<Record<string, string>>({});
+  const [selectedTierKeys, setSelectedTierKeys] = useState<string[]>([]);
   const [weekday, setWeekday] = useState(1);
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('12:00');
@@ -155,7 +156,7 @@ export function ProProfileScreen() {
     const offeredIds = offered.map((item) => item.id).filter((id): id is string => Boolean(id));
     if (offeredIds.length) {
       const tierPriceResult = await supabase.from('pro_service_tier_prices')
-        .select('pro_service_id, pricing_tier_id, price_dop, est_minutes')
+        .select('id, pro_service_id, pricing_tier_id, price_dop, est_minutes, active')
         .in('pro_service_id', offeredIds);
       if (tierPriceResult.error) {
         setError(tierPriceResult.error.message);
@@ -163,12 +164,14 @@ export function ProProfileScreen() {
         return;
       }
       const serviceIdByOfferId = new Map(offered.map((item) => [item.id, item.service_type_id]));
-      const savedTierPrices = (tierPriceResult.data ?? []) as { pro_service_id: string; pricing_tier_id: number; price_dop: number; est_minutes: number }[];
+      const savedTierPrices = (tierPriceResult.data ?? []) as { id: string; pro_service_id: string; pricing_tier_id: number; price_dop: number; est_minutes: number; active: boolean }[];
+      setSelectedTierKeys(savedTierPrices.filter((item) => item.active).map((item) => `${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`));
       setTierPrices(Object.fromEntries(savedTierPrices.map((item) => [`${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`, String(item.price_dop)])));
       setTierDurations(Object.fromEntries(savedTierPrices.map((item) => [`${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`, String(item.est_minutes)])));
     } else {
       setTierPrices({});
       setTierDurations({});
+      setSelectedTierKeys([]);
     }
     const configuredServices = offered.length ? offered : registrationDraft?.services ?? [];
     setCatalog(services);
@@ -326,24 +329,17 @@ export function ProProfileScreen() {
       return;
     }
 
-    const invalidTierPrice = selectedServices.some((serviceId) => pricingTiers.filter((tier) => tier.service_type_id === serviceId).some((tier) => {
-      const key = `${serviceId}:${tier.id}`;
-      const price = Number(tierPrices[key]);
-      const duration = Number(tierDurations[key]);
-      return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
-    }));
-    if (invalidTierPrice) {
-      setError('Configura un precio y una duración válidos para cada variante del servicio.');
-      return;
-    }
-
-    const invalidService = selectedServices.find((serviceId) => {
-      const price = Number(servicePrices[serviceId]);
-      const duration = Number(serviceDurations[serviceId]);
-      return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
+    const invalidTierService = selectedServices.find((serviceId) => {
+      const selectedTiers = pricingTiers.filter((tier) => tier.service_type_id === serviceId && selectedTierKeys.includes(`${serviceId}:${tier.id}`));
+      return selectedTiers.length === 0 || selectedTiers.some((tier) => {
+        const key = `${serviceId}:${tier.id}`;
+        const price = Number(tierPrices[key]);
+        const duration = Number(tierDurations[key]);
+        return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration < 1;
+      });
     });
-    if (invalidService !== undefined) {
-      setError('Cada servicio elegido necesita un precio mayor que cero y una duración válida en minutos.');
+    if (invalidTierService !== undefined) {
+      setError('Publica al menos una modalidad por profesión y completa su precio y duración.');
       return;
     }
     if (selectedServices.length > 0 && !coverageCenter) {
@@ -411,8 +407,8 @@ export function ProProfileScreen() {
           selectedServices.map((service_type_id) => ({
             pro_id: userId,
             service_type_id,
-            base_price_dop: Number(servicePrices[service_type_id]),
-            est_minutes: Number(serviceDurations[service_type_id]),
+            base_price_dop: Math.min(...pricingTiers.filter((tier) => tier.service_type_id === service_type_id && selectedTierKeys.includes(`${service_type_id}:${tier.id}`)).map((tier) => Number(tierPrices[`${service_type_id}:${tier.id}`]))),
+            est_minutes: Math.min(...pricingTiers.filter((tier) => tier.service_type_id === service_type_id && selectedTierKeys.includes(`${service_type_id}:${tier.id}`)).map((tier) => Number(tierDurations[`${service_type_id}:${tier.id}`]))),
             active: true,
           })),
           { onConflict: 'pro_id,service_type_id' },
@@ -433,7 +429,7 @@ export function ProProfileScreen() {
           const proServiceId = offerIdByServiceId.get(serviceId);
           if (!proServiceId) return [];
           return pricingTiers
-            .filter((tier) => tier.service_type_id === serviceId)
+            .filter((tier) => tier.service_type_id === serviceId && selectedTierKeys.includes(`${serviceId}:${tier.id}`))
             .map((tier) => {
               const key = `${serviceId}:${tier.id}`;
               return {
@@ -445,6 +441,31 @@ export function ProProfileScreen() {
               };
             });
         });
+        const proServiceIds = [...offerIdByServiceId.values()];
+        if (proServiceIds.length) {
+          const existingTierRows = await supabase.from('pro_service_tier_prices')
+            .select('id, pro_service_id, pricing_tier_id')
+            .in('pro_service_id', proServiceIds);
+          if (existingTierRows.error) {
+            setError(`Servicios guardados, pero no pudimos revisar las modalidades anteriores: ${existingTierRows.error.message}`);
+            setSaving(false);
+            return;
+          }
+          const serviceIdByOfferId = new Map([...offerIdByServiceId.entries()].map(([serviceId, offerId]) => [offerId, serviceId]));
+          const toDeactivate = (existingTierRows.data ?? [])
+            .filter((row) => !selectedTierKeys.includes(`${serviceIdByOfferId.get(row.pro_service_id)}:${row.pricing_tier_id}`))
+            .map((row) => row.id);
+          if (toDeactivate.length) {
+            const { error: deactivateError } = await supabase.from('pro_service_tier_prices')
+              .update({ active: false })
+              .in('id', toDeactivate);
+            if (deactivateError) {
+              setError(`Servicios guardados, pero no pudimos retirar modalidades despublicadas: ${deactivateError.message}`);
+              setSaving(false);
+              return;
+            }
+          }
+        }
         if (tierPriceRows.length) {
           const { error: tierPriceError } = await supabase.from('pro_service_tier_prices').upsert(
             tierPriceRows,
@@ -689,45 +710,33 @@ export function ProProfileScreen() {
                   ))}
                 </View>
               )}
-              {selected && (
-                <View style={styles.serviceFields}>
-                  <View style={styles.priceField}>
-                    <Text style={styles.label}>Precio base (RD$)</Text>
-                    <TextInput
-                      keyboardType="decimal-pad"
-                      onChangeText={(value) => setServicePrices((current) => ({ ...current, [service.id]: value }))}
-                      placeholder="1500"
-                      style={styles.input}
-                      value={servicePrices[service.id] ?? ''}
-                    />
-                  </View>
-                  <View style={styles.durationField}>
-                    <Text style={styles.label}>Duración (min)</Text>
-                    <TextInput
-                      keyboardType="number-pad"
-                      onChangeText={(value) => setServiceDurations((current) => ({ ...current, [service.id]: value }))}
-                      placeholder="60"
-                      style={styles.input}
-                      value={serviceDurations[service.id] ?? ''}
-                    />
-                  </View>
-                </View>
-              )}
+              {selected && <Text style={styles.body}>El precio base se calcula automáticamente a partir de la modalidad más económica que publiques.</Text>}
               {selected && pricingTiers.some((tier) => tier.service_type_id === service.id) && (
                 <View style={styles.serviceRequirements}>
-                  <Text style={styles.requirementsTitle}>Precios por variante (RD$):</Text>
+                  <Text style={styles.requirementsTitle}>Modalidades que ofreces</Text>
+                  <Text style={styles.body}>Activa solo las modalidades que realizas. Cada una tendrá su propio precio y duración.</Text>
                   {pricingTiers.filter((tier) => tier.service_type_id === service.id).map((tier) => {
                     const key = `${service.id}:${tier.id}`;
+                    const tierSelected = selectedTierKeys.includes(key);
                     return (
-                      <View key={tier.id} style={styles.serviceFields}>
-                        <View style={styles.priceField}>
-                          <Text style={styles.label}>{tier.label}</Text>
-                          <TextInput keyboardType="decimal-pad" onChangeText={(value) => setTierPrices((current) => ({ ...current, [key]: value }))} placeholder="Precio RD$" style={styles.input} value={tierPrices[key] ?? ''} />
-                        </View>
-                        <View style={styles.durationField}>
-                          <Text style={styles.label}>Minutos</Text>
-                          <TextInput keyboardType="number-pad" onChangeText={(value) => setTierDurations((current) => ({ ...current, [key]: value }))} placeholder="60" style={styles.input} value={tierDurations[key] ?? ''} />
-                        </View>
+                      <View key={tier.id} style={styles.serviceEditor}>
+                        <Choice
+                          selected={tierSelected}
+                          label={tier.label}
+                          onPress={() => setSelectedTierKeys((current) => tierSelected ? current.filter((item) => item !== key) : [...current, key])}
+                        />
+                        {tierSelected && (
+                          <View style={styles.serviceFields}>
+                            <View style={styles.priceField}>
+                              <Text style={styles.label}>Tu precio · RD$</Text>
+                              <TextInput keyboardType="decimal-pad" onChangeText={(value) => setTierPrices((current) => ({ ...current, [key]: value }))} placeholder="Precio RD$" style={styles.input} value={tierPrices[key] ?? ''} />
+                            </View>
+                            <View style={styles.durationField}>
+                              <Text style={styles.label}>Duración · min</Text>
+                              <TextInput keyboardType="number-pad" onChangeText={(value) => setTierDurations((current) => ({ ...current, [key]: value }))} placeholder="60" style={styles.input} value={tierDurations[key] ?? '60'} />
+                            </View>
+                          </View>
+                        )}
                       </View>
                     );
                   })}
