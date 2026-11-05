@@ -23,7 +23,7 @@ type AuthScreenProps = { mode: 'login' | 'register' };
 export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const { width } = useWindowDimensions();
-  const wideLogin = !isRegister && width >= 1050;
+  const wideLayout = width >= 900;
   const router = useRouter();
   const { session, signIn, signUp, authError } = useAuth();
   const [fullName, setFullName] = useState('');
@@ -82,8 +82,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             <Text style={styles.topHint}>{isRegister ? 'ÚNETE A KLIPP' : 'BIENVENIDO DE NUEVO'}</Text>
           </View>
 
-          <View style={styles.layout}>
-            <View style={styles.storyPanel}>
+          <View style={[styles.layout, !wideLayout && styles.layoutCompact]}>
+            {wideLayout && <View style={styles.storyPanel}>
               <View style={styles.storyBadge}><Text style={styles.storyBadgeText}>SERVICIOS, A TU MANERA</Text></View>
               <Text style={styles.storyTitle}>{isRegister ? 'Tu próximo gran servicio empieza aquí.' : 'Todo lo que necesitas, en un solo lugar.'}</Text>
               <Text style={styles.storyCopy}>{isRegister ? 'Conecta con profesionales de confianza o haz crecer tu propio negocio con Klipp.' : 'Entra para descubrir profesionales, gestionar tus reservas y seguir cada servicio.'}</Text>
@@ -92,9 +92,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               <View style={styles.storyFeature}><Text style={styles.featureMark}>✓</Text><Text style={styles.featureText}>Reservas sencillas y seguras</Text></View>
               <View style={styles.storyFeature}><Text style={styles.featureMark}>✓</Text><Text style={styles.featureText}>Todo desde una sola app</Text></View>
               <View style={styles.storyAccent}><Text style={styles.storyAccentText}>KLIPP · REPÚBLICA DOMINICANA</Text></View>
-            </View>
+            </View>}
 
-            <View style={styles.formColumn}>
+            <View style={[styles.formColumn, !wideLayout && styles.formColumnCompact]}>
               <View style={styles.formHeader}>
                 <Text style={styles.eyebrow}>{isRegister ? (registerStep === 0 ? '01 / ELIGE TU EXPERIENCIA' : '02 / CREA TU CUENTA') : 'TU ESPACIO KLIPP'}</Text>
                 <Text style={styles.title}>{isRegister ? (registerStep === 0 ? '¿Cómo quieres usar Klipp?' : 'Empecemos por ti.') : 'Qué bueno verte.'}</Text>
@@ -172,6 +172,7 @@ const styles = StyleSheet.create({
   brand: { color: '#222222', fontSize: 25, fontWeight: '900', letterSpacing: -0.8 },
   topHint: { color: '#717171', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
   layout: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: 48 },
+  layoutCompact: { flexDirection: 'column', justifyContent: 'center', gap: 12 },
   storyPanel: { flex: 1, minHeight: 560, borderRadius: 28, backgroundColor: '#FFF0F1', padding: 34, justifyContent: 'center', overflow: 'hidden' },
   storyBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 99, backgroundColor: '#FFFFFF' },
   storyBadgeText: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
@@ -184,6 +185,7 @@ const styles = StyleSheet.create({
   storyAccent: { marginTop: 30, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#FFFFFF' },
   storyAccentText: { color: '#717171', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
   formColumn: { width: '100%', maxWidth: 480, justifyContent: 'center', paddingVertical: 20 },
+  formColumnCompact: { maxWidth: 560, alignSelf: 'center', paddingVertical: 12 },
   formHeader: { marginBottom: 28, gap: 10 },
   eyebrow: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   title: { color: '#222222', fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
