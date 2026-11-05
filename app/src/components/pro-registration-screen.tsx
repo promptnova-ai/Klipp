@@ -230,8 +230,7 @@ export function ProRegistrationScreen() {
               <Text style={styles.title}>Crea tu perfil profesional</Text>
               <Text style={styles.subtitle}>Completa tus datos, servicios y disponibilidad para empezar a recibir solicitudes.</Text>
             </View>
-            {true && (
-              <Text style={styles.sectionTitle}>Datos personales</Text>
+            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Datos personales</Text>
               <View style={styles.card}>
                 <Field label="Nombre completo">
                   <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
@@ -239,11 +238,9 @@ export function ProRegistrationScreen() {
                 <Field label="Teléfono de contacto">
                   <TextInput autoComplete="tel" keyboardType="phone-pad" returnKeyType="done" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
                 </Field>
-              </View>
-            )}
+              </View></View>}
 
-            {true && (
-              <Text style={styles.sectionTitle}>Perfil profesional</Text>
+            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Perfil profesional</Text>
               <View style={styles.card}>
                 <Field label="Años de experiencia">
                   <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
@@ -258,11 +255,9 @@ export function ProRegistrationScreen() {
                   </View>
                   {transportType === 'Otro' && <TextInput accessibilityLabel="Especifica tu medio de transporte" maxLength={50} onChangeText={setOtherTransportType} placeholder="Tu medio de transporte" placeholderTextColor={KlippColors.muted} style={styles.input} value={otherTransportType} />}
                 </View>
-              </View>
-            )}
+              </View></View>}
 
-            {true && (
-              <Text style={styles.sectionTitle}>Servicios y tarifas</Text>
+            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Servicios y tarifas</Text>
               <View style={styles.serviceList}>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
@@ -308,11 +303,9 @@ export function ProRegistrationScreen() {
                     </View>
                   );
                 })}                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
-              </View>
-            )}
+              </View></View>}
 
-            {true && (
-              <Text style={styles.sectionTitle}>Zona de trabajo</Text>
+            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Zona de trabajo</Text>
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -339,11 +332,9 @@ export function ProRegistrationScreen() {
                   ))}
                 </View>
 
-              </View>
-            )}
+              </View></View>}
 
-            {true && (
-              <Text style={styles.sectionTitle}>Disponibilidad</Text>
+            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Disponibilidad</Text>
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Selecciona tus días de trabajo</Text>
                 <View style={styles.chips}>
@@ -353,11 +344,9 @@ export function ProRegistrationScreen() {
                   <Field label="Desde"><TextInput keyboardType="numbers-and-punctuation" onChangeText={setStartTime} placeholder="08:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={startTime} /></Field>
                   <Field label="Hasta"><TextInput keyboardType="numbers-and-punctuation" onChangeText={setEndTime} placeholder="17:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={endTime} /></Field>
                 </View>
-              </View>
-            )}
+              </View></View>}
 
-            {true && (
-              <>
+            <View style={styles.formSection}>              <>
                 <Text style={styles.sectionTitle}>Acceso a tu cuenta</Text>
               <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
@@ -378,8 +367,7 @@ export function ProRegistrationScreen() {
                   </Field>
                   <Text style={styles.privacyNote}>🔒 Tus datos se usan para crear y proteger tu cuenta profesional.</Text>
                 </View>
-              </>
-            )}
+              </></View>}
 
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
             {notice && (
@@ -423,10 +411,8 @@ const styles = StyleSheet.create({
   formScroll: { flex: 1 },
   scrollContentInner: { paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28, gap: 20 },
   formIntro: { gap: 7, maxWidth: 760, width: '100%', alignSelf: 'center', marginBottom: 2 },
-  sectionBlock: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 9, marginBottom: 18 },
+  formSection: { width: '100%', gap: 9, marginBottom: 14 },
   sectionTitle: { color: '#222222', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
-  sectionDescription: { color: '#717171', fontSize: 12, lineHeight: 18 },
-  sectionBody: { gap: 10 },
   sectionTitle: { color: '#222222', fontSize: 16, fontWeight: '800', letterSpacing: -0.25, marginBottom: 2 },
   
   headerHero: { height: 104, minHeight: 104, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
@@ -444,7 +430,7 @@ const styles = StyleSheet.create({
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
   scrollContent: { flex: 1, minHeight: 0 },
-  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 8 },
+  stepContent: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 8 },
   stepRail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, paddingVertical: 2, marginBottom: 0 },
   stepRailItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
   stepRailDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#DDDDDD', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
