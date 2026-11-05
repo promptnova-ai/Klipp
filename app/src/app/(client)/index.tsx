@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
 import {
   Animated,
+  ImageBackground,
   Modal,
   Pressable,
   ScrollView,
@@ -299,8 +300,8 @@ export default function ClientHomeScreen() {
       </View>
 
       {!search && (
-        <View style={styles.hero}>
-          <View style={styles.heroAccent} />
+        <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1600&q=88' }} imageStyle={styles.heroImage} style={styles.hero}>
+          <View style={styles.heroScrim} />
           <View style={styles.heroBadge}>
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
             <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
@@ -316,7 +317,7 @@ export default function ClientHomeScreen() {
               <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.navy} size={17} />
             </Pressable>
           )}
-        </View>
+        </ImageBackground>
       )}
 
       <View style={styles.catalogHeader}>
@@ -543,18 +544,19 @@ const styles = StyleSheet.create({
   searchBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 17, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: KlippColors.navy, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 3 },
   searchInput: { flex: 1, height: 52, color: KlippColors.navy, fontSize: 14 },
   clearSearch: { padding: 5 },
-  hero: { overflow: 'hidden', padding: 24, borderRadius: 28, backgroundColor: KlippColors.violet, gap: 14, shadowColor: KlippColors.violet, shadowOpacity: 0.16, shadowOffset: { width: 0, height: 12 }, shadowRadius: 22, elevation: 5 },
-  heroAccent: { position: 'absolute', width: 210, height: 210, borderRadius: 105, backgroundColor: '#2563EB', right: -85, top: -100, opacity: 0.7 },
-  heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.16)' },
+  hero: { minHeight: 310, overflow: 'hidden', padding: 26, borderRadius: 28, justifyContent: 'flex-end', backgroundColor: '#24191B', gap: 14, shadowColor: KlippColors.navy, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 12 }, shadowRadius: 22, elevation: 5 },
+  heroImage: { borderRadius: 28 },
+  heroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(24, 16, 18, 0.57)' },
+  heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.34)', backgroundColor: 'rgba(255,255,255,0.14)' },
   heroBadgeText: { color: KlippColors.white, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   heroTitle: { color: KlippColors.white, fontSize: 31, lineHeight: 37, fontWeight: '900', letterSpacing: -0.9, marginTop: 4 },
-  heroText: { maxWidth: 300, color: '#EDE9FE', fontSize: 14, lineHeight: 22 },
+  heroText: { maxWidth: 320, color: 'rgba(255,255,255,0.9)', fontSize: 14, lineHeight: 22 },
   primaryButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 4, borderRadius: 15, backgroundColor: KlippColors.white },
   primaryButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '900' },
   catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   sectionEyebrow: { color: KlippColors.violet, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
   sectionTitle: { color: KlippColors.navy, fontSize: 21, fontWeight: '900', letterSpacing: -0.4, marginTop: 5 },
-  serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
+  serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.blueSoft, alignItems: 'center', justifyContent: 'center' },
   categories: { gap: 9, paddingVertical: 1 },
   categoryPill: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   categorySelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
@@ -566,7 +568,7 @@ const styles = StyleSheet.create({
   serviceCopy: { flex: 1, gap: 7 },
   serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
   serviceTitle: { flex: 1, color: KlippColors.navy, fontSize: 16, fontWeight: '900' },
-  categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: '#F1F5F9' },
+  categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: KlippColors.surfaceSoft },
   categoryTagText: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
   serviceDescription: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   serviceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
@@ -584,7 +586,7 @@ const styles = StyleSheet.create({
   proResultName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   proResultBio: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
   emptyState: { alignItems: 'center', padding: 22, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
-  emptyIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
+  emptyIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.blueSoft },
   emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' },
   emptyText: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
   clearButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 2, borderRadius: 12, backgroundColor: '#EEF4FF' },
