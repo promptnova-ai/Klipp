@@ -35,10 +35,12 @@ type ProOnboardingDraft = {
 };
 
 const steps = [
-  { eyebrow: 'TU PERFIL', title: 'Cuéntanos sobre ti', subtitle: 'Un buen perfil genera confianza y te ayuda a destacar.' },
-  { eyebrow: 'TUS SERVICIOS', title: '¿Qué sabes hacer?', subtitle: 'Elige tus especialidades y define tu tarifa inicial.' },
-  { eyebrow: 'TU COBERTURA', title: 'Define dónde trabajas', subtitle: 'Te conectaremos con clientes dentro de tu radio.' },
-  { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales. Te enviaremos un correo para confirmar.' },
+  { eyebrow: 'TUS DATOS', title: 'Empecemos por ti', subtitle: 'Primero, tus datos de contacto.' },
+  { eyebrow: 'TU PERFIL', title: 'Cuéntanos de tu talento', subtitle: 'Completa los detalles que te ayudarán a destacar.' },
+  { eyebrow: 'TUS SERVICIOS', title: '¿Qué sabes hacer?', subtitle: 'Elige tus especialidades y define tus tarifas.' },
+  { eyebrow: 'TU COBERTURA', title: '¿Dónde trabajas?', subtitle: 'Define tu ubicación y el radio donde puedes atender.' },
+  { eyebrow: 'TU HORARIO', title: '¿Cuándo estás disponible?', subtitle: 'Indica los días y las horas en que puedes recibir solicitudes.' },
+  { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales para terminar.' },
 ];
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
@@ -139,10 +141,12 @@ export function ProRegistrationScreen() {
     if (step === 0) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
       if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
+    }
+    if (step === 1) {
       if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
       if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
-    if (step === 1) {
+    if (step === 2) {
       if (servicesLoading) return 'Espera un momento mientras cargamos las especialidades.';
       if (catalog.length === 0) return 'No hay especialidades disponibles ahora mismo.';
       if (selectedServices.length === 0) return 'Elige al menos un servicio para continuar.';
@@ -153,14 +157,14 @@ export function ProRegistrationScreen() {
       });
       if (invalid) return 'Completa un precio y una duración válidos para cada servicio elegido.';
     }
-    if (step === 2) {
-      if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 3 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 4) {
       if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
         return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
       }
     }
-    if (step === 3) {
+    if (step === 5) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
@@ -316,52 +320,36 @@ export function ProRegistrationScreen() {
             {step === 0 && (
               <View style={styles.card}>
                 <Field label="Nombre completo">
-                  <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
+                  <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
                 </Field>
                 <Field label="Teléfono de contacto">
-                  <TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
+                  <TextInput autoComplete="tel" keyboardType="phone-pad" returnKeyType="done" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
                 </Field>
-                <View style={styles.twoColumns}>
-                  <Field label="Años de experiencia">
-                    <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
-                  </Field>
-                  <View style={styles.experienceBadge}>
-                    <Text style={styles.badgeIcon}>✦</Text>
-                    <Text style={styles.badgeText}>Tu talento merece crecer</Text>
-                  </View>
-                </View>
-                <Field label="Una breve presentación">
-                  <TextInput multiline onChangeText={setBio} placeholder="Cuéntales a tus futuros clientes qué te hace especial..." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
-                </Field>
-                <View style={styles.transportSection}>
-                  <Text style={styles.label}>¿Cómo te trasladas al domicilio?</Text>
-                  <Text style={styles.helper}>Ayuda a tus clientes a saber cómo llegarás a su servicio.</Text>
-                  <View style={styles.chips}>
-                    {transportOptions.map((option) => (
-                      <Chip
-                        key={option}
-                        label={option}
-                        selected={transportType === option}
-                        onPress={() => setTransportType(option)}
-                      />
-                    ))}
-                  </View>
-                  {transportType === 'Otro' && (
-                    <TextInput
-                      accessibilityLabel="Especifica tu medio de transporte"
-                      maxLength={50}
-                      onChangeText={setOtherTransportType}
-                      placeholder="Especifica tu medio de transporte"
-                      placeholderTextColor={KlippColors.muted}
-                      style={styles.input}
-                      value={otherTransportType}
-                    />
-                  )}
-                </View>
               </View>
             )}
 
             {step === 1 && (
+              <View style={styles.card}>
+                <View style={styles.twoColumns}>
+                  <Field label="Años de experiencia">
+                    <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
+                  </Field>
+                  <View style={styles.experienceBadge}><Text style={styles.badgeIcon}>✦</Text><Text style={styles.badgeText}>Tu talento merece crecer</Text></View>
+                </View>
+                <Field label="Una breve presentación">
+                  <TextInput multiline maxLength={240} onChangeText={setBio} placeholder="¿Qué te hace especial en tu trabajo?" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
+                </Field>
+                <View style={styles.transportSection}>
+                  <Text style={styles.label}>¿Cómo te trasladas al domicilio?</Text>
+                  <View style={styles.chips}>
+                    {transportOptions.map((option) => <Chip key={option} label={option} selected={transportType === option} onPress={() => setTransportType(option)} />)}
+                  </View>
+                  {transportType === 'Otro' && <TextInput accessibilityLabel="Especifica tu medio de transporte" maxLength={50} onChangeText={setOtherTransportType} placeholder="Tu medio de transporte" placeholderTextColor={KlippColors.muted} style={styles.input} value={otherTransportType} />}
+                </View>
+              </View>
+            )}
+
+            {step === 2 && (
               <View style={styles.serviceList}>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
@@ -411,7 +399,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 2 && (
+            {step === 3 && (
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -437,25 +425,24 @@ export function ProRegistrationScreen() {
                     <Chip key={radius} label={`${radius} km`} selected={radiusKm === radius} onPress={() => setRadiusKm(radius)} />
                   ))}
                 </View>
-                <View style={styles.divider} />
-                <Text style={styles.cardTitle}>¿Qué días estás disponible?</Text>
+
+              </View>
+            )}
+
+            {step === 4 && (
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Selecciona tus días de trabajo</Text>
                 <View style={styles.chips}>
-                  {weekdays.map((day, index) => (
-                    <Chip key={day} label={day} selected={selectedWeekdays.includes(index + 1)} onPress={() => toggleWeekday(index + 1)} />
-                  ))}
+                  {weekdays.map((day, index) => <Chip key={day} label={day} selected={selectedWeekdays.includes(index + 1)} onPress={() => toggleWeekday(index + 1)} />)}
                 </View>
                 <View style={styles.timeRow}>
-                  <Field label="Desde">
-                    <TextInput keyboardType="numbers-and-punctuation" onChangeText={setStartTime} placeholder="08:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={startTime} />
-                  </Field>
-                  <Field label="Hasta">
-                    <TextInput keyboardType="numbers-and-punctuation" onChangeText={setEndTime} placeholder="17:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={endTime} />
-                  </Field>
+                  <Field label="Desde"><TextInput keyboardType="numbers-and-punctuation" onChangeText={setStartTime} placeholder="08:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={startTime} /></Field>
+                  <Field label="Hasta"><TextInput keyboardType="numbers-and-punctuation" onChangeText={setEndTime} placeholder="17:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={endTime} /></Field>
                 </View>
               </View>
             )}
 
-            {step === 3 && (
+            {step === 5 && (
               <>
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
