@@ -1,5 +1,5 @@
 import { Link, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -35,7 +35,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const stepMotion = useRef(new Animated.Value(0)).current;
+  const [stepMotion] = useState(() => new Animated.Value(0));
   const stepTranslate = stepMotion.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
 
   useEffect(() => {
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   layoutCompact: { flexDirection: 'column', justifyContent: 'flex-start', gap: 24 },
   storyPanel: { flex: 1, minHeight: 600, borderRadius: 30, backgroundColor: '#222222', padding: 38, justifyContent: 'center', overflow: 'hidden' },
   storyImage: { borderRadius: 30 },
-  storyScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(22, 16, 18, 0.58)' },
+  storyScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(22, 16, 18, 0.58)' },
   mobileHero: { width: '100%', height: 228, justifyContent: 'flex-end', padding: 24, borderRadius: 24, overflow: 'hidden', backgroundColor: '#222222' },
   mobileHeroImage: { borderRadius: 24 },
   mobileHeroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(22, 16, 18, 0.42)' },
