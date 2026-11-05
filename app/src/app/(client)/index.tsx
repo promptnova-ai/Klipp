@@ -239,8 +239,8 @@ export default function ClientHomeScreen() {
 
   function showServiceDetails(service: CatalogService) {
     setSelectedService(service);
-    setSelectedDetailTierId(service.offers.length > 0 ? null : service.tiers[0]?.id ?? null);
-    setSelectedOfferId(service.offers[0]?.id ?? null);
+    setSelectedDetailTierId(service.tiers[0]?.id ?? null);
+    setSelectedOfferId(service.tiers.length === 0 ? service.offers[0]?.id ?? null : null);
   }
 
   function clearFilters() {
@@ -469,15 +469,15 @@ export default function ClientHomeScreen() {
                   )}
                 </View>
                 <View style={styles.benefitList}>
-                  {['Profesionales verificados', 'Precio cerrado según el tamaño', 'Reserva en el horario que prefieras'].map((benefit) => (
+                  {['Profesionales verificados', 'Tarifas publicadas por cada profesional', 'Precio confirmado antes del pago'].map((benefit) => (
                     <View key={benefit} style={styles.benefit}>
                       <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#047857" size={18} />
                       <Text style={styles.benefitText}>{benefit}</Text>
                     </View>
                   ))}
                 </View>
-                {selectedService.offers.length > 0 && <Text style={styles.tierHeading}>Profesionales y precios</Text>}
-                {selectedService.offers.map((offer) => (
+                {selectedService.tiers.length === 0 && selectedService.offers.length > 0 && <Text style={styles.tierHeading}>Profesionales y precios</Text>}
+                {selectedService.tiers.length === 0 && selectedService.offers.map((offer) => (
                   <Pressable
                     accessibilityRole="radio"
                     accessibilityState={{ selected: offer.id === selectedOfferId }}
