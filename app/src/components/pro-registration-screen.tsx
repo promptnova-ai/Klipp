@@ -231,6 +231,7 @@ export function ProRegistrationScreen() {
               <Text style={styles.subtitle}>Completa tus datos, servicios y disponibilidad para empezar a recibir solicitudes.</Text>
             </View>
             {true && (
+              <Text style={styles.sectionTitle}>Datos personales</Text>
               <View style={styles.card}>
                 <Field label="Nombre completo">
                   <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
@@ -242,6 +243,7 @@ export function ProRegistrationScreen() {
             )}
 
             {true && (
+              <Text style={styles.sectionTitle}>Perfil profesional</Text>
               <View style={styles.card}>
                 <Field label="Años de experiencia">
                   <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
@@ -260,6 +262,7 @@ export function ProRegistrationScreen() {
             )}
 
             {true && (
+              <Text style={styles.sectionTitle}>Servicios y tarifas</Text>
               <View style={styles.serviceList}>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
@@ -309,6 +312,7 @@ export function ProRegistrationScreen() {
             )}
 
             {true && (
+              <Text style={styles.sectionTitle}>Zona de trabajo</Text>
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -339,6 +343,7 @@ export function ProRegistrationScreen() {
             )}
 
             {true && (
+              <Text style={styles.sectionTitle}>Disponibilidad</Text>
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Selecciona tus días de trabajo</Text>
                 <View style={styles.chips}>
@@ -353,7 +358,8 @@ export function ProRegistrationScreen() {
 
             {true && (
               <>
-                <View style={styles.summaryCard}>
+                <Text style={styles.sectionTitle}>Acceso a tu cuenta</Text>
+              <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
                   <View style={styles.summaryCopy}>
                     <Text style={styles.cardTitle}>{selectedCount} {selectedCount === 1 ? 'servicio' : 'servicios'} · {radiusKm} km</Text>
@@ -421,19 +427,20 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#222222', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   sectionDescription: { color: '#717171', fontSize: 12, lineHeight: 18 },
   sectionBody: { gap: 10 },
+  sectionTitle: { color: '#222222', fontSize: 16, fontWeight: '800', letterSpacing: -0.25, marginBottom: 2 },
   
   headerHero: { height: 104, minHeight: 104, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
   headerHeroImage: { opacity: 0.9 },
   headerScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
   header: { minHeight: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, borderBottomWidth: 1, borderBottomColor: '#EEEEEE', backgroundColor: '#FFFFFF' },
-  backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
-  backText: { color: '#FFFFFF', fontSize: 29, lineHeight: 32, marginTop: -3 },
+  backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#F7F7F7', borderWidth: 1, borderColor: '#E5E5E5' },
+  backText: { color: '#222222', fontSize: 26, lineHeight: 30, marginTop: -3 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#FF5A5F', borderWidth: 1, borderColor: '#FF5A5F' },
   logoLetter: { color: '#FFFFFF', fontSize: 20, fontWeight: '900' },
-  brand: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -0.8 },
-  proWord: { color: '#FFD5D7', fontSize: 10, letterSpacing: 1.5 },
-  headerCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, maxWidth: 112, textAlign: 'right', lineHeight: 14 },
+  brand: { color: '#222222', fontSize: 22, fontWeight: '800', letterSpacing: -0.7 },
+  proWord: { color: '#E31C5F', fontSize: 10, letterSpacing: 1.5 },
+  headerCaption: { color: '#717171', fontSize: 9, fontWeight: '800', letterSpacing: 1, maxWidth: 112, textAlign: 'right', lineHeight: 14 },
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
   scrollContent: { flex: 1, minHeight: 0 },
@@ -456,14 +463,14 @@ const styles = StyleSheet.create({
   title: { color: '#222222', fontSize: 27, lineHeight: 32, fontWeight: '800', letterSpacing: -0.7 },
   subtitle: { maxWidth: 520, color: '#717171', fontSize: 14, lineHeight: 21 },
   card: { padding: 16, borderWidth: 1, borderColor: '#E8E8E8', borderRadius: 16, backgroundColor: '#FFFFFF', gap: 16 },
-  field: { flex: 1, gap: 7 },
+  field: { flex: 1, minWidth: 0, gap: 7 },
   label: { color: '#484848', fontSize: 12, fontWeight: '800' },
   input: { minHeight: 46, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, backgroundColor: '#F7F7F7', color: '#222222', fontSize: 15, fontWeight: '500' },
   multiline: { minHeight: 78, paddingTop: 12, textAlignVertical: 'top' },
   transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
 
-  serviceList: { gap: 8, flexDirection: 'column', justifyContent: 'center' },
+  serviceList: { gap: 10, flexDirection: 'column' },
 
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
@@ -479,7 +486,7 @@ const styles = StyleSheet.create({
   serviceCopy: { flex: 1, gap: 4 },
   serviceName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   serviceDescription: { color: '#717171', fontSize: 12, lineHeight: 17 },
-  serviceFields: { flexDirection: 'row', gap: 6, paddingLeft: 0 },
+  serviceFields: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingLeft: 0 },
   helper: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   selectionNote: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   locationIntro: { flexDirection: 'row', alignItems: 'center', gap: 12 },
