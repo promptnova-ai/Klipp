@@ -552,7 +552,7 @@ export function ProProfileScreen() {
   }
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando perfil...</Text></View>;
+    return <View style={styles.centered}><ActivityIndicator color={KlippColors.violet} /><Text style={styles.body}>Cargando perfil...</Text></View>;
   }
 
   if (!proProfile) {
