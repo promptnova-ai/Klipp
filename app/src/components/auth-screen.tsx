@@ -39,7 +39,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const stepTranslate = stepMotion.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
 
   useEffect(() => {
-    Animated.spring(stepMotion, { toValue: 1, speed: 18, bounciness: 4, useNativeDriver: false }).start();
+    Animated.spring(stepMotion, { toValue: 1, speed: 18, bounciness: 4, useNativeDriver: Platform.OS !== 'web' }).start();
   }, [stepMotion]);
 
   useEffect(() => {
@@ -73,9 +73,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [registerStep, setRegisterStep] = useState(0);
 
   function moveRegisterStep(nextStep: number) {
-    Animated.timing(stepMotion, { toValue: 0, duration: 140, useNativeDriver: false }).start(() => {
+    Animated.timing(stepMotion, { toValue: 0, duration: 140, useNativeDriver: Platform.OS !== 'web' }).start(() => {
       setRegisterStep(nextStep);
-      Animated.spring(stepMotion, { toValue: 1, speed: 18, bounciness: 3, useNativeDriver: false }).start();
+      Animated.spring(stepMotion, { toValue: 1, speed: 18, bounciness: 3, useNativeDriver: Platform.OS !== 'web' }).start();
     });
   }
 
