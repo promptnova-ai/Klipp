@@ -291,7 +291,7 @@ export function ProRegistrationScreen() {
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.scrollContent}>
           <Animated.View style={[styles.stepContent, { opacity: transition, transform: [{ translateX: transitionOffset }] }]}>
             <View style={styles.stepRail}>
               {steps.map((item, index) => (
@@ -490,7 +490,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
           </Animated.View>
-        </ScrollView>
+        </View>
         <View style={styles.footer}>
           {step < steps.length - 1 ? (
             <Pressable accessibilityRole="button" onPress={continueRegistration} style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryPressed]}>
@@ -526,10 +526,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   
-  headerHero: { minHeight: 176, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
+  headerHero: { height: 104, minHeight: 104, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
   headerHeroImage: { opacity: 0.9 },
   headerScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
-  header: { minHeight: 156, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  header: { minHeight: 96, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
   backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   backText: { color: '#FFFFFF', fontSize: 29, lineHeight: 32, marginTop: -3 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
@@ -540,26 +540,26 @@ const styles = StyleSheet.create({
   headerCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, maxWidth: 112, textAlign: 'right', lineHeight: 14 },
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28 },
-  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 24 },
-  stepRail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginBottom: 4 },
+  scrollContent: { flex: 1, minHeight: 0, paddingHorizontal: 22, paddingTop: 8, paddingBottom: 6, justifyContent: 'center' },
+  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 8 },
+  stepRail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, paddingVertical: 2, marginBottom: 0 },
   stepRailItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
   stepRailDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#DDDDDD', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
   stepRailDotActive: { borderColor: '#FF5A5F', backgroundColor: '#FFF0F1' },
   stepRailDotDone: { borderColor: '#00A699', backgroundColor: '#E8F6F4' },
   stepRailNumber: { color: '#999999', fontSize: 10, fontWeight: '900' },
   stepRailNumberActive: { color: '#E31C5F' },
-  stepRailLabel: { color: '#999999', fontSize: 8, fontWeight: '800', letterSpacing: 0.4 },
+  stepRailLabel: { color: '#999999', fontSize: 7, fontWeight: '800', letterSpacing: 0.4 },
   stepRailLabelActive: { color: '#222222' },
   stepRailLine: { height: 1, flex: 1, backgroundColor: '#EBEBEB', marginHorizontal: 4 },
   stepRailLineDone: { backgroundColor: '#00A699' },
-  heading: { position: 'relative', overflow: 'hidden', gap: 10, marginBottom: 2, paddingHorizontal: 4, paddingVertical: 8, backgroundColor: 'transparent' },
+  heading: { position: 'relative', overflow: 'hidden', gap: 4, marginBottom: 0, paddingHorizontal: 4, paddingVertical: 2, backgroundColor: 'transparent' },
   headingTopline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headingStep: { color: '#717171', fontSize: 12, fontWeight: '900', letterSpacing: 1.4 },
   eyebrow: { color: '#FF5A5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  title: { color: '#222222', fontSize: 34, lineHeight: 40, fontWeight: '900', letterSpacing: -1.1 },
+  title: { color: '#222222', fontSize: 27, lineHeight: 32, fontWeight: '900', letterSpacing: -1.1 },
   subtitle: { maxWidth: 520, color: '#717171', fontSize: 14, lineHeight: 21 },
-  card: { padding: 26, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 20, shadowColor: '#222222', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
+  card: { padding: 16, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 20, shadowColor: '#222222', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   field: { flex: 1, gap: 7 },
   label: { color: '#484848', fontSize: 12, fontWeight: '800' },
   input: { minHeight: 54, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, backgroundColor: '#F7F7F7', color: '#222222', fontSize: 15, fontWeight: '500' },
@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   summaryIconText: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
   summaryCopy: { flex: 1, gap: 3 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
-  footer: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 14, borderTopWidth: 1, borderTopColor: '#EBEBEB', backgroundColor: '#FFFFFF' },
+  footer: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 6, borderTopWidth: 1, borderTopColor: '#EBEBEB', backgroundColor: '#FFFFFF' },
   primaryButton: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, backgroundColor: '#FF5A5F', shadowColor: '#FF5A5F', shadowOpacity: 0.14, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
   primaryPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
