@@ -308,7 +308,7 @@ export function ClientBookingsScreen() {
                   <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={19} />
                 </View>
                 <View style={styles.serviceHeadingCopy}>
-                  <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
+                  <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio profesional'}</Text>
                   <Text style={styles.tier}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
                 </View>
               </View>
