@@ -157,7 +157,7 @@ export function ProRegistrationScreen() {
           setSelectedTierIds([]);
           setTierDrafts((current) => ({
             ...current,
-            ...Object.fromEntries(rows.map((tier) => [tier.id, current[tier.id] ?? { price: '', minutes: '60' }])),
+            ...Object.fromEntries(rows.map((tier) => [tier.id, current[tier.id] ?? { price: '', minutes: String(tier.est_minutes || 60) }])),
           }));
         }
         setTiersLoading(false);
@@ -391,7 +391,7 @@ export function ProRegistrationScreen() {
                           ))}
                           <View style={styles.transportSection}>
                             <Text style={styles.label}>Modalidades y tarifas</Text>
-                            <Text style={styles.helper}>Selecciona cada servicio que ofreces e indica el precio y el tiempo que necesitas. Solo se mostrarán a los clientes las modalidades que publiques.</Text>
+                            <Text style={styles.helper}>Selecciona cada modalidad que ofreces e indica tu precio y duración. Las tarifas que no publiques no aparecerán en las reservas.</Text>
                             {tiersLoading ? <ActivityIndicator color={KlippColors.blue} /> : pricingTiers.map((tier) => {
                               const tierSelected = selectedTierIds.includes(tier.id);
                               const draft = tierDrafts[tier.id] ?? { price: '', minutes: '60' };
