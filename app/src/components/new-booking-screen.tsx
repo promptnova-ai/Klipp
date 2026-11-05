@@ -539,6 +539,7 @@ export function NewBookingScreen() {
     setSaving(true);
     setError(null);
     setSuccess(null);
+    try {
     let bookingId: unknown = null;
     let rpcError: { message: string } | null = null;
     if (selectedOffer) {
@@ -612,7 +613,11 @@ export function NewBookingScreen() {
         setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
       }
     }
-    setSaving(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos crear la reserva. Comprueba tu conexión e inténtalo de nuevo.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
