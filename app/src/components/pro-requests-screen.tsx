@@ -326,12 +326,12 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 
 const styles = StyleSheet.create({
   offerScreen: { flex: 1, backgroundColor: KlippColors.navy },
-  offerHeader: { paddingTop: 58, paddingHorizontal: 24, paddingBottom: 26, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
+  offerHeader: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingTop: 58, paddingHorizontal: 24, paddingBottom: 26, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
   offerBrand: { color: KlippColors.cyan, fontSize: 14, fontWeight: '900', letterSpacing: 2.5 },
   offerEyebrow: { color: '#ffffff', fontSize: 12, fontWeight: '800', letterSpacing: 1.5 },
   countdownPill: { marginTop: 6, minWidth: 82, paddingHorizontal: 18, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.violet },
   countdownText: { color: '#ffffff', fontWeight: '900', fontSize: 18, textAlign: 'center' },
-  offerContent: { padding: 22, paddingBottom: 44, gap: 17, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  offerContent: { width: '100%', maxWidth: 820, alignSelf: 'center', padding: 22, paddingBottom: 44, gap: 17, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   offerTitle: { color: KlippColors.navy, fontSize: 27, lineHeight: 33, fontWeight: '900', letterSpacing: -0.6, textAlign: 'center' },
   offerSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 20, textAlign: 'center', marginBottom: 4 },
   customerCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderRadius: 23, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
