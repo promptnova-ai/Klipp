@@ -130,3 +130,16 @@ En la base Supabase activa `hxjwibtpxgpdxemqqwjh` no aparecen `service_equipment
 - El perfil queda en estado de verificación pendiente por el valor predeterminado existente; no recibe asignaciones hasta ser aprobado.
 - Verificación estructural posterior a las migraciones: existe la columna JSONB y el índice único parcial; el trigger tiene ejecución revocada para `anon` y `authenticated`.
 - La prueba automática de la app para el último commit está en curso. Aún falta una prueba completa de alta con un usuario de prueba, confirmación de correo e inspección de los registros creados.
+
+
+## Tarifas por modalidad (2026-11-05)
+
+- Se amplió el catálogo a **40 modalidades**: 4 barbería, 6 peluquería, 5 estética, 4 carwash, 5 detailing, 3 limpieza regular, 3 limpieza profunda, 5 oficinas y 5 mantenimiento.
+- El valor de catálogo `pricing_tiers.price_dop = 0` significa que no hay precio fijo de Klipp. El cliente nunca debe ver ese cero como tarifa; cada profesional publica su precio y duración en `pro_service_tier_prices`.
+- El registro profesional permite seleccionar las modalidades que ofrece y pide precio y duración para cada una. La tarifa base heredada de `pro_services` se calcula como el menor precio publicado para compatibilidad con tarjetas de servicio.
+- Migración 038 actualiza el trigger de alta para validar y guardar cada tarifa de modalidad en la misma transacción de Auth; incorpora el catálogo para las profesiones que aún no tenían variantes y adapta las reservas con modalidad para consultar el precio/duración real del profesional.
+- Migración 039 actualiza la búsqueda manual para devolver solo profesionales con precio activo para la modalidad elegida y calcular su disponibilidad con la duración de esa tarifa. La consulta de franjas horarias también acepta el profesional elegido y comprueba su precio/tiempo exactos.
+- Migración 040 permite que el panel admin mantenga el catálogo con precio global cero. El panel ya no permite fijar un precio global que pueda confundirse con la tarifa real del profesional.
+- El cliente selecciona primero una modalidad. En asignación automática, el rango estimado procede de los precios publicados por profesionales de la zona; en asignación manual, la ficha y la reserva consultan la tarifa exacta del profesional. Al aceptar, el backend vuelve a fijar precio, duración, comisión y pago del profesional con la tarifa guardada.
+- Verificación estructural posterior a las migraciones: 40 modalidades en catálogo y las 40 con precio global cero; las funciones de búsqueda y creación de reserva no son ejecutables por `anon` y sí por `authenticated`.
+- Falta una prueba end-to-end con cuentas de prueba (alta PRO, confirmación de correo, inserción de varias tarifas, búsqueda de modalidad y reserva manual/automática) y QA visual en navegador/dispositivos.
