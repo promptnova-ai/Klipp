@@ -434,7 +434,7 @@ export function ProAgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 42, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingBottom: 42, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, backgroundColor: 'rgba(15, 23, 42, 0.55)' },
   equipmentModal: { width: '100%', maxWidth: 440, padding: 24, borderRadius: 24, backgroundColor: KlippColors.white, gap: 15 },
   modalTitle: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
