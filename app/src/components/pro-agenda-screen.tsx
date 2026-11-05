@@ -130,23 +130,30 @@ export function ProAgendaScreen() {
         // One GPS watcher is enough even when the professional has multiple
         // active trips. Fan the same fix out to each authorized booking instead
         // of starting one native location subscription per booking.
+        let publishing = false;
         const subscription = await Location.watchPositionAsync({
           accuracy: Location.Accuracy.High,
           distanceInterval: 10,
           timeInterval: 5000,
         }, async ({ coords }) => {
-          const results = await Promise.all(activeTripIds.map(async (bookingId) => {
-            const { data: published, error: publishError } = await supabase.rpc('publish_pro_location', {
-              p_booking_id: bookingId,
-              p_latitude: coords.latitude,
-              p_longitude: coords.longitude,
-            });
-            return { bookingId, published, publishError };
-          }));
-          const invalidatedTrips = results.filter((result) => result.published === false);
-          const failedPublication = results.find((result) => result.publishError);
-          if (failedPublication?.publishError && active) setError(failedPublication.publishError.message);
-          if (invalidatedTrips.length > 0 && active) await loadBookings();
+          if (publishing || !active) return;
+          publishing = true;
+          try {
+            const results = await Promise.all(activeTripIds.map(async (bookingId) => {
+              const { data: published, error: publishError } = await supabase.rpc('publish_pro_location', {
+                p_booking_id: bookingId,
+                p_latitude: coords.latitude,
+                p_longitude: coords.longitude,
+              });
+              return { published, publishError };
+            }));
+            const invalidatedTrips = results.some((result) => result.published === false);
+            const failedPublication = results.find((result) => result.publishError);
+            if (failedPublication?.publishError) setError(failedPublication.publishError.message);
+            if (invalidatedTrips) await loadBookings();
+          } finally {
+            publishing = false;
+          }
         });
         if (active) subscriptions.push(subscription);
         else subscription.remove();
