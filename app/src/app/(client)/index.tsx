@@ -526,7 +526,7 @@ export default function ClientHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 58, paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 960, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 24, paddingTop: 58, paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 42, height: 42, borderRadius: 15, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 4, borderBottomColor: KlippColors.cyan },
