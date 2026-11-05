@@ -78,3 +78,18 @@ Screenshots for every state are not attached to this report. A browser session c
 ## Release discipline
 
 Changes remain on `fix/auth-ui-klipp-services` and in the open pull request. No merge to `main`, production deployment or live database migration was performed as part of this audit.
+
+## Visual polish pass — 2026-11-05
+
+The follow-up implementation adds a more editorial visual direction to the entry and booking journeys:
+
+- Authentication now uses a full photographic showcase on wide layouts and a cropped photographic hero on compact layouts, with a contrast overlay and animated form transitions.
+- Klipp PRO onboarding uses a photographic header, a larger visual frame, animated directional step transitions, and an animated progress indicator.
+- The client home hero uses a full-bleed service image with a dark readability overlay and the shared coral/teal identity.
+- Root stack navigation now uses a short horizontal transition; booking sections animate into view when they appear.
+- Booking selection surfaces, date states, professional cards, and notices now use the coral/teal system rather than leftover blue selection treatments.
+- Native entry transitions use the native animation driver where supported; web uses the compatible JS driver.
+
+### Validation boundary
+
+GitHub Actions completed lint and TypeScript successfully for commit `010c4e4b3024e3449971ab6152c5ab84026c57f3`. Later visual-only changes are being revalidated on the current branch head. Vercel preview deployment is still queued/building. No screenshot-based visual QA or physical iOS/Android device validation has been completed, so final spacing, crop behavior, font rendering, and reduced-motion behavior still need device/browser review.
