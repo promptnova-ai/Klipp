@@ -64,6 +64,7 @@ export function ProRegistrationScreen() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [servicePage, setServicePage] = useState(0);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
@@ -283,6 +284,8 @@ export function ProRegistrationScreen() {
 
   const currentStep = steps[step];
   const selectedCount = selectedServices.length;
+  const visibleServices = catalog.slice(servicePage * 4, servicePage * 4 + 4);
+  const servicePageCount = Math.max(1, Math.ceil(catalog.length / 4));
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -367,7 +370,7 @@ export function ProRegistrationScreen() {
                       <Text style={styles.retryButtonText}>Actualizar catálogo</Text>
                     </Pressable>
                   </View>
-                ) : catalog.map((service) => {
+                ) : visibleServices.map((service) => {
                   const selected = selectedServices.includes(service.id);
                   const draft = serviceDrafts[service.id] ?? { price: '', minutes: '60' };
                   return (
@@ -392,6 +395,17 @@ export function ProRegistrationScreen() {
                     </View>
                   );
                 })}
+                {catalog.length > 4 && (
+                  <View style={styles.servicePagination}>
+                    <Pressable accessibilityRole="button" disabled={servicePage === 0} onPress={() => setServicePage((page) => Math.max(0, page - 1))} style={[styles.pageButton, servicePage === 0 && styles.pageButtonDisabled]}>
+                      <Text style={styles.pageButtonText}>← Anterior</Text>
+                    </Pressable>
+                    <Text style={styles.pageIndicator}>{servicePage + 1} / {servicePageCount}</Text>
+                    <Pressable accessibilityRole="button" disabled={servicePage >= servicePageCount - 1} onPress={() => setServicePage((page) => Math.min(servicePageCount - 1, page + 1))} style={[styles.pageButton, servicePage >= servicePageCount - 1 && styles.pageButtonDisabled]}>
+                      <Text style={styles.pageButtonText}>Siguiente →</Text>
+                    </Pressable>
+                  </View>
+                )}
                 {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
               </View>
             )}
@@ -554,6 +568,11 @@ const styles = StyleSheet.create({
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: '#E31C5F', fontSize: 11, fontWeight: '700' },
   serviceList: { gap: 7, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'space-between' },
+  servicePagination: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
+  pageButton: { minHeight: 34, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#FFF0F1' },
+  pageButtonDisabled: { opacity: 0.35 },
+  pageButtonText: { color: '#E31C5F', fontSize: 11, fontWeight: '800' },
+  pageIndicator: { color: '#717171', fontSize: 11, fontWeight: '700' },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
   catalogErrorTitle: { color: '#222222', fontSize: 15, fontWeight: '700' },
