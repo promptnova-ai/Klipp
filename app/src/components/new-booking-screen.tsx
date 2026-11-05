@@ -232,7 +232,9 @@ export function NewBookingScreen() {
       })[]);
       setOffers(nearby);
       const requestedOffer = nearby.find((offer) => offer.id === offerIdParam);
-      if (requestedOffer && !tiers.some((tier) => tier.service_type_id === requestedOffer.service_type_id)) setSelectedOfferId(requestedOffer.id);
+      if (requestedOffer) setSelectedOfferId(
+        tiers.some((tier) => tier.service_type_id === requestedOffer.service_type_id) ? null : requestedOffer.id,
+      );
     }).catch((cause: unknown) => {
       if (active) setError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
     });
