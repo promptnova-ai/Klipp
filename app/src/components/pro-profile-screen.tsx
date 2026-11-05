@@ -154,7 +154,7 @@ export function ProProfileScreen() {
     const offeredIds = offered.map((item) => item.id).filter((id): id is string => Boolean(id));
     if (offeredIds.length) {
       const tierPriceResult = await supabase.from('pro_service_tier_prices')
-        .select('id, pro_service_id, pricing_tier_id, price_dop, est_minutes, active')
+        .select('pro_service_id, pricing_tier_id, price_dop, est_minutes, active')
         .in('pro_service_id', offeredIds);
       if (tierPriceResult.error) {
         setError(tierPriceResult.error.message);
@@ -162,7 +162,7 @@ export function ProProfileScreen() {
         return;
       }
       const serviceIdByOfferId = new Map(offered.map((item) => [item.id, item.service_type_id]));
-      const savedTierPrices = (tierPriceResult.data ?? []) as { id: string; pro_service_id: string; pricing_tier_id: number; price_dop: number; est_minutes: number; active: boolean }[];
+      const savedTierPrices = (tierPriceResult.data ?? []) as { pro_service_id: string; pricing_tier_id: number; price_dop: number; est_minutes: number; active: boolean }[];
       setSelectedTierKeys(savedTierPrices.filter((item) => item.active).map((item) => `${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`));
       setTierPrices(Object.fromEntries(savedTierPrices.map((item) => [`${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`, String(item.price_dop)])));
       setTierDurations(Object.fromEntries(savedTierPrices.map((item) => [`${serviceIdByOfferId.get(item.pro_service_id)}:${item.pricing_tier_id}`, String(item.est_minutes)])));
@@ -440,7 +440,7 @@ export function ProProfileScreen() {
         const proServiceIds = [...offerIdByServiceId.values()];
         if (proServiceIds.length) {
           const existingTierRows = await supabase.from('pro_service_tier_prices')
-            .select('id, pro_service_id, pricing_tier_id')
+            .select('pro_service_id, pricing_tier_id')
             .in('pro_service_id', proServiceIds);
           if (existingTierRows.error) {
             setError(`Servicios guardados, pero no pudimos revisar las modalidades anteriores: ${existingTierRows.error.message}`);
@@ -449,12 +449,12 @@ export function ProProfileScreen() {
           }
           const serviceIdByOfferId = new Map([...offerIdByServiceId.entries()].map(([serviceId, offerId]) => [offerId, serviceId]));
           const toDeactivate = (existingTierRows.data ?? [])
-            .filter((row) => !selectedTierKeys.includes(`${serviceIdByOfferId.get(row.pro_service_id)}:${row.pricing_tier_id}`))
-            .map((row) => row.id);
-          if (toDeactivate.length) {
+            .filter((row) => !selectedTierKeys.includes(`${serviceIdByOfferId.get(row.pro_service_id)}:${row.pricing_tier_id}`));
+          for (const row of toDeactivate) {
             const { error: deactivateError } = await supabase.from('pro_service_tier_prices')
               .update({ active: false })
-              .in('id', toDeactivate);
+              .eq('pro_service_id', row.pro_service_id)
+              .eq('pricing_tier_id', row.pricing_tier_id);
             if (deactivateError) {
               setError(`Servicios guardados, pero no pudimos retirar modalidades despublicadas: ${deactivateError.message}`);
               setSaving(false);
