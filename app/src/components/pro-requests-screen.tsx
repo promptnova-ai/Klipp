@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   slideThumb: { width: 56, height: 56, borderRadius: 15, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', elevation: 3 },
   slideArrow: { color: KlippColors.violet, fontSize: 27, fontWeight: '900', letterSpacing: -4, marginRight: 4 },
   offerFootnote: { color: '#718187', fontSize: 11, lineHeight: 16, textAlign: 'center' },
-  page: { paddingBottom: 42, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingBottom: 42, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
