@@ -127,27 +127,29 @@ export function ProAgendaScreen() {
             setError('La ubicación en segundo plano no está permitida; el seguimiento funcionará mientras la app esté abierta.');
           }
         }
-        for (const bookingId of activeTripIds) {
-          let subscription: Location.LocationSubscription | null = null;
-          subscription = await Location.watchPositionAsync({
-            accuracy: Location.Accuracy.High,
-            distanceInterval: 10,
-            timeInterval: 5000,
-          }, async ({ coords }) => {
+        // One GPS watcher is enough even when the professional has multiple
+        // active trips. Fan the same fix out to each authorized booking instead
+        // of starting one native location subscription per booking.
+        const subscription = await Location.watchPositionAsync({
+          accuracy: Location.Accuracy.High,
+          distanceInterval: 10,
+          timeInterval: 5000,
+        }, async ({ coords }) => {
+          const results = await Promise.all(activeTripIds.map(async (bookingId) => {
             const { data: published, error: publishError } = await supabase.rpc('publish_pro_location', {
               p_booking_id: bookingId,
               p_latitude: coords.latitude,
               p_longitude: coords.longitude,
             });
-            if (publishError && active) setError(publishError.message);
-            if (published === false) {
-              subscription?.remove();
-              if (active) await loadBookings();
-            }
-          });
-          if (active) subscriptions.push(subscription);
-          else subscription.remove();
-        }
+            return { bookingId, published, publishError };
+          }));
+          const invalidatedTrips = results.filter((result) => result.published === false);
+          const failedPublication = results.find((result) => result.publishError);
+          if (failedPublication?.publishError && active) setError(failedPublication.publishError.message);
+          if (invalidatedTrips.length > 0 && active) await loadBookings();
+        });
+        if (active) subscriptions.push(subscription);
+        else subscription.remove();
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'No pudimos iniciar el seguimiento de ubicación.');
       }
