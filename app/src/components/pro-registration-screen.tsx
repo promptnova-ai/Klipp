@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import {
   ActivityIndicator,
   Animated,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -268,6 +269,8 @@ export function ProRegistrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1582771498000-8ad44e6c84db?auto=format&fit=crop&w=1800&q=85' }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
+      <View pointerEvents="none" style={styles.photoOverlay} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
@@ -512,7 +515,8 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
+  safeArea: { flex: 1, backgroundColor: '#101827' },
+  photoOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(7, 17, 34, 0.58)' },
   header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
   backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#E8EDF5' },
   backText: { color: KlippColors.navy, fontSize: 29, lineHeight: 32, marginTop: -3 },
@@ -583,7 +587,7 @@ const styles = StyleSheet.create({
   summaryIconText: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
   summaryCopy: { flex: 1, gap: 3 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
-  footer: { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#E8EDF5', backgroundColor: KlippColors.white },
+  footer: { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.96)' },
   primaryButton: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 18, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.22, shadowOffset: { width: 0, height: 7 }, shadowRadius: 16, elevation: 4 },
   primaryPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
