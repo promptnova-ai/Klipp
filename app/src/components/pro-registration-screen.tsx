@@ -284,8 +284,8 @@ export function ProRegistrationScreen() {
 
   const currentStep = steps[step];
   const selectedCount = selectedServices.length;
-  const visibleServices = catalog.slice(servicePage * 4, servicePage * 4 + 4);
-  const servicePageCount = Math.max(1, Math.ceil(catalog.length / 4));
+  const visibleServices = catalog.slice(servicePage * 2, servicePage * 2 + 2);
+  const servicePageCount = Math.max(1, Math.ceil(catalog.length / 2));
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#FFF0F1' },
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: '#E31C5F', fontSize: 11, fontWeight: '700' },
-  serviceList: { gap: 7, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'space-between' },
+  serviceList: { gap: 8, flexDirection: 'column', justifyContent: 'center' },
   servicePagination: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   pageButton: { minHeight: 34, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#FFF0F1' },
   pageButtonDisabled: { opacity: 0.35 },
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
   catalogErrorTitle: { color: '#222222', fontSize: 15, fontWeight: '700' },
   retryButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#FFF0F1' },
   retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
-  serviceCard: { width: '48%', padding: 9, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 14, backgroundColor: '#FFFFFF', gap: 8, shadowColor: KlippColors.navy, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
+  serviceCard: { width: '100%', padding: 10, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 14, backgroundColor: '#FFFFFF', gap: 8, shadowColor: KlippColors.navy, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
   serviceCardSelected: { borderColor: KlippColors.blue, backgroundColor: '#FFF0F1' },
   serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#DDDDDD', borderRadius: 7 },
