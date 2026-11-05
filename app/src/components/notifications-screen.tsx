@@ -281,6 +281,49 @@ export function NotificationsScreen() {
             ))}
           </View>
         )}
+
+        <Text style={styles.settingsSectionLabel}>Ajustes de notificaciones</Text>
+        <View style={styles.preferencesCard}>
+          <Text style={styles.preferencesTitle}>Preferencias de avisos</Text>
+          <Text style={styles.preferencesHint}>Elige cómo quieres recibir las actualizaciones de Klipp.</Text>
+          {([
+            ['booking_updates', 'Reservas y servicios'],
+            ['chat_messages', 'Mensajes del chat'],
+            ['reminders', 'Recordatorios de reservas'],
+          ] as const).map(([eventType, label]) => (
+            <View key={eventType} style={styles.preferenceRow}>
+              <Text style={styles.preferenceLabel}>{label}</Text>
+              <View style={styles.preferenceChannel}>
+                <Text style={styles.preferenceChannelLabel}>En la app</Text>
+                <Switch
+                  value={preferences[eventType].in_app_enabled}
+                  onValueChange={(value) => void updatePreference(eventType, 'in_app_enabled', value)}
+                  trackColor={{ true: KlippColors.blue }}
+                />
+              </View>
+              <View style={styles.preferenceChannel}>
+                <Text style={styles.preferenceChannelLabel}>Push</Text>
+                <Switch
+                  value={preferences[eventType].push_enabled}
+                  onValueChange={(value) => void updatePreference(eventType, 'push_enabled', value)}
+                  trackColor={{ true: KlippColors.blue }}
+                />
+              </View>
+            </View>
+          ))}
+        </View>
+
+        {Platform.OS !== 'web' && (
+          <View style={styles.pushCard}>
+            <View style={styles.pushCopy}>
+              <Text style={styles.preferencesTitle}>Notificaciones en tu dispositivo</Text>
+              <Text style={styles.preferencesHint}>Activa los avisos push para recibir actualizaciones aunque Klipp esté cerrado.</Text>
+            </View>
+            <Pressable accessibilityRole="button" disabled={pushBusy} onPress={() => void registerPushDevice()} style={({ pressed }) => [styles.pushButton, pressed && styles.pressed]}>
+              <Text style={styles.pushButtonText}>{pushBusy ? 'Activando…' : pushRegistered ? 'Actualizar este dispositivo' : 'Activar notificaciones push'}</Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -302,6 +345,7 @@ const styles = StyleSheet.create({
   pushCopy: { gap: 4 },
   pushButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.blue, paddingHorizontal: 16 },
   pushButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  settingsSectionLabel: { color: KlippColors.navy, fontSize: 17, fontWeight: '800', marginTop: 10, marginBottom: -5 },
   settingsSectionLabel: { color: KlippColors.navy, fontSize: 17, fontWeight: '800', marginTop: 10, marginBottom: -5 },
   preferencesTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
   preferencesHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
