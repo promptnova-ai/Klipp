@@ -17,10 +17,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth-provider';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
-import type { ServiceType } from '@/lib/types';
+import type { PricingTier, ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type ProServiceDraft = { price: string; minutes: string };
 type ProfessionField = { key: string; label: string; placeholder: string };
 const professionOptions: Record<string, string[]> = {
   barberia: ['Corte clásico', 'Degradado', 'Arreglo de barba', 'Afeitado'],
@@ -50,7 +49,7 @@ type ProOnboardingDraft = {
   bio: string;
   years_experience: number | null;
   transport_type: string | null;
-  services: { service_type_id: number; base_price_dop: number; est_minutes: number; details: Record<string, string> }[];
+  services: { service_type_id: number; base_price_dop: number; est_minutes: number; details: Record<string, string>; tier_prices: { pricing_tier_id: number; price_dop: number; est_minutes: number }[] }[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: AvailabilityDraft[];
   equipment_confirmed: boolean;
@@ -76,7 +75,10 @@ export function ProRegistrationScreen() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
-  const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(false);
+  const [selectedTierIds, setSelectedTierIds] = useState<number[]>([]);
+  const [tierDrafts, setTierDrafts] = useState<Record<number, { price: string; minutes: string }>>({});
   const [professionDetails, setProfessionDetails] = useState<Record<string, string>>({});
   const [selectedProfessionOptions, setSelectedProfessionOptions] = useState<string[]>([]);
   const [equipmentConfirmed, setEquipmentConfirmed] = useState(false);
@@ -130,12 +132,45 @@ export function ProRegistrationScreen() {
     return () => { active = false; };
   }, [fetchCatalog]);
 
+  useEffect(() => {
+    const serviceId = selectedServices[0];
+    if (!serviceId) {
+      setPricingTiers([]);
+      setSelectedTierIds([]);
+      setTiersLoading(false);
+      return;
+    }
+    let active = true;
+    setTiersLoading(true);
+    void supabase.from('pricing_tiers')
+      .select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes')
+      .eq('service_type_id', serviceId)
+      .order('id')
+      .then(({ data, error: queryError }) => {
+        if (!active) return;
+        if (queryError) {
+          setCatalogError(queryError.message);
+          setPricingTiers([]);
+        } else {
+          const rows = (data ?? []) as PricingTier[];
+          setPricingTiers(rows);
+          setSelectedTierIds([]);
+          setTierDrafts((current) => ({
+            ...current,
+            ...Object.fromEntries(rows.map((tier) => [tier.id, current[tier.id] ?? { price: '', minutes: '60' }])),
+          }));
+        }
+        setTiersLoading(false);
+      });
+    return () => { active = false; };
+  }, [selectedServices]);
+
   function validateForm() {
     if (fullName.trim().length < 2) return 'Escribe tu nombre completo.';
     if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
     if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
     if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
-    if (servicesLoading) return 'Espera mientras cargamos las especialidades.';
+    if (servicesLoading || tiersLoading) return 'Espera mientras cargamos las especialidades y modalidades.';
     if (!catalog.length) return 'No hay especialidades disponibles ahora mismo.';
     if (selectedServices.length !== 1) return 'Elige una profesión principal.';
     const profession = catalog.find((service) => service.id === selectedServices[0]);
@@ -143,11 +178,13 @@ export function ProRegistrationScreen() {
     if (!(professionOptions[profession.code] ?? []).length || !selectedProfessionOptions.length) return 'Selecciona al menos un tipo de servicio que realizas.';
     if ((professionFields[profession.code] ?? []).some((field) => !professionDetails[field.key]?.trim())) return 'Completa los detalles de tu profesión.';
     if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas, productos y materiales.';
-    const invalid = selectedServices.some((id) => {
-      const draft = serviceDrafts[id];
+    if (!pricingTiers.length) return 'Esta profesión todavía no tiene modalidades configuradas. Contacta con soporte.';
+    if (!selectedTierIds.length) return 'Selecciona al menos una modalidad y publica su tarifa.';
+    const invalid = selectedTierIds.some((id) => {
+      const draft = tierDrafts[id];
       return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0 || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
     });
-    if (invalid) return 'Completa un precio y una duración válidos para cada servicio elegido.';
+    if (invalid) return 'Completa un precio y una duración válidos para cada modalidad seleccionada.';
     if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
     if (!selectedWeekdays.length) return 'Selecciona al menos un día de trabajo.';
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) return 'Indica un horario válido y asegúrate de que la hora final sea posterior.';
@@ -162,10 +199,7 @@ export function ProRegistrationScreen() {
     setProfessionDetails({});
     setSelectedProfessionOptions([]);
     setEquipmentConfirmed(false);
-    setServiceDrafts((current) => ({
-      ...current,
-      [serviceId]: current[serviceId] ?? { price: '', minutes: '60' },
-    }));
+    setSelectedTierIds([]);
   }
 
   function toggleWeekday(weekday: number) {
@@ -209,12 +243,20 @@ export function ProRegistrationScreen() {
       transport_type: transportType === 'Otro'
         ? otherTransportType.trim()
         : transportType || null,
-      services: selectedServices.map((service_type_id) => ({
-        service_type_id,
-        base_price_dop: Number(serviceDrafts[service_type_id]?.price),
-        est_minutes: Number(serviceDrafts[service_type_id]?.minutes),
-        details: { specialty: selectedProfessionOptions.join(', '), ...professionDetails },
-      })),
+      services: selectedServices.map((service_type_id) => {
+        const tier_prices = selectedTierIds.map((pricing_tier_id) => ({
+          pricing_tier_id,
+          price_dop: Number(tierDrafts[pricing_tier_id]?.price),
+          est_minutes: Number(tierDrafts[pricing_tier_id]?.minutes),
+        }));
+        return {
+          service_type_id,
+          base_price_dop: Math.min(...tier_prices.map((tier) => tier.price_dop)),
+          est_minutes: Math.min(...tier_prices.map((tier) => tier.est_minutes)),
+          details: { specialty: selectedProfessionOptions.join(', '), ...professionDetails },
+          tier_prices,
+        };
+      }),
       coverage: { ...center, radius_km: radiusKm },
       availability: selectedWeekdays.map((weekday) => ({
         weekday,
@@ -329,7 +371,7 @@ export function ProRegistrationScreen() {
                       {selected && (
                         <View style={styles.serviceFields}>
                           <View style={styles.transportSection}>
-                            <Text style={styles.label}>¿Qué tipos de servicio realizas?</Text>
+                            <Text style={styles.label}>Especialidades que dominas</Text>
                             <View style={styles.chips}>
                               {(professionOptions[service.code] ?? []).map((option) => (
                                 <Chip
@@ -348,12 +390,32 @@ export function ProRegistrationScreen() {
                               <TextInput multiline maxLength={240} onChangeText={(value) => setProfessionDetails((current) => ({ ...current, [field.key]: value }))} placeholder={field.placeholder} placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={professionDetails[field.key] ?? ''} />
                             </Field>
                           ))}
-                          <Field label="Precio base · RD$">
-                            <TextInput keyboardType="decimal-pad" onChangeText={(price) => setServiceDrafts((current) => ({ ...current, [service.id]: { ...draft, price } }))} placeholder="1,500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
-                          </Field>
-                          <Field label="Duración · min">
-                            <TextInput keyboardType="number-pad" onChangeText={(minutes) => setServiceDrafts((current) => ({ ...current, [service.id]: { ...draft, minutes } }))} placeholder="60" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.minutes} />
-                          </Field>
+                          <View style={styles.transportSection}>
+                            <Text style={styles.label}>Modalidades y tarifas</Text>
+                            <Text style={styles.helper}>Selecciona cada servicio que ofreces e indica el precio y el tiempo que necesitas. Solo se mostrarán a los clientes las modalidades que publiques.</Text>
+                            {tiersLoading ? <ActivityIndicator color={KlippColors.blue} /> : pricingTiers.map((tier) => {
+                              const tierSelected = selectedTierIds.includes(tier.id);
+                              const draft = tierDrafts[tier.id] ?? { price: '', minutes: '60' };
+                              return (
+                                <View key={tier.id} style={styles.serviceCard}>
+                                  <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: tierSelected }} onPress={() => setSelectedTierIds((current) => tierSelected ? current.filter((id) => id !== tier.id) : [...current, tier.id])} style={styles.serviceRow}>
+                                    <View style={[styles.checkbox, tierSelected && styles.checkboxSelected]}>{tierSelected && <Text style={styles.checkmark}>✓</Text>}</View>
+                                    <Text style={[styles.serviceName, { flex: 1 }]}>{tier.label}</Text>
+                                  </Pressable>
+                                  {tierSelected && (
+                                    <View style={styles.serviceFields}>
+                                      <Field label="Tu precio · RD$">
+                                        <TextInput keyboardType="decimal-pad" onChangeText={(price) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, price } }))} placeholder="Ej. 1,500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
+                                      </Field>
+                                      <Field label="Duración estimada · minutos">
+                                        <TextInput keyboardType="number-pad" onChangeText={(minutes) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, minutes } }))} placeholder="60" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.minutes} />
+                                      </Field>
+                                    </View>
+                                  )}
+                                </View>
+                              );
+                            })}
+                          </View>
                           <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: equipmentConfirmed }} onPress={() => setEquipmentConfirmed((current) => !current)} style={styles.serviceRow}>
                             <View style={[styles.checkbox, equipmentConfirmed && styles.checkboxSelected]}>{equipmentConfirmed && <Text style={styles.checkmark}>✓</Text>}</View>
                             <Text style={[styles.helper, { flex: 1 }]}>Confirmo que llevaré mis propias herramientas, equipos, productos y materiales para realizar el servicio.</Text>
