@@ -1,22 +1,29 @@
+import { SymbolView } from 'expo-symbols';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/lib/brand';
 
 export function BrandScreenHeader({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle?: string }) {
   return (
     <View style={styles.header}>
       <View style={styles.brandRow}>
-        <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
+        <View style={styles.logoMark}>
+          <Text style={styles.logoLetter}>K</Text>
+          <View style={styles.logoSpark} />
+        </View>
         <View style={styles.brandCopy}>
           <View style={styles.brandLine}>
-            <Text style={styles.brand}>klipp</Text>
+            <Text style={styles.brand}>Klipp</Text>
             <View style={styles.badge}><Text style={styles.badgeText}>RD</Text></View>
           </View>
-          <Text style={styles.location}>REPÚBLICA DOMINICANA</Text>
+          <Text style={styles.location}>SERVICIOS QUE SE MUEVEN CONTIGO</Text>
         </View>
       </View>
       <View style={styles.heading}>
-        <Text style={styles.eyebrow}>{eyebrow}</Text>
+        <View style={styles.eyebrowRow}>
+          <View style={styles.eyebrowDot} />
+          <Text style={styles.eyebrow}>{eyebrow}</Text>
+        </View>
         <Text style={styles.title}>{title}</Text>
         {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       </View>
@@ -26,23 +33,26 @@ export function BrandScreenHeader({ eyebrow, title, subtitle }: { eyebrow: strin
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 20,
+    paddingHorizontal: KlippLayout.pageGutter,
     paddingTop: 58,
     paddingBottom: 8,
-    gap: 24,
+    gap: 27,
     backgroundColor: KlippColors.canvas,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.navy },
-  logoLetter: { color: KlippColors.white, fontSize: 22, fontWeight: '800' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  logoMark: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.blue, overflow: 'hidden' },
+  logoLetter: { color: KlippColors.white, fontSize: 23, fontWeight: '900', letterSpacing: -1 },
+  logoSpark: { position: 'absolute', right: 0, bottom: 0, width: 13, height: 4, backgroundColor: KlippColors.cyan },
   brandCopy: { gap: 2 },
-  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  brand: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
-  badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, backgroundColor: KlippColors.goldLight },
-  badgeText: { color: KlippColors.navy, fontSize: 9, fontWeight: '900' },
-  location: { color: KlippColors.muted, fontSize: 9, fontWeight: '700' },
-  heading: { gap: 7 },
-  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  title: { color: KlippColors.navy, fontSize: 28, lineHeight: 34, fontWeight: '700' },
-  subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
+  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brand: { color: KlippColors.navy, fontSize: 21, fontWeight: '900', letterSpacing: -0.8 },
+  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: KlippLayout.pillRadius, backgroundColor: KlippColors.violetSoft },
+  badgeText: { color: KlippColors.violet, fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  location: { color: KlippColors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 0.75 },
+  heading: { gap: 8 },
+  eyebrowRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  eyebrowDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: KlippColors.cyan },
+  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.9 },
+  subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22, maxWidth: 560 },
 });
