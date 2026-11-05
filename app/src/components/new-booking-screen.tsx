@@ -127,6 +127,10 @@ export function NewBookingScreen() {
     setAvailableSlots([]);
     setScheduledTime('');
     setLoadingSlots(false);
+    setAutoPriceRange(null);
+    setAutoPriceLoading(false);
+    setManualProPrice(null);
+    setManualPriceLoading(false);
     setPros([]);
     setSelectedProId(null);
     setLoadingPros(false);
@@ -247,11 +251,7 @@ export function NewBookingScreen() {
   const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' ? (selectedProId ? manualProPrice ?? undefined : undefined) : selectedTier?.price_dop);
 
   useEffect(() => {
-    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
-      setAutoPriceRange(null);
-      setAutoPriceLoading(false);
-      return;
-    }
+    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) return;
     let active = true;
     setAutoPriceLoading(true);
     void Promise.resolve(supabase.rpc('get_auto_service_price_estimate', {
@@ -283,11 +283,7 @@ export function NewBookingScreen() {
   }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
 
   useEffect(() => {
-    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
-      setManualProPrice(null);
-      setManualPriceLoading(false);
-      return;
-    }
+    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) return;
     let active = true;
     setManualPriceLoading(true);
     void Promise.resolve(supabase.from('pro_services')
@@ -335,12 +331,7 @@ export function NewBookingScreen() {
   }, [mode, selectedProId, selectedServiceId, selectedTier?.id, selectedOffer]);
 
   useEffect(() => {
-    if (timing === 'now') {
-      setAvailableSlots([]);
-      setScheduledTime('');
-      setLoadingSlots(false);
-      return;
-    }
+    if (timing === 'now') return;
     if (!coordinate || (!selectedTier && !selectedOffer && !(selectedServiceId && (mode === 'auto' || selectedProId))) || !scheduledDate) {
       return;
     }
