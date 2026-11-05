@@ -79,9 +79,18 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   }
 
   function continueRegister() {
-    if (!fullName.trim()) { setError('Escribe tu nombre completo para continuar.'); return; }
     setError(null);
-    moveRegisterStep(1);
+    if (registerStep === 0) return;
+    if (registerStep === 1 && !fullName.trim()) {
+      setError('Escribe tu nombre completo para continuar.');
+      return;
+    }
+    if (registerStep === 2 && (!email.trim() || !password)) {
+      setError('Completa tu correo y contraseña para continuar.');
+      return;
+    }
+    if (registerStep < 2) moveRegisterStep(registerStep + 1);
+    else void handleSubmit();
   }
 
   return (
@@ -108,13 +117,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               <View style={styles.storyAccent}><Text style={styles.storyAccentText}>KLIPP · REPÚBLICA DOMINICANA</Text></View>
             </ImageBackground>}
 
-            {!wideLayout && <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=85' }} imageStyle={styles.mobileHeroImage} style={styles.mobileHero}><View style={styles.mobileHeroScrim} /><Text style={styles.mobileHeroEyebrow}>KLIPP · SERVICIOS A TU MANERA</Text><Text style={styles.mobileHeroTitle}>Tu tiempo. Tu estilo. Tu Klipp.</Text></ImageBackground>}
+            {!wideLayout && !isRegister && <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1200&q=85' }} imageStyle={styles.mobileHeroImage} style={styles.mobileHero}><View style={styles.mobileHeroScrim} /><Text style={styles.mobileHeroEyebrow}>KLIPP · SERVICIOS A TU MANERA</Text><Text style={styles.mobileHeroTitle}>Tu tiempo. Tu estilo. Tu Klipp.</Text></ImageBackground>}
 
             <Animated.View style={[styles.formColumn, !wideLayout && styles.formColumnCompact, { opacity: stepMotion, transform: [{ translateY: stepTranslate }] }]}>
               <View style={styles.formHeader}>
-                <Text style={styles.eyebrow}>{isRegister ? (registerStep === 0 ? '01 / ELIGE TU EXPERIENCIA' : '02 / CREA TU CUENTA') : 'TU ESPACIO KLIPP'}</Text>
-                <Text style={styles.title}>{isRegister ? (registerStep === 0 ? '¿Cómo quieres usar Klipp?' : 'Empecemos por ti.') : 'Qué bueno verte.'}</Text>
-                <Text style={styles.subtitle}>{isRegister ? (registerStep === 0 ? 'Selecciona el perfil que mejor describe lo que necesitas.' : 'Completa tus datos para crear tu cuenta.') : 'Accede a tus servicios y continúa donde lo dejaste.'}</Text>
+                <Text style={styles.eyebrow}>{isRegister ? ['01 / TU EXPERIENCIA', '02 / TUS DATOS', '03 / TU CUENTA'][registerStep] : 'TU ESPACIO KLIPP'}</Text>
+                <Text style={styles.title}>{isRegister ? ['¿Cómo quieres usar Klipp?', '¿Cómo te llamas?', 'Crea tu cuenta'][registerStep] : 'Qué bueno verte.'}</Text>
+                <Text style={styles.subtitle}>{isRegister ? ['Elige cómo quieres disfrutar de Klipp.', 'Usaremos tu nombre para personalizar tu experiencia.', 'Un último paso y estarás dentro.'][registerStep] : 'Accede a tus servicios y continúa donde lo dejaste.'}</Text>
               </View>
 
               {isRegister && registerStep === 0 && (
@@ -132,23 +141,24 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </View>
               )}
 
-              {(!isRegister || registerStep === 1) && (
+              {(!isRegister || registerStep === 1 || registerStep === 2) && (
                 <View style={styles.fieldsPanel}>
-                  {isRegister && (
+                  {isRegister && registerStep === 1 && (
                     <View style={styles.fieldGroup}>
                       <Text style={styles.label}>Nombre completo</Text>
-                      <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="Ej. María Rodríguez" placeholderTextColor="#9A9A9A" style={styles.input} value={fullName} />
+                      <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="Ej. María Rodríguez" placeholderTextColor="#9A9A9A" style={styles.input} value={fullName} />
                     </View>
                   )}
-                  <View style={styles.fieldGroup}>
+                  {(!isRegister || registerStep === 2) && <View style={styles.fieldGroup}>
                     <Text style={styles.label}>Correo electrónico</Text>
                     <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor="#9A9A9A" style={styles.input} value={email} />
                   </View>
                   <View style={styles.fieldGroup}>
                     <Text style={styles.label}>Contraseña</Text>
-                    <TextInput autoComplete={isRegister ? 'new-password' : 'current-password'} onChangeText={setPassword} placeholder="Mínimo 8 caracteres" placeholderTextColor="#9A9A9A" secureTextEntry style={styles.input} value={password} />
+                    <TextInput autoComplete={isRegister ? 'new-password' : 'current-password'} returnKeyType="done" onChangeText={setPassword} placeholder="Mínimo 8 caracteres" placeholderTextColor="#9A9A9A" secureTextEntry style={styles.input} value={password} />
                   </View>
                   <Text style={styles.secureNote}><Text style={styles.secureMark}>●</Text> Tus datos se transmiten de forma segura.</Text>
+                  </View>}
                 </View>
               )}
 
@@ -157,9 +167,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
               <View style={styles.actions}>
-                {isRegister && registerStep === 1 && <Pressable onPress={() => moveRegisterStep(0)} style={styles.backAction}><Text style={styles.backActionText}>← Atrás</Text></Pressable>}
-                <Pressable accessibilityRole="button" disabled={busy || (!isRegister && (!email.trim() || !password)) || (isRegister && registerStep === 1 && (!email.trim() || !password))} onPress={() => isRegister && registerStep === 0 ? continueRegister() : void handleSubmit()} style={({ pressed }) => [styles.submit, (busy || (!isRegister && (!email.trim() || !password)) || (isRegister && registerStep === 1 && (!email.trim() || !password))) && styles.submitDisabled, pressed && styles.submitPressed]}>
-                  {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{isRegister ? (registerStep === 0 ? 'Continuar' : 'Crear cuenta') : 'Iniciar sesión'}</Text>}
+                {isRegister && registerStep > 0 && <Pressable onPress={() => moveRegisterStep(registerStep - 1)} style={styles.backAction}><Text style={styles.backActionText}>← Atrás</Text></Pressable>}
+                <Pressable accessibilityRole="button" disabled={busy || (!isRegister && (!email.trim() || !password))} onPress={() => isRegister ? continueRegister() : void handleSubmit()} style={({ pressed }) => [styles.submit, (busy || (!isRegister && (!email.trim() || !password)) || (isRegister && registerStep === 1 && (!email.trim() || !password))) && styles.submitDisabled, pressed && styles.submitPressed]}>
+                  {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{isRegister ? (registerStep < 2 ? 'Continuar' : 'Crear cuenta') : 'Iniciar sesión'}</Text>}
                   {!busy && <Text style={styles.submitArrow}>→</Text>}
                 </Pressable>
               </View>
@@ -181,14 +191,14 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24 },
-  topBar: { width: '100%', maxWidth: 1180, alignSelf: 'center', minHeight: 66, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginBottom: 34 },
+  topBar: { width: '100%', maxWidth: 1180, alignSelf: 'center', minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginBottom: 18 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: '#FF5A5F', alignItems: 'center', justifyContent: 'center' },
   logoLetter: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
   brand: { color: '#222222', fontSize: 25, fontWeight: '900', letterSpacing: -0.8 },
   topHint: { color: '#717171', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
   layout: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: 48 },
-  layoutCompact: { flex: 0, flexDirection: 'column', justifyContent: 'flex-start', gap: 24 },
+  layoutCompact: { flex: 1, minHeight: 0, flexDirection: 'column', justifyContent: 'center', gap: 10 },
   storyPanel: { flex: 1, minHeight: 600, borderRadius: 30, backgroundColor: '#222222', padding: 38, justifyContent: 'center', overflow: 'hidden' },
   storyImage: { borderRadius: 30 },
   storyScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(22, 16, 18, 0.58)' },
@@ -208,8 +218,8 @@ const styles = StyleSheet.create({
   storyAccent: { marginTop: 30, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)' },
   storyAccentText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
   formColumn: { width: '100%', maxWidth: 480, justifyContent: 'center', paddingVertical: 20 },
-  formColumnCompact: { maxWidth: 560, alignSelf: 'center', paddingVertical: 8 },
-  formHeader: { marginBottom: 28, gap: 10 },
+  formColumnCompact: { maxWidth: 560, alignSelf: 'center', paddingVertical: 4, justifyContent: 'center' },
+  formHeader: { marginBottom: 20, gap: 7 },
   eyebrow: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   title: { color: '#222222', fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
   subtitle: { color: '#717171', fontSize: 14, lineHeight: 21 },
@@ -225,10 +235,10 @@ const styles = StyleSheet.create({
   radio: { width: 21, height: 21, borderWidth: 1.5, borderColor: '#B0B0B0', borderRadius: 11 },
   radioSelected: { borderWidth: 6, borderColor: '#FF5A5F' },
   roleArrow: { color: '#717171', fontSize: 27 },
-  fieldsPanel: { gap: 18 },
-  fieldGroup: { gap: 8 },
+  fieldsPanel: { gap: 16, width: '100%' },
+  fieldGroup: { gap: 8, width: '100%' },
   label: { color: '#484848', fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 58, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, paddingHorizontal: 16, color: '#222222', backgroundColor: '#FFFFFF', fontSize: 15 },
+  input: { minHeight: 56, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, color: '#222222', backgroundColor: '#FFFFFF', fontSize: 16, lineHeight: 22, textAlignVertical: 'center' },
   secureNote: { color: '#717171', fontSize: 11, marginTop: 2 },
   secureMark: { color: '#00A699' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24 },
@@ -244,6 +254,6 @@ const styles = StyleSheet.create({
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 25 },
   switchText: { color: '#717171', fontSize: 13 },
   link: { color: '#E31C5F', fontSize: 13, fontWeight: '900' },
-  bottomNote: { width: '100%', maxWidth: 1180, alignSelf: 'center', marginTop: 30, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F0F0F0', flexDirection: 'row', justifyContent: 'space-between' },
+  bottomNote: { width: '100%', maxWidth: 1180, alignSelf: 'center', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#F0F0F0', flexDirection: 'row', justifyContent: 'space-between' },
   bottomNoteText: { color: '#999999', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
 });
