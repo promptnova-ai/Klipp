@@ -96,6 +96,7 @@ export function ProRegistrationScreen() {
       .select('id, code, name, description, active, category_id')
       .eq('active', true)
       .neq('code', 'masajes')
+      .in('code', Object.keys(professionOptions))
       .order('name');
     if (queryError) throw queryError;
     return (data ?? []) as ServiceType[];
