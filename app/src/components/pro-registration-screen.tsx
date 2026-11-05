@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
+  ImageBackground,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -72,6 +73,7 @@ export function ProRegistrationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const transition = useRef(new Animated.Value(1)).current;
+  const transitionOffset = useRef(new Animated.Value(0)).current;
   const progress = useRef(new Animated.Value(0)).current;
   const progressWidth = useMemo(
     () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
@@ -119,12 +121,19 @@ export function ProRegistrationScreen() {
   function animateToStep(nextStep: number) {
     setError(null);
     setNotice(null);
-    Animated.timing(transition, { toValue: 0, duration: 100, useNativeDriver: Platform.OS !== 'web' }).start(() => {
+    const direction = nextStep > step ? 1 : -1;
+    const nativeDriver = Platform.OS !== 'web';
+    Animated.parallel([
+      Animated.timing(transition, { toValue: 0, duration: 130, useNativeDriver: nativeDriver }),
+      Animated.timing(transitionOffset, { toValue: direction * -18, duration: 130, useNativeDriver: nativeDriver }),
+    ]).start(() => {
       setStep(nextStep);
       transition.setValue(0);
+      transitionOffset.setValue(direction * 18);
       Animated.parallel([
-        Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(progress, { toValue: nextStep, duration: 350, useNativeDriver: false }),
+        Animated.spring(transition, { toValue: 1, speed: 18, bounciness: 3, useNativeDriver: nativeDriver }),
+        Animated.spring(transitionOffset, { toValue: 0, speed: 18, bounciness: 3, useNativeDriver: nativeDriver }),
+        Animated.timing(progress, { toValue: nextStep, duration: 420, useNativeDriver: false }),
       ]).start();
     });
   }
@@ -269,7 +278,9 @@ export function ProRegistrationScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <View style={styles.header}>
+        <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1500&q=86' }} imageStyle={styles.headerHeroImage} style={styles.headerHero}>
+          <View style={styles.headerScrim} />
+          <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
             <Text style={styles.backText}>←</Text>
           </Pressable>
@@ -278,18 +289,13 @@ export function ProRegistrationScreen() {
             <Text style={styles.brand}>Klipp <Text style={styles.proWord}>PRO</Text></Text>
           </View>
           <Text style={styles.headerCaption}>CREA TU PERFIL PROFESIONAL</Text>
-        </View>
+          </View>
+        </ImageBackground>
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Animated.View
-            style={Platform.OS === 'web'
-              ? styles.stepContent
-              : [
-                  styles.stepContent,
-                  { opacity: transition },
-                ]}>
+          <Animated.View style={[styles.stepContent, { opacity: transition, transform: [{ translateX: transitionOffset }] }]}>
             <View style={styles.stepRail}>
               {steps.map((item, index) => (
                 <View key={item.eyebrow} style={styles.stepRailItem}>
@@ -523,15 +529,18 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   
-  header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
-  backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#DDDDDD' },
-  backText: { color: '#222222', fontSize: 29, lineHeight: 32, marginTop: -3 },
+  headerHero: { minHeight: 112, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
+  headerHeroImage: { opacity: 0.9 },
+  headerScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
+  header: { minHeight: 96, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
+  backText: { color: '#FFFFFF', fontSize: 29, lineHeight: 32, marginTop: -3 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#FF5A5F', borderWidth: 1, borderColor: '#FF5A5F' },
-  logoLetter: { color: '#09090B', fontSize: 20, fontWeight: '900' },
-  brand: { color: '#222222', fontSize: 23, fontWeight: '900', letterSpacing: -0.8 },
-  proWord: { color: '#FF5A5F', fontSize: 10, letterSpacing: 1.5 },
-  headerCaption: { color: '#717171', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  logoLetter: { color: '#FFFFFF', fontSize: 20, fontWeight: '900' },
+  brand: { color: '#FFFFFF', fontSize: 23, fontWeight: '900', letterSpacing: -0.8 },
+  proWord: { color: '#FFD5D7', fontSize: 10, letterSpacing: 1.5 },
+  headerCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, maxWidth: 112, textAlign: 'right', lineHeight: 14 },
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
   scrollContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28 },
