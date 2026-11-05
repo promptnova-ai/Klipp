@@ -87,8 +87,6 @@ export function ProProfileScreen() {
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [equipmentByService, setEquipmentByService] = useState<Record<number, EquipmentRequirement[]>>({});
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
-  const [servicePrices, setServicePrices] = useState<Record<number, string>>({});
-  const [serviceDurations, setServiceDurations] = useState<Record<number, string>>({});
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [tierPrices, setTierPrices] = useState<Record<string, string>>({});
   const [tierDurations, setTierDurations] = useState<Record<string, string>>({});
@@ -178,8 +176,6 @@ export function ProProfileScreen() {
     const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
     setEquipmentByService(Object.fromEntries(services.map((service) => [service.id, equipment.filter((item) => item.service_type_id === service.id)])));
     setSelectedServices(configuredServices.map((service) => service.service_type_id));
-    setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
-    setServiceDurations(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.est_minutes)])));
     setLoading(false);
   }, [userId]);
 
@@ -334,7 +330,7 @@ export function ProProfileScreen() {
       return selectedTiers.length === 0 || selectedTiers.some((tier) => {
         const key = `${serviceId}:${tier.id}`;
         const price = Number(tierPrices[key]);
-        const duration = Number(tierDurations[key]);
+        const duration = Number(tierDurations[key] ?? '60');
         return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration < 1;
       });
     });
@@ -408,7 +404,7 @@ export function ProProfileScreen() {
             pro_id: userId,
             service_type_id,
             base_price_dop: Math.min(...pricingTiers.filter((tier) => tier.service_type_id === service_type_id && selectedTierKeys.includes(`${service_type_id}:${tier.id}`)).map((tier) => Number(tierPrices[`${service_type_id}:${tier.id}`]))),
-            est_minutes: Math.min(...pricingTiers.filter((tier) => tier.service_type_id === service_type_id && selectedTierKeys.includes(`${service_type_id}:${tier.id}`)).map((tier) => Number(tierDurations[`${service_type_id}:${tier.id}`]))),
+            est_minutes: Math.min(...pricingTiers.filter((tier) => tier.service_type_id === service_type_id && selectedTierKeys.includes(`${service_type_id}:${tier.id}`)).map((tier) => Number(tierDurations[`${service_type_id}:${tier.id}`] ?? '60'))),
             active: true,
           })),
           { onConflict: 'pro_id,service_type_id' },
@@ -436,7 +432,7 @@ export function ProProfileScreen() {
                 pro_service_id: proServiceId,
                 pricing_tier_id: tier.id,
                 price_dop: Number(tierPrices[key]),
-                est_minutes: Number(tierDurations[key]),
+                est_minutes: Number(tierDurations[key] ?? '60'),
                 active: true,
               };
             });
