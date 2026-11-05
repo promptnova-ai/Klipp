@@ -53,7 +53,6 @@ function getCategory(service: ServiceType & { category_name?: string | null }) {
   const description = `${service.code} ${service.name}`.toLocaleLowerCase();
   if (description.includes('barber')) return 'Barbería';
   if (description.includes('estet') || description.includes('belleza') || description.includes('uña')) return 'Estética';
-  if (description.includes('limpieza') || description.includes('clean')) return 'Limpieza';
   return 'Otros';
 }
 
@@ -416,7 +415,7 @@ export default function ClientHomeScreen() {
                   <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
                   <View style={styles.proResultCopy}>
                     <Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional de limpieza verificado'}</Text>
+                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional disponible en Klipp'}</Text>
                   </View>
                 </View>
               ))}
@@ -448,15 +447,15 @@ export default function ClientHomeScreen() {
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.detailIllustration}>
                   <View style={styles.detailIllustrationIcon}>
-                    <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={34} />
+                    <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={34} />
                   </View>
                   <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
                 </View>
                 <Text style={styles.detailTitle}>{selectedService.name}</Text>
-                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar limpio y cuidado.'}</Text>
+                <Text style={styles.detailDescription}>{selectedService.description || 'Consulta los detalles y encuentra al profesional adecuado para este servicio.'}</Text>
                 <View style={styles.equipmentNotice}>
                   <Text style={styles.equipmentNoticeTitle}>El profesional lleva sus propias herramientas</Text>
-                  <Text style={styles.equipmentNoticeBody}>No tendrás que prestar herramientas, equipos ni productos de limpieza. El profesional debe acudir con todo lo necesario para el servicio contratado.</Text>
+                  <Text style={styles.equipmentNoticeBody}>No tendrás que prestar herramientas, equipos ni materiales. El profesional debe acudir con todo lo necesario para realizar el servicio contratado.</Text>
                   {selectedService.equipmentRequirements.length > 0 && (
                     <View style={styles.equipmentItems}>
                       <Text style={styles.equipmentItemsTitle}>Equipamiento previsto para este servicio</Text>
