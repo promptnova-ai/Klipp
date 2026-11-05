@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   storyScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(22, 16, 18, 0.58)' },
   mobileHero: { width: '100%', height: 228, justifyContent: 'flex-end', padding: 24, borderRadius: 24, overflow: 'hidden', backgroundColor: '#222222' },
   mobileHeroImage: { borderRadius: 24 },
-  mobileHeroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(22, 16, 18, 0.42)' },
+  mobileHeroScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(22, 16, 18, 0.42)' },
   mobileHeroEyebrow: { color: '#FFFFFF', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   mobileHeroTitle: { maxWidth: 290, marginTop: 9, color: '#FFFFFF', fontSize: 29, lineHeight: 34, fontWeight: '900', letterSpacing: -0.8 },
   storyBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' },
