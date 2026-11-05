@@ -35,12 +35,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [stepMotion] = useState(() => new Animated.Value(0));
+  const [stepMotion] = useState(() => new Animated.Value(1));
   const stepTranslate = stepMotion.interpolate({ inputRange: [0, 1], outputRange: [16, 0] });
-
-  useEffect(() => {
-    Animated.spring(stepMotion, { toValue: 1, speed: 18, bounciness: 4, useNativeDriver: Platform.OS !== 'web' }).start();
-  }, [stepMotion]);
 
   useEffect(() => {
     if (session) router.replace('/');
@@ -73,9 +69,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [registerStep, setRegisterStep] = useState(0);
 
   function moveRegisterStep(nextStep: number) {
-    Animated.timing(stepMotion, { toValue: 0, duration: 140, useNativeDriver: Platform.OS !== 'web' }).start(() => {
+    stepMotion.stopAnimation();
+    Animated.timing(stepMotion, { toValue: 0, duration: 160, useNativeDriver: Platform.OS !== 'web' }).start(({ finished }) => {
+      if (!finished) return;
       setRegisterStep(nextStep);
-      Animated.spring(stepMotion, { toValue: 1, speed: 18, bounciness: 3, useNativeDriver: Platform.OS !== 'web' }).start();
+      stepMotion.setValue(0);
+      Animated.spring(stepMotion, { toValue: 1, speed: 20, bounciness: 2, useNativeDriver: Platform.OS !== 'web' }).start();
     });
   }
 
@@ -120,7 +119,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
               {isRegister && registerStep === 0 && (
                 <View style={styles.roleGrid}>
-                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: role === 'client' }} onPress={() => setRole('client')} style={[styles.roleCard, role === 'client' && styles.roleCardSelected]}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: role === 'client' }} onPress={() => { setRole('client'); setError(null); moveRegisterStep(1); }} style={[styles.roleCard, role === 'client' && styles.roleCardSelected]}>
                     <View style={styles.roleIcon}><Text style={styles.roleIconText}>⌂</Text></View>
                     <View style={styles.roleCardCopy}><Text style={styles.roleTitle}>Soy cliente</Text><Text style={styles.roleDescription}>Quiero contratar servicios de confianza.</Text></View>
                     <View style={[styles.radio, role === 'client' && styles.radioSelected]} />
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
   brand: { color: '#222222', fontSize: 25, fontWeight: '900', letterSpacing: -0.8 },
   topHint: { color: '#717171', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
   layout: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: 48 },
-  layoutCompact: { flexDirection: 'column', justifyContent: 'flex-start', gap: 24 },
+  layoutCompact: { flex: 0, flexDirection: 'column', justifyContent: 'flex-start', gap: 24 },
   storyPanel: { flex: 1, minHeight: 600, borderRadius: 30, backgroundColor: '#222222', padding: 38, justifyContent: 'center', overflow: 'hidden' },
   storyImage: { borderRadius: 30 },
   storyScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(22, 16, 18, 0.58)' },
