@@ -262,10 +262,10 @@ export function ClientBookingsScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color=KlippColors.blue /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor=KlippColors.blue />}>
       <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
