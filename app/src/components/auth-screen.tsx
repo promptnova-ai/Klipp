@@ -98,16 +98,21 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 <Text style={styles.label}>¿Cómo usarás Klipp?</Text>
                 <View style={styles.roleOptions}>
                   {([
-                    ['client', 'Soy cliente'],
-                    ['pro', 'Soy profesional'],
-                  ] as const).map(([value, label]) => (
+                    ['client', 'Soy cliente', 'Quiero encontrar y reservar servicios'],
+                    ['pro', 'Soy profesional', 'Quiero ofrecer mis servicios en Klipp'],
+                  ] as const).map(([value, label, description]) => (
                     <Pressable
                       accessibilityRole="radio"
                       accessibilityState={{ selected: role === value }}
                       key={value}
                       onPress={() => value === 'pro' ? router.push('/(auth)/pro-register') : setRole(value)}
                       style={[styles.roleOption, role === value && styles.roleOptionSelected]}>
-                      <Text style={[styles.roleText, role === value && styles.roleTextSelected]}>{label}</Text>
+                      <View style={[styles.roleDot, role === value && styles.roleDotSelected]} />
+                      <View style={styles.roleCopy}>
+                        <Text style={[styles.roleText, role === value && styles.roleTextSelected]}>{label}</Text>
+                        <Text style={styles.roleDescription}>{description}</Text>
+                      </View>
+                      <Text style={[styles.roleArrow, role === value && styles.roleTextSelected]}>›</Text>
                     </Pressable>
                   ))}
                 </View>
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
   loginScrollContentWide: { justifyContent: 'center', minHeight: '100%' },
   loginShell: { width: '100%', maxWidth: 520, alignSelf: 'center' },
   loginShellWide: { paddingHorizontal: 12 },
-  brandBlock: { marginBottom: 28, gap: 6 },
+  brandBlock: { marginBottom: 30, gap: 8 },
   loginBrandBlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   logoMark: { width: 44, height: 44, borderRadius: 16, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 4, borderBottomColor: KlippColors.cyan },
@@ -188,23 +193,28 @@ const styles = StyleSheet.create({
   loginLocation: { color: KlippColors.violet, fontSize: 9, letterSpacing: 1.1 },
   loginMain: { gap: 20 },
   loginMainWide: { alignItems: 'center', justifyContent: 'center', gap: 20 },
-  form: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 12, padding: 24, borderRadius: 26, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: KlippColors.navy, shadowOpacity: 0.07, shadowRadius: 26, shadowOffset: { width: 0, height: 14 }, elevation: 5 },
+  form: { width: '100%', maxWidth: 500, alignSelf: 'center', gap: 13, padding: 28, borderRadius: 30, borderWidth: 1, borderColor: '#E7ECF4', backgroundColor: KlippColors.white, shadowColor: KlippColors.navy, shadowOpacity: 0.08, shadowRadius: 30, shadowOffset: { width: 0, height: 16 }, elevation: 5 },
   loginForm: { maxWidth: 480, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   loginFormWide: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: 30 },
   eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginBottom: 2 },
   loginEyebrow: { color: KlippColors.violet },
-  title: { color: KlippColors.navy, fontSize: 31, lineHeight: 38, fontWeight: '900', letterSpacing: -0.8 },
+  title: { color: KlippColors.navy, fontSize: 34, lineHeight: 40, fontWeight: '900', letterSpacing: -1.1 },
   loginTitle: { color: KlippColors.navy },
   subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 23, marginBottom: 12 },
   loginSubtitle: { color: KlippColors.muted },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '800', marginTop: 5 },
-  input: { minHeight: 54, borderWidth: 1, borderColor: KlippColors.borderStrong, borderRadius: 14, paddingHorizontal: 15, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  input: { minHeight: 56, borderWidth: 1, borderColor: '#E1E8F1', borderRadius: 16, paddingHorizontal: 16, color: KlippColors.navy, backgroundColor: '#FAFBFD', fontSize: 15 },
   loginInput: { borderColor: KlippColors.borderStrong, color: KlippColors.navy, backgroundColor: KlippColors.white },
-  roleOptions: { flexDirection: 'row', gap: 10 },
-  roleOption: { flex: 1, minHeight: 50, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: KlippColors.borderStrong, borderRadius: 14, backgroundColor: KlippColors.white, paddingHorizontal: 8 },
-  roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blueSoft },
-  roleText: { color: KlippColors.muted, fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  roleOptions: { flexDirection: 'column', gap: 10, marginTop: 2, marginBottom: 4 },
+  roleOption: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#E4EAF2', borderRadius: 18, backgroundColor: '#FAFBFD', paddingHorizontal: 15, paddingVertical: 12 },
+  roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#F0F5FF' },
+  roleText: { color: KlippColors.navy, fontSize: 14, fontWeight: '900' },
   roleTextSelected: { color: KlippColors.blueDark },
+  roleCopy: { flex: 1, gap: 4 },
+  roleDescription: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  roleDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: '#B8C4D5', backgroundColor: KlippColors.white },
+  roleDotSelected: { borderWidth: 5, borderColor: KlippColors.blue },
+  roleArrow: { color: '#9AA8BA', fontSize: 24, lineHeight: 26 },
   error: { color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
   notice: { color: KlippColors.success, fontSize: 13, lineHeight: 19 },
   submit: { minHeight: 54, marginTop: 10, borderRadius: 15, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', shadowColor: KlippColors.blue, shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 },
