@@ -145,3 +145,5 @@ En la base Supabase activa `hxjwibtpxgpdxemqqwjh` no aparecen `service_equipment
 - Falta una prueba end-to-end con cuentas de prueba (alta PRO, confirmación de correo, inserción de varias tarifas, búsqueda de modalidad y reserva manual/automática) y QA visual en navegador/dispositivos.
 
 - Migración 041 `require_equipment_policy_for_manual_discovery`: la búsqueda manual excluye perfiles que no tengan registrado el compromiso de herramientas/materiales, igual que el alta y la creación de reservas.
+
+- The PRO profile editor now loads each professional's active modality prices, lets them toggle individual modalities on/off, validates only those selected, derives the legacy base price/duration from the published tariffs, and deactivates unselected modality rows without deleting historical booking snapshots.
