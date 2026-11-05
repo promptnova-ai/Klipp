@@ -22,16 +22,27 @@ import { supabase } from '../../lib/supabase';
 
 type ProServiceDraft = { price: string; minutes: string };
 type ProfessionField = { key: string; label: string; placeholder: string };
+const professionOptions: Record<string, string[]> = {
+  barberia: ['Corte clásico', 'Degradado', 'Arreglo de barba', 'Afeitado'],
+  peluqueria: ['Corte', 'Lavado y secado', 'Peinados', 'Coloración', 'Trenzas', 'Tratamientos capilares'],
+  estetica: ['Manicura', 'Pedicura', 'Maquillaje', 'Cejas y pestañas', 'Depilación'],
+  carwash: ['Lavado exterior', 'Limpieza interior', 'Lavado completo', 'Aspirado'],
+  detailing: ['Detailing interior', 'Detailing exterior', 'Pulido', 'Encerado y protección', 'Limpieza de tapicería'],
+  limpieza_regular: ['Cocina', 'Baños', 'Habitaciones', 'Áreas comunes', 'Cristales interiores'],
+  limpieza_profunda: ['Cocina profunda', 'Baños', 'Electrodomésticos', 'Cristales interiores', 'Tapicería'],
+  'limpieza-oficinas': ['Puestos de trabajo', 'Áreas comunes', 'Baños', 'Suelos', 'Cristales'],
+  mantenimiento: ['Plomería', 'Electricidad', 'Montaje de muebles', 'Pintura', 'Reparaciones generales'],
+};
 const professionFields: Record<string, ProfessionField[]> = {
-  barberia: [{ key: 'specialty', label: 'Cortes y arreglos que realizas', placeholder: 'Ej. corte clásico, degradado, barba y afeitado' }],
-  peluqueria: [{ key: 'specialty', label: 'Servicios capilares que realizas', placeholder: 'Ej. corte, lavado, peinado, coloración o trenzas' }, { key: 'hair_lengths', label: 'Longitudes de cabello que atiendes', placeholder: 'Corto, medio, largo o todos' }],
-  estetica: [{ key: 'specialty', label: 'Tratamientos estéticos que ofreces', placeholder: 'Ej. manicura, pedicura, maquillaje, cejas o pestañas' }, { key: 'hygiene', label: 'Medidas de higiene e instrumental', placeholder: 'Describe cómo desinfectas y preparas tu material' }],
-  carwash: [{ key: 'specialty', label: 'Tipos de lavado que realizas', placeholder: 'Ej. exterior, interior, completo y aspirado' }, { key: 'utilities', label: 'Agua y energía para el servicio', placeholder: 'Describe cómo llevas agua y energía al domicilio' }],
-  detailing: [{ key: 'specialty', label: 'Tratamientos de detailing que realizas', placeholder: 'Ej. limpieza interior, pulido, encerado y tapicería' }, { key: 'vehicle_types', label: 'Vehículos que atiendes', placeholder: 'Automóviles, SUV, pickup u otros' }],
-  limpieza_regular: [{ key: 'specialty', label: 'Áreas y tareas que incluyes', placeholder: 'Ej. cocina, baños, habitaciones y áreas comunes' }, { key: 'frequency', label: 'Frecuencia de trabajo disponible', placeholder: 'Puntual, semanal o varias veces por semana' }],
-  limpieza_profunda: [{ key: 'specialty', label: 'Qué incluye tu limpieza profunda', placeholder: 'Describe las tareas y zonas que cubres' }, { key: 'extras', label: 'Trabajos que requieren presupuesto adicional', placeholder: 'Ej. cristales exteriores o tapicería' }],
-  'limpieza-oficinas': [{ key: 'specialty', label: 'Tipos de oficinas que atiendes', placeholder: 'Ej. oficinas pequeñas, locales y espacios compartidos' }, { key: 'frequency', label: 'Frecuencia de trabajo disponible', placeholder: 'Puntual, semanal o diaria' }],
-  mantenimiento: [{ key: 'specialty', label: 'Especialidades y reparaciones que realizas', placeholder: 'Ej. plomería, electricidad, montaje o pintura' }, { key: 'tools', label: 'Herramientas y trabajos que puedes realizar', placeholder: 'Indica tus herramientas y límites de servicio' }],
+  barberia: [],
+  peluqueria: [{ key: 'hair_lengths', label: 'Longitudes de cabello que atiendes', placeholder: 'Corto, medio, largo o todos' }],
+  estetica: [{ key: 'hygiene', label: 'Higiene e instrumental', placeholder: 'Describe cómo desinfectas y preparas tu material' }],
+  carwash: [{ key: 'utilities', label: 'Agua y energía para el servicio', placeholder: 'Describe cómo llevas agua y energía al domicilio' }],
+  detailing: [{ key: 'vehicle_types', label: 'Vehículos que atiendes', placeholder: 'Automóviles, SUV, pickup u otros' }],
+  limpieza_regular: [{ key: 'frequency', label: 'Frecuencia de trabajo disponible', placeholder: 'Puntual, semanal o varias veces por semana' }],
+  limpieza_profunda: [{ key: 'extras', label: 'Trabajos que requieren presupuesto adicional', placeholder: 'Ej. cristales exteriores o tapicería' }],
+  'limpieza-oficinas': [{ key: 'frequency', label: 'Frecuencia de trabajo disponible', placeholder: 'Puntual, semanal o diaria' }],
+  mantenimiento: [{ key: 'tools', label: 'Herramientas y alcance de trabajo', placeholder: 'Indica tus herramientas y los trabajos que puedes realizar' }],
 };
 type AvailabilityDraft = { weekday: number; start_time: string; end_time: string };
 type ProOnboardingDraft = {
@@ -67,6 +78,7 @@ export function ProRegistrationScreen() {
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
   const [professionDetails, setProfessionDetails] = useState<Record<string, string>>({});
+  const [selectedProfessionOptions, setSelectedProfessionOptions] = useState<string[]>([]);
   const [equipmentConfirmed, setEquipmentConfirmed] = useState(false);
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
@@ -127,6 +139,7 @@ export function ProRegistrationScreen() {
     if (selectedServices.length !== 1) return 'Elige una profesión principal.';
     const profession = catalog.find((service) => service.id === selectedServices[0]);
     if (!profession) return 'Selecciona una profesión válida.';
+    if (!(professionOptions[profession.code] ?? []).length || !selectedProfessionOptions.length) return 'Selecciona al menos un tipo de servicio que realizas.';
     if ((professionFields[profession.code] ?? []).some((field) => !professionDetails[field.key]?.trim())) return 'Completa los detalles de tu profesión.';
     if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas, productos y materiales.';
     const invalid = selectedServices.some((id) => {
@@ -146,6 +159,7 @@ export function ProRegistrationScreen() {
   function toggleService(serviceId: number) {
     setSelectedServices((current) => current.includes(serviceId) ? [] : [serviceId]);
     setProfessionDetails({});
+    setSelectedProfessionOptions([]);
     setEquipmentConfirmed(false);
     setServiceDrafts((current) => ({
       ...current,
@@ -198,7 +212,7 @@ export function ProRegistrationScreen() {
         service_type_id,
         base_price_dop: Number(serviceDrafts[service_type_id]?.price),
         est_minutes: Number(serviceDrafts[service_type_id]?.minutes),
-        details: professionDetails,
+        details: { specialty: selectedProfessionOptions.join(', '), ...professionDetails },
       })),
       coverage: { ...center, radius_km: radiusKm },
       availability: selectedWeekdays.map((weekday) => ({
@@ -313,6 +327,21 @@ export function ProRegistrationScreen() {
                       </Pressable>
                       {selected && (
                         <View style={styles.serviceFields}>
+                          <View style={styles.transportSection}>
+                            <Text style={styles.label}>¿Qué tipos de servicio realizas?</Text>
+                            <View style={styles.chips}>
+                              {(professionOptions[service.code] ?? []).map((option) => (
+                                <Chip
+                                  key={option}
+                                  label={option}
+                                  selected={selectedProfessionOptions.includes(option)}
+                                  onPress={() => setSelectedProfessionOptions((current) => current.includes(option)
+                                    ? current.filter((item) => item !== option)
+                                    : [...current, option])}
+                                />
+                              ))}
+                            </View>
+                          </View>
                           {(professionFields[service.code] ?? []).map((field) => (
                             <Field key={field.key} label={field.label}>
                               <TextInput multiline maxLength={240} onChangeText={(value) => setProfessionDetails((current) => ({ ...current, [field.key]: value }))} placeholder={field.placeholder} placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={professionDetails[field.key] ?? ''} />
