@@ -102,7 +102,7 @@ export function ProRegistrationScreen() {
 
   function validateForm() {
     if (fullName.trim().length < 2) return 'Escribe tu nombre completo.';
-    if (phone.replace(/\\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
+    if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
     if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
     if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     if (servicesLoading) return 'Espera mientras cargamos las especialidades.';
@@ -115,8 +115,8 @@ export function ProRegistrationScreen() {
     if (invalid) return 'Completa un precio y una duración válidos para cada servicio elegido.';
     if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
     if (!selectedWeekdays.length) return 'Selecciona al menos un día de trabajo.';
-    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime) || startTime >= endTime) return 'Indica un horario válido y asegúrate de que la hora final sea posterior.';
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) return 'Indica un horario válido y asegúrate de que la hora final sea posterior.';
+    if (!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
     if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
     if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     return null;
