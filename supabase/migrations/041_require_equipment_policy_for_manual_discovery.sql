@@ -1,7 +1,7 @@
 -- Filter manual professional discovery by the selected modality and its own duration.
 drop function if exists public.get_available_pros_at_location(double precision,double precision,timestamptz,integer,integer);
 
-create function public.get_available_pros_at_location(
+create or replace function public.get_available_pros_at_location(
   p_lat double precision,
   p_lng double precision,
   p_scheduled_start timestamptz,
