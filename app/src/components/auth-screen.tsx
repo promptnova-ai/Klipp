@@ -62,112 +62,99 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     }
   }
 
+  const [registerStep, setRegisterStep] = useState(0);
+
+  function continueRegister() {
+    if (!fullName.trim()) { setError('Escribe tu nombre completo para continuar.'); return; }
+    setError(null);
+    setRegisterStep(1);
+  }
+
   return (
-    <SafeAreaView style={[styles.safeArea, isRegister && styles.registerSafeArea]}>
+    <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={[styles.scrollContent, !isRegister && styles.loginScrollContent, wideLogin && styles.loginScrollContentWide]} keyboardShouldPersistTaps="handled">
-          <View style={[styles.loginShell, wideLogin && styles.loginShellWide]}>
-            <View style={[styles.brandBlock, !isRegister && styles.loginBrandBlock]}>
-              <View style={styles.brandRow}>
-                <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-                <Text style={[styles.brand, !isRegister && styles.loginBrand, isRegister && styles.registerBrand]}>Klipp</Text>
+        <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+          <View style={styles.topBar}>
+            <View style={styles.brandRow}>
+              <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
+              <Text style={styles.brand}>Klipp</Text>
+            </View>
+            <Text style={styles.topHint}>{isRegister ? 'ÚNETE A KLIPP' : 'BIENVENIDO DE NUEVO'}</Text>
+          </View>
+
+          <View style={styles.layout}>
+            <View style={styles.storyPanel}>
+              <View style={styles.storyBadge}><Text style={styles.storyBadgeText}>SERVICIOS, A TU MANERA</Text></View>
+              <Text style={styles.storyTitle}>{isRegister ? 'Tu próximo gran servicio empieza aquí.' : 'Todo lo que necesitas, en un solo lugar.'}</Text>
+              <Text style={styles.storyCopy}>{isRegister ? 'Conecta con profesionales de confianza o haz crecer tu propio negocio con Klipp.' : 'Entra para descubrir profesionales, gestionar tus reservas y seguir cada servicio.'}</Text>
+              <View style={styles.storyDivider} />
+              <View style={styles.storyFeature}><Text style={styles.featureMark}>✓</Text><Text style={styles.featureText}>Profesionales cerca de ti</Text></View>
+              <View style={styles.storyFeature}><Text style={styles.featureMark}>✓</Text><Text style={styles.featureText}>Reservas sencillas y seguras</Text></View>
+              <View style={styles.storyFeature}><Text style={styles.featureMark}>✓</Text><Text style={styles.featureText}>Todo desde una sola app</Text></View>
+              <View style={styles.storyAccent}><Text style={styles.storyAccentText}>KLIPP · REPÚBLICA DOMINICANA</Text></View>
+            </View>
+
+            <View style={styles.formColumn}>
+              <View style={styles.formHeader}>
+                <Text style={styles.eyebrow}>{isRegister ? (registerStep === 0 ? '01 / ELIGE TU EXPERIENCIA' : '02 / CREA TU CUENTA') : 'TU ESPACIO KLIPP'}</Text>
+                <Text style={styles.title}>{isRegister ? (registerStep === 0 ? '¿Cómo quieres usar Klipp?' : 'Empecemos por ti.') : 'Qué bueno verte.'}</Text>
+                <Text style={styles.subtitle}>{isRegister ? (registerStep === 0 ? 'Selecciona el perfil que mejor describe lo que necesitas.' : 'Completa tus datos para crear tu cuenta.') : 'Accede a tus servicios y continúa donde lo dejaste.'}</Text>
               </View>
-              <Text style={[styles.location, !isRegister && styles.loginLocation, isRegister && styles.registerLocation]}>TU SERVICIO, EN CAMINO</Text>
-            </View>
 
-            <View style={[styles.loginMain, wideLogin && styles.loginMainWide]}>
-          <View style={[styles.form, !isRegister && styles.loginForm, wideLogin && styles.loginFormWide]}>
-            <Text style={[styles.eyebrow, !isRegister && styles.loginEyebrow]}>{isRegister ? 'EMPIEZA CON KLIPP' : 'CUENTA KLIPP'}</Text>
-            <Text style={[styles.title, !isRegister && styles.loginTitle]}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
-            <Text style={[styles.subtitle, !isRegister && styles.loginSubtitle]}>
-              {isRegister ? 'Servicios profesionales de confianza, cerca de ti.' : 'Encuentra, reserva y sigue tus servicios desde un solo lugar.'}
-            </Text>
-
-            {isRegister && (
-              <>
-                <Text style={styles.label}>Nombre completo</Text>
-                <TextInput
-                  autoComplete="name"
-                  autoCapitalize="words"
-                  onChangeText={setFullName}
-                  placeholder="Tu nombre"
-                  placeholderTextColor="#85918b"
-                  style={[styles.input, !isRegister && styles.loginInput]}
-                  value={fullName}
-                />
-                <Text style={styles.label}>¿Cómo usarás Klipp?</Text>
-                <View style={styles.roleOptions}>
-                  {([
-                    ['client', 'Soy cliente', 'Quiero encontrar y reservar servicios'],
-                    ['pro', 'Soy profesional', 'Quiero ofrecer mis servicios en Klipp'],
-                  ] as const).map(([value, label, description]) => (
-                    <Pressable
-                      accessibilityRole="radio"
-                      accessibilityState={{ selected: role === value }}
-                      key={value}
-                      onPress={() => value === 'pro' ? router.push('/(auth)/pro-register') : setRole(value)}
-                      style={[styles.roleOption, role === value && styles.roleOptionSelected]}>
-                      <View style={[styles.roleDot, role === value && styles.roleDotSelected]} />
-                      <View style={styles.roleCopy}>
-                        <Text style={[styles.roleText, role === value && styles.roleTextSelected]}>{label}</Text>
-                        <Text style={styles.roleDescription}>{description}</Text>
-                      </View>
-                      <Text style={[styles.roleArrow, role === value && styles.roleTextSelected]}>›</Text>
-                    </Pressable>
-                  ))}
+              {isRegister && registerStep === 0 && (
+                <View style={styles.roleGrid}>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: role === 'client' }} onPress={() => setRole('client')} style={[styles.roleCard, role === 'client' && styles.roleCardSelected]}>
+                    <View style={styles.roleIcon}><Text style={styles.roleIconText}>⌂</Text></View>
+                    <View style={styles.roleCardCopy}><Text style={styles.roleTitle}>Soy cliente</Text><Text style={styles.roleDescription}>Quiero contratar servicios de confianza.</Text></View>
+                    <View style={[styles.radio, role === 'client' && styles.radioSelected]} />
+                  </Pressable>
+                  <Pressable accessibilityRole="radio" accessibilityState={{ selected: role === 'pro' }} onPress={() => router.push('/(auth)/pro-register')} style={styles.roleCard}>
+                    <View style={[styles.roleIcon, styles.roleIconPro]}><Text style={styles.roleIconText}>✦</Text></View>
+                    <View style={styles.roleCardCopy}><Text style={styles.roleTitle}>Soy profesional</Text><Text style={styles.roleDescription}>Quiero ofrecer mis habilidades en Klipp.</Text></View>
+                    <Text style={styles.roleArrow}>›</Text>
+                  </Pressable>
                 </View>
-              </>
-            )}
+              )}
 
-            <Text style={styles.label}>Correo electrónico</Text>
-            <TextInput
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect={false}
-              keyboardType="email-address"
-              onChangeText={setEmail}
-              placeholder="nombre@correo.com"
-              placeholderTextColor="#85918b"
-              style={[styles.input, !isRegister && styles.loginInput]}
-              value={email}
-            />
-            <Text style={styles.label}>Contraseña</Text>
-            <TextInput
-              autoComplete={isRegister ? 'new-password' : 'current-password'}
-              onChangeText={setPassword}
-              placeholder="Mínimo 6 caracteres"
-              placeholderTextColor="#85918b"
-              secureTextEntry
-              style={[styles.input, !isRegister && styles.loginInput]}
-              value={password}
-            />
+              {(!isRegister || registerStep === 1) && (
+                <View style={styles.fieldsPanel}>
+                  {isRegister && (
+                    <View style={styles.fieldGroup}>
+                      <Text style={styles.label}>Nombre completo</Text>
+                      <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="Ej. María Rodríguez" placeholderTextColor="#9A9A9A" style={styles.input} value={fullName} />
+                    </View>
+                  )}
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Correo electrónico</Text>
+                    <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor="#9A9A9A" style={styles.input} value={email} />
+                  </View>
+                  <View style={styles.fieldGroup}>
+                    <Text style={styles.label}>Contraseña</Text>
+                    <TextInput autoComplete={isRegister ? 'new-password' : 'current-password'} onChangeText={setPassword} placeholder="Mínimo 8 caracteres" placeholderTextColor="#9A9A9A" secureTextEntry style={styles.input} value={password} />
+                  </View>
+                  <Text style={styles.secureNote}><Text style={styles.secureMark}>●</Text> Tus datos se transmiten de forma segura.</Text>
+                </View>
+              )}
 
-            {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-            {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
-            {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
+              {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+              {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
+              {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
-            <Pressable
-              accessibilityRole="button"
-              disabled={busy || !email.trim() || !password}
-              onPress={() => void handleSubmit()}
-              style={({ pressed }) => [
-                styles.submit,
-                !isRegister && styles.loginSubmit,
-                (busy || !email.trim() || !password) && styles.submitDisabled,
-                pressed && !busy && styles.submitPressed,
-              ]}>
-              {busy ? <ActivityIndicator color={isRegister ? '#fff' : '#0f172a'} /> : <Text style={[styles.submitText, !isRegister && styles.loginSubmitText]}>{isRegister ? 'Crear cuenta' : 'Entrar'}</Text>}
-            </Pressable>
+              <View style={styles.actions}>
+                {isRegister && registerStep === 1 && <Pressable onPress={() => setRegisterStep(0)} style={styles.backAction}><Text style={styles.backActionText}>← Atrás</Text></Pressable>}
+                <Pressable accessibilityRole="button" disabled={busy || (!isRegister && (!email.trim() || !password)) || (isRegister && registerStep === 1 && (!email.trim() || !password))} onPress={() => isRegister && registerStep === 0 ? continueRegister() : void handleSubmit()} style={({ pressed }) => [styles.submit, (busy || (!isRegister && (!email.trim() || !password)) || (isRegister && registerStep === 1 && (!email.trim() || !password))) && styles.submitDisabled, pressed && styles.submitPressed]}>
+                  {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{isRegister ? (registerStep === 0 ? 'Continuar' : 'Crear cuenta') : 'Iniciar sesión'}</Text>}
+                  {!busy && <Text style={styles.submitArrow}>→</Text>}
+                </Pressable>
+              </View>
 
-            <View style={styles.switchRow}>
-              <Text style={[styles.switchText, !isRegister && styles.loginSwitchText]}>{isRegister ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</Text>
-              <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild>
-                <Text style={StyleSheet.flatten([styles.link, !isRegister && styles.loginLink])}>{isRegister ? 'Inicia sesión' : 'Regístrate'}</Text>
-              </Link>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</Text>
+                <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild><Text style={styles.link}>{isRegister ? 'Inicia sesión' : 'Regístrate'}</Text></Link>
+              </View>
             </View>
           </View>
-            </View>
-          </View>
+          <View style={styles.bottomNote}><Text style={styles.bottomNoteText}>KLIPP · TU SERVICIO, EN CAMINO</Text><Text style={styles.bottomNoteText}>República Dominicana</Text></View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -176,60 +163,62 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  registerSafeArea: { backgroundColor: '#FFFFFF' },
-  
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 28 },
-  loginScrollContent: { backgroundColor: KlippColors.canvas, paddingHorizontal: 22, paddingVertical: 30 },
-  loginScrollContentWide: { justifyContent: 'center', minHeight: '100%' },
-  loginShell: { width: '100%', maxWidth: 520, alignSelf: 'center' },
-  loginShellWide: { paddingHorizontal: 12 },
-  brandBlock: { marginBottom: 30, gap: 8 },
-  loginBrandBlock: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  logoMark: { width: 44, height: 44, borderRadius: 16, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 4, borderBottomColor: KlippColors.cyan },
-  logoLetter: { color: KlippColors.white, fontSize: 25, fontWeight: '900', letterSpacing: -1 },
-  brand: { color: KlippColors.navy, fontSize: 28, fontWeight: '900', letterSpacing: -1 },
-  registerBrand: { color: '#222222' },
-  loginBrand: { color: KlippColors.navy },
-  location: { color: KlippColors.muted, fontSize: 10, fontWeight: '800', marginTop: 4, letterSpacing: 1 },
-  registerLocation: { color: '#717171' },
-  loginLocation: { color: KlippColors.violet, fontSize: 9, letterSpacing: 1.1 },
-  loginMain: { gap: 20 },
-  loginMainWide: { alignItems: 'center', justifyContent: 'center', gap: 20 },
-  form: { width: '100%', maxWidth: 500, alignSelf: 'center', gap: 13, padding: 28, borderRadius: 26, borderWidth: 1, borderColor: '#EBEBEB', backgroundColor: '#FFFFFF', shadowColor: '#222222', shadowOpacity: 0.08, shadowRadius: 24, shadowOffset: { width: 0, height: 10 }, elevation: 3 },
-  loginForm: { maxWidth: 480, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
-  loginFormWide: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: 30 },
-  eyebrow: { color: '#FF5A5F', fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginBottom: 2 },
-  loginEyebrow: { color: KlippColors.violet },
-  title: { color: '#222222', fontSize: 34, lineHeight: 40, fontWeight: '900', letterSpacing: -1.1 },
-  loginTitle: { color: KlippColors.navy },
-  subtitle: { color: '#717171', fontSize: 15, lineHeight: 23, marginBottom: 12 },
-  loginSubtitle: { color: KlippColors.muted },
-  label: { color: '#484848', fontSize: 13, fontWeight: '800', marginTop: 5 },
-  input: { minHeight: 56, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 15, paddingHorizontal: 16, color: '#222222', backgroundColor: '#F7F7F7', fontSize: 15 },
-  loginInput: { borderColor: KlippColors.borderStrong, color: KlippColors.navy, backgroundColor: KlippColors.white },
-  roleOptions: { flexDirection: 'column', gap: 10, marginTop: 2, marginBottom: 4 },
-  roleOption: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 17, backgroundColor: '#F7F7F7', paddingHorizontal: 15, paddingVertical: 12 },
-  roleOptionSelected: { borderColor: '#FF5A5F', backgroundColor: '#FFF0F1' },
-  roleText: { color: '#222222', fontSize: 14, fontWeight: '900' },
-  roleTextSelected: { color: '#E31C5F' },
-  roleCopy: { flex: 1, gap: 4 },
-  roleDescription: { color: '#717171', fontSize: 11, lineHeight: 16 },
-  roleDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: '#717171', backgroundColor: '#FFFFFF' },
-  roleDotSelected: { borderWidth: 5, borderColor: '#FF5A5F' },
-  roleArrow: { color: '#717171', fontSize: 24, lineHeight: 26 },
-  error: { color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  notice: { color: KlippColors.success, fontSize: 13, lineHeight: 19 },
-  submit: { minHeight: 54, marginTop: 10, borderRadius: 15, backgroundColor: '#FF5A5F', alignItems: 'center', justifyContent: 'center', shadowColor: KlippColors.blue, shadowOpacity: 0.18, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 3 },
-  loginSubmit: { backgroundColor: KlippColors.blue },
-  submitDisabled: { backgroundColor: '#FFB5B8', shadowOpacity: 0 },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  page: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 24 },
+  topBar: { width: '100%', maxWidth: 1180, alignSelf: 'center', minHeight: 66, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginBottom: 34 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: '#FF5A5F', alignItems: 'center', justifyContent: 'center' },
+  logoLetter: { color: '#FFFFFF', fontSize: 22, fontWeight: '900' },
+  brand: { color: '#222222', fontSize: 25, fontWeight: '900', letterSpacing: -0.8 },
+  topHint: { color: '#717171', fontSize: 10, fontWeight: '800', letterSpacing: 1.5 },
+  layout: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1, flexDirection: 'row', alignItems: 'stretch', gap: 48 },
+  storyPanel: { flex: 1, minHeight: 560, borderRadius: 28, backgroundColor: '#FFF0F1', padding: 34, justifyContent: 'center', overflow: 'hidden' },
+  storyBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 99, backgroundColor: '#FFFFFF' },
+  storyBadgeText: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  storyTitle: { marginTop: 28, color: '#222222', fontSize: 38, lineHeight: 45, fontWeight: '900', letterSpacing: -1.4 },
+  storyCopy: { marginTop: 16, color: '#595959', fontSize: 16, lineHeight: 25, maxWidth: 430 },
+  storyDivider: { height: 1, backgroundColor: '#FFD5D7', marginVertical: 28 },
+  storyFeature: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
+  featureMark: { width: 24, height: 24, borderRadius: 12, overflow: 'hidden', textAlign: 'center', textAlignVertical: 'center', color: '#FFFFFF', backgroundColor: '#00A699', fontWeight: '900' },
+  featureText: { color: '#3F3F3F', fontSize: 14, fontWeight: '700' },
+  storyAccent: { marginTop: 30, alignSelf: 'flex-start', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: '#FFFFFF' },
+  storyAccentText: { color: '#717171', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
+  formColumn: { width: '100%', maxWidth: 480, justifyContent: 'center', paddingVertical: 20 },
+  formHeader: { marginBottom: 28, gap: 10 },
+  eyebrow: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+  title: { color: '#222222', fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
+  subtitle: { color: '#717171', fontSize: 14, lineHeight: 21 },
+  roleGrid: { gap: 14 },
+  roleCard: { minHeight: 116, flexDirection: 'row', alignItems: 'center', gap: 15, padding: 18, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 20, backgroundColor: '#FFFFFF' },
+  roleCardSelected: { borderColor: '#FF5A5F', backgroundColor: '#FFF8F8' },
+  roleIcon: { width: 52, height: 52, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFF0F1' },
+  roleIconPro: { backgroundColor: '#E8F6F4' },
+  roleIconText: { color: '#E31C5F', fontSize: 26, fontWeight: '800' },
+  roleCardCopy: { flex: 1, gap: 5 },
+  roleTitle: { color: '#222222', fontSize: 16, fontWeight: '900' },
+  roleDescription: { color: '#717171', fontSize: 12, lineHeight: 18 },
+  radio: { width: 21, height: 21, borderWidth: 1.5, borderColor: '#B0B0B0', borderRadius: 11 },
+  radioSelected: { borderWidth: 6, borderColor: '#FF5A5F' },
+  roleArrow: { color: '#717171', fontSize: 27 },
+  fieldsPanel: { gap: 18 },
+  fieldGroup: { gap: 8 },
+  label: { color: '#484848', fontSize: 12, fontWeight: '800' },
+  input: { minHeight: 58, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, paddingHorizontal: 16, color: '#222222', backgroundColor: '#FFFFFF', fontSize: 15 },
+  secureNote: { color: '#717171', fontSize: 11, marginTop: 2 },
+  secureMark: { color: '#00A699' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 24 },
+  backAction: { minHeight: 54, paddingHorizontal: 14, justifyContent: 'center' },
+  backActionText: { color: '#484848', fontSize: 13, fontWeight: '800' },
+  submit: { flex: 1, minHeight: 56, borderRadius: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#FF5A5F' },
+  submitDisabled: { opacity: 0.5 },
   submitPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
-  submitText: { color: '#09090B', fontSize: 16, fontWeight: '900' },
-  loginSubmitText: { color: KlippColors.white, fontWeight: '900' },
-  switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 16, flexWrap: 'wrap' },
-  switchText: { color: '#717171', fontSize: 14 },
-  loginSwitchText: { color: KlippColors.muted },
-  link: { color: '#E31C5F', fontSize: 14, fontWeight: '900' },
-  loginLink: { color: KlippColors.violet },
+  submitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900' },
+  submitArrow: { color: '#FFFFFF', fontSize: 18, fontWeight: '800' },
+  error: { color: '#C13515', fontSize: 13, marginTop: 12 },
+  notice: { color: '#008A70', fontSize: 13, marginTop: 12 },
+  switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, flexWrap: 'wrap', marginTop: 25 },
+  switchText: { color: '#717171', fontSize: 13 },
+  link: { color: '#E31C5F', fontSize: 13, fontWeight: '900' },
+  bottomNote: { width: '100%', maxWidth: 1180, alignSelf: 'center', marginTop: 30, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F0F0F0', flexDirection: 'row', justifyContent: 'space-between' },
+  bottomNoteText: { color: '#999999', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
 });
