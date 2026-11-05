@@ -23,15 +23,15 @@ import { supabase } from '../../lib/supabase';
 type ProServiceDraft = { price: string; minutes: string };
 type ProfessionField = { key: string; label: string; placeholder: string };
 const professionFields: Record<string, ProfessionField[]> = {
-  barberia: [{ key: 'specialty', label: 'Tipos de cortes y arreglos que realizas', placeholder: 'Ej. corte clásico, fade, barba' }],
-  peluqueria: [{ key: 'specialty', label: 'Servicios y técnicas que realizas', placeholder: 'Ej. peinados, color, trenzas' }],
-  estetica: [{ key: 'specialty', label: 'Tratamientos estéticos que ofreces', placeholder: 'Ej. manicura, cejas, maquillaje' }],
-  carwash: [{ key: 'specialty', label: 'Tipos de lavado que realizas', placeholder: 'Ej. exterior, interior, completo' }, { key: 'utilities', label: '¿Cómo llevas agua y energía?', placeholder: 'Describe tu equipo autónomo' }],
-  detailing: [{ key: 'specialty', label: 'Trabajos de detailing que realizas', placeholder: 'Ej. interior, pulido, tapicería' }],
-  limpieza_regular: [{ key: 'specialty', label: 'Áreas y tareas que incluyes', placeholder: 'Ej. cocina, baños, habitaciones' }],
-  limpieza_profunda: [{ key: 'specialty', label: 'Qué incluye tu limpieza profunda', placeholder: 'Describe las tareas que cubres' }],
-  'limpieza-oficinas': [{ key: 'specialty', label: 'Tipos de oficinas que atiendes', placeholder: 'Ej. oficinas pequeñas y medianas' }],
-  mantenimiento: [{ key: 'specialty', label: 'Especialidades y reparaciones que realizas', placeholder: 'Ej. plomería, montaje, pintura' }],
+  barberia: [{ key: 'specialty', label: 'Cortes y arreglos que realizas', placeholder: 'Ej. corte clásico, degradado, barba y afeitado' }],
+  peluqueria: [{ key: 'specialty', label: 'Servicios capilares que realizas', placeholder: 'Ej. corte, lavado, peinado, coloración o trenzas' }, { key: 'hair_lengths', label: 'Longitudes de cabello que atiendes', placeholder: 'Corto, medio, largo o todos' }],
+  estetica: [{ key: 'specialty', label: 'Tratamientos estéticos que ofreces', placeholder: 'Ej. manicura, pedicura, maquillaje, cejas o pestañas' }, { key: 'hygiene', label: 'Medidas de higiene e instrumental', placeholder: 'Describe cómo desinfectas y preparas tu material' }],
+  carwash: [{ key: 'specialty', label: 'Tipos de lavado que realizas', placeholder: 'Ej. exterior, interior, completo y aspirado' }, { key: 'utilities', label: 'Agua y energía para el servicio', placeholder: 'Describe cómo llevas agua y energía al domicilio' }],
+  detailing: [{ key: 'specialty', label: 'Tratamientos de detailing que realizas', placeholder: 'Ej. limpieza interior, pulido, encerado y tapicería' }, { key: 'vehicle_types', label: 'Vehículos que atiendes', placeholder: 'Automóviles, SUV, pickup u otros' }],
+  limpieza_regular: [{ key: 'specialty', label: 'Áreas y tareas que incluyes', placeholder: 'Ej. cocina, baños, habitaciones y áreas comunes' }, { key: 'frequency', label: 'Frecuencia de trabajo disponible', placeholder: 'Puntual, semanal o varias veces por semana' }],
+  limpieza_profunda: [{ key: 'specialty', label: 'Qué incluye tu limpieza profunda', placeholder: 'Describe las tareas y zonas que cubres' }, { key: 'extras', label: 'Trabajos que requieren presupuesto adicional', placeholder: 'Ej. cristales exteriores o tapicería' }],
+  'limpieza-oficinas': [{ key: 'specialty', label: 'Tipos de oficinas que atiendes', placeholder: 'Ej. oficinas pequeñas, locales y espacios compartidos' }, { key: 'frequency', label: 'Frecuencia de trabajo disponible', placeholder: 'Puntual, semanal o diaria' }],
+  mantenimiento: [{ key: 'specialty', label: 'Especialidades y reparaciones que realizas', placeholder: 'Ej. plomería, electricidad, montaje o pintura' }, { key: 'tools', label: 'Herramientas y trabajos que puedes realizar', placeholder: 'Indica tus herramientas y límites de servicio' }],
 };
 type AvailabilityDraft = { weekday: number; start_time: string; end_time: string };
 type ProOnboardingDraft = {
@@ -82,6 +82,7 @@ export function ProRegistrationScreen() {
       .from('service_types')
       .select('id, code, name, description, active, category_id')
       .eq('active', true)
+      .neq('code', 'masajes')
       .order('name');
     if (queryError) throw queryError;
     return (data ?? []) as ServiceType[];
@@ -305,7 +306,7 @@ export function ProRegistrationScreen() {
                         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Text style={styles.checkmark}>✓</Text>}</View>
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
-                          
+                          {service.description ? <Text style={styles.serviceDescription}>{service.description}</Text> : null}
                         </View>
                       </Pressable>
                       {selected && (
