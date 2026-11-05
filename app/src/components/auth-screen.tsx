@@ -126,6 +126,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 <Text style={styles.subtitle}>{isRegister ? ['Elige cómo quieres disfrutar de Klipp.', 'Usaremos tu nombre para personalizar tu experiencia.', 'Un último paso y estarás dentro.'][registerStep] : 'Accede a tus servicios y continúa donde lo dejaste.'}</Text>
               </View>
 
+              {isRegister && (
+                <View style={styles.stepProgress}>
+                  {[0, 1, 2].map((item) => <View key={item} style={[styles.stepProgressSegment, item <= registerStep && styles.stepProgressActive]} />)}
+                </View>
+              )}
+
               {isRegister && registerStep === 0 && (
                 <View style={styles.roleGrid}>
                   <Pressable accessibilityRole="radio" accessibilityState={{ selected: role === 'client' }} onPress={() => { setRole('client'); setError(null); moveRegisterStep(1); }} style={[styles.roleCard, role === 'client' && styles.roleCardSelected]}>
@@ -149,16 +155,19 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                       <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="Ej. María Rodríguez" placeholderTextColor="#9A9A9A" style={styles.input} value={fullName} />
                     </View>
                   )}
-                  {(!isRegister || registerStep === 2) && <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Correo electrónico</Text>
-                    <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor="#9A9A9A" style={styles.input} value={email} />
-                  </View>
-                  <View style={styles.fieldGroup}>
-                    <Text style={styles.label}>Contraseña</Text>
-                    <TextInput autoComplete={isRegister ? 'new-password' : 'current-password'} returnKeyType="done" onChangeText={setPassword} placeholder="Mínimo 8 caracteres" placeholderTextColor="#9A9A9A" secureTextEntry style={styles.input} value={password} />
-                  </View>
-                  <Text style={styles.secureNote}><Text style={styles.secureMark}>●</Text> Tus datos se transmiten de forma segura.</Text>
-                  </View>}
+                  {(!isRegister || registerStep === 2) && (
+                    <>
+                      <View style={styles.fieldGroup}>
+                        <Text style={styles.label}>Correo electrónico</Text>
+                        <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor="#9A9A9A" style={styles.input} value={email} />
+                      </View>
+                      <View style={styles.fieldGroup}>
+                        <Text style={styles.label}>Contraseña</Text>
+                        <TextInput autoComplete={isRegister ? 'new-password' : 'current-password'} returnKeyType="done" onChangeText={setPassword} placeholder="Mínimo 8 caracteres" placeholderTextColor="#9A9A9A" secureTextEntry style={styles.input} value={password} />
+                      </View>
+                      <Text style={styles.secureNote}><Text style={styles.secureMark}>●</Text> Tus datos se transmiten de forma segura.</Text>
+                    </>
+                  )}
                 </View>
               )}
 
@@ -168,7 +177,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
               <View style={styles.actions}>
                 {isRegister && registerStep > 0 && <Pressable onPress={() => moveRegisterStep(registerStep - 1)} style={styles.backAction}><Text style={styles.backActionText}>← Atrás</Text></Pressable>}
-                <Pressable accessibilityRole="button" disabled={busy || (!isRegister && (!email.trim() || !password))} onPress={() => isRegister ? continueRegister() : void handleSubmit()} style={({ pressed }) => [styles.submit, (busy || (!isRegister && (!email.trim() || !password)) || (isRegister && registerStep === 1 && (!email.trim() || !password))) && styles.submitDisabled, pressed && styles.submitPressed]}>
+                <Pressable accessibilityRole="button" disabled={busy || (!isRegister && (!email.trim() || !password))} onPress={() => isRegister ? continueRegister() : void handleSubmit()} style={({ pressed }) => [styles.submit, (busy || (!isRegister && (!email.trim() || !password))) && styles.submitDisabled, pressed && styles.submitPressed]}>
                   {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{isRegister ? (registerStep < 2 ? 'Continuar' : 'Crear cuenta') : 'Iniciar sesión'}</Text>}
                   {!busy && <Text style={styles.submitArrow}>→</Text>}
                 </Pressable>
@@ -223,6 +232,9 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   title: { color: '#222222', fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
   subtitle: { color: '#717171', fontSize: 14, lineHeight: 21 },
+  stepProgress: { flexDirection: 'row', gap: 6, marginTop: -5, marginBottom: 18 },
+  stepProgressSegment: { height: 4, flex: 1, borderRadius: 99, backgroundColor: '#EEEEEE' },
+  stepProgressActive: { backgroundColor: '#FF5A5F' },
   roleGrid: { gap: 14 },
   roleCard: { minHeight: 116, flexDirection: 'row', alignItems: 'center', gap: 15, padding: 18, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 20, backgroundColor: '#FFFFFF' },
   roleCardSelected: { borderColor: '#FF5A5F', backgroundColor: '#FFF8F8' },
