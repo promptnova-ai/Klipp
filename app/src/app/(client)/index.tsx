@@ -376,7 +376,6 @@ export default function ClientHomeScreen() {
           {visibleServices.map((service) => {
             const priceOptions = [
               ...service.offers.map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })),
-              ...service.tiers.filter((tier) => tier.price_dop > 0).map((tier) => ({ price: tier.price_dop, duration: tier.est_minutes })),
             ].sort((left, right) => left.price - right.price);
             const lowestOption = priceOptions[0];
             return (
@@ -503,7 +502,7 @@ export default function ClientHomeScreen() {
                       <Text style={styles.tierTitle}>{tier.label}</Text>
                       <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
                     </View>
-                    <Text style={styles.tierPrice}>{tier.price_dop > 0 ? formatDop(tier.price_dop) : 'Precio del profesional'}</Text>
+                    <Text style={styles.tierPrice}>Precio del profesional</Text>
                   </Pressable>
                 ))}
                 <Pressable
