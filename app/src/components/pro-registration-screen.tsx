@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -212,7 +214,7 @@ export function ProRegistrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.flex}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><Text style={styles.backText}>←</Text></Pressable>
           <View style={styles.brandRow}><View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View><Text style={styles.brand}>Klipp <Text style={styles.proWord}>PRO</Text></Text></View>
@@ -384,7 +386,7 @@ export function ProRegistrationScreen() {
           </Pressable>
           <Text style={styles.footerText}>¿Ya tienes una cuenta? <Text onPress={() => router.replace('/(auth)/login')} style={styles.footerLink}>Inicia sesión</Text></Text>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -467,7 +469,7 @@ const styles = StyleSheet.create({
   serviceCopy: { flex: 1, gap: 4 },
   serviceName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   serviceDescription: { color: '#717171', fontSize: 12, lineHeight: 17 },
-  serviceFields: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingLeft: 0 },
+  serviceFields: { flexDirection: 'column', gap: 10, paddingLeft: 0 },
   helper: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   selectionNote: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   locationIntro: { flexDirection: 'row', alignItems: 'center', gap: 12 },
