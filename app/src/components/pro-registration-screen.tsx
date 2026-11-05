@@ -286,7 +286,7 @@ export function ProRegistrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1500&q=86' }} imageStyle={styles.headerHeroImage} style={styles.headerHero}>
           <View style={styles.headerScrim} />
           <View style={styles.header}>
@@ -305,17 +305,6 @@ export function ProRegistrationScreen() {
         </View>
         <View style={styles.scrollContent}>
           <Animated.View style={[styles.stepContent, { opacity: transition, transform: [{ translateX: transitionOffset }] }]}>
-            <View style={styles.stepRail}>
-              {steps.map((item, index) => (
-                <View key={item.eyebrow} style={styles.stepRailItem}>
-                  <View style={[styles.stepRailDot, index === step && styles.stepRailDotActive, index < step && styles.stepRailDotDone]}>
-                    <Text style={[styles.stepRailNumber, (index === step || index < step) && styles.stepRailNumberActive]}>{index < step ? '✓' : String(index + 1)}</Text>
-                  </View>
-                  <Text style={[styles.stepRailLabel, index === step && styles.stepRailLabelActive]}>{item.eyebrow}</Text>
-                  {index < steps.length - 1 && <View style={[styles.stepRailLine, index < step && styles.stepRailLineDone]} />}
-                </View>
-              ))}
-            </View>
             <View style={styles.heading}>
               <View style={styles.headingTopline}>
                 <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
@@ -387,7 +376,7 @@ export function ProRegistrationScreen() {
                         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Text style={styles.checkmark}>✓</Text>}</View>
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
-                          {!!service.description && <Text style={styles.serviceDescription}>{service.description}</Text>}
+                          
                         </View>
                       </Pressable>
                       {selected && (
@@ -564,7 +553,7 @@ const styles = StyleSheet.create({
   experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#FFF0F1' },
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: '#E31C5F', fontSize: 11, fontWeight: '700' },
-  serviceList: { gap: 7, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center' },
+  serviceList: { gap: 7, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center', justifyContent: 'space-between' },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
   catalogErrorTitle: { color: '#222222', fontSize: 15, fontWeight: '700' },
@@ -572,7 +561,7 @@ const styles = StyleSheet.create({
   retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   serviceCard: { width: '48%', padding: 9, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 14, backgroundColor: '#FFFFFF', gap: 8, shadowColor: KlippColors.navy, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
   serviceCardSelected: { borderColor: KlippColors.blue, backgroundColor: '#FFF0F1' },
-  serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  serviceRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#DDDDDD', borderRadius: 7 },
   checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
   checkmark: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
