@@ -3,12 +3,8 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
-  ImageBackground,
-  Animated,
-  Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -34,14 +30,6 @@ type ProOnboardingDraft = {
   availability: AvailabilityDraft[];
 };
 
-const steps = [
-  { eyebrow: 'TUS DATOS', title: 'Empecemos por ti', subtitle: 'Primero, tus datos de contacto.' },
-  { eyebrow: 'TU PERFIL', title: 'Cuéntanos de tu talento', subtitle: 'Completa los detalles que te ayudarán a destacar.' },
-  { eyebrow: 'TUS SERVICIOS', title: '¿Qué sabes hacer?', subtitle: 'Elige tus especialidades y define tus tarifas.' },
-  { eyebrow: 'TU COBERTURA', title: '¿Dónde trabajas?', subtitle: 'Define tu ubicación y el radio donde puedes atender.' },
-  { eyebrow: 'TU HORARIO', title: '¿Cuándo estás disponible?', subtitle: 'Indica los días y las horas en que puedes recibir solicitudes.' },
-  { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales para terminar.' },
-];
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
@@ -50,7 +38,6 @@ const districtNationalTestLocation: CoverageCoordinate = { latitude: 18.479, lon
 export function ProRegistrationScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
-  const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
@@ -64,7 +51,6 @@ export function ProRegistrationScreen() {
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
-  const [servicePage, setServicePage] = useState(0);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
@@ -72,14 +58,9 @@ export function ProRegistrationScreen() {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
   const [busy, setBusy] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [transition] = useState(() => new Animated.Value(1));
-  const [transitionOffset] = useState(() => new Animated.Value(0));
-  const [progress] = useState(() => new Animated.Value(0));
-  const progressWidth = progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] });
 
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -119,75 +100,26 @@ export function ProRegistrationScreen() {
     return () => { active = false; };
   }, [fetchCatalog]);
 
-  function animateToStep(nextStep: number) {
-    if (isTransitioning || nextStep < 0 || nextStep >= steps.length) return;
-    setIsTransitioning(true);
-    Keyboard.dismiss();
-    setError(null);
-    setNotice(null);
-    transition.stopAnimation();
-    transitionOffset.stopAnimation();
-    progress.stopAnimation();
-    const direction = nextStep > step ? 1 : -1;
-    const nativeDriver = Platform.OS !== 'web';
-    Animated.parallel([
-      Animated.timing(transition, { toValue: 0, duration: 150, useNativeDriver: nativeDriver }),
-      Animated.timing(transitionOffset, { toValue: direction * -14, duration: 150, useNativeDriver: nativeDriver }),
-    ]).start(({ finished }) => {
-      if (!finished) { setIsTransitioning(false); return; }
-      setStep(nextStep);
-      transition.setValue(0);
-      transitionOffset.setValue(direction * 14);
-      Animated.parallel([
-        Animated.spring(transition, { toValue: 1, speed: 20, bounciness: 2, useNativeDriver: nativeDriver }),
-        Animated.spring(transitionOffset, { toValue: 0, speed: 20, bounciness: 2, useNativeDriver: nativeDriver }),
-        Animated.timing(progress, { toValue: nextStep, duration: 320, useNativeDriver: false }),
-      ]).start(() => setIsTransitioning(false));
+  function validateForm() {
+    if (fullName.trim().length < 2) return 'Escribe tu nombre completo.';
+    if (phone.replace(/\\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
+    if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
+    if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
+    if (servicesLoading) return 'Espera mientras cargamos las especialidades.';
+    if (!catalog.length) return 'No hay especialidades disponibles ahora mismo.';
+    if (!selectedServices.length) return 'Elige al menos un servicio.';
+    const invalid = selectedServices.some((id) => {
+      const draft = serviceDrafts[id];
+      return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0 || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
     });
-  }
-
-  function validateStep() {
-    if (step === 0) {
-      if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
-      if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
-    }
-    if (step === 1) {
-      if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
-      if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
-    }
-    if (step === 2) {
-      if (servicesLoading) return 'Espera un momento mientras cargamos las especialidades.';
-      if (catalog.length === 0) return 'No hay especialidades disponibles ahora mismo.';
-      if (selectedServices.length === 0) return 'Elige al menos un servicio para continuar.';
-      const invalid = selectedServices.some((id) => {
-        const draft = serviceDrafts[id];
-        return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0
-          || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
-      });
-      if (invalid) return 'Completa un precio y una duración válidos para cada servicio elegido.';
-    }
-    if (step === 3 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
-    if (step === 4) {
-      if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
-        return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
-      }
-    }
-    if (step === 5) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
-      if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
-      if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
-    }
+    if (invalid) return 'Completa un precio y una duración válidos para cada servicio elegido.';
+    if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (!selectedWeekdays.length) return 'Selecciona al menos un día de trabajo.';
+    if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime) || startTime >= endTime) return 'Indica un horario válido y asegúrate de que la hora final sea posterior.';
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+    if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
+    if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     return null;
-  }
-
-  function continueRegistration() {
-    const validationError = validateStep();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-    animateToStep(step + 1);
   }
 
   function toggleService(serviceId: number) {
@@ -230,7 +162,7 @@ export function ProRegistrationScreen() {
   }
 
   async function createProfessionalAccount() {
-    const validationError = validateStep();
+    const validationError = validateForm();
     if (validationError) {
       setError(validationError);
       return;
@@ -282,42 +214,23 @@ export function ProRegistrationScreen() {
     }
   }
 
-  const currentStep = steps[step];
   const selectedCount = selectedServices.length;
-  const visibleServices = catalog.slice(servicePage * 2, servicePage * 2 + 2);
-  const servicePageCount = Math.max(1, Math.ceil(catalog.length / 2));
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
-        <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1500&q=86' }} imageStyle={styles.headerHeroImage} style={styles.headerHero}>
-          <View style={styles.headerScrim} />
-          <View style={styles.header}>
-          <Pressable accessibilityRole="button" disabled={isTransitioning} onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
-            <Text style={styles.backText}>←</Text>
-          </Pressable>
-          <View style={styles.brandRow}>
-            <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-            <Text style={styles.brand}>Klipp <Text style={styles.proWord}>PRO</Text></Text>
-          </View>
-          <Text style={styles.headerCaption}>CREA TU PERFIL PROFESIONAL</Text>
-          </View>
-        </ImageBackground>
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+      <View style={styles.flex}>
+        <View style={styles.header}>
+          <Pressable accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}><Text style={styles.backText}>←</Text></Pressable>
+          <View style={styles.brandRow}><View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View><Text style={styles.brand}>Klipp <Text style={styles.proWord}>PRO</Text></Text></View>
+          <Text style={styles.headerCaption}>REGISTRO PROFESIONAL</Text>
         </View>
-        <View style={styles.scrollContent}>
-          <Animated.View style={[styles.stepContent, { opacity: transition, transform: [{ translateX: transitionOffset }] }]}>
-            <View style={styles.heading}>
-              <View style={styles.headingTopline}>
-                <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
-                <Text style={styles.headingStep}>{String(step + 1).padStart(2, '0')}</Text>
-              </View>
-              <Text style={styles.title}>{currentStep.title}</Text>
-              <Text style={styles.subtitle}>{currentStep.subtitle}</Text>
+        <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentInner} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={styles.stepContent}>
+            <View style={styles.formIntro}>
+              <Text style={styles.title}>Crea tu perfil profesional</Text>
+              <Text style={styles.subtitle}>Completa tus datos, servicios y disponibilidad para empezar a recibir solicitudes.</Text>
             </View>
-
-            {step === 0 && (
+            {true && (
               <View style={styles.card}>
                 <Field label="Nombre completo">
                   <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
@@ -328,14 +241,11 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 1 && (
+            {true && (
               <View style={styles.card}>
-                <View style={styles.twoColumns}>
-                  <Field label="Años de experiencia">
-                    <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
-                  </Field>
-                  <View style={styles.experienceBadge}><Text style={styles.badgeIcon}>✦</Text><Text style={styles.badgeText}>Tu talento merece crecer</Text></View>
-                </View>
+                <Field label="Años de experiencia">
+                  <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
+                </Field>
                 <Field label="Una breve presentación">
                   <TextInput multiline maxLength={240} onChangeText={setBio} placeholder="¿Qué te hace especial en tu trabajo?" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
                 </Field>
@@ -349,7 +259,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 2 && (
+            {true && (
               <View style={styles.serviceList}>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
@@ -370,7 +280,7 @@ export function ProRegistrationScreen() {
                       <Text style={styles.retryButtonText}>Actualizar catálogo</Text>
                     </Pressable>
                   </View>
-                ) : visibleServices.map((service) => {
+                ) : catalog.map((service) => {
                   const selected = selectedServices.includes(service.id);
                   const draft = serviceDrafts[service.id] ?? { price: '', minutes: '60' };
                   return (
@@ -394,23 +304,11 @@ export function ProRegistrationScreen() {
                       )}
                     </View>
                   );
-                })}
-                {catalog.length > 4 && (
-                  <View style={styles.servicePagination}>
-                    <Pressable accessibilityRole="button" disabled={servicePage === 0} onPress={() => setServicePage((page) => Math.max(0, page - 1))} style={[styles.pageButton, servicePage === 0 && styles.pageButtonDisabled]}>
-                      <Text style={styles.pageButtonText}>← Anterior</Text>
-                    </Pressable>
-                    <Text style={styles.pageIndicator}>{servicePage + 1} / {servicePageCount}</Text>
-                    <Pressable accessibilityRole="button" disabled={servicePage >= servicePageCount - 1} onPress={() => setServicePage((page) => Math.min(servicePageCount - 1, page + 1))} style={[styles.pageButton, servicePage >= servicePageCount - 1 && styles.pageButtonDisabled]}>
-                      <Text style={styles.pageButtonText}>Siguiente →</Text>
-                    </Pressable>
-                  </View>
-                )}
-                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
+                })}                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
               </View>
             )}
 
-            {step === 3 && (
+            {true && (
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -440,7 +338,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 4 && (
+            {true && (
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Selecciona tus días de trabajo</Text>
                 <View style={styles.chips}>
@@ -453,7 +351,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 5 && (
+            {true && (
               <>
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
@@ -487,23 +385,16 @@ export function ProRegistrationScreen() {
                 </Pressable>
               </View>
             )}
-          </Animated.View>
-        </View>
+          </View>
+        </ScrollView>
         <View style={styles.footer}>
-          {step < steps.length - 1 ? (
-            <Pressable accessibilityRole="button" disabled={isTransitioning} onPress={continueRegistration} style={({ pressed }) => [styles.primaryButton, (pressed || isTransitioning) && styles.primaryPressed]}>
-              <Text style={styles.primaryButtonText}>Continuar</Text>
-              <Text style={styles.primaryArrow}>→</Text>
-            </Pressable>
-          ) : (
-            <Pressable accessibilityRole="button" disabled={busy || Boolean(notice)} onPress={() => void createProfessionalAccount()} style={({ pressed }) => [styles.primaryButton, (busy || notice) && styles.buttonDisabled, pressed && !busy && styles.primaryPressed]}>
-              {busy ? <ActivityIndicator color={KlippColors.white} /> : <Text style={styles.primaryButtonText}>Crear cuenta profesional</Text>}
-              {!busy && <Text style={styles.primaryArrow}>→</Text>}
-            </Pressable>
-          )}
+          <Pressable accessibilityRole="button" disabled={busy || Boolean(notice)} onPress={() => void createProfessionalAccount()} style={({ pressed }) => [styles.primaryButton, (busy || notice) && styles.buttonDisabled, pressed && !busy && styles.primaryPressed]}>
+            {busy ? <ActivityIndicator color={KlippColors.white} /> : <Text style={styles.primaryButtonText}>Crear cuenta profesional</Text>}
+            {!busy && <Text style={styles.primaryArrow}>→</Text>}
+          </Pressable>
           <Text style={styles.footerText}>¿Ya tienes una cuenta? <Text onPress={() => router.replace('/(auth)/login')} style={styles.footerLink}>Inicia sesión</Text></Text>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -523,11 +414,18 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  formScroll: { flex: 1 },
+  scrollContentInner: { paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28, gap: 20 },
+  formIntro: { gap: 7, maxWidth: 760, width: '100%', alignSelf: 'center', marginBottom: 2 },
+  sectionBlock: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 9, marginBottom: 18 },
+  sectionTitle: { color: '#222222', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
+  sectionDescription: { color: '#717171', fontSize: 12, lineHeight: 18 },
+  sectionBody: { gap: 10 },
   
   headerHero: { height: 104, minHeight: 104, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
   headerHeroImage: { opacity: 0.9 },
   headerScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
-  header: { minHeight: 96, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  header: { minHeight: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, borderBottomWidth: 1, borderBottomColor: '#EEEEEE', backgroundColor: '#FFFFFF' },
   backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   backText: { color: '#FFFFFF', fontSize: 29, lineHeight: 32, marginTop: -3 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
@@ -538,7 +436,7 @@ const styles = StyleSheet.create({
   headerCaption: { color: 'rgba(255,255,255,0.86)', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, maxWidth: 112, textAlign: 'right', lineHeight: 14 },
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
-  scrollContent: { flex: 1, minHeight: 0, paddingHorizontal: 22, paddingTop: 8, paddingBottom: 6, justifyContent: 'center' },
+  scrollContent: { flex: 1, minHeight: 0 },
   stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 8 },
   stepRail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, paddingVertical: 2, marginBottom: 0 },
   stepRailItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -555,24 +453,18 @@ const styles = StyleSheet.create({
   headingTopline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headingStep: { color: '#717171', fontSize: 12, fontWeight: '900', letterSpacing: 1.4 },
   eyebrow: { color: '#FF5A5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  title: { color: '#222222', fontSize: 27, lineHeight: 32, fontWeight: '900', letterSpacing: -1.1 },
+  title: { color: '#222222', fontSize: 27, lineHeight: 32, fontWeight: '800', letterSpacing: -0.7 },
   subtitle: { maxWidth: 520, color: '#717171', fontSize: 14, lineHeight: 21 },
-  card: { padding: 16, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 20, shadowColor: '#222222', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
+  card: { padding: 16, borderWidth: 1, borderColor: '#E8E8E8', borderRadius: 16, backgroundColor: '#FFFFFF', gap: 16 },
   field: { flex: 1, gap: 7 },
   label: { color: '#484848', fontSize: 12, fontWeight: '800' },
   input: { minHeight: 46, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, backgroundColor: '#F7F7F7', color: '#222222', fontSize: 15, fontWeight: '500' },
   multiline: { minHeight: 78, paddingTop: 12, textAlignVertical: 'top' },
   transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
-  experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#FFF0F1' },
-  badgeIcon: { color: KlippColors.blue, fontSize: 16 },
-  badgeText: { color: '#E31C5F', fontSize: 11, fontWeight: '700' },
+
   serviceList: { gap: 8, flexDirection: 'column', justifyContent: 'center' },
-  servicePagination: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
-  pageButton: { minHeight: 34, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: '#FFF0F1' },
-  pageButtonDisabled: { opacity: 0.35 },
-  pageButtonText: { color: '#E31C5F', fontSize: 11, fontWeight: '800' },
-  pageIndicator: { color: '#717171', fontSize: 11, fontWeight: '700' },
+
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
   catalogErrorTitle: { color: '#222222', fontSize: 15, fontWeight: '700' },
