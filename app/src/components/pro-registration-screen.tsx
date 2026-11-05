@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
@@ -72,13 +72,10 @@ export function ProRegistrationScreen() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const transition = useRef(new Animated.Value(1)).current;
-  const transitionOffset = useRef(new Animated.Value(0)).current;
-  const progress = useRef(new Animated.Value(0)).current;
-  const progressWidth = useMemo(
-    () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
-    [progress],
-  );
+  const [transition] = useState(() => new Animated.Value(1));
+  const [transitionOffset] = useState(() => new Animated.Value(0));
+  const [progress] = useState(() => new Animated.Value(0));
+  const progressWidth = progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] });
 
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -531,7 +528,7 @@ const styles = StyleSheet.create({
   
   headerHero: { minHeight: 112, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
   headerHeroImage: { opacity: 0.9 },
-  headerScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
+  headerScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
   header: { minHeight: 96, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
   backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   backText: { color: '#FFFFFF', fontSize: 29, lineHeight: 32, marginTop: -3 },
