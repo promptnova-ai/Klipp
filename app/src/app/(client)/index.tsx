@@ -376,7 +376,7 @@ export default function ClientHomeScreen() {
           {visibleServices.map((service) => {
             const priceOptions = [
               ...service.offers.map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })),
-              ...service.tiers.map((tier) => ({ price: tier.price_dop, duration: tier.est_minutes })),
+              ...service.tiers.filter((tier) => tier.price_dop > 0).map((tier) => ({ price: tier.price_dop, duration: tier.est_minutes })),
             ].sort((left, right) => left.price - right.price);
             const lowestOption = priceOptions[0];
             return (
@@ -395,7 +395,7 @@ export default function ClientHomeScreen() {
                   </View>
                   <Text style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
                   <View style={styles.serviceMeta}>
-                    {lowestOption && <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text>}
+                    {lowestOption ? <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text> : <Text style={styles.serviceDuration}>Tarifas según modalidad y profesional</Text>}
                     {lowestOption && <Text style={styles.metaDot}>·</Text>}
                     {lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}
                   </View>
