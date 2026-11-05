@@ -540,79 +540,78 @@ export function NewBookingScreen() {
     setError(null);
     setSuccess(null);
     try {
-    let bookingId: unknown = null;
-    let rpcError: { message: string } | null = null;
-    if (selectedOffer) {
-      const result = await supabase.rpc('create_booking_at_location', {
-        p_pro_service_id: selectedOffer.id,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    } else if (selectedTier) {
-      const result = await supabase.rpc('create_tier_booking_at_location', {
-        p_pricing_tier_id: selectedTier.id,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-        p_mode: mode,
-        p_pro_id: mode === 'manual' ? selectedProId : null,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    } else if (mode === 'auto') {
-      const result = await supabase.rpc('create_auto_service_booking_at_location', {
-        p_service_type_id: selectedServiceId!,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    } else {
-      const { data: proService, error: serviceLookupError } = await supabase.from('pro_services')
-        .select('id')
-        .eq('pro_id', selectedProId!)
-        .eq('service_type_id', selectedServiceId!)
-        .eq('active', true)
-        .maybeSingle();
-      if (serviceLookupError || !proService) {
-        setError(serviceLookupError?.message ?? 'El profesional no tiene publicado este servicio.');
-        setSaving(false);
-        return;
-      }
-      const result = await supabase.rpc('create_booking_at_location', {
-        p_pro_service_id: proService.id,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    }
-    if (rpcError) setError(rpcError.message);
-    else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
-    else {
-      if (!selectedOffer && mode === 'auto' && timing === 'now') {
-        const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
-        if (assignmentError) setError('Solicitud creada. Klipp seguirá intentando encontrar un profesional; puedes consultar el estado en Mis reservas.');
-        else setSuccess('Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
-      } else if (!selectedOffer && mode === 'auto') {
-        setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
+      let bookingId: unknown = null;
+      let rpcError: { message: string } | null = null;
+      if (selectedOffer) {
+        const result = await supabase.rpc('create_booking_at_location', {
+          p_pro_service_id: selectedOffer.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
+      } else if (selectedTier) {
+        const result = await supabase.rpc('create_tier_booking_at_location', {
+          p_pricing_tier_id: selectedTier.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+          p_mode: mode,
+          p_pro_id: mode === 'manual' ? selectedProId : null,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
+      } else if (mode === 'auto') {
+        const result = await supabase.rpc('create_auto_service_booking_at_location', {
+          p_service_type_id: selectedServiceId!,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
       } else {
-        setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
+        const { data: proService, error: serviceLookupError } = await supabase.from('pro_services')
+          .select('id')
+          .eq('pro_id', selectedProId!)
+          .eq('service_type_id', selectedServiceId!)
+          .eq('active', true)
+          .maybeSingle();
+        if (serviceLookupError || !proService) {
+          setError(serviceLookupError?.message ?? 'El profesional no tiene publicado este servicio.');
+          return;
+        }
+        const result = await supabase.rpc('create_booking_at_location', {
+          p_pro_service_id: proService.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
       }
-    }
+      if (rpcError) setError(rpcError.message);
+      else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
+      else {
+        if (!selectedOffer && mode === 'auto' && timing === 'now') {
+          const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
+          if (assignmentError) setError('Solicitud creada. Klipp seguirá intentando encontrar un profesional; puedes consultar el estado en Mis reservas.');
+          else setSuccess('Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
+        } else if (!selectedOffer && mode === 'auto') {
+          setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
+        } else {
+          setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
+        }
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No pudimos crear la reserva. Comprueba tu conexión e inténtalo de nuevo.');
     } finally {
