@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
@@ -856,7 +856,24 @@ export function NewBookingScreen() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
+  const [entrance] = useState(() => new Animated.Value(0));
+  const offset = entrance.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
+
+  useEffect(() => {
+    Animated.spring(entrance, {
+      toValue: 1,
+      speed: 20,
+      bounciness: 2,
+      useNativeDriver: Platform.OS !== 'web',
+    }).start();
+  }, [entrance]);
+
+  return (
+    <Animated.View style={[styles.section, { opacity: entrance, transform: [{ translateY: offset }] }]}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {children}
+    </Animated.View>
+  );
 }
 
 function Choice({ selected, label, secondary, onPress }: { selected: boolean; label: string; secondary?: string; onPress: () => void }) {
