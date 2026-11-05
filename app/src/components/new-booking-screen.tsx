@@ -231,12 +231,13 @@ export function NewBookingScreen() {
         distance_m: number;
       })[]);
       setOffers(nearby);
-      if (offerIdParam && nearby.some((offer) => offer.id === offerIdParam)) setSelectedOfferId(offerIdParam);
+      const requestedOffer = nearby.find((offer) => offer.id === offerIdParam);
+      if (requestedOffer && !tiers.some((tier) => tier.service_type_id === requestedOffer.service_type_id)) setSelectedOfferId(requestedOffer.id);
     }).catch((cause: unknown) => {
       if (active) setError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
     });
     return () => { active = false; };
-  }, [coordinate, serviceIds, offerIdParam]);
+  }, [coordinate, serviceIds, offerIdParam, tiers]);
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
@@ -647,7 +648,7 @@ export function NewBookingScreen() {
       )}
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary="Precio según tarifa del profesional" onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary="Precio según tarifa del profesional" onPress={() => { resetAppointmentSelection(); setSelectedOfferId(null); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
