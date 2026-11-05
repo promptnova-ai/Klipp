@@ -230,7 +230,8 @@ export function ProRegistrationScreen() {
               <Text style={styles.title}>Crea tu perfil profesional</Text>
               <Text style={styles.subtitle}>Completa tus datos, servicios y disponibilidad para empezar a recibir solicitudes.</Text>
             </View>
-            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Datos personales</Text>
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Datos personales</Text>
               <View style={styles.card}>
                 <Field label="Nombre completo">
                   <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
@@ -238,7 +239,8 @@ export function ProRegistrationScreen() {
                 <Field label="Teléfono de contacto">
                   <TextInput autoComplete="tel" keyboardType="phone-pad" returnKeyType="done" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
                 </Field>
-              </View></View>
+              </View>
+            </View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Perfil profesional</Text>
               <View style={styles.card}>
@@ -302,7 +304,8 @@ export function ProRegistrationScreen() {
                       )}
                     </View>
                   );
-                })}                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
+                })}
+                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
               </View></View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Zona de trabajo</Text>
@@ -314,7 +317,7 @@ export function ProRegistrationScreen() {
                     <Text style={styles.helper}>Clientes dentro del círculo podrán encontrarte.</Text>
                   </View>
                 </View>
-                <Pressable accessibilityRole="button" disabled={locating || isTransitioning} onPress={() => void locateCurrentPosition()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
+                <Pressable accessibilityRole="button" disabled={locating} onPress={() => void locateCurrentPosition()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={setTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
@@ -346,7 +349,8 @@ export function ProRegistrationScreen() {
                 </View>
               </View></View>
 
-            <View style={styles.formSection}>              <>
+            <View style={styles.formSection}>
+              <>
                 <Text style={styles.sectionTitle}>Acceso a tu cuenta</Text>
               <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
@@ -412,7 +416,6 @@ const styles = StyleSheet.create({
   scrollContentInner: { paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28, gap: 20 },
   formIntro: { gap: 7, maxWidth: 760, width: '100%', alignSelf: 'center', marginBottom: 2 },
   formSection: { width: '100%', gap: 9, marginBottom: 14 },
-  sectionTitle: { color: '#222222', fontSize: 17, fontWeight: '800', letterSpacing: -0.3 },
   sectionTitle: { color: '#222222', fontSize: 16, fontWeight: '800', letterSpacing: -0.25, marginBottom: 2 },
   
   headerHero: { height: 104, minHeight: 104, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
