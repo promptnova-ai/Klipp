@@ -2,6 +2,7 @@ import { Link, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -63,16 +64,22 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, isRegister && styles.registerSafeArea]}>
+      {isRegister && (
+        <>
+          <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1675034743339-0b0747047727?auto=format&fit=crop&w=1800&q=85' }} resizeMode="cover" style={StyleSheet.absoluteFillObject} />
+          <View pointerEvents="none" style={styles.registerPhotoOverlay} />
+        </>
+      )}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={[styles.scrollContent, !isRegister && styles.loginScrollContent, wideLogin && styles.loginScrollContentWide]} keyboardShouldPersistTaps="handled">
           <View style={[styles.loginShell, wideLogin && styles.loginShellWide]}>
             <View style={[styles.brandBlock, !isRegister && styles.loginBrandBlock]}>
               <View style={styles.brandRow}>
                 <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-                <Text style={[styles.brand, !isRegister && styles.loginBrand]}>Klipp</Text>
+                <Text style={[styles.brand, !isRegister && styles.loginBrand, isRegister && styles.registerBrand]}>Klipp</Text>
               </View>
-              <Text style={[styles.location, !isRegister && styles.loginLocation]}>TU SERVICIO, EN CAMINO</Text>
+              <Text style={[styles.location, !isRegister && styles.loginLocation, isRegister && styles.registerLocation]}>TU SERVICIO, EN CAMINO</Text>
             </View>
 
             <View style={[styles.loginMain, wideLogin && styles.loginMainWide]}>
@@ -177,6 +184,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
+  registerSafeArea: { backgroundColor: '#101827' },
+  registerPhotoOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(7, 17, 34, 0.48)' },
   scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingVertical: 28 },
   loginScrollContent: { backgroundColor: KlippColors.canvas, paddingHorizontal: 22, paddingVertical: 30 },
   loginScrollContentWide: { justifyContent: 'center', minHeight: '100%' },
@@ -188,12 +197,14 @@ const styles = StyleSheet.create({
   logoMark: { width: 44, height: 44, borderRadius: 16, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 4, borderBottomColor: KlippColors.cyan },
   logoLetter: { color: KlippColors.white, fontSize: 25, fontWeight: '900', letterSpacing: -1 },
   brand: { color: KlippColors.navy, fontSize: 28, fontWeight: '900', letterSpacing: -1 },
+  registerBrand: { color: KlippColors.white },
   loginBrand: { color: KlippColors.navy },
   location: { color: KlippColors.muted, fontSize: 10, fontWeight: '800', marginTop: 4, letterSpacing: 1 },
+  registerLocation: { color: '#DCE8F7' },
   loginLocation: { color: KlippColors.violet, fontSize: 9, letterSpacing: 1.1 },
   loginMain: { gap: 20 },
   loginMainWide: { alignItems: 'center', justifyContent: 'center', gap: 20 },
-  form: { width: '100%', maxWidth: 500, alignSelf: 'center', gap: 13, padding: 28, borderRadius: 30, borderWidth: 1, borderColor: '#E7ECF4', backgroundColor: KlippColors.white, shadowColor: KlippColors.navy, shadowOpacity: 0.08, shadowRadius: 30, shadowOffset: { width: 0, height: 16 }, elevation: 5 },
+  form: { width: '100%', maxWidth: 500, alignSelf: 'center', gap: 13, padding: 28, borderRadius: 30, borderWidth: 1, borderColor: 'rgba(255,255,255,0.72)', backgroundColor: 'rgba(255,255,255,0.96)', shadowColor: KlippColors.navy, shadowOpacity: 0.18, shadowRadius: 30, shadowOffset: { width: 0, height: 16 }, elevation: 5 },
   loginForm: { maxWidth: 480, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   loginFormWide: { width: '100%', maxWidth: 480, alignSelf: 'center', padding: 30 },
   eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '900', letterSpacing: 1.2, marginBottom: 2 },
