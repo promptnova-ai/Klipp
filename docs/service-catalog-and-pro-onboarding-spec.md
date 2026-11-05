@@ -143,3 +143,5 @@ En la base Supabase activa `hxjwibtpxgpdxemqqwjh` no aparecen `service_equipment
 - El cliente selecciona primero una modalidad. En asignación automática, el rango estimado procede de los precios publicados por profesionales de la zona; en asignación manual, la ficha y la reserva consultan la tarifa exacta del profesional. Al aceptar, el backend vuelve a fijar precio, duración, comisión y pago del profesional con la tarifa guardada.
 - Verificación estructural posterior a las migraciones: 40 modalidades en catálogo y las 40 con precio global cero; las funciones de búsqueda y creación de reserva no son ejecutables por `anon` y sí por `authenticated`.
 - Falta una prueba end-to-end con cuentas de prueba (alta PRO, confirmación de correo, inserción de varias tarifas, búsqueda de modalidad y reserva manual/automática) y QA visual en navegador/dispositivos.
+
+- Migración 041 `require_equipment_policy_for_manual_discovery`: la búsqueda manual excluye perfiles que no tengan registrado el compromiso de herramientas/materiales, igual que el alta y la creación de reservas.
