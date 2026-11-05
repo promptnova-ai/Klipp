@@ -89,7 +89,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
       return;
     }
     if (registerStep === 2) {
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         setError('Escribe un correo electrónico válido.');
         return;
       }
