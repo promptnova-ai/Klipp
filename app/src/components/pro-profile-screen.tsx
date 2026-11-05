@@ -523,8 +523,6 @@ export function ProProfileScreen() {
   function toggleService(serviceId: number) {
     setSelectedServices((current) => {
       if (current.includes(serviceId)) return current.filter((id) => id !== serviceId);
-      setServicePrices((prices) => ({ ...prices, [serviceId]: prices[serviceId] ?? '' }));
-      setServiceDurations((durations) => ({ ...durations, [serviceId]: durations[serviceId] ?? '60' }));
       return [...current, serviceId];
     });
   }
