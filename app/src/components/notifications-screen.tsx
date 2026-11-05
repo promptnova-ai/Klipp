@@ -302,7 +302,6 @@ const styles = StyleSheet.create({
   pushButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.blue, paddingHorizontal: 16 },
   pushButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
   settingsSectionLabel: { color: KlippColors.navy, fontSize: 17, fontWeight: '800', marginTop: 10, marginBottom: -5 },
-  settingsSectionLabel: { color: KlippColors.navy, fontSize: 17, fontWeight: '800', marginTop: 10, marginBottom: -5 },
   preferencesTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
   preferencesHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   preferenceRow: { paddingTop: 11, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 8 },
