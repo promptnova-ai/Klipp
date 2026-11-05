@@ -28,7 +28,7 @@ export default function RootLayout() {
     <AuthProvider>
       <NotificationChannelBootstrap />
       <NotificationResponseHandler />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right', animationDuration: 260, gestureEnabled: true, contentStyle: { backgroundColor: '#FFFFFF' } }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(client)" />
