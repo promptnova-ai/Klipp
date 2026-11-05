@@ -377,7 +377,7 @@ export function ProAgendaScreen() {
         const step = nextStep[booking.status];
         return (
           <View key={booking.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
+            <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio profesional'}</Text>
             <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
             <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
             <Text style={styles.body}>Ubicación: {booking.address_text || booking.addresses?.label || booking.addresses?.street || 'No disponible'}</Text>
