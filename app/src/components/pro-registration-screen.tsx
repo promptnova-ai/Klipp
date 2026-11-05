@@ -187,7 +187,7 @@ export function ProRegistrationScreen() {
       : [...current, weekday].sort((a, b) => a - b));
   }
 
-  async function useCurrentLocation() {
+  async function locateCurrentPosition() {
     setLocating(true);
     setError(null);
     try {
@@ -205,7 +205,7 @@ export function ProRegistrationScreen() {
     }
   }
 
-  function useDistrictNationalTestLocation() {
+  function setTestLocation() {
     setCenter(districtNationalTestLocation);
     setError(null);
   }
@@ -275,7 +275,7 @@ export function ProRegistrationScreen() {
           </Pressable>
           <View style={styles.brandRow}>
             <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-            <Text style={styles.brand}>klipp</Text>
+            <Text style={styles.brand}>Klipp</Text>
           </View>
           <Text style={styles.stepCount}>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</Text>
         </View>
@@ -288,7 +288,7 @@ export function ProRegistrationScreen() {
               ? styles.stepContent
               : [
                   styles.stepContent,
-                  { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
+                  { opacity: transition },
                 ]}>
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
@@ -403,10 +403,10 @@ export function ProRegistrationScreen() {
                     <Text style={styles.helper}>Clientes dentro del círculo podrán encontrarte.</Text>
                   </View>
                 </View>
-                <Pressable accessibilityRole="button" disabled={locating} onPress={() => void useCurrentLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
+                <Pressable accessibilityRole="button" disabled={locating} onPress={() => void locateCurrentPosition()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
                 </Pressable>
-                <Pressable accessibilityRole="button" onPress={useDistrictNationalTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
+                <Pressable accessibilityRole="button" onPress={setTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
                   <Text style={styles.testLocationButtonText}>Usar ubicación de prueba · Piantini, Distrito Nacional</Text>
                 </Pressable>
                 {center ? (
@@ -524,10 +524,10 @@ const styles = StyleSheet.create({
   eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   title: { color: KlippColors.navy, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.5 },
   subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  card: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 15, shadowColor: '#0F172A', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 3 },
+  card: { padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 16, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 16, elevation: 1 },
   field: { flex: 1, gap: 7 },
-  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
-  input: { minHeight: 49, paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 12, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
+  label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
+  input: { minHeight: 51, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: '#FBFCFE', color: KlippColors.navy, fontSize: 15 },
   multiline: { minHeight: 104, paddingTop: 12, textAlignVertical: 'top' },
   transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   catalogErrorTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   retryButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
   retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
-  serviceCard: { padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.03, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
+  serviceCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 19, backgroundColor: KlippColors.white, gap: 14, shadowColor: KlippColors.navy, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 1 },
   serviceCardSelected: { borderColor: '#9AB9FF', backgroundColor: '#FBFDFF' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
   locationPin: { color: KlippColors.blue, fontSize: 25, fontWeight: '700' },
   locationCopy: { flex: 1, gap: 3 },
   cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
-  locationButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
+  locationButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#EEF4FF', borderWidth: 1, borderColor: '#DCE8FF' },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   testLocationButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 12, backgroundColor: KlippColors.white },
   testLocationButtonText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700', textAlign: 'center' },
@@ -576,7 +576,7 @@ const styles = StyleSheet.create({
   summaryCopy: { flex: 1, gap: 3 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, backgroundColor: KlippColors.canvas },
-  primaryButton: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 15, backgroundColor: KlippColors.navy },
+  primaryButton: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.15, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
   primaryPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
   primaryButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
@@ -585,7 +585,7 @@ const styles = StyleSheet.create({
   footerLink: { color: KlippColors.blueDark, fontWeight: '700' },
   pressed: { opacity: 0.85 },
   error: { padding: 12, borderRadius: 12, backgroundColor: '#FEF3F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  noticeCard: { alignItems: 'center', padding: 18, borderRadius: 16, backgroundColor: '#ECFDF5', gap: 9 },
+  noticeCard: { alignItems: 'center', padding: 20, borderWidth: 1, borderColor: '#A7F3D0', borderRadius: 19, backgroundColor: '#ECFDF5', gap: 10 },
   noticeIcon: { color: '#047857', fontSize: 22 },
   noticeText: { color: '#065F46', fontSize: 13, lineHeight: 20, textAlign: 'center' },
   loginButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 11, backgroundColor: '#D1FAE5' },
