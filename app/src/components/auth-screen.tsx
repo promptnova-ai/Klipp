@@ -1,5 +1,4 @@
 import { Link, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
