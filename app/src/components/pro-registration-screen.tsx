@@ -277,7 +277,9 @@ export function ProRegistrationScreen() {
             <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
             <Text style={styles.brand}>Klipp</Text>
           </View>
-          <Text style={styles.stepCount}>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</Text>
+          <View style={styles.stepPill}>
+            <Text style={styles.stepCount}>PASO {step + 1} DE {steps.length}</Text>
+          </View>
         </View>
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
@@ -291,7 +293,10 @@ export function ProRegistrationScreen() {
                   { opacity: transition },
                 ]}>
             <View style={styles.heading}>
-              <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
+              <View style={styles.headingTopline}>
+                <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
+                <Text style={styles.headingStep}>{String(step + 1).padStart(2, '0')}</Text>
+              </View>
               <Text style={styles.title}>{currentStep.title}</Text>
               <Text style={styles.subtitle}>{currentStep.subtitle}</Text>
             </View>
@@ -508,26 +513,29 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
-  backButton: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center' },
-  backText: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoMark: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
-  logoLetter: { color: KlippColors.white, fontSize: 19, fontWeight: '900' },
-  brand: { color: KlippColors.navy, fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  stepCount: { color: KlippColors.muted, fontSize: 12, fontWeight: '700' },
-  progressTrack: { height: 4, marginHorizontal: 20, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E2E8F0' },
-  progressFill: { height: 4, borderRadius: 999, backgroundColor: KlippColors.blue },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 26, paddingBottom: 20 },
-  stepContent: { width: '100%', maxWidth: 620, alignSelf: 'center', gap: 20 },
-  heading: { gap: 7, marginBottom: 2 },
-  eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  title: { color: KlippColors.navy, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  card: { padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 16, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 16, elevation: 1 },
+  header: { minHeight: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#E8EDF5' },
+  backText: { color: KlippColors.navy, fontSize: 29, lineHeight: 32, marginTop: -3 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  logoMark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.blue },
+  logoLetter: { color: KlippColors.white, fontSize: 20, fontWeight: '900' },
+  brand: { color: KlippColors.navy, fontSize: 23, fontWeight: '900', letterSpacing: -0.8 },
+  stepPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#EAF1FF' },
+  stepCount: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 0.7 },
+  progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E5EAF2' },
+  progressFill: { height: 5, borderRadius: 999, backgroundColor: KlippColors.cyan },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28 },
+  stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
+  heading: { position: 'relative', overflow: 'hidden', gap: 10, marginBottom: 2, paddingHorizontal: 24, paddingVertical: 23, borderRadius: 25, backgroundColor: KlippColors.navy },
+  headingTopline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  headingStep: { color: '#91A8CC', fontSize: 12, fontWeight: '900', letterSpacing: 1.4 },
+  eyebrow: { color: '#67E8F9', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+  title: { color: KlippColors.white, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.9 },
+  subtitle: { maxWidth: 520, color: '#C4D2E5', fontSize: 14, lineHeight: 21 },
+  card: { padding: 22, borderWidth: 1, borderColor: '#E7ECF4', borderRadius: 24, backgroundColor: KlippColors.white, gap: 18, shadowColor: KlippColors.navy, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 2 },
   field: { flex: 1, gap: 7 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 51, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: '#FBFCFE', color: KlippColors.navy, fontSize: 15 },
+  input: { minHeight: 54, paddingHorizontal: 16, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 15, backgroundColor: '#F8FAFD', color: KlippColors.navy, fontSize: 15, fontWeight: '500' },
   multiline: { minHeight: 104, paddingTop: 12, textAlignVertical: 'top' },
   transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
@@ -540,8 +548,8 @@ const styles = StyleSheet.create({
   catalogErrorTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   retryButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
   retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
-  serviceCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 19, backgroundColor: KlippColors.white, gap: 14, shadowColor: KlippColors.navy, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 4 }, shadowRadius: 10, elevation: 1 },
-  serviceCardSelected: { borderColor: '#9AB9FF', backgroundColor: '#FBFDFF' },
+  serviceCard: { padding: 19, borderWidth: 1, borderColor: '#E7ECF4', borderRadius: 21, backgroundColor: KlippColors.white, gap: 15, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
+  serviceCardSelected: { borderColor: KlippColors.blue, backgroundColor: '#F2F7FF' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
   checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
@@ -575,11 +583,11 @@ const styles = StyleSheet.create({
   summaryIconText: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
   summaryCopy: { flex: 1, gap: 3 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
-  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, backgroundColor: KlippColors.canvas },
-  primaryButton: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.15, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
+  footer: { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#E8EDF5', backgroundColor: KlippColors.white },
+  primaryButton: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 18, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.22, shadowOffset: { width: 0, height: 7 }, shadowRadius: 16, elevation: 4 },
   primaryPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
-  primaryButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
+  primaryButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '900', letterSpacing: 0.1 },
   primaryArrow: { color: KlippColors.white, fontSize: 19, fontWeight: '600' },
   footerText: { marginTop: 12, color: KlippColors.muted, fontSize: 12, textAlign: 'center' },
   footerLink: { color: KlippColors.blueDark, fontWeight: '700' },
