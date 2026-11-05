@@ -116,7 +116,7 @@ export function ProRegistrationScreen() {
     if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
     if (!selectedWeekdays.length) return 'Selecciona al menos un día de trabajo.';
     if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) return 'Indica un horario válido y asegúrate de que la hora final sea posterior.';
-    if (!/^[^\s@]+@[^\s@]+\\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
     if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
     if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     return null;
