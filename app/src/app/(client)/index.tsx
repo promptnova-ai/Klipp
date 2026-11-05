@@ -274,14 +274,14 @@ export default function ClientHomeScreen() {
             <Text style={styles.locationLabel}>TU UBICACIÓN</Text>
             <Text style={styles.locationText}>{locationLabel}</Text>
           </View>
-          {locationError && <Text accessibilityRole="alert" style={styles.locationError}>{locationError}</Text>}
           <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor={KlippColors.muted} size={14} />
         </Pressable>
+        {locationError && <Text accessibilityRole="alert" style={styles.locationError}>{locationError}</Text>}
       </View>
 
       <View style={styles.greetingBlock}>
         <Text style={styles.greeting}>¡Hola{firstName ? `, ${firstName}` : ''}! <Text style={styles.wave}>✦</Text></Text>
-        <Text style={styles.greetingSubtitle}>Un hogar cuidado se siente diferente.</Text>
+        <Text style={styles.greetingSubtitle}>¿Qué necesitas hoy? Encuentra profesionales cerca de ti.</Text>
       </View>
 
       <View style={styles.searchBar}>
@@ -290,7 +290,7 @@ export default function ClientHomeScreen() {
           accessibilityLabel="Buscar servicios o profesionales"
           autoCapitalize="none"
           onChangeText={setSearch}
-          placeholder="Buscar limpieza, profesionales..."
+          placeholder="Buscar servicios o profesionales..."
           placeholderTextColor={KlippColors.muted}
           returnKeyType="search"
           style={styles.searchInput}
@@ -310,8 +310,8 @@ export default function ClientHomeScreen() {
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
             <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
           </View>
-          <Text style={styles.heroTitle}>Tu hogar,{'\n'}en buenas manos.</Text>
-          <Text style={styles.heroText}>Profesionales verificados para que disfrutes más de tu tiempo.</Text>
+          <Text style={styles.heroTitle}>El servicio que necesitas,{'\n'}a un toque.</Text>
+          <Text style={styles.heroText}>Encuentra profesionales, compara sus tarifas y reserva fácilmente.</Text>
           {featuredService && (
             <Pressable
               accessibilityRole="button"
