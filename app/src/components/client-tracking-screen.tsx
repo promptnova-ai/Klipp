@@ -208,6 +208,7 @@ export function ClientTrackingScreen() {
         setRouteEtaMinutes(null);
         setRouteDistanceMeters(null);
         setRoutePolyline(null);
+        setRouteEtaUpdatedAt(null);
         return;
       }
       setRouteEtaMinutes(data.etaMinutes);
@@ -216,13 +217,16 @@ export function ClientTrackingScreen() {
       setRouteEtaUpdatedAt(typeof data.calculatedAt === 'string' ? data.calculatedAt : null);
     };
 
+    // The edge function reads the latest GPS fix from the database. Do not tie
+    // this effect to every GPS coordinate update: doing so can call Google
+    // Routes every few seconds and repeatedly reset this interval.
     void refreshRouteEta();
     const interval = setInterval(() => { void refreshRouteEta(); }, 60_000);
     return () => {
       active = false;
       clearInterval(interval);
     };
-  }, [booking?.id, booking?.status, professionalCoordinate?.latitude, professionalCoordinate?.longitude]);
+  }, [booking?.id, booking?.status]);
 
   const destination = booking && typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number'
     ? { latitude: booking.client_lat, longitude: booking.client_lng }
@@ -230,10 +234,11 @@ export function ClientTrackingScreen() {
   const etaMinutes = professionalCoordinate && destination
     ? Math.max(1, Math.round(distanceInKm(professionalCoordinate, destination) / 25 * 60))
     : null;
-  const locationAgeSeconds = locationUpdatedAt
-    ? Math.max(0, Math.floor((clockNow - new Date(locationUpdatedAt).getTime()) / 1000))
+  const parsedLocationTime = locationUpdatedAt ? new Date(locationUpdatedAt).getTime() : Number.NaN;
+  const locationAgeSeconds = Number.isFinite(parsedLocationTime)
+    ? Math.max(0, Math.floor((clockNow - parsedLocationTime) / 1000))
     : null;
-  const locationIsStale = locationAgeSeconds !== null && locationAgeSeconds > 30;
+  const locationIsStale = locationAgeSeconds === null || locationAgeSeconds > 30;
   const locationFreshnessLabel = locationAgeSeconds === null
     ? 'Esperando la primera ubicación del profesional.'
     : locationIsStale
@@ -264,9 +269,9 @@ export function ClientTrackingScreen() {
             {booking.status === 'en_route' ? (
               <>
                 <View style={styles.etaCard}>
-                  <Text style={styles.etaLabel}>ESTIMACIÓN INICIAL DE LLEGADA</Text>
-                  <Text style={styles.etaValue}>{routeEtaMinutes !== null ? `~${routeEtaMinutes} min` : etaMinutes === null ? 'Calculando…' : `~${etaMinutes} min`}</Text>
-                  <Text style={styles.etaHint}>{locationFreshnessLabel} {routeEtaMinutes !== null ? `Ruta por carretera con tráfico estimado · ${routeDistanceMeters !== null ? (routeDistanceMeters / 1000).toFixed(1) + ' km' : ''} · Actualizado ${routeEtaUpdatedAt ? new Date(routeEtaUpdatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : ''}.` : 'Mostrando una estimación provisional en línea recta; la ruta con tráfico todavía no está disponible.'}</Text>
+                  <Text style={styles.etaLabel}>LLEGADA ESTIMADA</Text>
+                  <Text style={styles.etaValue}>{routeEtaMinutes !== null ? `~${routeEtaMinutes} min` : locationIsStale || etaMinutes === null ? 'Actualizando…' : `~${etaMinutes} min`}</Text>
+                  <Text style={styles.etaHint}>{locationFreshnessLabel} {routeEtaMinutes !== null ? `Ruta por carretera con tráfico estimado · ${routeDistanceMeters !== null ? (routeDistanceMeters / 1000).toFixed(1) + ' km' : ''} · Actualizado ${routeEtaUpdatedAt ? new Date(routeEtaUpdatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : ''}.` : locationIsStale ? 'No mostramos una estimación basada en una posición antigua. Se actualizará cuando recibamos una ubicación reciente.' : 'Mostrando una estimación provisional en línea recta; la ruta con tráfico todavía no está disponible.'}</Text>
                 </View>
                 {professionalCoordinate && destination ? (
                   <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} routePolyline={routePolyline} />
