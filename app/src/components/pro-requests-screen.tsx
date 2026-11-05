@@ -137,7 +137,7 @@ export function ProRequestsScreen() {
     setBusyId(null);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color=KlippColors.cyan /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cyan} /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
 
   return (
     <>
@@ -216,7 +216,7 @@ export function ProRequestsScreen() {
       </Modal>
     <ScrollView
       contentContainerStyle={styles.page}
-      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor=KlippColors.cyan />}>
+      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cyan} />}>
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && requests.length === 0 && reassignments.length === 0 && (
