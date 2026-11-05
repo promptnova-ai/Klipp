@@ -41,10 +41,6 @@ export function ClientAddressesScreen() {
   useFocusEffect(useCallback(() => { void loadAddresses(); }, [loadAddresses]));
 
   useEffect(() => {
-    void locateCurrentPosition();
-  }, []);
-
-  useEffect(() => {
     if (!coordinate) return;
     let active = true;
     void Location.reverseGeocodeAsync(coordinate).then((places) => {
@@ -63,6 +59,8 @@ export function ClientAddressesScreen() {
   }, [coordinate]);
 
   async function locateCurrentPosition() {
+    setError(null);
+    setNotice(null);
     try {
       const permission = await Location.requestForegroundPermissionsAsync();
       if (!permission.granted) {
@@ -120,7 +118,7 @@ export function ClientAddressesScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda ubicaciones con GPS para tus próximos servicios." />
+      <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda tus ubicaciones para reservar servicios más rápido." />
       {addresses.length === 0 && <Text style={styles.body}>Todavía no has guardado una dirección.</Text>}
       {addresses.map((address) => (
         <View key={address.id} style={styles.addressCard}>
