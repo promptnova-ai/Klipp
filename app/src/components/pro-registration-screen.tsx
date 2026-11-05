@@ -5,10 +5,10 @@ import {
   ActivityIndicator,
   ImageBackground,
   Animated,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -71,6 +71,7 @@ export function ProRegistrationScreen() {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
   const [busy, setBusy] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -118,22 +119,29 @@ export function ProRegistrationScreen() {
   }, [fetchCatalog]);
 
   function animateToStep(nextStep: number) {
+    if (isTransitioning || nextStep < 0 || nextStep >= steps.length) return;
+    setIsTransitioning(true);
+    Keyboard.dismiss();
     setError(null);
     setNotice(null);
+    transition.stopAnimation();
+    transitionOffset.stopAnimation();
+    progress.stopAnimation();
     const direction = nextStep > step ? 1 : -1;
     const nativeDriver = Platform.OS !== 'web';
     Animated.parallel([
-      Animated.timing(transition, { toValue: 0, duration: 130, useNativeDriver: nativeDriver }),
-      Animated.timing(transitionOffset, { toValue: direction * -18, duration: 130, useNativeDriver: nativeDriver }),
-    ]).start(() => {
+      Animated.timing(transition, { toValue: 0, duration: 150, useNativeDriver: nativeDriver }),
+      Animated.timing(transitionOffset, { toValue: direction * -14, duration: 150, useNativeDriver: nativeDriver }),
+    ]).start(({ finished }) => {
+      if (!finished) { setIsTransitioning(false); return; }
       setStep(nextStep);
       transition.setValue(0);
-      transitionOffset.setValue(direction * 18);
+      transitionOffset.setValue(direction * 14);
       Animated.parallel([
-        Animated.spring(transition, { toValue: 1, speed: 18, bounciness: 3, useNativeDriver: nativeDriver }),
-        Animated.spring(transitionOffset, { toValue: 0, speed: 18, bounciness: 3, useNativeDriver: nativeDriver }),
-        Animated.timing(progress, { toValue: nextStep, duration: 420, useNativeDriver: false }),
-      ]).start();
+        Animated.spring(transition, { toValue: 1, speed: 20, bounciness: 2, useNativeDriver: nativeDriver }),
+        Animated.spring(transitionOffset, { toValue: 0, speed: 20, bounciness: 2, useNativeDriver: nativeDriver }),
+        Animated.timing(progress, { toValue: nextStep, duration: 320, useNativeDriver: false }),
+      ]).start(() => setIsTransitioning(false));
     });
   }
 
@@ -282,7 +290,7 @@ export function ProRegistrationScreen() {
         <ImageBackground source={{ uri: 'https://images.unsplash.com/photo-1521590832167-7bcbfaa6381f?auto=format&fit=crop&w=1500&q=86' }} imageStyle={styles.headerHeroImage} style={styles.headerHero}>
           <View style={styles.headerScrim} />
           <View style={styles.header}>
-          <Pressable accessibilityRole="button" onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
+          <Pressable accessibilityRole="button" disabled={isTransitioning} onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
             <Text style={styles.backText}>←</Text>
           </Pressable>
           <View style={styles.brandRow}>
@@ -408,7 +416,7 @@ export function ProRegistrationScreen() {
                     <Text style={styles.helper}>Clientes dentro del círculo podrán encontrarte.</Text>
                   </View>
                 </View>
-                <Pressable accessibilityRole="button" disabled={locating} onPress={() => void locateCurrentPosition()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
+                <Pressable accessibilityRole="button" disabled={locating || isTransitioning} onPress={() => void locateCurrentPosition()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={setTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
@@ -480,7 +488,7 @@ export function ProRegistrationScreen() {
         </View>
         <View style={styles.footer}>
           {step < steps.length - 1 ? (
-            <Pressable accessibilityRole="button" onPress={continueRegistration} style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryPressed]}>
+            <Pressable accessibilityRole="button" disabled={isTransitioning} onPress={continueRegistration} style={({ pressed }) => [styles.primaryButton, (pressed || isTransitioning) && styles.primaryPressed]}>
               <Text style={styles.primaryButtonText}>Continuar</Text>
               <Text style={styles.primaryArrow}>→</Text>
             </Pressable>
@@ -549,29 +557,29 @@ const styles = StyleSheet.create({
   card: { padding: 16, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 20, shadowColor: '#222222', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   field: { flex: 1, gap: 7 },
   label: { color: '#484848', fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 54, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, backgroundColor: '#F7F7F7', color: '#222222', fontSize: 15, fontWeight: '500' },
-  multiline: { minHeight: 104, paddingTop: 12, textAlignVertical: 'top' },
+  input: { minHeight: 46, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, backgroundColor: '#F7F7F7', color: '#222222', fontSize: 15, fontWeight: '500' },
+  multiline: { minHeight: 78, paddingTop: 12, textAlignVertical: 'top' },
   transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
   experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#FFF0F1' },
   badgeIcon: { color: KlippColors.blue, fontSize: 16 },
   badgeText: { color: '#E31C5F', fontSize: 11, fontWeight: '700' },
-  serviceList: { gap: 12 },
+  serviceList: { gap: 7, flexDirection: 'row', flexWrap: 'wrap', alignContent: 'center' },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
   catalogErrorTitle: { color: '#222222', fontSize: 15, fontWeight: '700' },
   retryButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#FFF0F1' },
   retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
-  serviceCard: { padding: 19, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 20, backgroundColor: '#FFFFFF', gap: 15, shadowColor: KlippColors.navy, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
+  serviceCard: { width: '48%', padding: 9, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 14, backgroundColor: '#FFFFFF', gap: 8, shadowColor: KlippColors.navy, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
   serviceCardSelected: { borderColor: KlippColors.blue, backgroundColor: '#FFF0F1' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#DDDDDD', borderRadius: 7 },
   checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
   checkmark: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   serviceCopy: { flex: 1, gap: 4 },
-  serviceName: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  serviceName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   serviceDescription: { color: '#717171', fontSize: 12, lineHeight: 17 },
-  serviceFields: { flexDirection: 'row', gap: 10, paddingLeft: 34 },
+  serviceFields: { flexDirection: 'row', gap: 6, paddingLeft: 0 },
   helper: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   selectionNote: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', textAlign: 'center' },
   locationIntro: { flexDirection: 'row', alignItems: 'center', gap: 12 },
