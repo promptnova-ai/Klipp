@@ -134,14 +134,8 @@ export function ProRegistrationScreen() {
 
   useEffect(() => {
     const serviceId = selectedServices[0];
-    if (!serviceId) {
-      setPricingTiers([]);
-      setSelectedTierIds([]);
-      setTiersLoading(false);
-      return;
-    }
+    if (!serviceId) return;
     let active = true;
-    setTiersLoading(true);
     void supabase.from('pricing_tiers')
       .select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes')
       .eq('service_type_id', serviceId)
@@ -195,7 +189,11 @@ export function ProRegistrationScreen() {
   }
 
   function toggleService(serviceId: number) {
-    setSelectedServices((current) => current.includes(serviceId) ? [] : [serviceId]);
+    const nextSelection = selectedServices.includes(serviceId) ? [] : [serviceId];
+    setSelectedServices(nextSelection);
+    setPricingTiers([]);
+    setSelectedTierIds([]);
+    setTiersLoading(nextSelection.length > 0);
     setProfessionDetails({});
     setSelectedProfessionOptions([]);
     setEquipmentConfirmed(false);
