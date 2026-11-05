@@ -491,7 +491,7 @@ export default function ClientHomeScreen() {
                     <Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
                   </Pressable>
                 ))}
-                {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige el tamaño de tu hogar</Text>}
+                {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige la modalidad</Text>}
                 {selectedService.tiers.map((tier) => (
                   <Pressable
                     accessibilityRole="radio"
@@ -503,7 +503,7 @@ export default function ClientHomeScreen() {
                       <Text style={styles.tierTitle}>{tier.label}</Text>
                       <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
                     </View>
-                    <Text style={styles.tierPrice}>{formatDop(tier.price_dop)}</Text>
+                    <Text style={styles.tierPrice}>{tier.price_dop > 0 ? formatDop(tier.price_dop) : 'Precio del profesional'}</Text>
                   </Pressable>
                 ))}
                 <Pressable
