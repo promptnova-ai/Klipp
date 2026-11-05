@@ -151,6 +151,8 @@ export function ProAgendaScreen() {
             const failedPublication = results.find((result) => result.publishError);
             if (failedPublication?.publishError) setError(failedPublication.publishError.message);
             if (invalidatedTrips) await loadBookings();
+          } catch (cause) {
+            if (active) setError(cause instanceof Error ? cause.message : 'No pudimos compartir tu ubicación en este momento.');
           } finally {
             publishing = false;
           }
