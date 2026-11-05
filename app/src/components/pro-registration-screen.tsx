@@ -271,15 +271,13 @@ export function ProRegistrationScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
-            <Text style={styles.backText}>‹</Text>
+            <Text style={styles.backText}>←</Text>
           </Pressable>
           <View style={styles.brandRow}>
             <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-            <Text style={styles.brand}>Klipp</Text>
+            <Text style={styles.brand}>Klipp <Text style={styles.proWord}>PRO</Text></Text>
           </View>
-          <View style={styles.stepPill}>
-            <Text style={styles.stepCount}>PASO {step + 1} DE {steps.length}</Text>
-          </View>
+          <Text style={styles.headerCaption}>CREA TU PERFIL PROFESIONAL</Text>
         </View>
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
@@ -292,6 +290,17 @@ export function ProRegistrationScreen() {
                   styles.stepContent,
                   { opacity: transition },
                 ]}>
+            <View style={styles.stepRail}>
+              {steps.map((item, index) => (
+                <View key={item.eyebrow} style={styles.stepRailItem}>
+                  <View style={[styles.stepRailDot, index === step && styles.stepRailDotActive, index < step && styles.stepRailDotDone]}>
+                    <Text style={[styles.stepRailNumber, (index === step || index < step) && styles.stepRailNumberActive]}>{index < step ? '✓' : String(index + 1)}</Text>
+                  </View>
+                  <Text style={[styles.stepRailLabel, index === step && styles.stepRailLabelActive]}>{item.eyebrow}</Text>
+                  {index < steps.length - 1 && <View style={[styles.stepRailLine, index < step && styles.stepRailLineDone]} />}
+                </View>
+              ))}
+            </View>
             <View style={styles.heading}>
               <View style={styles.headingTopline}>
                 <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
@@ -520,20 +529,31 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#FF5A5F', borderWidth: 1, borderColor: '#FF5A5F' },
   logoLetter: { color: '#09090B', fontSize: 20, fontWeight: '900' },
-  brand: { color: KlippColors.white, fontSize: 23, fontWeight: '900', letterSpacing: -0.8 },
-  stepPill: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 999, backgroundColor: '#FFF0F1', borderWidth: 1, borderColor: '#FFD5D7' },
-  stepCount: { color: '#E31C5F', fontSize: 10, fontWeight: '900', letterSpacing: 0.7 },
+  brand: { color: '#222222', fontSize: 23, fontWeight: '900', letterSpacing: -0.8 },
+  proWord: { color: '#FF5A5F', fontSize: 10, letterSpacing: 1.5 },
+  headerCaption: { color: '#717171', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
   scrollContent: { flexGrow: 1, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 28 },
-  stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
-  heading: { position: 'relative', overflow: 'hidden', gap: 10, marginBottom: 2, paddingHorizontal: 24, paddingVertical: 23, borderRadius: 25, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#EBEBEB' },
+  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 24 },
+  stepRail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 18, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', marginBottom: 4 },
+  stepRailItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  stepRailDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#DDDDDD', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
+  stepRailDotActive: { borderColor: '#FF5A5F', backgroundColor: '#FFF0F1' },
+  stepRailDotDone: { borderColor: '#00A699', backgroundColor: '#E8F6F4' },
+  stepRailNumber: { color: '#999999', fontSize: 10, fontWeight: '900' },
+  stepRailNumberActive: { color: '#E31C5F' },
+  stepRailLabel: { color: '#999999', fontSize: 8, fontWeight: '800', letterSpacing: 0.4 },
+  stepRailLabelActive: { color: '#222222' },
+  stepRailLine: { height: 1, flex: 1, backgroundColor: '#EBEBEB', marginHorizontal: 4 },
+  stepRailLineDone: { backgroundColor: '#00A699' },
+  heading: { position: 'relative', overflow: 'hidden', gap: 10, marginBottom: 2, paddingHorizontal: 4, paddingVertical: 8, backgroundColor: 'transparent' },
   headingTopline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headingStep: { color: '#717171', fontSize: 12, fontWeight: '900', letterSpacing: 1.4 },
   eyebrow: { color: '#FF5A5F', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  title: { color: '#222222', fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.9 },
+  title: { color: '#222222', fontSize: 34, lineHeight: 40, fontWeight: '900', letterSpacing: -1.1 },
   subtitle: { maxWidth: 520, color: '#717171', fontSize: 14, lineHeight: 21 },
-  card: { padding: 22, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 18, shadowColor: KlippColors.navy, shadowOpacity: 0.06, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 2 },
+  card: { padding: 26, borderWidth: 1, borderColor: '#EBEBEB', borderRadius: 22, backgroundColor: '#FFFFFF', gap: 20, shadowColor: '#222222', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   field: { flex: 1, gap: 7 },
   label: { color: '#484848', fontSize: 12, fontWeight: '800' },
   input: { minHeight: 54, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DDDDDD', borderRadius: 14, backgroundColor: '#F7F7F7', color: '#222222', fontSize: 15, fontWeight: '500' },
@@ -584,8 +604,8 @@ const styles = StyleSheet.create({
   summaryIconText: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
   summaryCopy: { flex: 1, gap: 3 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
-  footer: { paddingHorizontal: 22, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#EBEBEB', backgroundColor: '#F7F7F7' },
-  primaryButton: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 18, backgroundColor: '#FF5A5F', shadowColor: '#FF5A5F', shadowOpacity: 0.22, shadowOffset: { width: 0, height: 7 }, shadowRadius: 16, elevation: 4 },
+  footer: { paddingHorizontal: 22, paddingTop: 16, paddingBottom: 14, borderTopWidth: 1, borderTopColor: '#EBEBEB', backgroundColor: '#FFFFFF' },
+  primaryButton: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 14, backgroundColor: '#FF5A5F', shadowColor: '#FF5A5F', shadowOpacity: 0.14, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
   primaryPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
   primaryButtonText: { color: '#09090B', fontSize: 15, fontWeight: '900', letterSpacing: 0.1 },
