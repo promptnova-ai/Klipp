@@ -526,10 +526,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
   
-  headerHero: { minHeight: 112, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
+  headerHero: { minHeight: 176, justifyContent: 'center', backgroundColor: '#222222', overflow: 'hidden' },
   headerHeroImage: { opacity: 0.9 },
   headerScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(18, 14, 16, 0.58)' },
-  header: { minHeight: 96, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  header: { minHeight: 156, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
   backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   backText: { color: '#FFFFFF', fontSize: 29, lineHeight: 32, marginTop: -3 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
