@@ -25,10 +25,10 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KlippColors.canvas },
-  details: { marginHorizontal: 22, marginTop: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, padding: 18, gap: 7 },
-  label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
-  value: { color: KlippColors.navy, fontSize: 16 },
-  signOut: { marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginTop: 20, backgroundColor: KlippColors.white },
+  details: { width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, padding: 22, gap: 9, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 16, elevation: 1 },
+  label: { color: KlippColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.3, marginTop: 8 },
+  value: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
+  signOut: { width: '100%', maxWidth: 760, alignSelf: 'center', minHeight: 50, borderWidth: 1, borderColor: '#FECACA', borderRadius: 15, alignItems: 'center', justifyContent: 'center', marginTop: 18, backgroundColor: '#FFF7F7' },
   signOutText: { color: KlippColors.danger, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.75 },
 });
