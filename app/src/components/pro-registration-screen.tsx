@@ -238,7 +238,7 @@ export function ProRegistrationScreen() {
                 <Field label="Teléfono de contacto">
                   <TextInput autoComplete="tel" keyboardType="phone-pad" returnKeyType="done" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
                 </Field>
-              </View></View>}
+              </View></View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Perfil profesional</Text>
               <View style={styles.card}>
@@ -255,7 +255,7 @@ export function ProRegistrationScreen() {
                   </View>
                   {transportType === 'Otro' && <TextInput accessibilityLabel="Especifica tu medio de transporte" maxLength={50} onChangeText={setOtherTransportType} placeholder="Tu medio de transporte" placeholderTextColor={KlippColors.muted} style={styles.input} value={otherTransportType} />}
                 </View>
-              </View></View>}
+              </View></View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Servicios y tarifas</Text>
               <View style={styles.serviceList}>
@@ -303,7 +303,7 @@ export function ProRegistrationScreen() {
                     </View>
                   );
                 })}                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
-              </View></View>}
+              </View></View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Zona de trabajo</Text>
               <View style={styles.card}>
@@ -332,7 +332,7 @@ export function ProRegistrationScreen() {
                   ))}
                 </View>
 
-              </View></View>}
+              </View></View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Disponibilidad</Text>
               <View style={styles.card}>
@@ -344,7 +344,7 @@ export function ProRegistrationScreen() {
                   <Field label="Desde"><TextInput keyboardType="numbers-and-punctuation" onChangeText={setStartTime} placeholder="08:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={startTime} /></Field>
                   <Field label="Hasta"><TextInput keyboardType="numbers-and-punctuation" onChangeText={setEndTime} placeholder="17:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={endTime} /></Field>
                 </View>
-              </View></View>}
+              </View></View>
 
             <View style={styles.formSection}>              <>
                 <Text style={styles.sectionTitle}>Acceso a tu cuenta</Text>
@@ -367,7 +367,7 @@ export function ProRegistrationScreen() {
                   </Field>
                   <Text style={styles.privacyNote}>🔒 Tus datos se usan para crear y proteger tu cuenta profesional.</Text>
                 </View>
-              </></View>}
+              </></View>
 
             {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
             {notice && (
