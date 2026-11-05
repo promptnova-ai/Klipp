@@ -221,7 +221,7 @@ export function ProRegistrationScreen() {
           <Text style={styles.headerCaption}>REGISTRO PROFESIONAL</Text>
         </View>
         <ScrollView style={styles.scrollContent} contentContainerStyle={styles.scrollContentInner} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <View style={styles.stepContent}>
+          <View style={styles.formContent}>
             <View style={styles.formIntro}>
               <Text style={styles.title}>Crea tu perfil profesional</Text>
               <Text style={styles.subtitle}>Completa tus datos, servicios y disponibilidad para empezar a recibir solicitudes.</Text>
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
   progressTrack: { height: 5, marginHorizontal: 22, overflow: 'hidden', borderRadius: 999, backgroundColor: '#EBEBEB' },
   progressFill: { height: 5, borderRadius: 999, backgroundColor: '#FF5A5F' },
   scrollContent: { flex: 1, minHeight: 0 },
-  stepContent: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 8 },
+  formContent: { width: '100%', maxWidth: 760, alignSelf: 'center', gap: 8 },
   stepRail: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2, paddingVertical: 2, marginBottom: 0 },
   stepRailItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
   stepRailDot: { width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#DDDDDD', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
