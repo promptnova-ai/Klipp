@@ -663,7 +663,7 @@ export function AdminScreen() {
                     return (
                       <View key={tier.id} style={styles.tierCard}>
                         <TextInput accessibilityLabel={`Etiqueta de tarifa ${tier.id}`} onChangeText={(label) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...tierDraft, label } }))} style={styles.input} value={tierDraft.label} />
-                        <Text style={styles.helper}>El precio lo establece cada profesional. Klipp no aplica una tarifa fija a esta modalidad.</Text>
+                        <Text style={styles.body}>El precio lo establece cada profesional. Klipp no aplica una tarifa fija a esta modalidad.</Text>
                         <TextInput accessibilityLabel={`Duración de referencia de tarifa ${tier.id}`} keyboardType="number-pad" onChangeText={(value) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...tierDraft, est_minutes: Number(value) } }))} style={styles.input} value={String(tierDraft.est_minutes)} />
                         <ActionButton disabled={busyKey === `tier:${tier.id}`} label="Guardar tarifa" onPress={() => void saveTier(tier)} secondary />
                       </View>
