@@ -647,7 +647,7 @@ export function NewBookingScreen() {
       )}
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={tier.price_dop > 0 ? formatDop(tier.price_dop) : 'Precio según tarifa del profesional'} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary="Precio según tarifa del profesional" onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
