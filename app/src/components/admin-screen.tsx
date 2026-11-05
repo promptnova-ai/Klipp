@@ -336,17 +336,16 @@ export function AdminScreen() {
   async function saveTier(tier: PricingTier) {
     const draft = tierDrafts[tier.id];
     if (!draft) return;
-    const price = Number(draft.price_dop);
     const duration = Number(draft.est_minutes);
-    if (!Number.isFinite(price) || price <= 0 || !Number.isInteger(duration)) {
-      setError('Indica un precio y una duración válidos para cada tarifa.');
+    if (!Number.isInteger(duration) || duration < 15 || duration > 1440) {
+      setError('Indica una duración de entre 15 y 1.440 minutos.');
       return;
     }
     await runAction(`tier:${tier.id}`, async () => {
       const { error: tierError } = await supabase.rpc('admin_update_pricing_tier', {
         p_tier_id: tier.id,
         p_label: draft.label,
-        p_price_dop: price,
+        p_price_dop: 0,
         p_est_minutes: duration,
       });
       if (tierError) throw tierError;
@@ -664,10 +663,8 @@ export function AdminScreen() {
                     return (
                       <View key={tier.id} style={styles.tierCard}>
                         <TextInput accessibilityLabel={`Etiqueta de tarifa ${tier.id}`} onChangeText={(label) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...tierDraft, label } }))} style={styles.input} value={tierDraft.label} />
-                        <View style={styles.actions}>
-                          <TextInput accessibilityLabel={`Precio de tarifa ${tier.id}`} keyboardType="decimal-pad" onChangeText={(value) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...tierDraft, price_dop: Number(value) } }))} style={[styles.input, styles.flex]} value={String(tierDraft.price_dop)} />
-                          <TextInput accessibilityLabel={`Duración de tarifa ${tier.id}`} keyboardType="number-pad" onChangeText={(value) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...tierDraft, est_minutes: Number(value) } }))} style={[styles.input, styles.flex]} value={String(tierDraft.est_minutes)} />
-                        </View>
+                        <Text style={styles.helper}>El precio lo establece cada profesional. Klipp no aplica una tarifa fija a esta modalidad.</Text>
+                        <TextInput accessibilityLabel={`Duración de referencia de tarifa ${tier.id}`} keyboardType="number-pad" onChangeText={(value) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...tierDraft, est_minutes: Number(value) } }))} style={styles.input} value={String(tierDraft.est_minutes)} />
                         <ActionButton disabled={busyKey === `tier:${tier.id}`} label="Guardar tarifa" onPress={() => void saveTier(tier)} secondary />
                       </View>
                     );
