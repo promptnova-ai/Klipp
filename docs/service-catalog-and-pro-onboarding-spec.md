@@ -117,3 +117,16 @@ En la base Supabase activa `hxjwibtpxgpdxemqqwjh` no aparecen `service_equipment
 - El alta persiste perfil, profesión, detalles, tarifas, cobertura y disponibilidad aunque Auth requiera confirmar el correo.
 - El cliente solo reserva una modalidad por solicitud y el precio queda congelado en la reserva.
 - Las políticas RLS impiden consultar o modificar datos privados de otros profesionales.
+
+
+## Implementación aplicada (2026-11-05)
+
+- El formulario PRO permite una única profesión principal y oculta explícitamente el código `masajes`.
+- Los campos cambian según el código de profesión: peluquería, estética, carwash, detailing, limpieza y mantenimiento recogen datos diferentes.
+- El formulario envía `equipment_confirmed` y los detalles específicos dentro de `pro_onboarding`.
+- Migración `036_one_active_profession_details` aplicada en Supabase: columna `pro_services.details jsonb` e índice único parcial para una sola profesión activa por profesional.
+- Migración `037_validate_professional_onboarding_payload` aplicada en Supabase: el trigger de `auth.users` valida el teléfono, la profesión, detalles requeridos, precio, duración, cobertura, disponibilidad y aceptación del equipamiento; después persiste `profiles`, `pro_profiles`, `pro_services` y `pro_availability` en la misma transacción de alta.
+- La aceptación de herramientas queda registrada en `pro_profiles.equipment_policy_accepted_at`; los detalles de profesión se guardan en `pro_services.details`.
+- El perfil queda en estado de verificación pendiente por el valor predeterminado existente; no recibe asignaciones hasta ser aprobado.
+- Verificación estructural posterior a las migraciones: existe la columna JSONB y el índice único parcial; el trigger tiene ejecución revocada para `anon` y `authenticated`.
+- La prueba automática de la app para el último commit está en curso. Aún falta una prueba completa de alta con un usuario de prueba, confirmación de correo e inspección de los registros creados.
