@@ -22,15 +22,15 @@ import { supabase } from '../../lib/supabase';
 
 type ProfessionField = { key: string; label: string; placeholder: string };
 const professionOptions: Record<string, string[]> = {
-  barberia: ['Corte clásico', 'Degradado', 'Arreglo de barba', 'Afeitado'],
-  peluqueria: ['Corte', 'Lavado y secado', 'Peinados', 'Coloración', 'Trenzas', 'Tratamientos capilares'],
-  estetica: ['Manicura', 'Pedicura', 'Maquillaje', 'Cejas y pestañas', 'Depilación'],
-  carwash: ['Lavado exterior', 'Limpieza interior', 'Lavado completo', 'Aspirado'],
-  detailing: ['Detailing interior', 'Detailing exterior', 'Pulido', 'Encerado y protección', 'Limpieza de tapicería'],
+  barberia: ['Perfilado y diseño de barba', 'Cuidado capilar', 'Asesoría de imagen', 'Diseño de cejas'],
+  peluqueria: ['Cabello rizado', 'Cabello afro', 'Peinados para eventos', 'Tratamientos capilares', 'Extensiones'],
+  estetica: ['Piel sensible', 'Maquillaje social', 'Uñas acrílicas', 'Cejas y pestañas', 'Depilación'],
+  carwash: ['Automóviles compactos', 'SUV y camionetas', 'Motocicletas', 'Vehículos comerciales'],
+  detailing: ['Pulido de pintura', 'Protección cerámica', 'Restauración de faros', 'Tapicería especializada'],
   limpieza_regular: ['Cocina', 'Baños', 'Habitaciones', 'Áreas comunes', 'Cristales interiores'],
   limpieza_profunda: ['Cocina profunda', 'Baños', 'Electrodomésticos', 'Cristales interiores', 'Tapicería'],
   'limpieza-oficinas': ['Puestos de trabajo', 'Áreas comunes', 'Baños', 'Suelos', 'Cristales'],
-  mantenimiento: ['Plomería', 'Electricidad', 'Montaje de muebles', 'Pintura', 'Reparaciones generales'],
+  mantenimiento: ['Instalaciones', 'Reparaciones', 'Montajes', 'Mantenimiento preventivo', 'Trabajos de acabado'],
 };
 const professionFields: Record<string, ProfessionField[]> = {
   barberia: [],
@@ -370,7 +370,7 @@ export function ProRegistrationScreen() {
                       {selected && (
                         <View style={styles.serviceFields}>
                           <View style={styles.transportSection}>
-                            <Text style={styles.label}>Especialidades que dominas</Text>
+                            <Text style={styles.label}>Experiencia y especialidades adicionales</Text>
                             <View style={styles.chips}>
                               {(professionOptions[service.code] ?? []).map((option) => (
                                 <Chip
