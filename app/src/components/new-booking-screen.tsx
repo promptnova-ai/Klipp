@@ -89,7 +89,7 @@ export function NewBookingScreen() {
   const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
   const [addressText, setAddressText] = useState('');
   const [landmarkNotes, setLandmarkNotes] = useState('');
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState(() => getDateOptions()[0]?.key ?? '');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -154,10 +154,6 @@ export function NewBookingScreen() {
       setLocationLoading(false);
     }
   }, [updateCoordinate]);
-
-  useEffect(() => {
-    void Promise.resolve().then(requestCurrentLocation);
-  }, [requestCurrentLocation]);
 
   useEffect(() => {
     if (!coordinate) return;
