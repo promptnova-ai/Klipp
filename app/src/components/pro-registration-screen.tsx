@@ -169,7 +169,7 @@ export function ProRegistrationScreen() {
     if (selectedServices.length !== 1) return 'Elige una profesión principal.';
     const profession = catalog.find((service) => service.id === selectedServices[0]);
     if (!profession) return 'Selecciona una profesión válida.';
-    if (!(professionOptions[profession.code] ?? []).length || !selectedProfessionOptions.length) return 'Selecciona al menos un tipo de servicio que realizas.';
+    if (!(professionOptions[profession.code] ?? []).length || !selectedProfessionOptions.length) return 'Selecciona al menos una especialidad adicional.';
     if ((professionFields[profession.code] ?? []).some((field) => !professionDetails[field.key]?.trim())) return 'Completa los detalles de tu profesión.';
     if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas, productos y materiales.';
     if (!pricingTiers.length) return 'Esta profesión todavía no tiene modalidades configuradas. Contacta con soporte.';
