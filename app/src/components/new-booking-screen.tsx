@@ -619,7 +619,7 @@ export function NewBookingScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
@@ -759,13 +759,13 @@ export function NewBookingScreen() {
       </Section>}
       <Section title={timing === 'now' ? "5. Profesional" : "6. Profesional"}>
         {timing === 'scheduled' && !selectedOffer && <View style={styles.modeOptions}>
-          <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
-          <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
+          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
+          <ModeOption label="Cerca de mí" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales cercanos, revisar sus perfiles y seleccionar a quién contratar.</Text>}
-        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
+        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color={KlippColors.blue} />}
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
@@ -781,7 +781,7 @@ export function NewBookingScreen() {
             </Pressable>
             {expandedProId === pro.pro_id && (
               <View style={styles.profileDetails}>
-                {loadingProDetails ? <ActivityIndicator color="#16766c" /> : <>
+                {loadingProDetails ? <ActivityIndicator color={KlippColors.blue} /> : <>
                   <Text style={styles.body}>{pro.bio || 'Este profesional aún no ha añadido una biografía.'}</Text>
                   <View style={styles.proStats}>
                     <View style={styles.proStat}><Text style={styles.proStatValue}>{pro.jobs_completed}</Text><Text style={styles.proStatLabel}>Trabajos</Text></View>
@@ -886,12 +886,12 @@ const styles = StyleSheet.create({
   equipmentCopy: { flex: 1, gap: 2 },
   equipmentName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   equipmentDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
-  page: { paddingBottom: 40, gap: 24, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1000, alignSelf: 'center', paddingTop: 8, paddingBottom: 44, gap: 22, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
   pressed: { opacity: 0.88 },
   backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
-  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
+  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '900', letterSpacing: -0.5 },
   section: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   sectionTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700', marginBottom: 2 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
   dateList: { gap: 8, paddingVertical: 2 },
   dateOption: { width: 62, minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 3, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, backgroundColor: KlippColors.white },
-  dateOptionSelected: { borderColor: KlippColors.navy, backgroundColor: KlippColors.navy },
+  dateOptionSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
   dateWeekday: { color: KlippColors.muted, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   dateDay: { color: KlippColors.navy, fontSize: 19, fontWeight: '700' },
   dateMonth: { color: KlippColors.muted, fontSize: 10, textTransform: 'capitalize' },
