@@ -21,13 +21,25 @@ import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
 type ProServiceDraft = { price: string; minutes: string };
+type ProfessionField = { key: string; label: string; placeholder: string };
+const professionFields: Record<string, ProfessionField[]> = {
+  barberia: [{ key: 'specialty', label: 'Tipos de cortes y arreglos que realizas', placeholder: 'Ej. corte clásico, fade, barba' }],
+  peluqueria: [{ key: 'specialty', label: 'Servicios y técnicas que realizas', placeholder: 'Ej. peinados, color, trenzas' }],
+  estetica: [{ key: 'specialty', label: 'Tratamientos estéticos que ofreces', placeholder: 'Ej. manicura, cejas, maquillaje' }],
+  carwash: [{ key: 'specialty', label: 'Tipos de lavado que realizas', placeholder: 'Ej. exterior, interior, completo' }, { key: 'utilities', label: '¿Cómo llevas agua y energía?', placeholder: 'Describe tu equipo autónomo' }],
+  detailing: [{ key: 'specialty', label: 'Trabajos de detailing que realizas', placeholder: 'Ej. interior, pulido, tapicería' }],
+  limpieza_regular: [{ key: 'specialty', label: 'Áreas y tareas que incluyes', placeholder: 'Ej. cocina, baños, habitaciones' }],
+  limpieza_profunda: [{ key: 'specialty', label: 'Qué incluye tu limpieza profunda', placeholder: 'Describe las tareas que cubres' }],
+  'limpieza-oficinas': [{ key: 'specialty', label: 'Tipos de oficinas que atiendes', placeholder: 'Ej. oficinas pequeñas y medianas' }],
+  mantenimiento: [{ key: 'specialty', label: 'Especialidades y reparaciones que realizas', placeholder: 'Ej. plomería, montaje, pintura' }],
+};
 type AvailabilityDraft = { weekday: number; start_time: string; end_time: string };
 type ProOnboardingDraft = {
   phone: string;
   bio: string;
   years_experience: number | null;
   transport_type: string | null;
-  services: { service_type_id: number; base_price_dop: number; est_minutes: number }[];
+  services: { service_type_id: number; base_price_dop: number; est_minutes: number; details: Record<string, string> }[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: AvailabilityDraft[];
 };
@@ -53,6 +65,8 @@ export function ProRegistrationScreen() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
+  const [professionDetails, setProfessionDetails] = useState<Record<string, string>>({});
+  const [equipmentConfirmed, setEquipmentConfirmed] = useState(false);
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -108,7 +122,11 @@ export function ProRegistrationScreen() {
     if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     if (servicesLoading) return 'Espera mientras cargamos las especialidades.';
     if (!catalog.length) return 'No hay especialidades disponibles ahora mismo.';
-    if (!selectedServices.length) return 'Elige al menos un servicio.';
+    if (selectedServices.length !== 1) return 'Elige una profesión principal.';
+    const profession = catalog.find((service) => service.id === selectedServices[0]);
+    if (!profession) return 'Selecciona una profesión válida.';
+    if ((professionFields[profession.code] ?? []).some((field) => !professionDetails[field.key]?.trim())) return 'Completa los detalles de tu profesión.';
+    if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas, productos y materiales.';
     const invalid = selectedServices.some((id) => {
       const draft = serviceDrafts[id];
       return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0 || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
@@ -124,9 +142,9 @@ export function ProRegistrationScreen() {
   }
 
   function toggleService(serviceId: number) {
-    setSelectedServices((current) => current.includes(serviceId)
-      ? current.filter((id) => id !== serviceId)
-      : [...current, serviceId]);
+    setSelectedServices((current) => current.includes(serviceId) ? [] : [serviceId]);
+    setProfessionDetails({});
+    setEquipmentConfirmed(false);
     setServiceDrafts((current) => ({
       ...current,
       [serviceId]: current[serviceId] ?? { price: '', minutes: '60' },
@@ -178,6 +196,7 @@ export function ProRegistrationScreen() {
         service_type_id,
         base_price_dop: Number(serviceDrafts[service_type_id]?.price),
         est_minutes: Number(serviceDrafts[service_type_id]?.minutes),
+        details: professionDetails,
       })),
       coverage: { ...center, radius_km: radiusKm },
       availability: selectedWeekdays.map((weekday) => ({
@@ -201,7 +220,7 @@ export function ProRegistrationScreen() {
       if (hasSession) {
         router.replace('/');
       } else {
-        setNotice('¡Tu solicitud está lista! Confirma tu correo y luego inicia sesión. Tu perfil y configuración quedarán preparados para terminar.');
+        setNotice('¡Tu solicitud está lista! Confirma tu correo y luego inicia sesión. Tu cuenta se activará después de confirmar el correo. Podrás completar la configuración del perfil al iniciar sesión.');
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No pudimos crear tu cuenta profesional.');
@@ -256,7 +275,7 @@ export function ProRegistrationScreen() {
                 </View>
               </View></View>
 
-            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Servicios y tarifas</Text>
+            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Tu profesión y tarifa</Text>
               <View style={styles.serviceList}>
                 {servicesLoading ? (
                   <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
@@ -282,7 +301,7 @@ export function ProRegistrationScreen() {
                   const draft = serviceDrafts[service.id] ?? { price: '', minutes: '60' };
                   return (
                     <View key={service.id} style={[styles.serviceCard, selected && styles.serviceCardSelected]}>
-                      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => toggleService(service.id)} style={styles.serviceRow}>
+                      <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => toggleService(service.id)} style={styles.serviceRow}>
                         <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Text style={styles.checkmark}>✓</Text>}</View>
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
@@ -291,18 +310,27 @@ export function ProRegistrationScreen() {
                       </Pressable>
                       {selected && (
                         <View style={styles.serviceFields}>
+                          {(professionFields[service.code] ?? []).map((field) => (
+                            <Field key={field.key} label={field.label}>
+                              <TextInput multiline maxLength={240} onChangeText={(value) => setProfessionDetails((current) => ({ ...current, [field.key]: value }))} placeholder={field.placeholder} placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={professionDetails[field.key] ?? ''} />
+                            </Field>
+                          ))}
                           <Field label="Precio base · RD$">
                             <TextInput keyboardType="decimal-pad" onChangeText={(price) => setServiceDrafts((current) => ({ ...current, [service.id]: { ...draft, price } }))} placeholder="1,500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
                           </Field>
                           <Field label="Duración · min">
                             <TextInput keyboardType="number-pad" onChangeText={(minutes) => setServiceDrafts((current) => ({ ...current, [service.id]: { ...draft, minutes } }))} placeholder="60" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.minutes} />
                           </Field>
+                          <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: equipmentConfirmed }} onPress={() => setEquipmentConfirmed((current) => !current)} style={styles.serviceRow}>
+                            <View style={[styles.checkbox, equipmentConfirmed && styles.checkboxSelected]}>{equipmentConfirmed && <Text style={styles.checkmark}>✓</Text>}</View>
+                            <Text style={[styles.helper, { flex: 1 }]}>Confirmo que llevaré mis propias herramientas, equipos, productos y materiales para realizar el servicio.</Text>
+                          </Pressable>
                         </View>
                       )}
                     </View>
                   );
                 })}
-                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
+                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>Profesión principal seleccionada. Solo puedes elegir una.</Text>}
               </View></View>
 
             <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Zona de trabajo</Text>
