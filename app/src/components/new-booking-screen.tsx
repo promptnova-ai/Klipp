@@ -442,6 +442,7 @@ export function NewBookingScreen() {
             p_scheduled_start: scheduledStart,
             p_est_minutes: selectedDuration,
             p_service_type_id: selectedTier?.service_type_id,
+            p_pricing_tier_id: selectedTier?.id ?? null,
           });
           if (active && prosError) setError(prosError.message);
           else if (active) {
