@@ -93,6 +93,12 @@ export function ClientTrackingScreen() {
 
     const bookingRow = data as unknown as TrackingBooking;
     setBooking(bookingRow);
+    // Clear data from a previous assignment before loading the current one;
+    // reassignment can change the professional while this screen stays mounted.
+    setProfessional(null);
+    setProfessionalAcceptanceRate(null);
+    setProfessionalCoordinate(null);
+    setLocationUpdatedAt(null);
     const { data: eventRows, error: eventsError } = await supabase
       .from('booking_status_events')
       .select('id, from_status, to_status, occurred_at')
@@ -127,11 +133,7 @@ export function ClientTrackingScreen() {
         setProfessionalCoordinate({ latitude: location.latitude, longitude: location.longitude });
         setLocationUpdatedAt(location.updated_at ?? null);
       }
-    } else {
-      setProfessionalCoordinate(null);
-      setLocationUpdatedAt(null);
     }
-    if (!bookingRow.pro_id) setProfessionalAcceptanceRate(null);
     setLoading(false);
   }, [bookingId, session]);
 
