@@ -223,7 +223,7 @@ export function ProRegistrationScreen() {
       if (hasSession) {
         router.replace('/');
       } else {
-        setNotice('¡Tu solicitud está lista! Confirma tu correo y luego inicia sesión. Tu cuenta se activará después de confirmar el correo. Podrás completar la configuración del perfil al iniciar sesión.');
+        setNotice('Hemos guardado tu perfil y su configuración. Confirma tu correo para acceder a Klipp PRO. Tu perfil quedará pendiente de revisión antes de recibir solicitudes.');
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No pudimos crear tu cuenta profesional.');
