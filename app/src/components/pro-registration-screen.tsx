@@ -42,6 +42,7 @@ type ProOnboardingDraft = {
   services: { service_type_id: number; base_price_dop: number; est_minutes: number; details: Record<string, string> }[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: AvailabilityDraft[];
+  equipment_confirmed: boolean;
 };
 
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -205,6 +206,7 @@ export function ProRegistrationScreen() {
         start_time: startTime,
         end_time: endTime,
       })),
+      equipment_confirmed: equipmentConfirmed,
     };
 
     setBusy(true);
