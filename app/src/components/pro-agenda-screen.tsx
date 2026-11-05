@@ -342,7 +342,7 @@ export function ProAgendaScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color=KlippColors.violet /><Text style={styles.body}>Cargando agenda...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.violet} /><Text style={styles.body}>Cargando agenda...</Text></View>;
 
   return (
     <>
@@ -366,7 +366,7 @@ export function ProAgendaScreen() {
           </View>
         </View>
       </Modal>
-      <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor=KlippColors.violet />}>
+      <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.violet} />}>
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       <View style={styles.presenceCard}>
         <View style={styles.presenceCopy}>
