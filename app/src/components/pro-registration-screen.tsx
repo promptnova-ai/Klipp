@@ -33,7 +33,6 @@ type ProOnboardingDraft = {
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
-const districtNationalTestLocation: CoverageCoordinate = { latitude: 18.479, longitude: -69.941 };
 
 export function ProRegistrationScreen() {
   const router = useRouter();
@@ -156,11 +155,6 @@ export function ProRegistrationScreen() {
     }
   }
 
-  function setTestLocation() {
-    setCenter(districtNationalTestLocation);
-    setError(null);
-  }
-
   async function createProfessionalAccount() {
     const validationError = validateForm();
     if (validationError) {
@@ -242,13 +236,14 @@ export function ProRegistrationScreen() {
               </View>
             </View>
 
-            <View style={styles.formSection}>              <Text style={styles.sectionTitle}>Perfil profesional</Text>
+            <View style={styles.formSection}>
+              <Text style={styles.sectionTitle}>Perfil profesional</Text>
               <View style={styles.card}>
                 <Field label="Años de experiencia">
                   <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
                 </Field>
                 <Field label="Una breve presentación">
-                  <TextInput multiline maxLength={240} onChangeText={setBio} placeholder="¿Qué te hace especial en tu trabajo?" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
+                  <TextInput multiline maxLength={240} onChangeText={setBio} placeholder="Describe brevemente tu experiencia y especialidad." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
                 </Field>
                 <View style={styles.transportSection}>
                   <Text style={styles.label}>¿Cómo te trasladas al domicilio?</Text>
@@ -320,9 +315,6 @@ export function ProRegistrationScreen() {
                 <Pressable accessibilityRole="button" disabled={locating} onPress={() => void locateCurrentPosition()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
                 </Pressable>
-                <Pressable accessibilityRole="button" onPress={setTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
-                  <Text style={styles.testLocationButtonText}>Usar ubicación de prueba · Piantini, Distrito Nacional</Text>
-                </Pressable>
                 {center ? (
                   <CoverageRadiusPicker center={center} onChange={setCenter} radiusMeters={radiusKm * 1000} />
                 ) : (
@@ -369,7 +361,7 @@ export function ProRegistrationScreen() {
                   <Field label="Confirma tu contraseña">
                     <TextInput autoComplete="new-password" onChangeText={setConfirmPassword} placeholder="Repite tu contraseña" placeholderTextColor={KlippColors.muted} secureTextEntry style={styles.input} value={confirmPassword} />
                   </Field>
-                  <Text style={styles.privacyNote}>🔒 Tus datos se usan para crear y proteger tu cuenta profesional.</Text>
+                  <Text style={styles.privacyNote}>Tus datos se utilizan para gestionar tu cuenta y las solicitudes de servicio.</Text>
                 </View>
               </></View>
 
