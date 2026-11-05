@@ -358,7 +358,6 @@ export function ProRegistrationScreen() {
                   </View>
                 ) : catalog.map((service) => {
                   const selected = selectedServices.includes(service.id);
-                  const draft = serviceDrafts[service.id] ?? { price: '', minutes: '60' };
                   return (
                     <View key={service.id} style={[styles.serviceCard, selected && styles.serviceCardSelected]}>
                       <Pressable accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => toggleService(service.id)} style={styles.serviceRow}>
