@@ -162,12 +162,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             </View>
 
             <View style={[styles.loginMain, wideLogin && styles.loginMainWide]}>
-              {!isRegister && <LoginShowcase compact={!wideLogin} />}
           <View style={[styles.form, !isRegister && styles.loginForm, wideLogin && styles.loginFormWide]}>
             <Text style={[styles.eyebrow, !isRegister && styles.loginEyebrow]}>{isRegister ? 'EMPIEZA CON KLIPP' : 'CUENTA KLIPP'}</Text>
             <Text style={[styles.title, !isRegister && styles.loginTitle]}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
             <Text style={[styles.subtitle, !isRegister && styles.loginSubtitle]}>
-              {isRegister ? 'Servicios de limpieza confiables, cerca de ti.' : 'Accede a tu espacio de Klipp.'}
+              {isRegister ? 'Servicios profesionales de confianza, cerca de ti.' : 'Encuentra, reserva y sigue tus servicios desde un solo lugar.'}
             </Text>
 
             {isRegister && (
@@ -269,7 +268,7 @@ const styles = StyleSheet.create({
   loginBrand: { color: '#f8fafc', fontSize: 24, letterSpacing: 1.5 },
   loginLocation: { color: '#9babbc', fontSize: 9, letterSpacing: 1.4 },
   loginMain: { gap: 20 },
-  loginMainWide: { flexDirection: 'row', alignItems: 'center', gap: 28 },
+  loginMainWide: { alignItems: 'center', justifyContent: 'center', gap: 20 },
   showcase: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, padding: 18, borderWidth: 1, borderColor: '#334155', borderRadius: 12, backgroundColor: '#121f30' },
   showcaseCompact: { padding: 12 },
   terminal: { flex: 1, minWidth: 0, borderWidth: 1, borderColor: '#64748b', borderRadius: 12, padding: 7, backgroundColor: '#364354' },
@@ -343,7 +342,7 @@ const styles = StyleSheet.create({
   location: { color: KlippColors.muted, fontSize: 10, fontWeight: '700', marginTop: 5, letterSpacing: 0.5 },
   form: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: 10, padding: 18, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   loginForm: { maxWidth: 400, borderColor: '#35495d', backgroundColor: '#142638' },
-  loginFormWide: { width: 360, alignSelf: 'auto', padding: 22 },
+  loginFormWide: { width: '100%', maxWidth: 440, alignSelf: 'center', padding: 22 },
   eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '800', marginBottom: 2 },
   loginEyebrow: { color: '#a3e635' },
   title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '800' },
