@@ -253,7 +253,7 @@ export function NewBookingScreen() {
   useEffect(() => {
     if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) return;
     let active = true;
-    setAutoPriceLoading(true);
+    void Promise.resolve().then(() => { if (active) setAutoPriceLoading(true); });
     void Promise.resolve(supabase.rpc('get_auto_service_price_estimate', {
       p_service_type_id: selectedServiceId,
       p_pricing_tier_id: selectedTier?.id ?? null,
@@ -285,7 +285,7 @@ export function NewBookingScreen() {
   useEffect(() => {
     if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) return;
     let active = true;
-    setManualPriceLoading(true);
+    void Promise.resolve().then(() => { if (active) setManualPriceLoading(true); });
     void Promise.resolve(supabase.from('pro_services')
       .select('id, base_price_dop')
       .eq('pro_id', selectedProId)
