@@ -80,17 +80,27 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
   function continueRegister() {
     setError(null);
-    if (registerStep === 0) return;
-    if (registerStep === 1 && !fullName.trim()) {
+    if (registerStep === 0) {
+      moveRegisterStep(1);
+      return;
+    }
+    if (registerStep === 1 && fullName.trim().length < 2) {
       setError('Escribe tu nombre completo para continuar.');
       return;
     }
-    if (registerStep === 2 && (!email.trim() || !password)) {
-      setError('Completa tu correo y contraseña para continuar.');
+    if (registerStep === 2) {
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+        setError('Escribe un correo electrónico válido.');
+        return;
+      }
+      if (password.length < 8) {
+        setError('La contraseña debe tener al menos 8 caracteres.');
+        return;
+      }
+      void handleSubmit();
       return;
     }
-    if (registerStep < 2) moveRegisterStep(registerStep + 1);
-    else void handleSubmit();
+    moveRegisterStep(registerStep + 1);
   }
 
   return (
