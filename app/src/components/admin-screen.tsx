@@ -692,9 +692,9 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 20, paddingBottom: 44, gap: 16, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1280, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
-  section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
+  section: { padding: 20, gap: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 21, backgroundColor: KlippColors.white, shadowColor: KlippColors.navy, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   issueSummary: { flexDirection: 'row', gap: 8 },
   issueCount: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#F3F6FA', gap: 3 },
