@@ -161,7 +161,7 @@ export function CoverageRadiusPicker({
 
 const styles = StyleSheet.create({
   container: { gap: 8 },
-  mapFrame: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  mapFrame: { height: 180, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
   overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
   errorOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, gap: 8, backgroundColor: '#FFFFFFF2' },
   missingKey: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, backgroundColor: '#FFF7ED', gap: 8 },
