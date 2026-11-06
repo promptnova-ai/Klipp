@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { parseBearerToken } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -25,7 +26,7 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: "Server configuration error" }, 500);
 
-  const bearer = req.headers.get("Authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const bearer = parseBearerToken(req.headers.get("Authorization"));
   const isServiceRole = bearer === serviceRoleKey;
   const admin = createClient(supabaseUrl, serviceRoleKey);
   const suppliedCronSecret = req.headers.get("x-notification-cron-secret");
@@ -193,7 +194,7 @@ Deno.serve(async (req) => {
     for (const item of claimed) {
       const { data: notification, error: notificationError } = await admin
         .from("notifications")
-        .select("id, user_id, title, body, data")
+        .select("id, user_id, type, title, body, data")
         .eq("id", item.notification_id)
         .maybeSingle();
       if (notificationError || !notification) {

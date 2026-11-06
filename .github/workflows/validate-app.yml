@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "app/**"
+      - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
   pull_request:
     branches:
@@ -13,6 +14,7 @@ on:
       - security/008-profile-permissions
     paths:
       - "app/**"
+      - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
 
 permissions:
@@ -48,3 +50,33 @@ jobs:
 
       - name: Run TypeScript
         run: npx tsc --noEmit
+
+      - name: Export web app
+        run: npx expo export --platform web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+
+  edge-function-checks:
+    name: Edge Function checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Test shared Edge Function utilities
+        run: deno test supabase/functions/_shared/auth_test.ts
+
+      - name: Type-check notification dispatcher
+        run: deno check supabase/functions/dispatch-notifications/index.ts
+      
+      - name: Type-check automatic booking dispatcher
+        run: deno check supabase/functions/auto-assign-booking/index.ts
+
+      - name: Type-check booking route ETA
+        run: deno check supabase/functions/booking-route-eta/index.ts
