@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState, useWindowDimensions } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { ComponentProps } from 'react';
 import * as Location from 'expo-location';
 import {
   Animated,
@@ -11,6 +12,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
@@ -49,7 +51,7 @@ type NearbyOffer = ServiceOffer & {
 };
 type HomeCoordinate = { latitude: number; longitude: number };
 
-function serviceIcon(code: string) {
+function serviceIcon(code: string): ComponentProps<typeof SymbolView>['name'] {
   if (code.includes('barber') || code.includes('peluquer')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' };
   if (code.includes('estetica')) return { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' };
   if (code.includes('carwash') || code.includes('detailing')) return { ios: 'car.side.fill', android: 'directions_car', web: 'directions_car' };
@@ -277,7 +279,7 @@ export default function ClientHomeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ver mis direcciones"
-          onPress={() => router.push('/(client)/addresses')}
+          onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()}
           style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
           <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.blueDark} size={17} />
           <View>
