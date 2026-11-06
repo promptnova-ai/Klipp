@@ -287,6 +287,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </View>
                 <Text style={styles.legalNote}>Al continuar, aceptas las condiciones de uso y la política de privacidad de Klipp.</Text>
               </View>
+              </View>
             </ScreenEntrance>
           </View>
         </ScrollView>
