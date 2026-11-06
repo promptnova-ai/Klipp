@@ -213,7 +213,8 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$DECLARE
+AS $
+DECLARE
   v_booking public.bookings%rowtype;
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_admin_permission('bookings.manage') THEN
