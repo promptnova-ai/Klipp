@@ -67,7 +67,7 @@ export function NotificationsScreen() {
       setError(null);
     }
     setLoading(false);
-  }, [session?.user.id]);
+  }, [session]);
 
   const loadPreferences = useCallback(async () => {
     if (!session?.user.id) return;
@@ -93,11 +93,11 @@ export function NotificationsScreen() {
   }, [session?.user.id]);
 
   useEffect(() => {
-    void loadNotifications();
+    void Promise.resolve().then(loadNotifications);
   }, [loadNotifications]);
 
   useEffect(() => {
-    void loadPreferences();
+    void Promise.resolve().then(loadPreferences);
   }, [loadPreferences]);
 
   useEffect(() => {
