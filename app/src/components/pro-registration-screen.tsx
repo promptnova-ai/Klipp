@@ -12,12 +12,13 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, RoleThemes } from '@/lib/brand';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
@@ -53,6 +54,8 @@ const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicle
 
 export function ProRegistrationScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const compact = width < 540;
   const { signUp } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
@@ -339,7 +342,10 @@ export function ProRegistrationScreen() {
           </Pressable>
           <View style={styles.brandRow}>
             <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-            <Text style={styles.brand}>klipp</Text>
+            <View style={styles.brandCopy}>
+              <Text style={styles.brand}>KLIPP</Text>
+              <Text style={styles.brandRole}>PROFESIONAL</Text>
+            </View>
           </View>
           <Text style={styles.stepCount}>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</Text>
         </View>
@@ -348,12 +354,10 @@ export function ProRegistrationScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Animated.View
-            style={Platform.OS === 'web'
-              ? styles.stepContent
-              : [
-                  styles.stepContent,
-                  { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
-                ]}>
+            style={[
+              styles.stepContent,
+              { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
+            ]}>
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
               <Text style={styles.title}>{currentStep.title}</Text>
@@ -368,7 +372,7 @@ export function ProRegistrationScreen() {
                 <Field label="Teléfono de contacto">
                   <TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
                 </Field>
-                <View style={styles.twoColumns}>
+                <View style={[styles.twoColumns, compact && styles.stackedColumns]}>
                   <Field label="Años de experiencia">
                     <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
                   </Field>
@@ -489,7 +493,7 @@ export function ProRegistrationScreen() {
                       return (
                         <View key={tier.id} style={styles.tierCard}>
                           <Text style={styles.serviceName}>{tier.label}</Text>
-                          <View style={styles.serviceFields}>
+                          <View style={[styles.serviceFields, compact && styles.stackedServiceFields]}>
                             <Field label="Precio · RD$">
                               <TextInput keyboardType="decimal-pad" onChangeText={(price) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, price } }))} placeholder="1500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
                             </Field>
@@ -559,7 +563,7 @@ export function ProRegistrationScreen() {
                     <Chip key={day} label={day} selected={selectedWeekdays.includes(index + 1)} onPress={() => toggleWeekday(index + 1)} />
                   ))}
                 </View>
-                <View style={styles.timeRow}>
+                <View style={[styles.timeRow, compact && styles.stackedColumns]}>
                   <Field label="Desde">
                     <TextInput keyboardType="numbers-and-punctuation" onChangeText={setStartTime} placeholder="08:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={startTime} />
                   </Field>
@@ -639,94 +643,98 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  header: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
-  backButton: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center' },
+  safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
+  header: { width: '100%', maxWidth: 760, minHeight: 64, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
+  backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13 },
   backText: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  logoMark: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
-  logoLetter: { color: KlippColors.white, fontSize: 19, fontWeight: '900' },
-  brand: { color: KlippColors.navy, fontSize: 22, fontWeight: '900', letterSpacing: -0.5 },
-  stepCount: { color: KlippColors.muted, fontSize: 12, fontWeight: '700' },
-  progressTrack: { height: 4, marginHorizontal: 20, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E2E8F0' },
-  progressFill: { height: 4, borderRadius: 999, backgroundColor: KlippColors.blue },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 26, paddingBottom: 20 },
-  stepContent: { width: '100%', maxWidth: 620, alignSelf: 'center', gap: 20 },
-  heading: { gap: 7, marginBottom: 2 },
-  eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  title: { color: KlippColors.navy, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.5 },
-  subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  card: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 15, shadowColor: '#0F172A', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 3 },
-  field: { flex: 1, gap: 7 },
-  label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
-  input: { minHeight: 49, paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 12, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
-  multiline: { minHeight: 104, paddingTop: 12, textAlignVertical: 'top' },
-  transportSection: { gap: 9, paddingTop: 2 },
-  twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
-  experienceHint: { flex: 1, minHeight: 49, justifyContent: 'center', paddingHorizontal: 8 },
-  serviceList: { gap: 12 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoMark: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: RoleThemes.pro.accentStrong },
+  logoLetter: { color: KlippColors.white, fontSize: 20, fontWeight: '900' },
+  brandCopy: { gap: 1 },
+  brand: { color: KlippColors.navy, fontSize: 20, fontWeight: '900', letterSpacing: 1 },
+  brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
+  stepCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
+  progressTrack: { width: '100%', maxWidth: 720, height: 4, alignSelf: 'center', marginHorizontal: 20, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E5EAF0' },
+  progressFill: { height: 4, borderRadius: 999, backgroundColor: RoleThemes.pro.accent },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 28 },
+  stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
+  heading: { gap: 8, marginBottom: 2 },
+  eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: KlippColors.navy, fontSize: 31, lineHeight: 38, fontWeight: '900', letterSpacing: -0.65 },
+  subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, maxWidth: 620 },
+  card: { padding: 22, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 24, backgroundColor: KlippColors.white, gap: 17, shadowColor: '#17243D', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
+  field: { flex: 1, gap: 8, minWidth: 0 },
+  label: { color: '#344054', fontSize: 12, fontWeight: '800' },
+  input: { minHeight: 52, paddingHorizontal: 15, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 14, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
+  multiline: { minHeight: 112, paddingTop: 13, textAlignVertical: 'top' },
+  transportSection: { gap: 10, paddingTop: 3 },
+  twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 14 },
+  stackedColumns: { flexDirection: 'column', alignItems: 'stretch' },
+  experienceHint: { flex: 1, minHeight: 52, justifyContent: 'center', paddingHorizontal: 8 },
+  serviceList: { gap: 16 },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
-  catalogErrorTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
-  retryButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
-  retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
-  serviceCard: { padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.03, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
-  serviceCardSelected: { borderColor: '#9AB9FF', backgroundColor: '#FBFDFF' },
-  professionOption: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, backgroundColor: KlippColors.white },
-  professionOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#F5F8FF' },
+  catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 18, backgroundColor: KlippColors.white, gap: 11 },
+  catalogErrorTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  retryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceTeal },
+  retryButtonText: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800' },
+  serviceCard: { padding: 17, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 18, backgroundColor: KlippColors.white, gap: 14, shadowColor: '#17243D', shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 14, elevation: 2 },
+  serviceCardSelected: { borderColor: '#A7D9CB', backgroundColor: '#F9FCFB' },
+  professionOption: { minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 17, backgroundColor: KlippColors.white },
+  professionOptionSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: '#F3FAF7' },
   radioOuter: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 99 },
-  radioOuterSelected: { borderColor: KlippColors.blue },
-  radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.blue },
-  tierCard: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border },
-  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 16, backgroundColor: KlippColors.white },
-  equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 7 },
-  emptyState: { color: KlippColors.muted, fontSize: 13, lineHeight: 19, paddingVertical: 10 },
-  equipmentBullet: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '800' },
+  radioOuterSelected: { borderColor: RoleThemes.pro.accent },
+  radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: RoleThemes.pro.accent },
+  tierCard: { gap: 11, paddingTop: 13, borderTopWidth: 1, borderTopColor: '#E8EDF2' },
+  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 17, borderWidth: 1, borderColor: '#B7DCCF', borderRadius: 18, backgroundColor: '#F3FAF7' },
+  equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, paddingVertical: 8 },
+  emptyState: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, paddingVertical: 10 },
+  equipmentBullet: { color: RoleThemes.pro.accentStrong, fontSize: 15, fontWeight: '900' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
-  checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
-  checkmark: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
-  serviceCopy: { flex: 1, gap: 4 },
-  serviceName: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
-  serviceDescription: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
-  serviceFields: { flexDirection: 'row', gap: 10, paddingLeft: 34 },
+  checkboxSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: RoleThemes.pro.accent },
+  checkmark: { color: KlippColors.white, fontSize: 14, fontWeight: '900' },
+  serviceCopy: { flex: 1, minWidth: 0, gap: 4 },
+  serviceName: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  serviceDescription: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
+  serviceFields: { flexDirection: 'row', gap: 12, paddingLeft: 34 },
+  stackedServiceFields: { flexDirection: 'column', paddingLeft: 0 },
   helper: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
-  selectionNote: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', textAlign: 'center' },
-  locationIntro: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  locationIcon: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#EEF4FF' },
-  locationPin: { color: KlippColors.blue, fontSize: 25, fontWeight: '700' },
+  selectionNote: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800', textAlign: 'center' },
+  locationIntro: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  locationIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.surfaceTeal },
+  locationPin: { color: RoleThemes.pro.accent, fontSize: 25, fontWeight: '800' },
   locationCopy: { flex: 1, gap: 3 },
-  cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
-  locationButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
-  locationButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  locationButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.surfaceTeal },
+  locationButtonText: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800' },
   testLocationButtonText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  noLocation: { minHeight: 118, alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 5 },
-  noLocationTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  noLocation: { minHeight: 122, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: '#F8FAFC', gap: 6 },
+  noLocationTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 13, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 999, backgroundColor: KlippColors.white },
-  chipSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
-  chipText: { color: KlippColors.slate, fontSize: 12, fontWeight: '600' },
-  chipTextSelected: { color: KlippColors.blueDark, fontWeight: '700' },
-  divider: { height: 1, backgroundColor: KlippColors.border },
-  timeRow: { flexDirection: 'row', gap: 12 },
-  summaryCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, borderWidth: 1, borderColor: '#D8E7FF', borderRadius: 16, backgroundColor: '#F3F7FF' },
-  summaryIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#DCEAFF' },
-  summaryIconText: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
-  summaryCopy: { flex: 1, gap: 3 },
+  chip: { minHeight: 39, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 999, backgroundColor: KlippColors.white },
+  chipSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: KlippColors.surfaceTeal },
+  chipText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
+  chipTextSelected: { color: RoleThemes.pro.accentStrong, fontWeight: '800' },
+  divider: { height: 1, backgroundColor: '#E8EDF2' },
+  timeRow: { flexDirection: 'row', gap: 14 },
+  summaryCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 17, borderWidth: 1, borderColor: '#B7DCCF', borderRadius: 18, backgroundColor: '#F3FAF7' },
+  summaryIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#D9F0E7' },
+  summaryIconText: { color: RoleThemes.pro.accentStrong, fontSize: 17, fontWeight: '900' },
+  summaryCopy: { flex: 1, gap: 4 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
-  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, backgroundColor: KlippColors.canvas },
-  primaryButton: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 15, backgroundColor: KlippColors.navy },
-  primaryPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+  footer: { width: '100%', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#E5EAF1', backgroundColor: '#FFFFFF' },
+  primaryButton: { width: '100%', maxWidth: 720, minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16, backgroundColor: RoleThemes.pro.accentStrong },
+  primaryPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
-  primaryButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
-  primaryArrow: { color: KlippColors.white, fontSize: 19, fontWeight: '600' },
+  primaryButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '900' },
+  primaryArrow: { color: KlippColors.white, fontSize: 19, fontWeight: '700' },
   footerText: { marginTop: 12, color: KlippColors.muted, fontSize: 12, textAlign: 'center' },
-  footerLink: { color: KlippColors.blueDark, fontWeight: '700' },
-  pressed: { opacity: 0.85 },
-  error: { padding: 12, borderRadius: 12, backgroundColor: '#FEF3F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  noticeCard: { alignItems: 'center', padding: 18, borderRadius: 16, backgroundColor: '#ECFDF5', gap: 9 },
+  footerLink: { color: RoleThemes.pro.accentStrong, fontWeight: '900' },
+  pressed: { opacity: 0.88 },
+  error: { padding: 13, borderWidth: 1, borderColor: '#FECACA', borderRadius: 14, backgroundColor: '#FEF2F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
+  noticeCard: { alignItems: 'center', padding: 20, borderWidth: 1, borderColor: '#B7E4D1', borderRadius: 18, backgroundColor: '#ECFDF5', gap: 10 },
   noticeIcon: { color: '#047857', fontSize: 22 },
   noticeText: { color: '#065F46', fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  loginButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 18, borderRadius: 11, backgroundColor: '#D1FAE5' },
-  loginButtonText: { color: '#047857', fontSize: 13, fontWeight: '700' },
+  loginButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 19, borderRadius: 13, backgroundColor: '#D1FAE5' },
+  loginButtonText: { color: '#047857', fontSize: 13, fontWeight: '800' },
 });
