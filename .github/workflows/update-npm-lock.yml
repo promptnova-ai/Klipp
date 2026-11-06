@@ -8,6 +8,13 @@ on:
       - "app/package.json"
       - "app/package-lock.json"
       - ".github/workflows/update-npm-lock.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "app/package.json"
+      - "app/package-lock.json"
+      - ".github/workflows/update-npm-lock.yml"
 
 permissions:
   contents: read
