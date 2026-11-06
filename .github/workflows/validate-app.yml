@@ -68,3 +68,9 @@ jobs:
 
       - name: Type-check notification dispatcher
         run: deno check supabase/functions/dispatch-notifications/index.ts
+      
+      - name: Type-check automatic booking dispatcher
+        run: deno check supabase/functions/auto-assign-booking/index.ts
+
+      - name: Type-check booking route ETA
+        run: deno check supabase/functions/booking-route-eta/index.ts
