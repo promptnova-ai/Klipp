@@ -89,8 +89,6 @@ export function ProProfileScreen() {
   const [equipmentByService, setEquipmentByService] = useState<Record<number, EquipmentRequirement[]>>({});
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
   const [serviceDetails, setServiceDetails] = useState<Record<number, Record<string, string>>>({});
-  const [servicePrices, setServicePrices] = useState<Record<number, string>>({});
-  const [serviceDurations, setServiceDurations] = useState<Record<number, string>>({});
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
   const [tierPrices, setTierPrices] = useState<Record<string, string>>({});
   const [tierDurations, setTierDurations] = useState<Record<string, string>>({});
@@ -178,8 +176,6 @@ export function ProProfileScreen() {
     setEquipmentByService(Object.fromEntries(services.map((service) => [service.id, equipment.filter((item) => item.service_type_id === service.id)])));
     setSelectedServices(configuredServices.map((service) => service.service_type_id).slice(0, 1));
     setServiceDetails(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, service.details ?? {}])));
-    setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
-    setServiceDurations(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.est_minutes)])));
     setLoading(false);
   }, [userId]);
 
@@ -329,26 +325,25 @@ export function ProProfileScreen() {
       return;
     }
 
-    const invalidTierPrice = selectedServices.some((serviceId) => pricingTiers.filter((tier) => tier.service_type_id === serviceId).some((tier) => {
+    if (selectedServices.length !== 1) {
+      setError('Tu perfil debe tener exactamente una profesión principal.');
+      return;
+    }
+
+    const invalidTierPrice = selectedServices.some((serviceId) => {
+      const serviceTiers = pricingTiers.filter((tier) => tier.service_type_id === serviceId);
+      return serviceTiers.length === 0 || serviceTiers.some((tier) => {
       const key = `${serviceId}:${tier.id}`;
       const price = Number(tierPrices[key]);
       const duration = Number(tierDurations[key]);
       return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
-    }));
+      });
+    });
     if (invalidTierPrice) {
       setError('Configura un precio y una duración válidos para cada variante del servicio.');
       return;
     }
 
-    const invalidService = selectedServices.find((serviceId) => {
-      const price = Number(servicePrices[serviceId]);
-      const duration = Number(serviceDurations[serviceId]);
-      return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
-    });
-    if (invalidService !== undefined) {
-      setError('La profesión elegida necesita un precio mayor que cero y una duración válida en minutos.');
-      return;
-    }
     const invalidDetails = selectedServices.some((serviceId) => {
       const service = catalog.find((item) => item.id === serviceId);
       const details = serviceDetails[serviceId] ?? {};
@@ -428,14 +423,19 @@ export function ProProfileScreen() {
       }
       if (selectedServices.length) {
         const { error: serviceError } = await supabase.from('pro_services').upsert(
-          selectedServices.map((service_type_id) => ({
-            pro_id: userId,
-            service_type_id,
-            base_price_dop: Number(servicePrices[service_type_id]),
-            est_minutes: Number(serviceDurations[service_type_id]),
-            details: serviceDetails[service_type_id] ?? {},
-            active: true,
-          })),
+          selectedServices.map((service_type_id) => {
+            const serviceTiers = pricingTiers.filter((tier) => tier.service_type_id === service_type_id);
+            const prices = serviceTiers.map((tier) => Number(tierPrices[`${service_type_id}:${tier.id}`]));
+            const durations = serviceTiers.map((tier) => Number(tierDurations[`${service_type_id}:${tier.id}`]));
+            return {
+              pro_id: userId,
+              service_type_id,
+              base_price_dop: Math.min(...prices),
+              est_minutes: Math.min(...durations),
+              details: serviceDetails[service_type_id] ?? {},
+              active: true,
+            };
+          }),
           { onConflict: 'pro_id,service_type_id' },
         );
         if (serviceError) {
@@ -688,7 +688,7 @@ export function ProProfileScreen() {
         <ActionButton disabled={uploadingPortfolio || portfolio.length >= 6} label={uploadingPortfolio ? 'Subiendo foto...' : portfolio.length >= 6 ? 'Límite de 6 fotos alcanzado' : 'Añadir foto de un trabajo'} onPress={() => void uploadPortfolioPhoto()} />
       </Section>
 
-      <Section title="Servicios y tarifas">
+      <Section title="Profesión y tarifas">
         <Text style={styles.body}>Mantén una sola profesión principal y publica sus tarifas en pesos dominicanos. Klipp retiene una comisión del 7% del precio del servicio; recibirás el 93% restante antes de posibles impuestos o costes de pago.</Text>
         {catalog.map((service) => {
           const selected = selectedServices.includes(service.id);
@@ -730,30 +730,7 @@ export function ProProfileScreen() {
                   ))}
                 </View>
               )}
-              {selected && (
-                <View style={styles.serviceFields}>
-                  <View style={styles.priceField}>
-                    <Text style={styles.label}>Precio base (RD$)</Text>
-                    <TextInput
-                      keyboardType="decimal-pad"
-                      onChangeText={(value) => setServicePrices((current) => ({ ...current, [service.id]: value }))}
-                      placeholder="1500"
-                      style={styles.input}
-                      value={servicePrices[service.id] ?? ''}
-                    />
-                  </View>
-                  <View style={styles.durationField}>
-                    <Text style={styles.label}>Duración (min)</Text>
-                    <TextInput
-                      keyboardType="number-pad"
-                      onChangeText={(value) => setServiceDurations((current) => ({ ...current, [service.id]: value }))}
-                      placeholder="60"
-                      style={styles.input}
-                      value={serviceDurations[service.id] ?? ''}
-                    />
-                  </View>
-                </View>
-              )}
+              {selected && <Text style={styles.body}>Configura cada modalidad por separado. Klipp calculará la tarifa general a partir de los precios publicados, sin pedirte un precio base adicional.</Text>}
               {selected && pricingTiers.some((tier) => tier.service_type_id === service.id) && (
                 <View style={styles.serviceRequirements}>
                   <Text style={styles.requirementsTitle}>Precios por variante (RD$):</Text>
