@@ -90,7 +90,7 @@ export function NewBookingScreen() {
   const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
   const [addressText, setAddressText] = useState('');
   const [landmarkNotes, setLandmarkNotes] = useState('');
-  const [locationLoading, setLocationLoading] = useState(true);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [scheduledDate, setScheduledDate] = useState(() => getDateOptions()[0]?.key ?? '');
   const [scheduledTime, setScheduledTime] = useState('');
@@ -156,9 +156,6 @@ export function NewBookingScreen() {
     }
   }, [updateCoordinate]);
 
-  useEffect(() => {
-    void Promise.resolve().then(requestCurrentLocation);
-  }, [requestCurrentLocation]);
 
   useEffect(() => {
     if (!coordinate) return;
@@ -245,6 +242,7 @@ export function NewBookingScreen() {
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
+  const selectedTierIdForQuery = selectedTier?.id ?? null;
   const selectedDuration = selectedOffer?.est_minutes ?? (mode === 'manual' && selectedProId ? manualProDuration ?? selectedTier?.est_minutes : selectedTier?.est_minutes);
   const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' ? (selectedProId ? manualProPrice ?? undefined : undefined) : selectedTier?.price_dop);
 
@@ -285,14 +283,19 @@ export function NewBookingScreen() {
   }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
 
   useEffect(() => {
-    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
-      setManualProPrice(null);
-      setManualProDuration(null);
-      setManualPriceLoading(false);
-      return;
-    }
     let active = true;
-    setManualPriceLoading(true);
+    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setManualProPrice(null);
+        setManualProDuration(null);
+        setManualPriceLoading(false);
+      });
+      return () => { active = false; };
+    }
+    void Promise.resolve().then(() => {
+      if (active) setManualPriceLoading(true);
+    });
     void Promise.resolve(supabase.from('pro_services')
       .select('id, base_price_dop, est_minutes')
       .eq('pro_id', selectedProId)
@@ -308,7 +311,7 @@ export function NewBookingScreen() {
           setManualPriceLoading(false);
           return;
         }
-        if (!selectedTier) {
+        if (!selectedTierIdForQuery) {
           setManualProPrice(Number(proService.base_price_dop));
           setManualProDuration(Number(proService.est_minutes));
           setError(null);
@@ -318,7 +321,7 @@ export function NewBookingScreen() {
         const { data: tierPrice, error: tierPriceError } = await supabase.from('pro_service_tier_prices')
           .select('price_dop, est_minutes')
           .eq('pro_service_id', proService.id)
-          .eq('pricing_tier_id', selectedTier.id)
+          .eq('pricing_tier_id', selectedTierIdForQuery)
           .eq('active', true)
           .maybeSingle();
         if (!active) return;
@@ -340,20 +343,23 @@ export function NewBookingScreen() {
         setError(cause instanceof Error ? cause.message : 'No pudimos consultar la tarifa del profesional.');
       });
     return () => { active = false; };
-  }, [mode, selectedProId, selectedServiceId, selectedTier?.id, selectedOffer]);
+  }, [mode, selectedProId, selectedServiceId, selectedTierIdForQuery, selectedOffer]);
 
   useEffect(() => {
+    let active = true;
     if (timing === 'now') {
-      setAvailableSlots([]);
-      setScheduledTime('');
-      setLoadingSlots(false);
-      return;
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setAvailableSlots([]);
+        setScheduledTime('');
+        setLoadingSlots(false);
+      });
+      return () => { active = false; };
     }
     if (!coordinate || (!selectedTier && !selectedOffer && !(selectedServiceId && (mode === 'auto' || selectedProId))) || !scheduledDate) {
-      return;
+      return () => { active = false; };
     }
 
-    let active = true;
     void Promise.resolve().then(() => {
       if (active) setLoadingSlots(true);
     });
@@ -654,7 +660,7 @@ export function NewBookingScreen() {
       )}
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={tier.price_dop > 0 ? formatDop(tier.price_dop) : "Tarifa del profesional"} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary="Tarifa del profesional" onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
@@ -707,9 +713,12 @@ export function NewBookingScreen() {
             />
           </>
         ) : (
-          <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.retryLocation, pressed && styles.pressed]}>
-            <Text style={styles.adjustLocationText}>Compartir ubicación para continuar</Text>
-          </Pressable>
+          <View style={styles.locationPermissionPrompt}>
+            <Text style={styles.body}>Para calcular distancias y mostrar profesionales disponibles, Klipp necesita conocer el punto del servicio. Solo solicitaremos tu ubicación cuando tú lo decidas.</Text>
+            <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.retryLocation, pressed && styles.pressed]}>
+              <Text style={styles.adjustLocationText}>Usar mi ubicación actual</Text>
+            </Pressable>
+          </View>
         )}
         {locationError && <Text accessibilityRole="alert" style={styles.error}>{locationError}</Text>}
       </Section>
@@ -902,6 +911,7 @@ const styles = StyleSheet.create({
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
   notesInput: { minHeight: 84, paddingHorizontal: 13, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, textAlignVertical: 'top', backgroundColor: KlippColors.white },
+  locationPermissionPrompt: { gap: 12 },
   adjustLocation: { alignSelf: 'flex-start', paddingVertical: 7 },
   retryLocation: { minHeight: 46, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: '#F8FAFC' },
   adjustLocationText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
