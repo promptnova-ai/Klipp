@@ -65,7 +65,9 @@ export function ProRegistrationScreen() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [tiersLoading, setTiersLoading] = useState(false);
   const [equipmentRequirements, setEquipmentRequirements] = useState<EquipmentRequirement[]>([]);
+  const [equipmentLoading, setEquipmentLoading] = useState(false);
   const [tierDrafts, setTierDrafts] = useState<Record<number, TierDraft>>({});
   const [serviceDetails, setServiceDetails] = useState<Record<string, string>>({});
   const [equipmentConfirmed, setEquipmentConfirmed] = useState(false);
@@ -148,7 +150,8 @@ export function ProRegistrationScreen() {
       if (servicesLoading) return 'Espera un momento mientras cargamos las profesiones.';
       if (catalog.length === 0) return 'No hay profesiones disponibles ahora mismo.';
       if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
-      if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. Inténtalo más tarde.';
+      if (tiersLoading || equipmentLoading) return 'Espera mientras cargamos las modalidades y el equipamiento de esta profesión.';
+      if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
       if (pricingTiers.some((tier) => {
         const draft = tierDrafts[tier.id];
         return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0
@@ -195,7 +198,9 @@ export function ProRegistrationScreen() {
     const requestId = ++tierRequestId.current;
     setSelectedServiceId(serviceId);
     setPricingTiers([]);
+    setTiersLoading(true);
     setEquipmentRequirements([]);
+    setEquipmentLoading(true);
     setTierDrafts({});
     setServiceDetails({});
     setError(null);
@@ -207,10 +212,12 @@ export function ProRegistrationScreen() {
         if (requestId !== tierRequestId.current) return;
         if (queryError) {
           setError('No pudimos cargar las modalidades de esta profesión.');
+          setTiersLoading(false);
           return;
         }
         const tiers = (data ?? []) as PricingTier[];
         setPricingTiers(tiers);
+        setTiersLoading(false);
         setTierDrafts(Object.fromEntries(tiers.map((tier) => [tier.id, {
           price: '',
           minutes: String(tier.est_minutes || 60),
@@ -225,9 +232,11 @@ export function ProRegistrationScreen() {
         if (requestId !== tierRequestId.current) return;
         if (queryError) {
           setError('No pudimos cargar la lista de herramientas recomendadas.');
+          setEquipmentLoading(false);
           return;
         }
         setEquipmentRequirements((data ?? []) as EquipmentRequirement[]);
+        setEquipmentLoading(false);
       });
   }
 
@@ -471,8 +480,10 @@ export function ProRegistrationScreen() {
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Precios por modalidad</Text>
                     <Text style={styles.helper}>Define cuánto cobras y cuánto tiempo necesitas para cada modalidad. El cliente verá estos importes al reservar.</Text>
-                    {pricingTiers.length === 0 ? (
+                    {tiersLoading ? (
                       <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando modalidades...</Text></View>
+                    ) : pricingTiers.length === 0 ? (
+                      <Text style={styles.emptyState}>Esta profesión todavía no tiene modalidades publicadas. No es posible continuar con el registro.</Text>
                     ) : pricingTiers.map((tier) => {
                       const draft = tierDrafts[tier.id] ?? { price: '', minutes: String(tier.est_minutes || 60) };
                       return (
@@ -491,7 +502,9 @@ export function ProRegistrationScreen() {
                     })}
                   </View>
                 )}
-                {equipmentRequirements.length > 0 && (
+                {equipmentLoading ? (
+                  <View style={styles.card}><View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando herramientas y materiales...</Text></View></View>
+                ) : equipmentRequirements.length > 0 && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Herramientas y materiales que debes llevar</Text>
                     <Text style={styles.helper}>Esta es la lista orientativa para tu profesión. Todo el equipo y los productos necesarios corren por cuenta del profesional.</Text>
@@ -670,6 +683,7 @@ const styles = StyleSheet.create({
   tierCard: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border },
   equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 16, backgroundColor: KlippColors.white },
   equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 7 },
+  emptyState: { color: KlippColors.muted, fontSize: 13, lineHeight: 19, paddingVertical: 10 },
   equipmentBullet: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '800' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
