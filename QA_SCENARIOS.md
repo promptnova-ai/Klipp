@@ -62,6 +62,18 @@ recupera en el perfil. La opción **Otro** requiere una descripción.
 
 **Resultado esperado:** Solo se registra una profesión principal. Cada modalidad conserva su propio precio y duración. No se avanza con datos específicos incompletos ni con modalidades sin tarifa válida.
 
+### QA-PRO-02A — Catálogo de modalidades antes de crear la cuenta
+
+**Prioridad:** Alta  
+**Precondición:** Sesión cerrada, antes de completar el registro profesional.
+
+1. Abrir el registro profesional y elegir una profesión.
+2. Comprobar que aparecen sus modalidades y que se pueden introducir precio y duración.
+3. Confirmar que los precios de catálogo no se presentan como tarifas cobradas al cliente.
+4. Intentar consultar el catálogo sin iniciar sesión.
+
+**Resultado esperado:** Las modalidades se pueden leer antes del alta (rol anónimo), pero el catálogo no admite inserciones ni modificaciones desde el cliente. El profesional define sus tarifas al registrarse.
+
 ### QA-PRO-03 — Centro GPS, pin y radio de cobertura
 
 **Prioridad:** Alta  
