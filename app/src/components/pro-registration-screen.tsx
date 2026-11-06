@@ -37,7 +37,7 @@ type ProOnboardingDraft = {
 
 const steps = [
   { eyebrow: 'TU PERFIL', title: 'Cuéntanos sobre ti', subtitle: 'Un buen perfil genera confianza y te ayuda a destacar.' },
-  { eyebrow: 'TUS SERVICIOS', title: '¿Qué sabes hacer?', subtitle: 'Elige tus especialidades y define tu tarifa inicial.' },
+  { eyebrow: 'TU PROFESIÓN', title: 'Elige tu profesión', subtitle: 'Selecciona una profesión principal y configura sus modalidades y tarifas.' },
   { eyebrow: 'TU COBERTURA', title: 'Define dónde trabajas', subtitle: 'Te conectaremos con clientes dentro de tu radio.' },
   { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales. Te enviaremos un correo para confirmar.' },
 ];
