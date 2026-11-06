@@ -66,15 +66,15 @@ function relativeDate(value: string) {
 
 function notificationIcon(type: string) {
   if (type === 'chat_message') {
-    return { ios: 'message.fill', android: 'chat', web: 'chat' };
+    return { ios: 'message.fill', android: 'chat', web: 'chat' } as const;
   }
   if (type === 'booking_request' || type === 'booking_reassignment_request') {
-    return { ios: 'calendar.badge.clock', android: 'event', web: 'event' };
+    return { ios: 'calendar.badge.clock', android: 'event', web: 'event' } as const;
   }
   if (type.includes('payment')) {
-    return { ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' };
+    return { ios: 'creditcard.fill', android: 'credit_card', web: 'credit_card' } as const;
   }
-  return { ios: 'bell.fill', android: 'notifications', web: 'notifications' };
+  return { ios: 'bell.fill', android: 'notifications', web: 'notifications' } as const;
 }
 
 export function NotificationsScreen() {
