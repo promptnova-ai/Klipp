@@ -1,17 +1,19 @@
 import * as Device from 'expo-device';
+import { lazy, Suspense } from 'react';
 import { Redirect } from 'expo-router';
 import { Platform, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { AnimatedIcon } from '@/components/animated-icon';
-import { AdminScreen } from '@/components/admin-screen';
 import { useAuth } from '@/components/auth-provider';
 import { HintRow } from '@/components/hint-row';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+
+const AdminScreen = lazy(() => import('@/components/admin-screen').then((module) => ({ default: module.AdminScreen })));
 
 function getDevMenuHint() {
   if (Platform.OS === 'web') {
@@ -61,7 +63,11 @@ export default function HomeScreen() {
   if (profile.role === 'client') return <Redirect href="/(client)" />;
   if (profile.role === 'pro') return <Redirect href="/(pro)" />;
 
-  return <AdminScreen />;
+  return (
+    <Suspense fallback={<View style={authStyles.centered}><ActivityIndicator color="#16766c" /><Text style={authStyles.message}>Cargando el panel...</Text></View>}>
+      <AdminScreen />
+    </Suspense>
+  );
 
   /* Original starter screen retained below until the client and pro home screens are built. */
   /*
