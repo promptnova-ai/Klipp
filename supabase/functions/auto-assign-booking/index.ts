@@ -120,8 +120,8 @@ async function runAssignment(admin: AdminClient, bookingId: string) {
       .eq("booking_id", bookingId);
     if (requestsError) throw requestsError;
 
-    const hasPending = (requests ?? []).some((request) => request.status === "pending");
-    const hasAccepted = (requests ?? []).some((request) => request.status === "accepted");
+    const hasPending = (requests ?? []).some((request: { status: string }) => request.status === "pending");
+    const hasAccepted = (requests ?? []).some((request: { status: string }) => request.status === "accepted");
     if (hasAccepted || !hasPending) return;
 
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
