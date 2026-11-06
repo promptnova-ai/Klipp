@@ -469,7 +469,7 @@ export function NewBookingScreen() {
     }
     void loadPros();
     return () => { active = false; };
-  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.service_type_id, mode, timing, getScheduledStart]);
+  }, [coordinate, scheduledDate, scheduledTime, selectedDuration, selectedOffer, selectedTier?.id, selectedTier?.service_type_id, mode, timing, getScheduledStart]);
 
   async function showProProfile(pro: ProCard) {
     if (expandedProId === pro.pro_id) {
