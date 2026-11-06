@@ -65,6 +65,9 @@ jobs:
       - name: Lint the changed authentication screen
         run: npx eslint src/components/auth-screen.tsx
 
+      - name: Lint shared UI primitives and role-aware header
+        run: npx eslint src/components/ui-primitives.tsx src/components/brand-screen-header.tsx
+
       - name: Run TypeScript
         run: npx tsc --noEmit
 
