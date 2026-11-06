@@ -21,84 +21,85 @@ import type { ExtractRole } from '@/lib/types';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
 
-const quickActions = [
-  { title: 'Mis Llaves', icon: { ios: 'key.fill', android: 'key', web: 'vpn_key' } },
-  { title: 'Invitaciones', icon: { ios: 'paperplane.fill', android: 'send', web: 'send' } },
-  { title: 'Ajustes', icon: { ios: 'gearshape.fill', android: 'settings', web: 'settings' } },
+const serviceHighlights = [
+  {
+    title: 'Profesionales verificados',
+    detail: 'Perfiles revisados antes de trabajar.',
+    icon: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
+  },
+  {
+    title: 'Tarifas claras',
+    detail: 'Conoces el precio antes de pagar.',
+    icon: { ios: 'tag.fill', android: 'sell', web: 'sell' },
+  },
+  {
+    title: 'Seguimiento en vivo',
+    detail: 'Sigue la llegada del profesional.',
+    icon: { ios: 'location.fill', android: 'location_on', web: 'place' },
+  },
 ] as const;
 
 function LoginShowcase({ compact }: { compact: boolean }) {
   return (
     <View style={[styles.showcase, compact && styles.showcaseCompact]}>
-      <View style={styles.terminal}>
-        <View style={styles.terminalTop}>
-          <View style={styles.terminalStripe} />
-          <View style={styles.terminalBrand}>
-            <View style={styles.terminalMark}><Text style={styles.terminalMarkLetter}>K</Text></View>
-            <Text style={styles.terminalBrandName}>KLIPP</Text>
-          </View>
-          <Text style={styles.terminalId}>ACCESS TERMINAL 01</Text>
+      <View style={styles.showcaseCopy}>
+        <View style={styles.showcaseBrandLine}>
+          <View style={styles.showcaseMark}><Text style={styles.showcaseMarkLetter}>K</Text></View>
+          <Text style={styles.showcaseBrand}>KLIPP</Text>
+          <Text style={styles.showcaseRegion}>SANTO DOMINGO · RD</Text>
         </View>
-        <View style={styles.terminalDisplay}>
-          <View style={styles.screenHeader}>
-            <Text style={styles.screenBrand}>KLIPP</Text>
-            <View style={styles.screenMenu}><View /><View /><View /></View>
-          </View>
-          <Text style={styles.screenKicker}>ACCESO INTELIGENTE · EN LÍNEA</Text>
-          <Text style={styles.screenTitle}>¡Bienvenido A KLIPP!</Text>
-          <Text style={styles.screenSubtitle}>El Futuro del Acceso</Text>
-          <Text style={styles.screenDescription}>
-            Gestione sus llaves, invitaciones y accesos de forma inteligente.
-          </Text>
-          <View style={styles.quickActions}>
-            {quickActions.map((action) => (
-              <View key={action.title} style={styles.quickAction}>
-                <SymbolView name={action.icon} tintColor="#0f172a" size={18} />
-                <Text style={styles.quickActionText}>{action.title}</Text>
+        <Text style={styles.showcaseKicker}>SERVICIOS A DOMICILIO</Text>
+        <Text style={styles.showcaseTitle}>Tu día, más fácil. Tu servicio, en buenas manos.</Text>
+        <Text style={styles.showcaseDescription}>
+          Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.
+        </Text>
+        <View style={styles.showcaseHighlights}>
+          {serviceHighlights.map((item) => (
+            <View key={item.title} style={styles.showcaseHighlight}>
+              <View style={styles.showcaseHighlightIcon}>
+                <SymbolView name={item.icon} tintColor={KlippColors.teal} size={18} />
               </View>
-            ))}
-          </View>
-          <View style={styles.accessPanel}>
-            <View style={styles.accessPanelTitleRow}>
-              <Text style={styles.accessPanelTitle}>ÚLTIMOS ACCESOS</Text>
-              <View style={styles.liveStatus}><View style={styles.liveDot} /><Text style={styles.liveText}>EN VIVO</Text></View>
+              <View style={styles.showcaseHighlightCopy}>
+                <Text style={styles.showcaseHighlightTitle}>{item.title}</Text>
+                <Text style={styles.showcaseHighlightDetail}>{item.detail}</Text>
+              </View>
             </View>
-            <View style={styles.accessRow}>
-              <View style={styles.accessAvatar}><Text style={styles.accessInitials}>MG</Text></View>
-              <View style={styles.accessPerson}><Text style={styles.accessName}>Maria Garcia</Text><Text style={styles.accessDetail}>Entrada principal</Text></View>
-              <Text style={styles.accessTime}>09:15</Text>
-            </View>
-            <View style={styles.accessRow}>
-              <View style={styles.accessAvatar}><Text style={styles.accessInitials}>CM</Text></View>
-              <View style={styles.accessPerson}><Text style={styles.accessName}>Carlos Mendez</Text><Text style={styles.accessDetail}>Acceso de residente</Text></View>
-              <Text style={styles.accessTime}>08:42</Text>
-            </View>
-          </View>
-        </View>
-        <View style={styles.readerShelf}>
-          <View style={styles.readerUnit}><View style={styles.readerGlow} /><SymbolView name={{ ios: 'wave.3.right', android: 'contactless', web: 'contactless' }} tintColor="#a3e635" size={18} /><Text style={styles.readerText}>NFC</Text></View>
-          <View style={styles.readerUnit}><SymbolView name={{ ios: 'touchid', android: 'fingerprint', web: 'fingerprint' }} tintColor="#dce5ed" size={19} /><Text style={styles.readerSecondary}>HUELLA</Text></View>
+          ))}
         </View>
       </View>
-
       {!compact && (
-        <View style={styles.phone}>
-          <View style={styles.phoneScreen}>
-            <View style={styles.phoneNotch} />
-            <View style={styles.phoneStatus}><Text style={styles.phoneTime}>9:41</Text><Text style={styles.phoneSignal}>● ● ●</Text></View>
-            <View style={styles.phoneBrandRow}><Text style={styles.phoneBrand}>K KLIPP</Text><View style={styles.phoneProfile}><Text style={styles.phoneProfileText}>MG</Text></View></View>
-            <Text style={styles.phoneGreeting}>Hola, Maria</Text>
-            <Text style={styles.phoneMessage}>Tu hogar está a un toque.</Text>
-            <View style={styles.digitalKey}>
-              <Text style={styles.digitalKeyLabel}>LLAVE PRINCIPAL</Text>
-              <View style={styles.digitalKeyIcon}><SymbolView name={{ ios: 'key.fill', android: 'key', web: 'vpn_key' }} tintColor="#0f172a" size={22} /></View>
-              <Text style={styles.digitalKeyName}>Mi hogar</Text>
-              <Text style={styles.digitalKeyAddress}>Entrada principal</Text>
-              <View style={styles.openButton}><SymbolView name={{ ios: 'lock.open.fill', android: 'lock_open', web: 'lock_open' }} tintColor="#0f172a" size={14} /><Text style={styles.openButtonText}>Abrir puerta</Text></View>
+        <View style={styles.bookingPreview}>
+          <View style={styles.previewHeader}>
+            <Text style={styles.previewEyebrow}>ASÍ FUNCIONA</Text>
+            <View style={styles.previewLive}><View style={styles.previewLiveDot} /><Text style={styles.previewLiveText}>EN VIVO</Text></View>
+          </View>
+          <View style={styles.previewService}>
+            <View style={styles.previewServiceIcon}>
+              <SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={KlippColors.blue} size={23} />
             </View>
-            <Text style={styles.phoneRecentTitle}>ACCESO RECIENTE</Text>
-            <View style={styles.phoneRecent}><View style={styles.phoneRecentDot} /><View><Text style={styles.phoneRecentName}>Entrada principal</Text><Text style={styles.phoneRecentTime}>Hoy, 09:15</Text></View></View>
-            <View style={styles.phoneNav}><Text style={styles.phoneNavActive}>Llaves</Text><Text style={styles.phoneNavText}>Invitados</Text><Text style={styles.phoneNavText}>Perfil</Text></View>
+            <View style={styles.previewServiceCopy}>
+              <Text style={styles.previewServiceTitle}>Barbería a domicilio</Text>
+              <Text style={styles.previewServiceDetail}>Ejemplo de una reserva</Text>
+            </View>
+          </View>
+          <View style={styles.previewDivider} />
+          <Text style={styles.previewSectionTitle}>Tu servicio, paso a paso</Text>
+          <View style={styles.previewTimeline}>
+            <View style={styles.previewTimelineRail}>
+              <View style={styles.previewTimelineDot} />
+              <View style={styles.previewTimelineLine} />
+              <View style={[styles.previewTimelineDot, styles.previewTimelineDotActive]} />
+            </View>
+            <View style={styles.previewTimelineCopy}>
+              <Text style={styles.previewTimelineTitle}>Profesional asignado</Text>
+              <Text style={styles.previewTimelineDetail}>Precio confirmado antes del pago</Text>
+              <Text style={styles.previewTimelineTitle}>En camino</Text>
+              <Text style={styles.previewTimelineDetail}>Ubicación y ETA actualizadas</Text>
+            </View>
+          </View>
+          <View style={styles.previewFooter}>
+            <SymbolView name={{ ios: 'shield.lefthalf.filled', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.teal} size={15} />
+            <Text style={styles.previewFooterText}>Todo desde la app Klipp</Text>
           </View>
         </View>
       )}
@@ -167,7 +168,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             <Text style={[styles.eyebrow, !isRegister && styles.loginEyebrow]}>{isRegister ? 'EMPIEZA CON KLIPP' : 'CUENTA KLIPP'}</Text>
             <Text style={[styles.title, !isRegister && styles.loginTitle]}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
             <Text style={[styles.subtitle, !isRegister && styles.loginSubtitle]}>
-              {isRegister ? 'Servicios de limpieza confiables, cerca de ti.' : 'Accede a tu espacio de Klipp.'}
+              {isRegister ? 'Encuentra profesionales de confianza para los servicios que necesitas.' : 'Accede a tu espacio de Klipp.'}
             </Text>
 
             {isRegister && (
@@ -270,72 +271,46 @@ const styles = StyleSheet.create({
   loginLocation: { color: '#9babbc', fontSize: 9, letterSpacing: 1.4 },
   loginMain: { gap: 20 },
   loginMainWide: { flexDirection: 'row', alignItems: 'center', gap: 28 },
-  showcase: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, padding: 18, borderWidth: 1, borderColor: '#334155', borderRadius: 12, backgroundColor: '#121f30' },
-  showcaseCompact: { padding: 12 },
-  terminal: { flex: 1, minWidth: 0, borderWidth: 1, borderColor: '#64748b', borderRadius: 12, padding: 7, backgroundColor: '#364354' },
-  terminalTop: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 7, borderBottomWidth: 1, borderBottomColor: '#253244' },
-  terminalStripe: { position: 'absolute', top: -7, left: -7, right: -7, height: 3, backgroundColor: '#a3e635', borderTopLeftRadius: 12, borderTopRightRadius: 12 },
-  terminalBrand: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  terminalMark: { width: 23, height: 23, alignItems: 'center', justifyContent: 'center', borderRadius: 6, backgroundColor: '#a3e635' },
-  terminalMarkLetter: { color: '#0f172a', fontSize: 14, fontWeight: '900' },
-  terminalBrandName: { color: '#fff', fontSize: 12, fontWeight: '900', letterSpacing: 1.2 },
-  terminalId: { color: '#a8b5c5', fontSize: 7, fontWeight: '800', letterSpacing: 1 },
-  terminalDisplay: { padding: 13, backgroundColor: '#0d1b2a' },
-  screenHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  screenBrand: { color: '#f8fafc', fontSize: 11, fontWeight: '900', letterSpacing: 1.6 },
-  screenMenu: { width: 26, height: 25, alignItems: 'center', justifyContent: 'center', gap: 3, borderWidth: 1, borderColor: '#405267', borderRadius: 4 },
-  screenKicker: { color: '#a3e635', fontSize: 7, fontWeight: '900', letterSpacing: 1.3 },
-  screenTitle: { color: '#fff', fontSize: 20, lineHeight: 24, fontWeight: '900', marginTop: 6 },
-  screenSubtitle: { color: '#a3e635', fontSize: 16, lineHeight: 20, fontWeight: '800' },
-  screenDescription: { color: '#a9b7c6', fontSize: 9, lineHeight: 14, maxWidth: 350, marginTop: 5 },
-  quickActions: { flexDirection: 'row', gap: 6, marginTop: 12 },
-  quickAction: { flex: 1, minHeight: 51, padding: 7, alignItems: 'flex-start', justifyContent: 'space-between', borderRadius: 4, backgroundColor: '#a3e635' },
-  quickActionText: { color: '#0f172a', fontSize: 8, fontWeight: '900' },
-  accessPanel: { marginTop: 10, paddingHorizontal: 9, paddingVertical: 7, borderRadius: 4, backgroundColor: '#172b3e' },
-  accessPanelTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 },
-  accessPanelTitle: { color: '#f8fafc', fontSize: 7, fontWeight: '900', letterSpacing: 1 },
-  liveStatus: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  liveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#a3e635' },
-  liveText: { color: '#a3e635', fontSize: 6, fontWeight: '900' },
-  accessRow: { minHeight: 33, flexDirection: 'row', alignItems: 'center', gap: 7, borderTopWidth: 1, borderTopColor: '#2d4053' },
-  accessAvatar: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#31465a' },
-  accessInitials: { color: '#e2e8f0', fontSize: 6, fontWeight: '900' },
-  accessPerson: { flex: 1 },
-  accessName: { color: '#fff', fontSize: 8, fontWeight: '800' },
-  accessDetail: { color: '#95a6b8', fontSize: 6, marginTop: 2 },
-  accessTime: { color: '#e2e8f0', fontSize: 8, fontWeight: '800' },
-  readerShelf: { minHeight: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderTopWidth: 1, borderTopColor: '#738194', backgroundColor: '#465466' },
-  readerUnit: { minWidth: 75, height: 29, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#68788c', borderRadius: 4, backgroundColor: '#142235' },
-  readerGlow: { position: 'absolute', top: -3, left: 9, right: 9, height: 2, backgroundColor: '#a3e635' },
-  readerText: { color: '#a3e635', fontSize: 7, fontWeight: '900' },
-  readerSecondary: { color: '#dce5ed', fontSize: 6, fontWeight: '900' },
-  phone: { width: 150, height: 310, padding: 5, borderWidth: 1.5, borderColor: '#8794a3', borderRadius: 24, backgroundColor: '#384455', shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 12, shadowOffset: { width: 0, height: 8 }, elevation: 8 },
-  phoneScreen: { flex: 1, position: 'relative', overflow: 'hidden', paddingHorizontal: 9, paddingTop: 6, borderRadius: 19, backgroundColor: '#0d1b2a' },
-  phoneNotch: { position: 'absolute', top: 0, left: '50%', marginLeft: -22, width: 44, height: 11, borderBottomLeftRadius: 8, borderBottomRightRadius: 8, backgroundColor: '#050b12', zIndex: 2 },
-  phoneStatus: { height: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 3 },
-  phoneTime: { color: '#fff', fontSize: 6, fontWeight: '900' },
-  phoneSignal: { color: '#fff', fontSize: 6 },
-  phoneBrandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
-  phoneBrand: { color: '#fff', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  phoneProfile: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#304457' },
-  phoneProfileText: { color: '#a3e635', fontSize: 5, fontWeight: '900' },
-  phoneGreeting: { color: '#fff', fontSize: 13, fontWeight: '900', marginTop: 12 },
-  phoneMessage: { color: '#9babbc', fontSize: 6, marginTop: 3 },
-  digitalKey: { marginTop: 10, padding: 8, borderRadius: 8, backgroundColor: '#182b3d', borderWidth: 1, borderColor: '#34495c' },
-  digitalKeyLabel: { color: '#b8c5d1', fontSize: 5, fontWeight: '900', letterSpacing: 0.7 },
-  digitalKeyIcon: { width: 33, height: 33, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: '#a3e635', marginTop: 7 },
-  digitalKeyName: { color: '#fff', fontSize: 9, fontWeight: '900', marginTop: 5 },
-  digitalKeyAddress: { color: '#9babbc', fontSize: 5, marginTop: 2 },
-  openButton: { height: 25, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 4, backgroundColor: '#a3e635', marginTop: 7 },
-  openButtonText: { color: '#0f172a', fontSize: 6, fontWeight: '900' },
-  phoneRecentTitle: { color: '#b9c5d2', fontSize: 5, fontWeight: '900', letterSpacing: 0.8, marginTop: 10 },
-  phoneRecent: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 5 },
-  phoneRecentDot: { width: 19, height: 19, borderRadius: 5, backgroundColor: '#263b4e' },
-  phoneRecentName: { color: '#fff', fontSize: 5, fontWeight: '800' },
-  phoneRecentTime: { color: '#9babbc', fontSize: 5, marginTop: 2 },
-  phoneNav: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 27, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', borderTopWidth: 1, borderTopColor: '#293a4c', backgroundColor: '#0b1723' },
-  phoneNavActive: { color: '#a3e635', fontSize: 5, fontWeight: '900' },
-  phoneNavText: { color: '#9babbc', fontSize: 5 },
+  showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 18, padding: 22, borderWidth: 1, borderColor: '#35495d', borderRadius: 18, backgroundColor: '#142638' },
+  showcaseCompact: { flexDirection: 'column', padding: 18 },
+  showcaseCopy: { flex: 1, minWidth: 0, gap: 11, justifyContent: 'center' },
+  showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
+  showcaseMarkLetter: { color: '#fff', fontSize: 17, fontWeight: '900' },
+  showcaseBrand: { color: '#fff', fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
+  showcaseRegion: { color: '#9babbc', fontSize: 8, fontWeight: '800', letterSpacing: 0.7, marginLeft: 'auto' },
+  showcaseKicker: { color: KlippColors.teal, fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
+  showcaseTitle: { color: '#f8fafc', fontSize: 27, lineHeight: 33, fontWeight: '900', maxWidth: 430 },
+  showcaseDescription: { color: '#b6c4d2', fontSize: 13, lineHeight: 20, maxWidth: 430 },
+  showcaseHighlights: { gap: 12, marginTop: 8 },
+  showcaseHighlight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  showcaseHighlightIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#1d3b4a' },
+  showcaseHighlightCopy: { flex: 1, gap: 2 },
+  showcaseHighlightTitle: { color: '#f8fafc', fontSize: 11, fontWeight: '800' },
+  showcaseHighlightDetail: { color: '#9babbc', fontSize: 10, lineHeight: 14 },
+  bookingPreview: { width: 215, alignSelf: 'center', padding: 15, borderWidth: 1, borderColor: '#3b5367', borderRadius: 15, backgroundColor: '#0f1d2c' },
+  previewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
+  previewEyebrow: { color: '#9babbc', fontSize: 7, fontWeight: '900', letterSpacing: 1 },
+  previewLive: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 20, backgroundColor: '#153c36' },
+  previewLiveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: KlippColors.teal },
+  previewLiveText: { color: KlippColors.teal, fontSize: 6, fontWeight: '900' },
+  previewService: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  previewServiceIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#e8f0ff' },
+  previewServiceCopy: { flex: 1, gap: 3 },
+  previewServiceTitle: { color: '#f8fafc', fontSize: 10, fontWeight: '900' },
+  previewServiceDetail: { color: '#9babbc', fontSize: 8 },
+  previewDivider: { height: 1, backgroundColor: '#2e4356', marginVertical: 14 },
+  previewSectionTitle: { color: '#f8fafc', fontSize: 9, fontWeight: '900', marginBottom: 10 },
+  previewTimeline: { flexDirection: 'row', gap: 10 },
+  previewTimelineRail: { width: 12, alignItems: 'center', paddingTop: 3 },
+  previewTimelineDot: { width: 8, height: 8, borderWidth: 2, borderColor: '#64748b', borderRadius: 5, backgroundColor: '#0f1d2c' },
+  previewTimelineDotActive: { borderColor: KlippColors.teal, backgroundColor: KlippColors.teal },
+  previewTimelineLine: { width: 1, height: 27, backgroundColor: '#64748b' },
+  previewTimelineCopy: { flex: 1, gap: 3 },
+  previewTimelineTitle: { color: '#f8fafc', fontSize: 8, fontWeight: '800' },
+  previewTimelineDetail: { color: '#9babbc', fontSize: 7, lineHeight: 11, marginBottom: 7 },
+  previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#2e4356' },
+  previewFooterText: { color: '#b6c4d2', fontSize: 8, fontWeight: '700' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoMark: { width: 42, height: 42, borderRadius: 12, backgroundColor: KlippColors.blue, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: KlippColors.teal },
   logoLetter: { color: KlippColors.white, fontSize: 23, fontWeight: '900' },
