@@ -18,6 +18,7 @@ type ProfessionalService = {
   service_type_id: number;
   base_price_dop: number;
   est_minutes: number;
+  details?: Record<string, string>;
 };
 
 type RegistrationDraft = {
@@ -87,6 +88,7 @@ export function ProProfileScreen() {
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [equipmentByService, setEquipmentByService] = useState<Record<number, EquipmentRequirement[]>>({});
   const [selectedServices, setSelectedServices] = useState<number[]>([]);
+  const [serviceDetails, setServiceDetails] = useState<Record<number, Record<string, string>>>({});
   const [servicePrices, setServicePrices] = useState<Record<number, string>>({});
   const [serviceDurations, setServiceDurations] = useState<Record<number, string>>({});
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
@@ -108,7 +110,7 @@ export function ProProfileScreen() {
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
-      supabase.from('pro_services').select('id, service_type_id, base_price_dop, est_minutes').eq('pro_id', userId).eq('active', true),
+      supabase.from('pro_services').select('id, service_type_id, base_price_dop, est_minutes, details').eq('pro_id', userId).eq('active', true),
       supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
       supabase.from('pro_portfolio').select('id, pro_id, object_path, caption, sort_order, created_at').eq('pro_id', userId).order('sort_order').order('created_at', { ascending: false }),
       supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('id'),
@@ -174,7 +176,8 @@ export function ProProfileScreen() {
     setCatalog(services);
     const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
     setEquipmentByService(Object.fromEntries(services.map((service) => [service.id, equipment.filter((item) => item.service_type_id === service.id)])));
-    setSelectedServices(configuredServices.map((service) => service.service_type_id));
+    setSelectedServices(configuredServices.map((service) => service.service_type_id).slice(0, 1));
+    setServiceDetails(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, service.details ?? {}])));
     setServicePrices(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.base_price_dop)])));
     setServiceDurations(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, String(service.est_minutes)])));
     setLoading(false);
@@ -343,7 +346,24 @@ export function ProProfileScreen() {
       return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
     });
     if (invalidService !== undefined) {
-      setError('Cada servicio elegido necesita un precio mayor que cero y una duración válida en minutos.');
+      setError('La profesión elegida necesita un precio mayor que cero y una duración válida en minutos.');
+      return;
+    }
+    const invalidDetails = selectedServices.some((serviceId) => {
+      const service = catalog.find((item) => item.id === serviceId);
+      const details = serviceDetails[serviceId] ?? {};
+      if (!details.specialty?.trim()) return true;
+      const requiredKey = service?.code === 'peluqueria' ? 'hair_lengths'
+        : service?.code === 'estetica' ? 'hygiene'
+        : service?.code === 'carwash' ? 'utilities'
+        : service?.code === 'detailing' ? 'vehicle_types'
+        : ['limpieza_regular', 'limpieza-oficinas'].includes(service?.code ?? '') ? 'frequency'
+        : service?.code === 'limpieza_profunda' ? 'extras'
+        : service?.code === 'mantenimiento' ? 'tools' : null;
+      return requiredKey ? !details[requiredKey]?.trim() : false;
+    });
+    if (invalidDetails) {
+      setError('Completa la especialidad y los detalles específicos de tu profesión antes de guardar.');
       return;
     }
     if (selectedServices.length > 0 && !coverageCenter) {
@@ -413,6 +433,7 @@ export function ProProfileScreen() {
             service_type_id,
             base_price_dop: Number(servicePrices[service_type_id]),
             est_minutes: Number(serviceDurations[service_type_id]),
+            details: serviceDetails[service_type_id] ?? {},
             active: true,
           })),
           { onConflict: 'pro_id,service_type_id' },
@@ -508,6 +529,7 @@ export function ProProfileScreen() {
       if (current.includes(serviceId)) return [];
       setServicePrices((prices) => ({ ...prices, [serviceId]: prices[serviceId] ?? '' }));
       setServiceDurations((durations) => ({ ...durations, [serviceId]: durations[serviceId] ?? '60' }));
+      setServiceDetails((details) => ({ ...details, [serviceId]: details[serviceId] ?? {} }));
       return [serviceId];
     });
   }
@@ -675,6 +697,25 @@ export function ProProfileScreen() {
           return (
             <View key={service.id} style={styles.serviceEditor}>
               <Choice selected={selected} label={`${service.name}${category ? ` · ${category}` : ''}`} onPress={() => toggleService(service.id)} />
+              {selected && (
+                <View style={styles.serviceRequirements}>
+                  <Text style={styles.requirementsTitle}>Detalles de tu profesión</Text>
+                  <Text style={styles.label}>Especialidad o trabajo principal</Text>
+                  <TextInput
+                    onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), specialty: value } }))}
+                    placeholder="Describe el trabajo que realizas"
+                    style={styles.input}
+                    value={serviceDetails[service.id]?.specialty ?? ''}
+                  />
+                  {service.code === 'peluqueria' && <><Text style={styles.label}>Tipos y largos de cabello</Text><TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), hair_lengths: value } }))} placeholder="Ej. corto, medio, largo y rizado" style={styles.input} value={serviceDetails[service.id]?.hair_lengths ?? ''} /></>}
+                  {service.code === 'estetica' && <><Text style={styles.label}>Higiene y desinfección de instrumentos</Text><TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), hygiene: value } }))} placeholder="Describe tu protocolo de higiene" style={[styles.input, styles.multiline]} value={serviceDetails[service.id]?.hygiene ?? ''} /></>}
+                  {service.code === 'carwash' && <><Text style={styles.label}>Agua y energía en el lugar del servicio</Text><TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), utilities: value } }))} placeholder="Explica cómo resuelves el agua y la energía con tu propio equipo" style={[styles.input, styles.multiline]} value={serviceDetails[service.id]?.utilities ?? ''} /></>}
+                  {service.code === 'detailing' && <><Text style={styles.label}>Tipos de vehículos que atiendes</Text><TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), vehicle_types: value } }))} placeholder="Ej. sedanes, SUV y camionetas" style={styles.input} value={serviceDetails[service.id]?.vehicle_types ?? ''} /></>}
+                  {['limpieza_regular', 'limpieza-oficinas'].includes(service.code) && <><Text style={styles.label}>Frecuencia de servicio</Text><TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), frequency: value } }))} placeholder="Ej. puntual, semanal o quincenal" style={styles.input} value={serviceDetails[service.id]?.frequency ?? ''} /></>}
+                  {service.code === 'limpieza_profunda' && <><Text style={styles.label}>Alcance y tareas adicionales</Text><TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), extras: value } }))} placeholder="Describe las tareas profundas que realizas" style={[styles.input, styles.multiline]} value={serviceDetails[service.id]?.extras ?? ''} /></>}
+                  {service.code === 'mantenimiento' && <><Text style={styles.label}>Herramientas y trabajos que realizas</Text><TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, [service.id]: { ...(current[service.id] ?? {}), tools: value } }))} placeholder="Describe herramientas propias y trabajos" style={[styles.input, styles.multiline]} value={serviceDetails[service.id]?.tools ?? ''} /></>}
+                </View>
+              )}
               {selected && requirements.length > 0 && (
                 <View style={styles.serviceRequirements}>
                   <Text style={styles.requirementsTitle}>Equipamiento que debes llevar:</Text>
