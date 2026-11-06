@@ -430,13 +430,15 @@ export function ProProfileScreen() {
         const { error: serviceError } = await supabase.from('pro_services').upsert(
           selectedServices.map((service_type_id) => {
             const serviceTiers = pricingTiers.filter((tier) => tier.service_type_id === service_type_id);
-            const prices = serviceTiers.map((tier) => Number(tierPrices[`${service_type_id}:${tier.id}`]));
-            const durations = serviceTiers.map((tier) => Number(tierDurations[`${service_type_id}:${tier.id}`]));
+            const baseTier = [...serviceTiers].sort((a, b) => {
+              const priceDifference = Number(tierPrices[`${service_type_id}:${a.id}`]) - Number(tierPrices[`${service_type_id}:${b.id}`]);
+              return priceDifference || Number(tierDurations[`${service_type_id}:${a.id}`]) - Number(tierDurations[`${service_type_id}:${b.id}`]);
+            })[0];
             return {
               pro_id: userId,
               service_type_id,
-              base_price_dop: Math.min(...prices),
-              est_minutes: Math.min(...durations),
+              base_price_dop: Number(tierPrices[`${service_type_id}:${baseTier.id}`]),
+              est_minutes: Number(tierDurations[`${service_type_id}:${baseTier.id}`]),
               details: serviceDetails[service_type_id] ?? {},
               active: true,
             };
