@@ -80,7 +80,7 @@ function notificationIcon(type: string) {
 export function NotificationsScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
-  const userId = userId;
+  const userId = session?.user.id;
   const isPro = profile?.role === 'pro';
   const roleTheme = isPro ? RoleThemes.pro : RoleThemes.client;
   const [items, setItems] = useState<AppNotification[]>([]);
