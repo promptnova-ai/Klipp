@@ -10,8 +10,13 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
   const [longitude, setLongitude] = useState(String(coordinate.longitude));
 
   useEffect(() => {
-    setLatitude(String(coordinate.latitude));
-    setLongitude(String(coordinate.longitude));
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      setLatitude(String(coordinate.latitude));
+      setLongitude(String(coordinate.longitude));
+    });
+    return () => { active = false; };
   }, [coordinate.latitude, coordinate.longitude]);
 
   function applyCoordinates() {
