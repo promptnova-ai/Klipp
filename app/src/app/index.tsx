@@ -1,10 +1,7 @@
-import { lazy, Suspense } from 'react';
 import { Redirect } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
-
-const AdminScreen = lazy(() => import('@/components/admin-screen').then((module) => ({ default: module.AdminScreen })));
 
 export default function HomeScreen() {
   const { session, profile, loading, profileError, refreshProfile } = useAuth();
@@ -35,11 +32,7 @@ export default function HomeScreen() {
   if (profile.role === 'client') return <Redirect href="/(client)" />;
   if (profile.role === 'pro') return <Redirect href="/(pro)" />;
 
-  return (
-    <Suspense fallback={<View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.message}>Cargando el panel...</Text></View>}>
-      <AdminScreen />
-    </Suspense>
-  );
+  return <Redirect href="/admin" />;
 }
 
 const styles = StyleSheet.create({
