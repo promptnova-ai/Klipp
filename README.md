@@ -31,6 +31,6 @@ npx expo start
 
 ## Estado del piloto
 
-El código y la infraestructura principal están desplegados y validados en CI. La base de producción tiene el catálogo de 40 modalidades y las migraciones de seguridad/onboarding. No se deben considerar habilitados los pagos reales: la afiliación y certificación AZUL siguen pendientes. También faltan tarifas profesionales reales, pruebas push en dispositivos físicos y validación final de los flujos completos con profesionales/clientes de piloto.
+El código principal está en `main` y los cambios recientes pasan CI. El último despliegue web READY consultado corresponde al commit `586400f`; el cambio de autenticación fusionado después aún no está publicado porque Vercel ha alcanzado el límite diario de builds. La base de producción tiene el catálogo de 40 modalidades y las migraciones de seguridad/onboarding. No se deben considerar habilitados los pagos reales: la afiliación y certificación AZUL siguen pendientes. También faltan tarifas profesionales reales, pruebas push en dispositivos físicos y validación final de los flujos completos con profesionales/clientes de piloto.
 
 No uses datos de clientes reales para pruebas. Aplica migraciones primero en QA y revisa el historial del proyecto Supabase antes de cualquier cambio de esquema.
