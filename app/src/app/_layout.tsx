@@ -1,24 +1,25 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 
 import { AuthProvider } from '@/components/auth-provider';
 import { NotificationResponseHandler } from '@/components/notification-response-handler';
 import { configureNotificationChannelsAsync } from '@/lib/push-notifications';
-import '@/lib/pro-location-task';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-
-function NotificationChannelBootstrap() {
+function NativeNotificationBootstrap() {
   useEffect(() => {
-    void configureNotificationChannelsAsync().catch(() => undefined);
+    if (Platform.OS === 'web') return;
+    void import('expo-notifications').then((Notifications) => {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+      return configureNotificationChannelsAsync();
+    }).catch(() => undefined);
   }, []);
   return null;
 }
@@ -26,10 +27,11 @@ function NotificationChannelBootstrap() {
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NotificationChannelBootstrap />
+      <NativeNotificationBootstrap />
       <NotificationResponseHandler />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
+        <Stack.Screen name="admin" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(client)" />
         <Stack.Screen name="(pro)" />
