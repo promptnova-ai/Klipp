@@ -16,7 +16,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
-import { KlippColors, KlippLayout } from '@/lib/brand';
+import { ScreenEntrance } from '@/components/ui-primitives';
+import { KlippColors } from '@/lib/brand';
 import type { ExtractRole } from '@/lib/types';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
@@ -168,7 +169,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               </View>
             </View>
 
-            <View style={[styles.main, wide && styles.mainWide]}>
+            <ScreenEntrance delay={30}>
+              <View style={[styles.main, wide && styles.mainWide]}>
               <AuthShowcase compact={!wide} />
               <View style={[styles.formCard, wide && styles.formCardWide]}>
                 <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'QUÉ BUENO VERTE'}</Text>
@@ -285,7 +287,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </View>
                 <Text style={styles.legalNote}>Al continuar, aceptas las condiciones de uso y la política de privacidad de Klipp.</Text>
               </View>
-            </View>
+            </ScreenEntrance>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
