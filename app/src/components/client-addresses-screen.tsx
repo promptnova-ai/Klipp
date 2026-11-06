@@ -36,7 +36,7 @@ export function ClientAddressesScreen() {
       setAddresses((data ?? []) as SavedAddress[]);
     }
     setLoading(false);
-  }, [session?.user.id]);
+  }, [session]);
 
   useFocusEffect(useCallback(() => { void loadAddresses(); }, [loadAddresses]));
 
