@@ -13,6 +13,11 @@ import type { ProAvailability, ProProfile, PricingTier, ServiceType, Verificatio
 
 type PortfolioPhoto = { id: string; pro_id: string; object_path: string; caption: string | null; sort_order: number; created_at: string };
 type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
+function parseDopPrice(value: string | undefined): number {
+  const normalized = (value ?? '').trim().replace(/[\s,]/g, '');
+  return normalized ? Number(normalized) : Number.NaN;
+}
+
 type ProfessionalService = {
   id?: string;
   service_type_id: number;
@@ -339,7 +344,7 @@ export function ProProfileScreen() {
       const serviceTiers = pricingTiers.filter((tier) => tier.service_type_id === serviceId);
       return serviceTiers.length === 0 || serviceTiers.some((tier) => {
       const key = `${serviceId}:${tier.id}`;
-      const price = Number(tierPrices[key]);
+      const price = parseDopPrice(tierPrices[key]);
       const duration = Number(tierDurations[key]);
       return !Number.isFinite(price) || price <= 0 || !Number.isInteger(duration) || duration <= 0;
       });
@@ -431,13 +436,13 @@ export function ProProfileScreen() {
           selectedServices.map((service_type_id) => {
             const serviceTiers = pricingTiers.filter((tier) => tier.service_type_id === service_type_id);
             const baseTier = [...serviceTiers].sort((a, b) => {
-              const priceDifference = Number(tierPrices[`${service_type_id}:${a.id}`]) - Number(tierPrices[`${service_type_id}:${b.id}`]);
+              const priceDifference = parseDopPrice(tierPrices[`${service_type_id}:${a.id}`]) - parseDopPrice(tierPrices[`${service_type_id}:${b.id}`]);
               return priceDifference || Number(tierDurations[`${service_type_id}:${a.id}`]) - Number(tierDurations[`${service_type_id}:${b.id}`]);
             })[0];
             return {
               pro_id: userId,
               service_type_id,
-              base_price_dop: Number(tierPrices[`${service_type_id}:${baseTier.id}`]),
+              base_price_dop: parseDopPrice(tierPrices[`${service_type_id}:${baseTier.id}`]),
               est_minutes: Number(tierDurations[`${service_type_id}:${baseTier.id}`]),
               details: serviceDetails[service_type_id] ?? {},
               active: true,
@@ -467,7 +472,7 @@ export function ProProfileScreen() {
               return {
                 pro_service_id: proServiceId,
                 pricing_tier_id: tier.id,
-                price_dop: Number(tierPrices[key]),
+                price_dop: parseDopPrice(tierPrices[key]),
                 est_minutes: Number(tierDurations[key]),
                 active: true,
               };
