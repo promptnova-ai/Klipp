@@ -426,3 +426,18 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 5. Verificar que la RPC solo devuelve las coordenadas de las solicitudes pendientes del profesional autenticado.
 
 **Resultado esperado:** El profesional identifica visualmente el punto de prestación del servicio antes de confirmar materiales y aceptar o rechazar. Si no hay coordenadas, la interfaz lo indica con claridad y conserva la dirección textual.
+
+
+### QA-CLI-06 — Acceso directo al chat desde seguimiento
+
+**Prioridad:** Alta  
+**Precondición:** Cliente con una reserva en estado `en_route`, profesional asignado y conversación habilitada.
+
+1. Abrir el seguimiento de esa reserva desde Mis reservas.
+2. Pulsar «Contactar por el chat de Klipp».
+3. Comprobar que se abre Mis reservas con el chat de esa misma reserva desplegado, sin tener que buscarla.
+4. Verificar que aparecen los últimos mensajes ordenados y que no se duplican al recibir el mismo mensaje por Realtime.
+5. Enviar un mensaje y comprobar que se guarda asociado a la reserva correcta.
+6. Cambiar el estado de la reserva a `arrived` o `completed` y verificar que el mapa/ETA anterior deja de mostrarse.
+
+**Resultado esperado:** El CTA abre la conversación correspondiente, conserva el aislamiento por reserva y no deja datos de ubicación o ETA antiguos visibles cuando el servicio deja de estar en camino.
