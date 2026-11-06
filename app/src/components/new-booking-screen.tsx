@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
@@ -74,6 +74,7 @@ export function NewBookingScreen() {
   const router = useRouter();
   const { serviceId: serviceIdParam, tierId: tierIdParam, offerId: offerIdParam } = useLocalSearchParams<{ serviceId?: string; tierId?: string; offerId?: string }>();
   const { session } = useAuth();
+  const bookingSubmissionLock = useRef(false);
   const [services, setServices] = useState<ServiceType[]>([]);
   const [equipmentByService, setEquipmentByService] = useState<Record<number, EquipmentRequirement[]>>({});
   const [serviceIds, setServiceIds] = useState<number[]>([]);
@@ -110,6 +111,7 @@ export function NewBookingScreen() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [submissionUncertain, setSubmissionUncertain] = useState(false);
   const dateOptions = useMemo(() => getDateOptions(), []);
   const slotOptions = useMemo(
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
@@ -539,6 +541,7 @@ export function NewBookingScreen() {
   }
 
   async function createBooking() {
+    if (bookingSubmissionLock.current || success || submissionUncertain) return;
     if ((!selectedTier && !selectedOffer && !(mode === 'auto' && selectedServiceId)) || !coordinate || !session?.user.id) {
       setError('Selecciona el servicio y permite confirmar tu ubicación.');
       return;
@@ -560,83 +563,115 @@ export function NewBookingScreen() {
       setError('El profesional seleccionado no tiene un precio publicado para esta variante. Elige otro profesional.');
       return;
     }
+
+    bookingSubmissionLock.current = true;
     setSaving(true);
     setError(null);
     setSuccess(null);
-    let bookingId: unknown = null;
-    let rpcError: { message: string } | null = null;
-    if (selectedOffer) {
-      const result = await supabase.rpc('create_booking_at_location', {
-        p_pro_service_id: selectedOffer.id,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    } else if (selectedTier) {
-      const result = await supabase.rpc('create_tier_booking_at_location', {
-        p_pricing_tier_id: selectedTier.id,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-        p_mode: mode,
-        p_pro_id: mode === 'manual' ? selectedProId : null,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    } else if (mode === 'auto') {
-      const result = await supabase.rpc('create_auto_service_booking_at_location', {
-        p_service_type_id: selectedServiceId!,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    } else {
-      const { data: proService, error: serviceLookupError } = await supabase.from('pro_services')
-        .select('id')
-        .eq('pro_id', selectedProId!)
-        .eq('service_type_id', selectedServiceId!)
-        .eq('active', true)
-        .maybeSingle();
-      if (serviceLookupError || !proService) {
-        setError(serviceLookupError?.message ?? 'El profesional no tiene publicado este servicio.');
-        setSaving(false);
+    setSubmissionUncertain(false);
+    let bookingCreationAttempted = false;
+
+    try {
+      let bookingId: unknown = null;
+      let rpcError: { message: string } | null = null;
+
+      if (selectedOffer) {
+        bookingCreationAttempted = true;
+        const result = await supabase.rpc('create_booking_at_location', {
+          p_pro_service_id: selectedOffer.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
+      } else if (selectedTier) {
+        bookingCreationAttempted = true;
+        const result = await supabase.rpc('create_tier_booking_at_location', {
+          p_pricing_tier_id: selectedTier.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+          p_mode: mode,
+          p_pro_id: mode === 'manual' ? selectedProId : null,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
+      } else if (mode === 'auto') {
+        bookingCreationAttempted = true;
+        const result = await supabase.rpc('create_auto_service_booking_at_location', {
+          p_service_type_id: selectedServiceId!,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
+      } else {
+        const { data: proService, error: serviceLookupError } = await supabase.from('pro_services')
+          .select('id')
+          .eq('pro_id', selectedProId!)
+          .eq('service_type_id', selectedServiceId!)
+          .eq('active', true)
+          .maybeSingle();
+        if (serviceLookupError || !proService) {
+          setError(serviceLookupError?.message ?? 'El profesional no tiene publicado este servicio.');
+          return;
+        }
+        bookingCreationAttempted = true;
+        const result = await supabase.rpc('create_booking_at_location', {
+          p_pro_service_id: proService.id,
+          p_lat: coordinate.latitude,
+          p_lng: coordinate.longitude,
+          p_address_text: addressText,
+          p_landmark_notes: landmarkNotes,
+          p_scheduled_start: scheduledStart,
+        });
+        bookingId = result.data;
+        rpcError = result.error;
+      }
+
+      if (rpcError) {
+        setError(rpcError.message);
         return;
       }
-      const result = await supabase.rpc('create_booking_at_location', {
-        p_pro_service_id: proService.id,
-        p_lat: coordinate.latitude,
-        p_lng: coordinate.longitude,
-        p_address_text: addressText,
-        p_landmark_notes: landmarkNotes,
-        p_scheduled_start: scheduledStart,
-      });
-      bookingId = result.data;
-      rpcError = result.error;
-    }
-    if (rpcError) setError(rpcError.message);
-    else if (typeof bookingId !== 'string') setError('La reserva no devolvió un identificador válido.');
-    else {
+      if (typeof bookingId !== 'string') {
+        setSubmissionUncertain(true);
+        setError('No recibimos la confirmación de la reserva. Revisa Mis reservas antes de volver a intentarlo.');
+        return;
+      }
+
       if (!selectedOffer && mode === 'auto' && timing === 'now') {
-        const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
-        if (assignmentError) setError('Solicitud creada. Klipp seguirá intentando encontrar un profesional; puedes consultar el estado en Mis reservas.');
-        else setSuccess('Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
+        try {
+          const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
+          setSuccess(assignmentError
+            ? 'Solicitud creada. Klipp continuará buscando un profesional; consulta el estado en Mis reservas.'
+            : 'Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
+        } catch {
+          setSuccess('Solicitud creada. Klipp continuará buscando un profesional; consulta el estado en Mis reservas.');
+        }
       } else if (!selectedOffer && mode === 'auto') {
         setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
       } else {
         setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
       }
+    } catch (cause) {
+      if (bookingCreationAttempted) {
+        setSubmissionUncertain(true);
+        setError('No pudimos confirmar si la solicitud llegó a registrarse. Revisa Mis reservas antes de intentarlo otra vez para evitar duplicarla.');
+      } else {
+        setError(cause instanceof Error ? cause.message : 'No pudimos consultar la información necesaria para crear la reserva.');
+      }
+    } finally {
+      bookingSubmissionLock.current = false;
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
@@ -875,9 +910,15 @@ export function NewBookingScreen() {
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
-      <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-        {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
-      </Pressable>
+      {submissionUncertain ? (
+        <Pressable accessibilityRole="button" onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => [styles.submit, pressed && styles.buttonPressed]}>
+          <Text style={styles.submitText}>Revisar Mis reservas</Text>
+        </Pressable>
+      ) : !success && (
+        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
