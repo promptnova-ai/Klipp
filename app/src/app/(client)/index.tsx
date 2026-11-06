@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
   serviceList: { gap: 14 },
   serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 14, rowGap: 16 },
   serviceCard: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 19, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
-  serviceCardWide: { width: '48.5%' },
+  serviceCardWide: { width: '48%' },
   serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
   serviceCopy: { flex: 1, gap: 7 },
   serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
