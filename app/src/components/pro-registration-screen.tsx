@@ -21,14 +21,16 @@ import { KlippColors } from '@/lib/brand';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type ProServiceDraft = { price: string; minutes: string };
+type PricingTier = { id: number; service_type_id: number; label: string; est_minutes: number };
+type TierDraft = { price: string; minutes: string };
 type AvailabilityDraft = { weekday: number; start_time: string; end_time: string };
 type ProOnboardingDraft = {
   phone: string;
   bio: string;
   years_experience: number | null;
   transport_type: string | null;
-  services: { service_type_id: number; base_price_dop: number; est_minutes: number }[];
+  equipment_confirmed: boolean;
+  services: { service_type_id: number; details: Record<string, string>; tier_prices: { pricing_tier_id: number; price_dop: number; est_minutes: number }[] }[];
   coverage: { latitude: number; longitude: number; radius_km: number } | null;
   availability: AvailabilityDraft[];
 };
@@ -60,8 +62,11 @@ export function ProRegistrationScreen() {
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [selectedServices, setSelectedServices] = useState<number[]>([]);
-  const [serviceDrafts, setServiceDrafts] = useState<Record<number, ProServiceDraft>>({});
+  const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
+  const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [tierDrafts, setTierDrafts] = useState<Record<number, TierDraft>>({});
+  const [serviceDetails, setServiceDetails] = useState<Record<string, string>>({});
+  const [equipmentConfirmed, setEquipmentConfirmed] = useState(false);
   const [center, setCenter] = useState<CoverageCoordinate | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -137,15 +142,27 @@ export function ProRegistrationScreen() {
       if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
     if (step === 1) {
-      if (servicesLoading) return 'Espera un momento mientras cargamos las especialidades.';
-      if (catalog.length === 0) return 'No hay especialidades disponibles ahora mismo.';
-      if (selectedServices.length === 0) return 'Elige al menos un servicio para continuar.';
-      const invalid = selectedServices.some((id) => {
-        const draft = serviceDrafts[id];
+      if (servicesLoading) return 'Espera un momento mientras cargamos las profesiones.';
+      if (catalog.length === 0) return 'No hay profesiones disponibles ahora mismo.';
+      if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
+      if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. Inténtalo más tarde.';
+      if (pricingTiers.some((tier) => {
+        const draft = tierDrafts[tier.id];
         return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0
           || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
-      });
-      if (invalid) return 'Completa un precio y una duración válidos para cada servicio elegido.';
+      })) return 'Indica un precio y una duración válidos para cada modalidad.';
+      const selectedProfession = catalog.find((item) => item.id === selectedServiceId);
+      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
+      const requiredDetail = selectedProfession?.code === 'peluqueria' ? 'hair_lengths'
+        : selectedProfession?.code === 'estetica' ? 'hygiene'
+        : selectedProfession?.code === 'carwash' ? 'utilities'
+        : selectedProfession?.code === 'detailing' ? 'vehicle_types'
+        : ['limpieza_regular', 'limpieza-oficinas'].includes(selectedProfession?.code ?? '') ? 'frequency'
+        : selectedProfession?.code === 'limpieza_profunda' ? 'extras'
+        : selectedProfession?.code === 'mantenimiento' ? 'tools' : null;
+      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
+      if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
+
     }
     if (step === 2) {
       if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
@@ -171,14 +188,28 @@ export function ProRegistrationScreen() {
     animateToStep(step + 1);
   }
 
-  function toggleService(serviceId: number) {
-    setSelectedServices((current) => current.includes(serviceId)
-      ? current.filter((id) => id !== serviceId)
-      : [...current, serviceId]);
-    setServiceDrafts((current) => ({
-      ...current,
-      [serviceId]: current[serviceId] ?? { price: '', minutes: '60' },
-    }));
+  function chooseProfession(serviceId: number) {
+    setSelectedServiceId(serviceId);
+    setPricingTiers([]);
+    setTierDrafts({});
+    setServiceDetails({});
+    setError(null);
+    void supabase.from('pricing_tiers')
+      .select('id, service_type_id, label, est_minutes')
+      .eq('service_type_id', serviceId)
+      .order('id')
+      .then(({ data, error: queryError }) => {
+        if (queryError) {
+          setError('No pudimos cargar las modalidades de esta profesión.');
+          return;
+        }
+        const tiers = (data ?? []) as PricingTier[];
+        setPricingTiers(tiers);
+        setTierDrafts(Object.fromEntries(tiers.map((tier) => [tier.id, {
+          price: '',
+          minutes: String(tier.est_minutes || 60),
+        }])));
+      });
   }
 
   function toggleWeekday(weekday: number) {
@@ -227,11 +258,16 @@ export function ProRegistrationScreen() {
       transport_type: transportType === 'Otro'
         ? otherTransportType.trim()
         : transportType || null,
-      services: selectedServices.map((service_type_id) => ({
-        service_type_id,
-        base_price_dop: Number(serviceDrafts[service_type_id]?.price),
-        est_minutes: Number(serviceDrafts[service_type_id]?.minutes),
-      })),
+      equipment_confirmed: equipmentConfirmed,
+      services: selectedServiceId === null ? [] : [{
+        service_type_id: selectedServiceId,
+        details: serviceDetails,
+        tier_prices: pricingTiers.map((tier) => ({
+          pricing_tier_id: tier.id,
+          price_dop: Number(tierDrafts[tier.id]?.price),
+          est_minutes: Number(tierDrafts[tier.id]?.minutes),
+        })),
+      }],
       coverage: { ...center, radius_km: radiusKm },
       availability: selectedWeekdays.map((weekday) => ({
         weekday,
@@ -264,7 +300,7 @@ export function ProRegistrationScreen() {
   }
 
   const currentStep = steps[step];
-  const selectedCount = selectedServices.length;
+  const selectedProfession = catalog.find((item) => item.id === selectedServiceId) ?? null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -308,9 +344,8 @@ export function ProRegistrationScreen() {
                   <Field label="Años de experiencia">
                     <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
                   </Field>
-                  <View style={styles.experienceBadge}>
-                    <Text style={styles.badgeIcon}>✦</Text>
-                    <Text style={styles.badgeText}>Tu talento merece crecer</Text>
+                  <View style={styles.experienceHint}>
+                    <Text style={styles.helper}>Puedes dejar este dato vacío y completarlo más adelante.</Text>
                   </View>
                 </View>
                 <Field label="Una breve presentación">
@@ -346,51 +381,104 @@ export function ProRegistrationScreen() {
 
             {step === 1 && (
               <View style={styles.serviceList}>
-                {servicesLoading ? (
-                  <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando especialidades...</Text></View>
-                ) : catalogError ? (
-                  <View style={styles.catalogErrorCard}>
-                    <Text style={styles.catalogErrorTitle}>No pudimos cargar las especialidades</Text>
-                    <Text style={styles.helper}>{catalogError}</Text>
-                    <Text style={styles.helper}>Si el problema continúa, verifica que el catálogo público esté habilitado en Supabase.</Text>
-                    <Pressable accessibilityRole="button" onPress={retryCatalog} style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-                      <Text style={styles.retryButtonText}>Reintentar</Text>
-                    </Pressable>
-                  </View>
-                ) : catalog.length === 0 ? (
-                  <View style={styles.catalogErrorCard}>
-                    <Text style={styles.catalogErrorTitle}>Aún no hay especialidades disponibles</Text>
-                    <Text style={styles.helper}>Intenta cargar el catálogo nuevamente.</Text>
-                    <Pressable accessibilityRole="button" onPress={retryCatalog} style={({ pressed }) => [styles.retryButton, pressed && styles.pressed]}>
-                      <Text style={styles.retryButtonText}>Actualizar catálogo</Text>
-                    </Pressable>
-                  </View>
-                ) : catalog.map((service) => {
-                  const selected = selectedServices.includes(service.id);
-                  const draft = serviceDrafts[service.id] ?? { price: '', minutes: '60' };
-                  return (
-                    <View key={service.id} style={[styles.serviceCard, selected && styles.serviceCardSelected]}>
-                      <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => toggleService(service.id)} style={styles.serviceRow}>
-                        <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Text style={styles.checkmark}>✓</Text>}</View>
+                <View style={styles.card}>
+                  <Text style={styles.cardTitle}>Elige tu profesión principal</Text>
+                  <Text style={styles.helper}>Tu cuenta profesional se especializa en una sola actividad. Después podrás completar tu perfil y publicar sus modalidades.</Text>
+                  {servicesLoading ? (
+                    <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando profesiones...</Text></View>
+                  ) : catalogError ? (
+                    <View style={styles.catalogErrorCard}>
+                      <Text style={styles.catalogErrorTitle}>No pudimos cargar las profesiones</Text>
+                      <Text style={styles.helper}>{catalogError}</Text>
+                      <Pressable accessibilityRole="button" onPress={retryCatalog} style={styles.retryButton}><Text style={styles.retryButtonText}>Reintentar</Text></Pressable>
+                    </View>
+                  ) : catalog.map((service) => {
+                    const selected = selectedServiceId === service.id;
+                    return (
+                      <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => chooseProfession(service.id)} style={[styles.professionOption, selected && styles.professionOptionSelected]}>
+                        <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>{selected && <View style={styles.radioInner} />}</View>
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
                           {!!service.description && <Text style={styles.serviceDescription}>{service.description}</Text>}
                         </View>
                       </Pressable>
-                      {selected && (
-                        <View style={styles.serviceFields}>
-                          <Field label="Precio base · RD$">
-                            <TextInput keyboardType="decimal-pad" onChangeText={(price) => setServiceDrafts((current) => ({ ...current, [service.id]: { ...draft, price } }))} placeholder="1,500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
-                          </Field>
-                          <Field label="Duración · min">
-                            <TextInput keyboardType="number-pad" onChangeText={(minutes) => setServiceDrafts((current) => ({ ...current, [service.id]: { ...draft, minutes } }))} placeholder="60" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.minutes} />
-                          </Field>
+                    );
+                  })}
+                </View>
+                {selectedProfession && (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Detalles de {selectedProfession.name.toLowerCase()}</Text>
+                    <Field label="Especialidad o trabajo principal">
+                      <TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, specialty: value }))} placeholder="Ej. cortes clásicos y degradados" placeholderTextColor={KlippColors.muted} style={styles.input} value={serviceDetails.specialty ?? ''} />
+                    </Field>
+                    {selectedProfession.code === 'peluqueria' && (
+                      <Field label="Tipos y largos de cabello que atiendes">
+                        <TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, hair_lengths: value }))} placeholder="Ej. corto, medio, largo y rizado" placeholderTextColor={KlippColors.muted} style={styles.input} value={serviceDetails.hair_lengths ?? ''} />
+                      </Field>
+                    )}
+                    {selectedProfession.code === 'estetica' && (
+                      <Field label="Higiene y desinfección de instrumentos">
+                        <TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, hygiene: value }))} placeholder="Describe cómo limpias y desinfectas tus instrumentos" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={serviceDetails.hygiene ?? ''} />
+                      </Field>
+                    )}
+                    {selectedProfession.code === 'carwash' && (
+                      <Field label="Agua y energía en el lugar del servicio">
+                        <TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, utilities: value }))} placeholder="Indica qué necesitas del lugar y cómo trabajas si no hay toma de agua" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={serviceDetails.utilities ?? ''} />
+                      </Field>
+                    )}
+                    {selectedProfession.code === 'detailing' && (
+                      <Field label="Tipos de vehículos que atiendes">
+                        <TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, vehicle_types: value }))} placeholder="Ej. sedanes, SUV y camionetas" placeholderTextColor={KlippColors.muted} style={styles.input} value={serviceDetails.vehicle_types ?? ''} />
+                      </Field>
+                    )}
+                    {['limpieza_regular', 'limpieza-oficinas'].includes(selectedProfession.code) && (
+                      <Field label="Frecuencia y disponibilidad">
+                        <TextInput onChangeText={(value) => setServiceDetails((current) => ({ ...current, frequency: value }))} placeholder="Ej. servicios puntuales, semanales o quincenales" placeholderTextColor={KlippColors.muted} style={styles.input} value={serviceDetails.frequency ?? ''} />
+                      </Field>
+                    )}
+                    {selectedProfession.code === 'limpieza_profunda' && (
+                      <Field label="Alcance y tareas adicionales">
+                        <TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, extras: value }))} placeholder="Indica qué tareas profundas o adicionales realizas" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={serviceDetails.extras ?? ''} />
+                      </Field>
+                    )}
+                    {selectedProfession.code === 'mantenimiento' && (
+                      <Field label="Herramientas y trabajos que puedes realizar">
+                        <TextInput multiline onChangeText={(value) => setServiceDetails((current) => ({ ...current, tools: value }))} placeholder="Ej. herramientas propias para plomería y montaje" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={serviceDetails.tools ?? ''} />
+                      </Field>
+                    )}
+                  </View>
+                )}
+                {selectedProfession && (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Precios por modalidad</Text>
+                    <Text style={styles.helper}>Define cuánto cobras y cuánto tiempo necesitas para cada modalidad. El cliente verá estos importes al reservar.</Text>
+                    {pricingTiers.length === 0 ? (
+                      <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando modalidades...</Text></View>
+                    ) : pricingTiers.map((tier) => {
+                      const draft = tierDrafts[tier.id] ?? { price: '', minutes: String(tier.est_minutes || 60) };
+                      return (
+                        <View key={tier.id} style={styles.tierCard}>
+                          <Text style={styles.serviceName}>{tier.label}</Text>
+                          <View style={styles.serviceFields}>
+                            <Field label="Precio · RD$">
+                              <TextInput keyboardType="decimal-pad" onChangeText={(price) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, price } }))} placeholder="1,500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
+                            </Field>
+                            <Field label="Duración · min">
+                              <TextInput keyboardType="number-pad" onChangeText={(minutes) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, minutes } }))} placeholder="60" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.minutes} />
+                            </Field>
+                          </View>
                         </View>
-                      )}
-                    </View>
-                  );
-                })}
-                {!servicesLoading && selectedCount > 0 && <Text style={styles.selectionNote}>{selectedCount} {selectedCount === 1 ? 'especialidad elegida' : 'especialidades elegidas'}</Text>}
+                      );
+                    })}
+                  </View>
+                )}
+                <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: equipmentConfirmed }} onPress={() => setEquipmentConfirmed((value) => !value)} style={styles.equipmentConsent}>
+                  <View style={[styles.checkbox, equipmentConfirmed && styles.checkboxSelected]}>{equipmentConfirmed && <Text style={styles.checkmark}>✓</Text>}</View>
+                  <View style={styles.serviceCopy}>
+                    <Text style={styles.serviceName}>Llevaré mis propias herramientas y materiales</Text>
+                    <Text style={styles.helper}>Klipp no proporciona herramientas ni materiales. El profesional debe acudir con todo lo necesario para realizar el servicio. No se utilizarán los materiales del cliente.</Text>
+                  </View>
+                </Pressable>
               </View>
             )}
 
@@ -443,7 +531,7 @@ export function ProRegistrationScreen() {
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
                   <View style={styles.summaryCopy}>
-                    <Text style={styles.cardTitle}>{selectedCount} {selectedCount === 1 ? 'servicio' : 'servicios'} · {radiusKm} km</Text>
+                    <Text style={styles.cardTitle}>{selectedProfession?.name ?? 'Profesión pendiente'} · {radiusKm} km</Text>
                     <Text style={styles.helper}>{selectedWeekdays.length} días disponibles · {startTime}–{endTime}</Text>
                   </View>
                 </View>
@@ -531,9 +619,7 @@ const styles = StyleSheet.create({
   multiline: { minHeight: 104, paddingTop: 12, textAlignVertical: 'top' },
   transportSection: { gap: 9, paddingTop: 2 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 12 },
-  experienceBadge: { flex: 1, minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingHorizontal: 9, borderRadius: 12, backgroundColor: '#EEF4FF' },
-  badgeIcon: { color: KlippColors.blue, fontSize: 16 },
-  badgeText: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '700' },
+  experienceHint: { flex: 1, minHeight: 49, justifyContent: 'center', paddingHorizontal: 8 },
   serviceList: { gap: 12 },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
   catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 10 },
@@ -542,6 +628,13 @@ const styles = StyleSheet.create({
   retryButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   serviceCard: { padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.03, shadowOffset: { width: 0, height: 5 }, shadowRadius: 12, elevation: 2 },
   serviceCardSelected: { borderColor: '#9AB9FF', backgroundColor: '#FBFDFF' },
+  professionOption: { minHeight: 68, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13, borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, backgroundColor: KlippColors.white },
+  professionOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#F5F8FF' },
+  radioOuter: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 99 },
+  radioOuterSelected: { borderColor: KlippColors.blue },
+  radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.blue },
+  tierCard: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border },
+  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 16, backgroundColor: KlippColors.white }
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
   checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
