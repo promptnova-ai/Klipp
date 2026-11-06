@@ -43,7 +43,7 @@ BEGIN
     )
     AND (p_pricing_tier_id IS NULL OR tp.price_dop IS NOT NULL);
 END;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.get_available_booking_slots_at_location(p_pricing_tier_id integer, p_lat double precision, p_lng double precision, p_date date, p_mode assignment_mode DEFAULT 'manual'::assignment_mode, p_pro_id uuid DEFAULT NULL::uuid)
@@ -85,7 +85,7 @@ begin
     ) then slot_time:=v_local::time; return next; end if;
   end loop;
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.create_tier_booking_at_location(p_pricing_tier_id integer, p_lat double precision, p_lng double precision, p_address_text text, p_landmark_notes text, p_scheduled_start timestamp with time zone, p_mode assignment_mode, p_pro_id uuid DEFAULT NULL::uuid)
@@ -148,5 +148,5 @@ begin
   if p_mode='manual' then insert into public.booking_requests(booking_id,pro_id,expires_at) values(v_booking_id,p_pro_id,now()+interval '2 hours'); end if;
   return v_booking_id;
 end;
-$function$
+$function$;
 
