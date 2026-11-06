@@ -282,14 +282,19 @@ export function NewBookingScreen() {
   }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
 
   useEffect(() => {
-    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
-      setManualProPrice(null);
-      setManualProDuration(null);
-      setManualPriceLoading(false);
-      return;
-    }
     let active = true;
-    setManualPriceLoading(true);
+    if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setManualProPrice(null);
+        setManualProDuration(null);
+        setManualPriceLoading(false);
+      });
+      return () => { active = false; };
+    }
+    void Promise.resolve().then(() => {
+      if (active) setManualPriceLoading(true);
+    });
     void Promise.resolve(supabase.from('pro_services')
       .select('id, base_price_dop, est_minutes')
       .eq('pro_id', selectedProId)
@@ -340,17 +345,20 @@ export function NewBookingScreen() {
   }, [mode, selectedProId, selectedServiceId, selectedTier?.id, selectedOffer]);
 
   useEffect(() => {
+    let active = true;
     if (timing === 'now') {
-      setAvailableSlots([]);
-      setScheduledTime('');
-      setLoadingSlots(false);
-      return;
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setAvailableSlots([]);
+        setScheduledTime('');
+        setLoadingSlots(false);
+      });
+      return () => { active = false; };
     }
     if (!coordinate || (!selectedTier && !selectedOffer && !(selectedServiceId && (mode === 'auto' || selectedProId))) || !scheduledDate) {
-      return;
+      return () => { active = false; };
     }
 
-    let active = true;
     void Promise.resolve().then(() => {
       if (active) setLoadingSlots(true);
     });
