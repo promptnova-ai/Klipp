@@ -29,6 +29,7 @@ export function ProAgendaScreen() {
   const { bookingId: requestedBookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const deepLinkChatHandled = useRef<string | null>(null);
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [reassignmentLockedIds, setReassignmentLockedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,12 +48,12 @@ export function ProAgendaScreen() {
     .join(',');
 
   const loadBookings = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
       .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
-      .eq('pro_id', session.user.id)
+      .eq('pro_id', userId)
       .in('status', ['scheduled', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_start');
     if (queryError) setError(queryError.message);
@@ -61,11 +62,11 @@ export function ProAgendaScreen() {
     if (lockedError) setError(lockedError.message);
     else setReassignmentLockedIds((lockedData ?? []).map((row: { booking_id: string }) => row.booking_id));
     setLoading(false);
-  }, [session?.user.id]);
+  }, [userId]);
 
   useFocusEffect(useCallback(() => {
     void loadBookings();
-    if (!session?.user.id) return;
+    if (!userId) return;
     let active = true;
     const refreshPresence = async () => {
       const { data, error: presenceError } = await supabase.from('pro_presence')
@@ -92,7 +93,7 @@ export function ProAgendaScreen() {
       active = false;
       void supabase.removeChannel(channel);
     };
-  }, [loadBookings, session?.user.id]));
+  }, [loadBookings, userId]));
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -193,21 +194,26 @@ export function ProAgendaScreen() {
   }, []);
 
   useEffect(() => {
-    if (!requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
-    if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active || !requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
+      if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
 
-    deepLinkChatHandled.current = requestedBookingId;
-    setChatBookingId(requestedBookingId);
-    void supabase
-      .from('messages')
-      .select('id, booking_id, sender_id, body, created_at')
-      .eq('booking_id', requestedBookingId)
-      .order('created_at', { ascending: true })
-      .limit(20)
-      .then(({ data, error: messagesError }) => {
-        if (messagesError) setError(messagesError.message);
-        else setChatMessages((data ?? []) as AgendaMessage[]);
-      });
+      deepLinkChatHandled.current = requestedBookingId;
+      setChatBookingId(requestedBookingId);
+      void supabase
+        .from('messages')
+        .select('id, booking_id, sender_id, body, created_at')
+        .eq('booking_id', requestedBookingId)
+        .order('created_at', { ascending: true })
+        .limit(20)
+        .then(({ data, error: messagesError }) => {
+          if (!active) return;
+          if (messagesError) setError(messagesError.message);
+          else setChatMessages((data ?? []) as AgendaMessage[]);
+        });
+    });
+    return () => { active = false; };
   }, [requestedBookingId, bookings]);
 
   useEffect(() => {
