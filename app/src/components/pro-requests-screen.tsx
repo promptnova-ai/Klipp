@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -37,7 +37,16 @@ export function ProRequestsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
+  const [materialsConfirmed, setMaterialsConfirmed] = useState(false);
+  const [materialsError, setMaterialsError] = useState(false);
+  const [materialsShake] = useState(() => new Animated.Value(0));
   const activeRequest = requests[0] ?? null;
+  useEffect(() => {
+    setMaterialsConfirmed(false);
+    setMaterialsError(false);
+    materialsShake.setValue(0);
+  }, [activeRequest?.id, materialsShake]);
+
   const secondsLeft = activeRequest ? Math.max(0, Math.ceil((new Date(activeRequest.expires_at).getTime() - nowMs) / 1000)) : 0;
 
   const loadRequests = useCallback(async () => {
@@ -113,11 +122,23 @@ export function ProRequestsScreen() {
   }
 
   async function respond(requestId: string, accept: boolean) {
+    if (accept && !materialsConfirmed) {
+      setMaterialsError(true);
+      Vibration.vibrate(90);
+      Animated.sequence([
+        Animated.timing(materialsShake, { toValue: 1, duration: 55, useNativeDriver: true }),
+        Animated.timing(materialsShake, { toValue: -1, duration: 55, useNativeDriver: true }),
+        Animated.timing(materialsShake, { toValue: 1, duration: 55, useNativeDriver: true }),
+        Animated.timing(materialsShake, { toValue: 0, duration: 70, useNativeDriver: true }),
+      ]).start();
+      return;
+    }
     setBusyId(requestId);
     setError(null);
     const { error: rpcError } = await supabase.rpc('respond_to_request', {
       p_request_id: requestId,
       p_accept: accept,
+      p_materials_confirmed: accept ? materialsConfirmed : false,
     });
     if (rpcError) setError(rpcError.message);
     else await loadRequests();
@@ -195,6 +216,28 @@ export function ProRequestsScreen() {
                 <Text style={styles.earningNote}>Importe estimado para ti, después de la comisión de Klipp.</Text>
               </View>
 
+              <Animated.View style={{ transform: [{ translateX: materialsShake.interpolate({ inputRange: [-1, 1], outputRange: [-7, 7] }) }] }}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: materialsConfirmed }}
+                  onPress={() => {
+                    setMaterialsConfirmed((current) => !current);
+                    setMaterialsError(false);
+                    Vibration.vibrate(18);
+                  }}
+                  style={[styles.materialsCard, materialsError && styles.materialsCardError, materialsConfirmed && styles.materialsCardConfirmed]}>
+                  <View style={[styles.materialsCheck, materialsConfirmed && styles.materialsCheckSelected, materialsError && styles.materialsCheckError]}>
+                    {materialsConfirmed && <Text style={styles.materialsCheckmark}>✓</Text>}
+                  </View>
+                  <View style={styles.materialsCopy}>
+                    <Text style={styles.materialsTitle}>Llevo mis herramientas y materiales</Text>
+                    <Text style={styles.materialsDescription}>Confirmo que cuento con todo lo necesario para realizar este servicio. No utilizaré materiales ni herramientas del cliente.</Text>
+                    {materialsError && <Text accessibilityRole="alert" style={styles.materialsErrorText}>Marca esta casilla para confirmar que llevas todo lo necesario.</Text>}
+                    {materialsConfirmed && <Text style={styles.materialsSuccess}>Confirmación lista</Text>}
+                  </View>
+                </Pressable>
+              </Animated.View>
+
               <Pressable
                 accessibilityRole="button"
                 disabled={busyId === activeRequest.id || secondsLeft <= 0}
@@ -208,6 +251,7 @@ export function ProRequestsScreen() {
                 label={busyId === activeRequest.id ? 'Enviando respuesta…' : secondsLeft <= 0 ? 'Solicitud expirada' : 'Desliza para aceptar'}
                 onAccept={() => void respond(activeRequest.id, true)}
               />
+              <Text style={styles.offerFootnote}>Para aceptar, confirma primero que llevas tus propias herramientas y materiales.</Text>
               <Text style={styles.offerFootnote}>Si otro profesional acepta primero, esta solicitud dejará de estar disponible.</Text>
             </ScrollView>
           </View>
@@ -348,6 +392,18 @@ const styles = StyleSheet.create({
   earningLabel: { color: '#36745f', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   earningAmount: { color: '#126b50', fontSize: 32, fontWeight: '900' },
   earningNote: { color: '#4e7868', fontSize: 11, textAlign: 'center' },
+  materialsCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 17, borderRadius: 18, borderWidth: 1.5, borderColor: '#cbd8d5', backgroundColor: '#ffffff' },
+  materialsCardError: { borderColor: '#d94841', backgroundColor: '#fff4f2' },
+  materialsCardConfirmed: { borderColor: '#16836f', backgroundColor: '#effaf6' },
+  materialsCheck: { width: 27, height: 27, borderRadius: 8, borderWidth: 2, borderColor: '#93a5a2', backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
+  materialsCheckSelected: { borderColor: '#126b60', backgroundColor: '#126b60' },
+  materialsCheckError: { borderColor: '#d94841' },
+  materialsCheckmark: { color: '#ffffff', fontSize: 19, fontWeight: '900', lineHeight: 22 },
+  materialsCopy: { flex: 1, gap: 5 },
+  materialsTitle: { color: '#142c36', fontSize: 15, fontWeight: '900', lineHeight: 21 },
+  materialsDescription: { color: '#64747a', fontSize: 12, lineHeight: 18 },
+  materialsErrorText: { color: '#b42318', fontSize: 12, fontWeight: '800', lineHeight: 17 },
+  materialsSuccess: { color: '#126b50', fontSize: 12, fontWeight: '800' },
   declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: '#b42318', borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#b42318' },
   declineText: { color: '#ffffff', fontSize: 14, fontWeight: '900' },
   slideTrack: { height: 64, borderRadius: 18, backgroundColor: '#126b60', justifyContent: 'center', padding: 4, overflow: 'hidden' },
