@@ -80,6 +80,7 @@ function notificationIcon(type: string) {
 export function NotificationsScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
+  const userId = userId;
   const isPro = profile?.role === 'pro';
   const roleTheme = isPro ? RoleThemes.pro : RoleThemes.client;
   const [items, setItems] = useState<AppNotification[]>([]);
@@ -94,7 +95,7 @@ export function NotificationsScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadNotifications = useCallback(async () => {
-    if (!session?.user.id) {
+    if (!userId) {
       setItems([]);
       setLoading(false);
       return;
@@ -102,7 +103,7 @@ export function NotificationsScreen() {
     const { data, error: queryError } = await supabase
       .from('notifications')
       .select('id, user_id, booking_id, type, title, body, data, read_at, created_at')
-      .eq('user_id', session.user.id)
+      .eq('user_id', userId)
       .eq('show_in_app', true)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -112,14 +113,14 @@ export function NotificationsScreen() {
       setError(null);
     }
     setLoading(false);
-  }, [session?.user.id]);
+  }, [userId]);
 
   const loadPreferences = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     const { data, error: preferenceError } = await supabase
       .from('notification_preferences')
       .select('event_type, in_app_enabled, push_enabled')
-      .eq('user_id', session.user.id);
+      .eq('user_id', userId);
     if (preferenceError) {
       setError(preferenceError.message);
       return;
@@ -138,7 +139,7 @@ export function NotificationsScreen() {
       }
     }
     setPreferences(next);
-  }, [session?.user.id]);
+  }, [userId]);
 
   useEffect(() => {
     void loadNotifications();
@@ -149,13 +150,13 @@ export function NotificationsScreen() {
   }, [loadPreferences]);
 
   useEffect(() => {
-    if (!session?.user.id || Platform.OS === 'web') {
+    if (!userId || Platform.OS === 'web') {
       setPushStatus('unknown');
       return;
     }
     let active = true;
     setPushStatus('checking');
-    void isPushDeviceRegisteredAsync(session.user.id)
+    void isPushDeviceRegisteredAsync(userId)
       .then((registered) => {
         if (active) setPushStatus(registered ? 'registered' : 'not_registered');
       })
@@ -165,26 +166,26 @@ export function NotificationsScreen() {
         setError(cause instanceof Error ? cause.message : 'No pudimos comprobar el registro de este dispositivo.');
       });
     return () => { active = false; };
-  }, [session?.user.id]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     const channel = supabase
-      .channel('notifications-inbox:' + session.user.id)
+      .channel('notifications-inbox:' + userId)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'notifications',
-        filter: 'user_id=eq.' + session.user.id,
+        filter: 'user_id=eq.' + userId,
       }, () => { void loadNotifications(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [session?.user.id, loadNotifications]);
+  }, [userId, loadNotifications]);
 
   const unreadCount = items.filter((item) => !item.read_at).length;
 
   async function updatePreference(eventType: keyof PreferenceMap, channel: PreferenceChannel, enabled: boolean) {
-    if (!session?.user.id) return;
+    if (!userId) return;
     const lockKey = eventType + ':' + channel;
     if (savingPreferences[lockKey]) return;
 
@@ -198,7 +199,7 @@ export function NotificationsScreen() {
       const { error: updateError } = await supabase
         .from('notification_preferences')
         .upsert({
-          user_id: session.user.id,
+          user_id: userId,
           event_type: eventType,
           in_app_enabled: next.in_app_enabled,
           push_enabled: next.push_enabled,
@@ -219,12 +220,12 @@ export function NotificationsScreen() {
   }
 
   async function registerPushDevice() {
-    if (!session?.user.id) return;
+    if (!userId) return;
     setPushBusy(true);
     setError(null);
     setNotice(null);
     try {
-      const token = await registerPushDeviceAsync(session.user.id);
+      const token = await registerPushDeviceAsync(userId);
       setPushStatus(token ? 'registered' : 'not_registered');
       if (token) setNotice('Este dispositivo ya puede recibir notificaciones push.');
     } catch (cause) {
@@ -236,12 +237,12 @@ export function NotificationsScreen() {
   }
 
   async function unregisterCurrentDevice() {
-    if (!session?.user.id) return;
+    if (!userId) return;
     setPushBusy(true);
     setError(null);
     setNotice(null);
     try {
-      await unregisterPushDeviceAsync(session.user.id);
+      await unregisterPushDeviceAsync(userId);
       setPushStatus('not_registered');
       setNotice('Las notificaciones push se han desactivado en este dispositivo.');
     } catch (cause) {
@@ -252,7 +253,7 @@ export function NotificationsScreen() {
   }
 
   async function markAllRead() {
-    if (!session?.user.id || unreadCount === 0) return;
+    if (!userId || unreadCount === 0) return;
     const previous = items;
     const timestamp = new Date().toISOString();
     setBusy(true);
@@ -262,7 +263,7 @@ export function NotificationsScreen() {
       const { error: updateError } = await supabase
         .from('notifications')
         .update({ read_at: timestamp })
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .is('read_at', null);
       if (updateError) {
         setItems(previous);
@@ -280,7 +281,7 @@ export function NotificationsScreen() {
     if (openingId) return;
     setOpeningId(item.id);
     setError(null);
-    if (!item.read_at && session?.user.id) {
+    if (!item.read_at && userId) {
       const timestamp = new Date().toISOString();
       const previous = items;
       setItems((current) => current.map((row) => row.id === item.id ? { ...row, read_at: timestamp } : row));
@@ -289,7 +290,7 @@ export function NotificationsScreen() {
           .from('notifications')
           .update({ read_at: timestamp })
           .eq('id', item.id)
-          .eq('user_id', session.user.id);
+          .eq('user_id', userId);
         if (updateError) {
           setItems(previous);
           setError(updateError.message);
