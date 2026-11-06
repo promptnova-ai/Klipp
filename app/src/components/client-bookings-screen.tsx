@@ -39,6 +39,7 @@ export function ClientBookingsScreen() {
   const { bookingId: requestedBookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const deepLinkChatHandled = useRef<string | null>(null);
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
   const [pros, setPros] = useState<Record<string, ProCard>>({});
   const [payments, setPayments] = useState<Record<string, PaymentSummary>>({});
@@ -50,7 +51,7 @@ export function ClientBookingsScreen() {
   const [messages, setMessages] = useState<Record<string, BookingMessage[]>>({});
   const [messageDrafts, setMessageDrafts] = useState<Record<string, string>>({});
   const [openChatId, setOpenChatId] = useState<string | null>(null);
-  const [currentTime, setCurrentTime] = useState(Date.now());
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -58,12 +59,12 @@ export function ClientBookingsScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
       .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
-      .eq('client_id', session.user.id)
+      .eq('client_id', userId)
       .order('scheduled_start', { ascending: false });
     if (queryError) {
       setError(queryError.message);
@@ -108,26 +109,31 @@ export function ClientBookingsScreen() {
       'info' in result && result.info ? [[result.bookingId, result.info]] : [],
     )));
     setLoading(false);
-  }, [session?.user.id]);
+  }, [userId]);
 
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
 
   useEffect(() => {
-    if (!requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
-    if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active || !requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
+      if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
 
-    deepLinkChatHandled.current = requestedBookingId;
-    setOpenChatId(requestedBookingId);
-    void supabase
-      .from('messages')
-      .select('id, booking_id, sender_id, body, created_at')
-      .eq('booking_id', requestedBookingId)
-      .order('created_at', { ascending: true })
-      .limit(20)
-      .then(({ data, error: messagesError }) => {
-        if (messagesError) setError(messagesError.message);
-        else setMessages((current) => ({ ...current, [requestedBookingId]: (data ?? []) as BookingMessage[] }));
-      });
+      deepLinkChatHandled.current = requestedBookingId;
+      setOpenChatId(requestedBookingId);
+      void supabase
+        .from('messages')
+        .select('id, booking_id, sender_id, body, created_at')
+        .eq('booking_id', requestedBookingId)
+        .order('created_at', { ascending: true })
+        .limit(20)
+        .then(({ data, error: messagesError }) => {
+          if (!active) return;
+          if (messagesError) setError(messagesError.message);
+          else setMessages((current) => ({ ...current, [requestedBookingId]: (data ?? []) as BookingMessage[] }));
+        });
+    });
+    return () => { active = false; };
   }, [requestedBookingId, bookings]);
 
   useEffect(() => {
@@ -147,8 +153,9 @@ export function ClientBookingsScreen() {
   useEffect(() => {
     const activeBookings = bookings.filter((booking) => booking.status === 'en_route');
     if (activeBookings.length === 0) {
-      setTracking({});
-      return;
+      let active = true;
+      void Promise.resolve().then(() => { if (active) setTracking({}); });
+      return () => { active = false; };
     }
     const channels = activeBookings.map((booking) => {
       const channel = supabase
@@ -211,7 +218,7 @@ export function ClientBookingsScreen() {
   }, [bookings]);
 
   useEffect(() => {
-    if (!bookings.some((booking) => booking.status === 'in_progress')) return;
+    if (!bookings.some((booking) => booking.status === 'in_progress' || (booking.assignment_mode === 'auto' && booking.status === 'requested'))) return;
     const interval = setInterval(() => setCurrentTime(Date.now()), 30_000);
     return () => clearInterval(interval);
   }, [bookings]);
@@ -302,7 +309,7 @@ export function ClientBookingsScreen() {
         const pro = booking.pro_id ? pros[booking.pro_id] : undefined;
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
-        const immediateSearch = searching && new Date(booking.scheduled_start).getTime() <= Date.now() + 60 * 60 * 1000;
+        const immediateSearch = searching && new Date(booking.scheduled_start).getTime() <= currentTime + 60 * 60 * 1000;
         const canReview = ['completed', 'confirmed'].includes(booking.status) && !!booking.pro_id && !review;
         const statusLabel = searching ? (immediateSearch ? 'Buscando profesional' : 'Reserva en espera') : statusLabels[booking.status];
         const livePoint = tracking[booking.id];
