@@ -48,6 +48,9 @@ jobs:
       - name: Lint the changed admin screen
         run: npx eslint src/components/admin-screen.tsx
 
+      - name: Lint the changed client booking screen
+        run: npx eslint src/components/new-booking-screen.tsx
+
       - name: Run TypeScript
         run: npx tsc --noEmit
 
