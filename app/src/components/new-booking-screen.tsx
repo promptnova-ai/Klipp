@@ -371,6 +371,7 @@ export function NewBookingScreen() {
           p_lng: coordinate.longitude,
           p_date: scheduledDate,
           p_mode: mode,
+          p_pro_id: mode === 'manual' ? selectedProId : null,
         })
         : mode === 'auto'
           ? supabase.rpc('get_available_auto_service_slots_at_location', {
