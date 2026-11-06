@@ -59,7 +59,7 @@ export function ProAgendaScreen() {
     if (lockedError) setError(lockedError.message);
     else setReassignmentLockedIds((lockedData ?? []).map((row: { booking_id: string }) => row.booking_id));
     setLoading(false);
-  }, [session?.user.id]);
+  }, [session]);
 
   useFocusEffect(useCallback(() => {
     void loadBookings();
@@ -90,7 +90,7 @@ export function ProAgendaScreen() {
       active = false;
       void supabase.removeChannel(channel);
     };
-  }, [loadBookings, session?.user.id]));
+  }, [loadBookings, session]));
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -175,7 +175,7 @@ export function ProAgendaScreen() {
       active = false;
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, [activeTripKey, loading]);
+  }, [activeTripKey, loadBookings, loading]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
