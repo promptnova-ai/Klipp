@@ -68,8 +68,8 @@ jobs:
       - name: Lint the professional registration flow
         run: npx eslint src/components/pro-registration-screen.tsx
 
-      - name: Lint the notification center and push registration
-        run: npx eslint src/components/notifications-screen.tsx src/lib/push-notifications.ts
+      - name: Lint notifications, chat deep links and push registration
+        run: npx eslint src/components/notifications-screen.tsx src/components/client-bookings-screen.tsx src/components/pro-agenda-screen.tsx src/lib/push-notifications.ts src/lib/push-notifications.web.ts
 
       - name: Lint shared UI primitives and role-aware header
         run: npx eslint src/components/ui-primitives.tsx src/components/brand-screen-header.tsx
