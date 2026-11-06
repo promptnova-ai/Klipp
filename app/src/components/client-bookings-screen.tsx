@@ -111,11 +111,6 @@ export function ClientBookingsScreen() {
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
 
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
     if (!session?.user.id) return;
     const channel = supabase
       .channel(`client-bookings:${session.user.id}`)
@@ -198,7 +193,7 @@ export function ClientBookingsScreen() {
   }, [bookings]);
 
   useEffect(() => {
-    if (!bookings.some((booking) => booking.status === 'in_progress')) return;
+    if (!bookings.some((booking) => booking.status === 'in_progress' || (booking.assignment_mode === 'auto' && booking.status === 'requested'))) return;
     const interval = setInterval(() => setCurrentTime(Date.now()), 30_000);
     return () => clearInterval(interval);
   }, [bookings]);
