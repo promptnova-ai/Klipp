@@ -397,11 +397,12 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
     },
   }), [disabled, fillProgress, translateX]);
   useEffect(() => {
-    if (disabled) {
-      translateX.setValue(0);
-      fillProgress.setValue(0);
-      setReady(false);
-    }
+    if (!disabled) return;
+    let active = true;
+    translateX.setValue(0);
+    fillProgress.setValue(0);
+    void Promise.resolve().then(() => { if (active) setReady(false); });
+    return () => { active = false; };
   }, [disabled, fillProgress, translateX]);
   const fillWidth = fillProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
