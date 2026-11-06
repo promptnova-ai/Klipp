@@ -82,7 +82,7 @@ export function ProRequestsScreen() {
     if (!activeRequest || secondsLeft > 0 || expiryHandledRef.current.has(activeRequest.id)) return;
     expiryHandledRef.current.add(activeRequest.id);
     let cancelled = false;
-    void supabase.rpc('pro_expire_booking_request', { p_request_id: activeRequest.id })
+    void Promise.resolve(supabase.rpc('pro_expire_booking_request', { p_request_id: activeRequest.id }))
       .then(async () => {
         if (!cancelled) await loadRequests();
       })
