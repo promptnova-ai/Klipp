@@ -142,21 +142,35 @@ export function NotificationsScreen() {
   }, [userId]);
 
   useEffect(() => {
-    void loadNotifications();
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) return loadNotifications();
+      return undefined;
+    });
+    return () => { active = false; };
   }, [loadNotifications]);
 
   useEffect(() => {
-    void loadPreferences();
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) return loadPreferences();
+      return undefined;
+    });
+    return () => { active = false; };
   }, [loadPreferences]);
 
   useEffect(() => {
-    if (!userId || Platform.OS === 'web') {
-      setPushStatus('unknown');
-      return;
-    }
     let active = true;
-    setPushStatus('checking');
-    void isPushDeviceRegisteredAsync(userId)
+    if (!userId || Platform.OS === 'web') {
+      void Promise.resolve().then(() => {
+        if (active) setPushStatus('unknown');
+      });
+      return () => { active = false; };
+    }
+    void Promise.resolve().then(() => {
+      if (active) setPushStatus('checking');
+      return isPushDeviceRegisteredAsync(userId);
+    })
       .then((registered) => {
         if (active) setPushStatus(registered ? 'registered' : 'not_registered');
       })
