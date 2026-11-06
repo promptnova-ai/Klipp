@@ -85,6 +85,7 @@ export function NewBookingScreen() {
   const [autoPriceRange, setAutoPriceRange] = useState<{ min_price_dop: number; max_price_dop: number; professional_count: number } | null>(null);
   const [autoPriceLoading, setAutoPriceLoading] = useState(false);
   const [manualProPrice, setManualProPrice] = useState<number | null>(null);
+  const [manualProDuration, setManualProDuration] = useState<number | null>(null);
   const [manualPriceLoading, setManualPriceLoading] = useState(false);
   const [coordinate, setCoordinate] = useState<BookingCoordinate | null>(null);
   const [addressText, setAddressText] = useState('');
@@ -244,7 +245,7 @@ export function NewBookingScreen() {
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
-  const selectedDuration = selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
+  const selectedDuration = selectedOffer?.est_minutes ?? (mode === 'manual' && selectedProId ? manualProDuration ?? selectedTier?.est_minutes : selectedTier?.est_minutes);
   const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' ? (selectedProId ? manualProPrice ?? undefined : undefined) : selectedTier?.price_dop);
 
   useEffect(() => {
@@ -286,13 +287,14 @@ export function NewBookingScreen() {
   useEffect(() => {
     if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
       setManualProPrice(null);
+      setManualProDuration(null);
       setManualPriceLoading(false);
       return;
     }
     let active = true;
     setManualPriceLoading(true);
     void Promise.resolve(supabase.from('pro_services')
-      .select('id, base_price_dop')
+      .select('id, base_price_dop, est_minutes')
       .eq('pro_id', selectedProId)
       .eq('service_type_id', selectedServiceId)
       .eq('active', true)
@@ -301,18 +303,20 @@ export function NewBookingScreen() {
         if (!active) return;
         if (serviceError || !proService) {
           setManualProPrice(null);
+          setManualProDuration(null);
           setError(serviceError?.message ?? 'Este profesional no tiene una tarifa activa para el servicio.');
           setManualPriceLoading(false);
           return;
         }
         if (!selectedTier) {
           setManualProPrice(Number(proService.base_price_dop));
+          setManualProDuration(Number(proService.est_minutes));
           setError(null);
           setManualPriceLoading(false);
           return;
         }
         const { data: tierPrice, error: tierPriceError } = await supabase.from('pro_service_tier_prices')
-          .select('price_dop')
+          .select('price_dop, est_minutes')
           .eq('pro_service_id', proService.id)
           .eq('pricing_tier_id', selectedTier.id)
           .eq('active', true)
@@ -320,15 +324,18 @@ export function NewBookingScreen() {
         if (!active) return;
         if (tierPriceError || !tierPrice) {
           setManualProPrice(null);
+          setManualProDuration(null);
           setError(tierPriceError?.message ?? 'Este profesional todavía no ha configurado el precio de esta variante.');
         } else {
           setManualProPrice(Number(tierPrice.price_dop));
+          setManualProDuration(Number(tierPrice.est_minutes));
           setError(null);
         }
         setManualPriceLoading(false);
       }).catch((cause: unknown) => {
         if (!active) return;
         setManualProPrice(null);
+        setManualProDuration(null);
         setManualPriceLoading(false);
         setError(cause instanceof Error ? cause.message : 'No pudimos consultar la tarifa del profesional.');
       });
