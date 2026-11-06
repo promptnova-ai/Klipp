@@ -128,7 +128,8 @@ A fecha de revisión:
 - El onboarding profesional se ha probado de forma transaccional en QA: perfil, profesión, tarifa, cobertura, equipamiento y disponibilidad se crean juntos y se revierten al terminar la prueba.
 - En QA se han probado cinco ofertas simultáneas, el avance al siguiente candidato y la aceptación con cálculo de comisión del 7 %.
 - La compilación TypeScript, el lint dirigido a las pantallas modificadas, las pruebas Deno, el chequeo de Edge Functions y la exportación web han pasado en CI.
-- El despliegue web de producción más reciente consultado está en estado READY.
+- La CI del cambio de acceso/branding (auth y ruta heredada `/explore`) pasó lint dirigido, TypeScript, exportación web y chequeos Deno; el cambio está fusionado en `main`.
+- El último despliegue web de producción consultado sigue en estado READY, pero corresponde al commit `586400f`, anterior al cambio visual de autenticación. Vercel está bloqueando nuevos despliegues por el límite diario de la API de builds. Por tanto, el cambio de login ya está en `main`, pero todavía no está publicado en la web de producción.
 
 **No está listo para un lanzamiento comercial todavía:** producción no tiene tarifas profesionales activas, reservas ni pagos registrados; hay un perfil aprobado que todavía no ha aceptado el compromiso de equipamiento ni configurado cobertura. Tampoco se ha completado la prueba real de pago AZUL ni la validación de push en dispositivos físicos.
 
