@@ -1,24 +1,47 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, type ReactNode } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout, RoleThemes, type KlippRole } from '@/lib/brand';
 
-export function BrandScreenHeader({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle?: string }) {
+type BrandScreenHeaderProps = {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  role?: KlippRole;
+  trailing?: ReactNode;
+};
+
+export function BrandScreenHeader({
+  eyebrow,
+  title,
+  subtitle,
+  role = 'client',
+  trailing,
+}: BrandScreenHeaderProps) {
+  const theme = RoleThemes[role];
+  const roleLabel = role === 'pro' ? 'PRO' : role === 'admin' ? 'ADMIN' : 'RD';
+
   return (
     <View style={styles.header}>
       <View style={styles.brandRow}>
-        <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
+        <View style={[styles.logoMark, { backgroundColor: theme.accent }]}>
+          <Text style={styles.logoLetter}>K</Text>
+        </View>
         <View style={styles.brandCopy}>
           <View style={styles.brandLine}>
             <Text style={styles.brand}>klipp</Text>
-            <View style={styles.badge}><Text style={styles.badgeText}>RD</Text></View>
+            <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}>
+              <Text style={[styles.badgeText, { color: theme.accentStrong }]}>{roleLabel}</Text>
+            </View>
           </View>
           <Text style={styles.location}>REPÚBLICA DOMINICANA</Text>
         </View>
+        {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
       </View>
+
       <View style={styles.heading}>
-        <Text style={styles.eyebrow}>{eyebrow}</Text>
+        <Text style={[styles.eyebrow, { color: theme.accentStrong }]}>{eyebrow}</Text>
         <Text style={styles.title}>{title}</Text>
-        {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
     </View>
   );
@@ -26,23 +49,26 @@ export function BrandScreenHeader({ eyebrow, title, subtitle }: { eyebrow: strin
 
 const styles = StyleSheet.create({
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 58,
-    paddingBottom: 8,
-    gap: 24,
-    backgroundColor: KlippColors.canvas,
+    width: '100%',
+    maxWidth: KlippLayout.contentMaxWidth,
+    alignSelf: 'center',
+    paddingHorizontal: KlippLayout.pageGutter,
+    paddingTop: 28,
+    paddingBottom: 10,
+    gap: 18,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.navy },
-  logoLetter: { color: KlippColors.white, fontSize: 22, fontWeight: '800' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42 },
+  logoMark: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  logoLetter: { color: KlippColors.white, fontSize: 22, fontWeight: '900' },
   brandCopy: { gap: 2 },
-  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  brand: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
-  badge: { paddingHorizontal: 7, paddingVertical: 3, borderRadius: 999, backgroundColor: KlippColors.goldLight },
-  badgeText: { color: KlippColors.navy, fontSize: 9, fontWeight: '900' },
-  location: { color: KlippColors.muted, fontSize: 9, fontWeight: '700' },
-  heading: { gap: 7 },
-  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  title: { color: KlippColors.navy, fontSize: 28, lineHeight: 34, fontWeight: '700' },
-  subtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
+  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brand: { color: KlippColors.navy, fontSize: 21, fontWeight: '900', letterSpacing: -0.5 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
+  badgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
+  location: { color: KlippColors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 0.8 },
+  trailing: { marginLeft: 'auto' },
+  heading: { gap: 6, marginTop: 2 },
+  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.15 },
+  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.75 },
+  subtitle: { maxWidth: 720, color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
 });
