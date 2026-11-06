@@ -108,12 +108,11 @@ export function ClientTrackingScreen() {
         const metric = Array.isArray(acceptanceData) ? acceptanceData[0] : acceptanceData;
         setProfessionalAcceptanceRate(metric && typeof metric.acceptance_rate === 'number' ? metric.acceptance_rate : metric?.acceptance_rate == null ? null : Number(metric.acceptance_rate));
       }
-      const { data: proData, error: proError } = await supabase.from('pro_cards')
-        .select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type')
-        .eq('pro_id', bookingRow.pro_id)
-        .maybeSingle();
+      const { data: proData, error: proError } = await supabase.rpc('get_client_booking_pro_cards', {
+        p_booking_ids: [bookingRow.id],
+      });
       if (proError) setError(proError.message);
-      else setProfessional(proData as ProCard | null);
+      else setProfessional(((proData ?? []) as ProCard[])[0] ?? null);
     }
 
     if (bookingRow.status === 'en_route') {
