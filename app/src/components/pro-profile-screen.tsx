@@ -325,7 +325,7 @@ export function ProProfileScreen() {
       setError('Los años de experiencia deben ser un número entero igual o mayor que cero.');
       return;
     }
-    if (phone.replace(/\\D/g, '').length < 10) {
+    if (phone.replace(/\D/g, '').length < 10) {
       setError('Introduce un teléfono de contacto válido con al menos 10 dígitos.');
       return;
     }
