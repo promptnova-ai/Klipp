@@ -251,12 +251,15 @@ export function NewBookingScreen() {
     : selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
 
   useEffect(() => {
-    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
-      setAutoPriceRange(null);
-      setAutoPriceLoading(false);
-      return;
-    }
     let active = true;
+    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setAutoPriceRange(null);
+        setAutoPriceLoading(false);
+      });
+      return () => { active = false; };
+    }
     setAutoPriceLoading(true);
     void Promise.resolve(supabase.rpc('get_auto_service_price_estimate', {
       p_service_type_id: selectedServiceId,
