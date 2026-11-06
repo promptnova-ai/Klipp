@@ -183,7 +183,7 @@ export function ProProfileScreen() {
     setSelectedServices(configuredServices.map((service) => service.service_type_id).slice(0, 1));
     setServiceDetails(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, service.details ?? {}])));
     setLoading(false);
-  }, [userId]);
+  }, [userId, session?.user.user_metadata?.pro_onboarding]);
 
   useEffect(() => {
     void Promise.resolve().then(loadProfile);
