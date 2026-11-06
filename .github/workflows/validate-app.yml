@@ -14,6 +14,7 @@ on:
       - security/008-profile-permissions
     paths:
       - "app/**"
+      - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
 
 permissions:
