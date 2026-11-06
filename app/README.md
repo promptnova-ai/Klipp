@@ -1,80 +1,93 @@
-# Welcome to your Expo app 👋
+# Klipp — aplicación Expo
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Esta carpeta contiene el cliente universal de Klipp para web, Android e iOS. El backend y las migraciones Supabase están en `../supabase`.
 
-## Klipp location and booking setup
+## Stack
 
-Apply `supabase/migrations/004_location_services_and_tracking.sql` after the existing migrations before testing the multi-industry catalog, GPS checkout, messaging, or live tracking.
+- Expo SDK 58, React 19 y React Native 0.88.
+- TypeScript y Expo Router.
+- Supabase Auth, Postgres/PostGIS, RLS, Realtime, Storage y Edge Functions.
+- Google Maps para mapas web y rutas; mapas nativos según la plataforma.
+- Expo Notifications para notificaciones push.
 
-For native maps, set `GOOGLE_MAPS_ANDROID_API_KEY` in the build environment. Set `GOOGLE_MAPS_IOS_API_KEY` only if using Google Maps instead of the default Apple map on iOS. Restrict each key to the app's package/bundle identifier and required Maps SDK. Native permission and background-location changes require a new development or production build; live location is shared only while a booking is `en_route`.
+## Configuración local
 
-## Admin accounts and professional verification
-
-Apply `supabase/migrations/007_admin_verification_and_settings.sql` after the other migrations. The migration creates a private Storage bucket for identity documents, admin-only database functions, audit records, and editable commission/request-expiry settings. Never make the verification bucket public or put a Supabase service-role key in the app.
-
-Bootstrap the first administrator from the Supabase SQL Editor after that person has registered and confirmed their email. Replace the email below with the account to promote:
-
-```sql
-update public.profiles p
-set role = 'admin'
-from auth.users u
-where p.id = u.id
-  and lower(u.email) = lower('admin@example.com');
-```
-
-Confirm exactly one account was updated, then sign in with that account. The admin panel is shown on the account home screen. Administrators can assign `client`, `pro`, or `admin` to other existing accounts, review professional documents, edit the service catalog and pricing tiers, and change the commission and professional-request expiry applied to new records. The current administrator cannot change their own role from the panel.
-
-Professionals submit a PDF, JPG, or PNG (maximum 10 MB) from **Mi perfil → Verificación de identidad**. Documents stay in private Storage; an administrator opens a short-lived signed link, then approves or rejects the submission with a reason. Approval requires a confirmed email and a submitted document. Do not approve a profile unless its identity has actually been checked.
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+Instala Node.js 22 o una versión compatible con el SDK actual. Desde esta carpeta:
 
 ```bash
-npm run reset-project
+npm ci
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Configura estas variables en tu entorno local, sin subirlas al repositorio:
 
-### Other setup steps
+| Variable | Uso |
+|---|---|
+| `EXPO_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Clave pública/anon de Supabase |
+| `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY` | Google Maps JavaScript API en web |
+| `GOOGLE_MAPS_ANDROID_API_KEY` | Maps SDK for Android en builds nativos |
+| `GOOGLE_MAPS_IOS_API_KEY` | Maps SDK for iOS cuando se utilice Google Maps en iOS |
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+La clave anon de Supabase puede estar en el cliente; nunca pongas aquí `SUPABASE_SERVICE_ROLE_KEY`, secretos de cron, credenciales de AZUL ni claves privadas del servidor.
 
-## Learn more
+Para arrancar:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo start
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Para web:
 
-## Join the community
+```bash
+npx expo start --web
+```
 
-Join our community of developers creating universal apps.
+## Validación local y CI
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx tsc --noEmit
+npx expo lint
+npx expo export --platform web
+```
+
+El workflow de GitHub también ejecuta pruebas Deno y chequeos de tipo de las Edge Functions. El lint global conserva algunos avisos/errores históricos en pantallas no modificadas; las pantallas tocadas deben pasar su lint dirigido.
+
+## Backend y migraciones
+
+Las migraciones versionadas están en `../supabase/migrations`. Antes de aplicar cambios:
+
+1. Identifica el proyecto Supabase correcto (QA o producción).
+2. Consulta su historial de migraciones.
+3. Aplica las migraciones en orden y primero en QA.
+4. Verifica RLS, permisos de tabla y funciones SECURITY DEFINER.
+5. No uses datos de clientes reales para pruebas.
+
+Las Edge Functions se encuentran en `../supabase/functions`. Las funciones que usan service role se ejecutan solo en servidor. No copies secretos al código Expo.
+
+## Ubicación, mapas y notificaciones
+
+- Klipp no solicita GPS automáticamente al entrar en Inicio, Direcciones o Nueva reserva. El cliente comparte ubicación después de pulsar una acción explícita.
+- Las claves de Google Maps deben restringirse por API, dominio, paquete Android o bundle iOS.
+- Los cambios de permisos, mapas o módulos nativos pueden requerir un nuevo build nativo.
+- Las notificaciones in-app no requieren permisos push. Para push real se necesitan credenciales FCM/APNs en EAS y pruebas en dispositivos físicos.
+- La ETA de servidor utiliza `GOOGLE_MAPS_SERVER_API_KEY` como secreto de Supabase, nunca como variable pública del cliente.
+
+Consulta [configuración de notificaciones](../docs/notifications-setup.md).
+
+## Pagos AZUL
+
+El cliente no debe capturar ni almacenar números de tarjeta, CVV ni fecha de caducidad. La integración prevista utiliza la página de pago alojada por AZUL y validación HMAC en backend.
+
+Los pagos reales siguen deshabilitados hasta disponer de afiliación, credenciales de certificación y producción, callbacks verificados y pruebas de conciliación y reembolso. Consulta [Integración de pagos AZUL](../docs/payments-azul-integration.md).
+
+## Reglas de producto que no deben romperse
+
+- Un profesional tiene una sola profesión principal.
+- Cada modalidad tiene su propio precio y duración definidos por el profesional.
+- El profesional lleva sus herramientas, equipos, productos y materiales; no utiliza los del cliente.
+- El cliente elige una modalidad antes de seleccionar profesional o «Cerca de mí».
+- La asignación automática envía ofertas con cuenta atrás y avanza al siguiente candidato cuando vence o se rechaza.
+- El contacto entre cliente y profesional se mantiene dentro de Klipp.
+- La comisión actual configurada es del 7 % y se calcula en backend.
+
+La especificación funcional vigente está en [PROJECT_SPEC.md](../PROJECT_SPEC.md); los casos de prueba están en [QA_SCENARIOS.md](../QA_SCENARIOS.md).
