@@ -62,6 +62,9 @@ jobs:
       - name: Lint the changed client addresses screen
         run: npx eslint src/components/client-addresses-screen.tsx
 
+      - name: Lint the changed authentication screen
+        run: npx eslint src/components/auth-screen.tsx
+
       - name: Run TypeScript
         run: npx tsc --noEmit
 
