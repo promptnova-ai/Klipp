@@ -80,9 +80,9 @@ export function ProRegistrationScreen() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const transition = useRef(new Animated.Value(1)).current;
+  const [transition] = useState(() => new Animated.Value(1));
   const tierRequestId = useRef(0);
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
   const progressWidth = useMemo(
     () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
     [progress],
@@ -246,7 +246,7 @@ export function ProRegistrationScreen() {
       : [...current, weekday].sort((a, b) => a - b));
   }
 
-  async function useCurrentLocation() {
+  async function requestCurrentLocation() {
     setLocating(true);
     setError(null);
     try {
@@ -538,7 +538,7 @@ export function ProRegistrationScreen() {
                     <Text style={styles.helper}>Clientes dentro del círculo podrán encontrarte.</Text>
                   </View>
                 </View>
-                <Pressable accessibilityRole="button" disabled={locating} onPress={() => void useCurrentLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
+                <Pressable accessibilityRole="button" disabled={locating} onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
                 </Pressable>
                 <Pressable accessibilityRole="button" onPress={useDistrictNationalTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
