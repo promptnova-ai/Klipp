@@ -43,3 +43,9 @@ Usar exclusivamente un proyecto y cuentas de prueba. No crear reservas ficticias
 ## QA-AUTO-08 — Exclusiones correctas
 - Probar candidatos fuera de cobertura, sin tarifa para la modalidad, no aprobados, desconectados, GPS con más de 90 segundos, horario incompatible, con reserva solapada o con otra oferta pendiente.
 - Resultado esperado: ninguno entra en la ronda.
+
+## QA-AUTO-09 — Expiración desde el dispositivo
+- Mantener abierta la oferta en la app profesional hasta que llegue a cero.
+- Resultado esperado: la app invoca `pro_expire_booking_request`; el backend marca la oferta como expirada y activa la siguiente ronda de inmediato si no quedan ofertas vivas.
+- Repetir con la app en segundo plano o sin conexión.
+- Resultado esperado: al volver a conectarse se recupera el estado correcto; el cron del servidor sigue siendo el mecanismo de respaldo.
