@@ -18,6 +18,7 @@ type ClientBooking = Booking & {
 type LocationPoint = { latitude: number; longitude: number };
 type QueueInfo = { previous_stops: number; previous_service_in_progress: boolean; departure_window: string };
 type BookingMessage = { id: number; booking_id: string; sender_id: string; body: string; created_at: string };
+type PaymentSummary = { id: string; booking_id: string; provider: string; amount_dop: number; status: 'pending' | 'held' | 'released' | 'refunded' | 'failed'; created_at: string; held_at: string | null; released_at: string | null };
 
 const statusLabels: Record<BookingStatus, string> = {
   requested: 'Solicitud enviada',
@@ -38,6 +39,7 @@ export function ClientBookingsScreen() {
   const { session } = useAuth();
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
   const [pros, setPros] = useState<Record<string, ProCard>>({});
+  const [payments, setPayments] = useState<Record<string, PaymentSummary>>({});
   const [reviews, setReviews] = useState<Record<string, Review>>({});
   const [ratings, setRatings] = useState<Record<string, number>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
@@ -70,18 +72,25 @@ export function ClientBookingsScreen() {
     setBookings(bookingRows);
     if (bookingRows.length) {
       const bookingIds = bookingRows.map((booking) => booking.id);
-      const [reviewResult, proResult] = await Promise.all([
+      const [reviewResult, proResult, paymentResult] = await Promise.all([
         supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
         supabase.rpc('get_client_booking_pro_cards', { p_booking_ids: bookingIds }),
+        supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at').in('booking_id', bookingIds).order('created_at', { ascending: false }),
       ]);
-      if (reviewResult.error || proResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? 'No pudimos cargar los detalles.');
-      else {
-        setReviews(Object.fromEntries(((reviewResult.data ?? []) as Review[]).map((review) => [review.booking_id, review])));
-        setPros(Object.fromEntries(((proResult.data ?? []) as ProCard[]).map((pro) => [pro.pro_id, pro])));
+      if (reviewResult.error || proResult.error || paymentResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? paymentResult.error?.message ?? 'No pudimos cargar los detalles.');
+      if (!reviewResult.error) setReviews(Object.fromEntries(((reviewResult.data ?? []) as Review[]).map((review) => [review.booking_id, review])));
+      if (!proResult.error) setPros(Object.fromEntries(((proResult.data ?? []) as ProCard[]).map((pro) => [pro.pro_id, pro])));
+      if (!paymentResult.error) {
+        const latestPayments = new Map<string, PaymentSummary>();
+        for (const payment of (paymentResult.data ?? []) as PaymentSummary[]) {
+          if (!latestPayments.has(payment.booking_id)) latestPayments.set(payment.booking_id, payment);
+        }
+        setPayments(Object.fromEntries(latestPayments));
       }
     } else {
       setReviews({});
       setPros({});
+      setPayments({});
     }
     const scheduledBookings = bookingRows.filter((booking) => booking.status === 'scheduled' && booking.pro_id);
     const queueResults = await Promise.all(scheduledBookings.map(async (booking) => {
@@ -390,7 +399,22 @@ export function ClientBookingsScreen() {
               <Text style={styles.priceLabel}>Total</Text>
               <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
             </View>
-            {booking.status === 'awaiting_payment' && <View style={styles.payment}><Text style={styles.paymentTitle}>Pago pendiente</Text><Text style={styles.body}>La integración de pagos estará disponible más adelante.</Text></View>}
+            {booking.status === 'awaiting_payment' && (() => {
+              const payment = payments[booking.id];
+              const paymentTitle = payment?.status === 'held' || payment?.status === 'released'
+                ? 'Pago recibido'
+                : payment?.status === 'failed'
+                  ? 'Pago no completado'
+                  : 'Pago pendiente';
+              const paymentMessage = payment?.status === 'held' || payment?.status === 'released'
+                ? 'Hemos recibido la confirmación del proveedor de pago. Estamos actualizando tu reserva.'
+                : payment?.status === 'failed'
+                  ? 'El pago no fue aprobado y la reserva todavía no está confirmada.'
+                  : payment
+                    ? 'Todavía no se ha confirmado el pago. La reserva no está confirmada.'
+                    : 'El pago con tarjeta aún no está habilitado. No realices transferencias ni pagos fuera de Klipp.';
+              return <View style={styles.payment}><Text style={styles.paymentTitle}>{paymentTitle}</Text><Text style={styles.body}>{paymentMessage}</Text></View>;
+            })()}
             {booking.status === 'completed' && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void confirmService(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Confirmando...' : 'Confirmar servicio'}</Text></Pressable>}
             {canReview && (
               <View style={styles.reviewForm}>
