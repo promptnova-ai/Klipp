@@ -104,8 +104,9 @@ export function ProProfileScreen() {
     if (!userId) return;
     setLoading(true);
     setError(null);
-    const [profileResult, availabilityResult, catalogResult, offeredResult, equipmentResult, portfolioResult, tiersResult] = await Promise.all([
+    const [profileResult, accountProfileResult, availabilityResult, catalogResult, offeredResult, equipmentResult, portfolioResult, tiersResult] = await Promise.all([
       supabase.from('pro_profiles').select('*').eq('user_id', userId).single(),
+      supabase.from('profiles').select('phone').eq('id', userId).single(),
       supabase.from('pro_availability').select('id, pro_id, weekday, start_time, end_time').eq('pro_id', userId).order('weekday'),
       supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
       supabase.from('pro_services').select('id, service_type_id, base_price_dop, est_minutes, details').eq('pro_id', userId).eq('active', true),
@@ -113,9 +114,9 @@ export function ProProfileScreen() {
       supabase.from('pro_portfolio').select('id, pro_id, object_path, caption, sort_order, created_at').eq('pro_id', userId).order('sort_order').order('created_at', { ascending: false }),
       supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('id'),
     ]);
-    if (profileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error || portfolioResult.error || tiersResult.error) {
+    if (profileResult.error || accountProfileResult.error || availabilityResult.error || catalogResult.error || offeredResult.error || equipmentResult.error || portfolioResult.error || tiersResult.error) {
       setError(
-        profileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? portfolioResult.error?.message ?? tiersResult.error?.message ?? 'No pudimos cargar tu perfil.',
+        profileResult.error?.message ?? accountProfileResult.error?.message ?? availabilityResult.error?.message ?? catalogResult.error?.message ?? offeredResult.error?.message ?? equipmentResult.error?.message ?? portfolioResult.error?.message ?? tiersResult.error?.message ?? 'No pudimos cargar tu perfil.',
       );
       setLoading(false);
       return;
@@ -124,7 +125,7 @@ export function ProProfileScreen() {
     const savedProfile = profileResult.data as ProProfile;
     const registrationDraft = getRegistrationDraft(session?.user.user_metadata?.pro_onboarding);
     setProProfile(savedProfile);
-    setPhone(typeof session?.user.user_metadata?.phone === 'string' ? session.user.user_metadata.phone : '');
+    setPhone(typeof accountProfileResult.data?.phone === 'string' ? accountProfileResult.data.phone : '');
     setBio(savedProfile.bio ?? registrationDraft?.bio ?? '');
     setYears(savedProfile.years_experience?.toString() ?? registrationDraft?.years_experience?.toString() ?? '');
     setTransportType(savedProfile.transport_type ?? registrationDraft?.transport_type ?? '');
