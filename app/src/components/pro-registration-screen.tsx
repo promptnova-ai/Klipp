@@ -24,6 +24,11 @@ import { supabase } from '../../lib/supabase';
 type PricingTier = { id: number; service_type_id: number; label: string; est_minutes: number };
 type EquipmentRequirement = { id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type TierDraft = { price: string; minutes: string };
+
+function parseDopPrice(value: string): number {
+  const normalized = value.trim().replace(/[\s,]/g, '');
+  return normalized ? Number(normalized) : Number.NaN;
+}
 type AvailabilityDraft = { weekday: number; start_time: string; end_time: string };
 type ProOnboardingDraft = {
   phone: string;
@@ -45,7 +50,6 @@ const steps = [
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
-const districtNationalTestLocation: CoverageCoordinate = { latitude: 18.479, longitude: -69.941 };
 
 export function ProRegistrationScreen() {
   const router = useRouter();
@@ -154,7 +158,7 @@ export function ProRegistrationScreen() {
       if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
       if (pricingTiers.some((tier) => {
         const draft = tierDrafts[tier.id];
-        return !draft || !Number.isFinite(Number(draft.price)) || Number(draft.price) <= 0
+        return !draft || !Number.isFinite(parseDopPrice(draft.price)) || parseDopPrice(draft.price) <= 0
           || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
       })) return 'Indica un precio y una duración válidos para cada modalidad.';
       const selectedProfession = catalog.find((item) => item.id === selectedServiceId);
@@ -264,11 +268,6 @@ export function ProRegistrationScreen() {
     }
   }
 
-  function useDistrictNationalTestLocation() {
-    setCenter(districtNationalTestLocation);
-    setError(null);
-  }
-
   async function createProfessionalAccount() {
     const validationError = validateStep();
     if (validationError) {
@@ -292,7 +291,7 @@ export function ProRegistrationScreen() {
         details: serviceDetails,
         tier_prices: pricingTiers.map((tier) => ({
           pricing_tier_id: tier.id,
-          price_dop: Number(tierDrafts[tier.id]?.price),
+          price_dop: parseDopPrice(tierDrafts[tier.id]?.price ?? ''),
           est_minutes: Number(tierDrafts[tier.id]?.minutes),
         })),
       }],
@@ -491,7 +490,7 @@ export function ProRegistrationScreen() {
                           <Text style={styles.serviceName}>{tier.label}</Text>
                           <View style={styles.serviceFields}>
                             <Field label="Precio · RD$">
-                              <TextInput keyboardType="decimal-pad" onChangeText={(price) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, price } }))} placeholder="1,500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
+                              <TextInput keyboardType="decimal-pad" onChangeText={(price) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, price } }))} placeholder="1500" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.price} />
                             </Field>
                             <Field label="Duración · min">
                               <TextInput keyboardType="number-pad" onChangeText={(minutes) => setTierDrafts((current) => ({ ...current, [tier.id]: { ...draft, minutes } }))} placeholder="60" placeholderTextColor={KlippColors.muted} style={styles.input} value={draft.minutes} />
@@ -540,9 +539,6 @@ export function ProRegistrationScreen() {
                 </View>
                 <Pressable accessibilityRole="button" disabled={locating} onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
                   {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
-                </Pressable>
-                <Pressable accessibilityRole="button" onPress={useDistrictNationalTestLocation} style={({ pressed }) => [styles.testLocationButton, pressed && styles.pressed]}>
-                  <Text style={styles.testLocationButtonText}>Usar ubicación de prueba · Piantini, Distrito Nacional</Text>
                 </Pressable>
                 {center ? (
                   <CoverageRadiusPicker center={center} onChange={setCenter} radiusMeters={radiusKm * 1000} />
@@ -702,7 +698,6 @@ const styles = StyleSheet.create({
   cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   locationButton: { minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EEF4FF' },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
-  testLocationButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 12, backgroundColor: KlippColors.white },
   testLocationButtonText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700', textAlign: 'center' },
   noLocation: { minHeight: 118, alignItems: 'center', justifyContent: 'center', padding: 14, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 5 },
   noLocationTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
