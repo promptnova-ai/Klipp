@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
     for (const item of claimed) {
       const { data: notification, error: notificationError } = await admin
         .from("notifications")
-        .select("id, user_id, title, body, data")
+        .select("id, user_id, type, title, body, data")
         .eq("id", item.notification_id)
         .maybeSingle();
       if (notificationError || !notification) {
