@@ -599,7 +599,7 @@ export function ProProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
       <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
         <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
         {proProfile.verification_status !== 'approved' && (
@@ -816,17 +816,17 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 40, gap: 16, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
-  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
+  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   portfolioItem: { width: '47%', gap: 5 },
   portfolioImage: { width: '100%', height: 118, borderRadius: 12, backgroundColor: KlippColors.canvas },
   portfolioDelete: { alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 9, borderRadius: 8, backgroundColor: '#FFF1F2' },
   portfolioDeleteText: { color: '#BE123C', fontSize: 12, fontWeight: '700' },
-  statusBanner: { padding: 16, borderRadius: 8, backgroundColor: KlippColors.goldLight, gap: 5 },
+  statusBanner: { padding: 16, borderRadius: 16, backgroundColor: KlippColors.goldLight, gap: 5 },
   signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, backgroundColor: '#FFF7F7' },
   signOutPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   signOutText: { color: KlippColors.danger, fontSize: 14, fontWeight: '700' },
@@ -834,16 +834,16 @@ const styles = StyleSheet.create({
   statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 7, paddingHorizontal: 12, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 12, paddingHorizontal: 13, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
   multiline: { minHeight: 92, paddingVertical: 10, textAlignVertical: 'top' },
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#EEF4FF' },
-  locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
+  locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceTeal },
+  locationButtonText: { color: KlippColors.tealDark, fontSize: 14, fontWeight: '700' },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
   choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  choiceSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  choiceSelected: { borderColor: KlippColors.teal, backgroundColor: KlippColors.surfaceTeal },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
-  choiceTextSelected: { color: KlippColors.blueDark },
+  choiceTextSelected: { color: KlippColors.tealDark },
   serviceRequirements: { paddingHorizontal: 10, gap: 6 },
   requirementsTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
   requirementRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   durationField: { flex: 1 },
   timeRow: { flexDirection: 'row', gap: 12 },
   timeField: { flex: 1, gap: 6 },
-  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.blue },
+  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.teal },
   actionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   buttonDisabled: { opacity: 0.55 },
   slotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#e7eeea' },

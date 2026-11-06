@@ -66,13 +66,6 @@ const permissionLabels: Record<string, string> = {
   'audit.read': 'Consultar actividad',
 };
 
-const permissionGroups: { title: string; codes: string[] }[] = [
-  { title: 'Clientes y profesionales', codes: ['accounts.read', 'accounts.manage_clients', 'professionals.manage', 'verification.review'] },
-  { title: 'Operación diaria', codes: ['bookings.read', 'bookings.manage', 'support.manage', 'catalog.manage'] },
-  { title: 'Finanzas', codes: ['finance.read', 'finance.reconcile'] },
-  { title: 'Administración', codes: ['settings.operational', 'staff.manage', 'audit.read'] },
-];
-
 const templateHighlights: Record<string, string> = {
   support: 'Atención al cliente y consulta básica de cuentas.',
   operations: 'Gestión operativa y revisión de profesionales.',
@@ -401,7 +394,7 @@ export function AdminScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
+      <BrandScreenHeader role="admin" eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
       <View style={styles.sectionTabs}>
         {visibleSections.map((item) => (
           <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: activeSection === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, activeSection === item.key && styles.sectionTabSelected]}>
@@ -692,9 +685,9 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
 }
 
 const styles = StyleSheet.create({
-  page: { padding: 20, paddingBottom: 44, gap: 16, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 8, paddingBottom: 52, gap: 20, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
-  section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
+  section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   issueSummary: { flexDirection: 'row', gap: 8 },
   issueCount: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#F3F6FA', gap: 3 },
@@ -705,7 +698,7 @@ const styles = StyleSheet.create({
   issueStatusDone: { backgroundColor: '#E8F7EE' },
   issueStatusText: { color: KlippColors.slate, fontSize: 10, fontWeight: '800' },
   resolutionBox: { padding: 12, gap: 8, borderRadius: 10, backgroundColor: '#F0F8F3' },
-  heroCard: { padding: 19, gap: 12, borderRadius: 18, backgroundColor: KlippColors.navy },
+  heroCard: { padding: 22, gap: 14, borderRadius: 22, backgroundColor: '#27213F' },
   eyebrow: { color: '#B8D2FF', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
   heroTitle: { color: KlippColors.white, fontSize: 23, fontWeight: '800' },
   summaryGrid: { flexDirection: 'row', gap: 8, marginTop: 5 },
@@ -714,9 +707,9 @@ const styles = StyleSheet.create({
   summaryLabel: { color: '#D6E2F2', fontSize: 10, fontWeight: '600' },
   sectionHeading: { gap: 4, marginTop: 5 },
   templateGrid: { gap: 9 },
-  templateCard: { padding: 14, gap: 7, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 13, backgroundColor: KlippColors.white },
+  templateCard: { padding: 14, gap: 7, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   templateName: { color: KlippColors.navy, fontSize: 16, fontWeight: '800' },
-  templateMeta: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
+  templateMeta: { color: '#7051C8', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
   permissionSummary: { color: KlippColors.slate, fontSize: 12, lineHeight: 18 },
   employeeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   employeeIdentity: { flex: 1, gap: 3 },
@@ -725,23 +718,23 @@ const styles = StyleSheet.create({
   permissionName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   auditAction: { color: KlippColors.navy, fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
   sectionTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  sectionTab: { minHeight: 40, paddingHorizontal: 13, justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
-  sectionTabSelected: { backgroundColor: KlippColors.navy, borderColor: KlippColors.navy },
+  sectionTab: { minHeight: 42, paddingHorizontal: 15, justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  sectionTabSelected: { backgroundColor: '#7051C8', borderColor: '#7051C8' },
   sectionTabText: { color: KlippColors.slate, fontWeight: '600', fontSize: 13 },
   sectionTabTextSelected: { color: KlippColors.white },
-  card: { padding: 13, gap: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: '#FCFCFD' },
+  card: { padding: 13, gap: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: '#FFFFFF' },
   tierCard: { paddingTop: 10, gap: 8, borderTopWidth: 1, borderTopColor: KlippColors.border },
   cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
-  input: { minHeight: 44, paddingHorizontal: 11, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 9, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 14 },
+  input: { minHeight: 44, paddingHorizontal: 11, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 12, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 14 },
   multiline: { minHeight: 70, paddingVertical: 9, textAlignVertical: 'top' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   flex: { flex: 1, minWidth: 100 },
   roleOption: { minHeight: 38, flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 9, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 9, backgroundColor: KlippColors.white },
-  roleOptionSelected: { borderColor: KlippColors.blue, backgroundColor: '#EEF4FF' },
+  roleOptionSelected: { borderColor: '#7051C8', backgroundColor: KlippColors.surfaceViolet },
   roleText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
-  roleTextSelected: { color: KlippColors.blueDark },
+  roleTextSelected: { color: '#593DAA' },
   auditRow: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 4 },
   permissionRow: { flexDirection: 'column', gap: 7, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },
   permissionCopy: { gap: 2 },
@@ -754,7 +747,7 @@ const styles = StyleSheet.create({
   permissionToggleTextActive: { color: '#067647' },
   permissionToggleTextDenied: { color: KlippColors.danger },
   permissionReset: { minWidth: 54, minHeight: 32, alignItems: 'center', justifyContent: 'center' },
-  actionButton: { minHeight: 42, flex: 1, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
+  actionButton: { minHeight: 42, flex: 1, paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: '#7051C8' },
   actionText: { color: KlippColors.white, fontWeight: '700', fontSize: 13, textAlign: 'center' },
   secondaryButton: { backgroundColor: '#FEECEB' },
   secondaryActionText: { color: KlippColors.danger },

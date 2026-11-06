@@ -1,6 +1,7 @@
 import { SymbolView } from 'expo-symbols';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
+import type { ComponentProps } from 'react';
 import * as Location from 'expo-location';
 import {
   Animated,
@@ -11,10 +12,12 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
+import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
@@ -47,6 +50,15 @@ type NearbyOffer = ServiceOffer & {
   distance_m: number;
 };
 type HomeCoordinate = { latitude: number; longitude: number };
+
+function serviceIcon(code: string): ComponentProps<typeof SymbolView>['name'] {
+  if (code.includes('barber') || code.includes('peluquer')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' };
+  if (code.includes('estetica')) return { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' };
+  if (code.includes('carwash') || code.includes('detailing')) return { ios: 'car.side.fill', android: 'directions_car', web: 'directions_car' };
+  if (code.includes('mantenimiento')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' };
+  if (code.includes('oficinas')) return { ios: 'building.2.fill', android: 'business', web: 'business' };
+  return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
+}
 
 function getCategory(service: ServiceType & { category_name?: string | null }) {
   if (service.category_name) return service.category_name;
@@ -85,6 +97,8 @@ function ServiceSkeleton() {
 
 export default function ClientHomeScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const wideLayout = width >= 900;
   const { profile } = useAuth();
   const [services, setServices] = useState<CatalogService[]>([]);
   const [pros, setPros] = useState<SearchablePro[]>([]);
@@ -255,6 +269,7 @@ export default function ClientHomeScreen() {
   const selectedDetailOffer = selectedService?.offers.find((offer) => offer.id === selectedOfferId);
 
   return (
+    <ScreenEntrance style={{ flex: 1 }}>
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <View style={styles.topBar}>
         <View style={styles.brandRow}>
@@ -278,7 +293,7 @@ export default function ClientHomeScreen() {
 
       <View style={styles.greetingBlock}>
         <Text style={styles.greeting}>¡Hola{firstName ? `, ${firstName}` : ''}! <Text style={styles.wave}>✦</Text></Text>
-        <Text style={styles.greetingSubtitle}>Un hogar cuidado se siente diferente.</Text>
+        <Text style={styles.greetingSubtitle}>Servicios confiables, justo donde los necesitas.</Text>
       </View>
 
       <View style={styles.searchBar}>
@@ -287,7 +302,7 @@ export default function ClientHomeScreen() {
           accessibilityLabel="Buscar servicios o profesionales"
           autoCapitalize="none"
           onChangeText={setSearch}
-          placeholder="Buscar limpieza, profesionales..."
+          placeholder="Buscar servicios, modalidades o profesionales..."
           placeholderTextColor={KlippColors.muted}
           returnKeyType="search"
           style={styles.searchInput}
@@ -307,16 +322,16 @@ export default function ClientHomeScreen() {
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
             <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
           </View>
-          <Text style={styles.heroTitle}>Tu hogar,{'\n'}en buenas manos.</Text>
-          <Text style={styles.heroText}>Profesionales verificados para que disfrutes más de tu tiempo.</Text>
+          <Text style={styles.heroTitle}>Tu día, más fácil.{'\n'}Tus servicios, en buenas manos.</Text>
+          <Text style={styles.heroText}>Limpieza, cuidado personal, vehículos y mantenimiento con profesionales verificados.</Text>
           {featuredService && (
-            <Pressable
-              accessibilityRole="button"
+            <MotionPressable
+              accessibilityLabel="Explorar servicios"
               onPress={() => showServiceDetails(featuredService)}
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}>
+              style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Explorar servicios</Text>
               <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.navy} size={17} />
-            </Pressable>
+            </MotionPressable>
           )}
         </View>
       )}
@@ -324,7 +339,7 @@ export default function ClientHomeScreen() {
       <View style={styles.catalogHeader}>
         <View>
           <Text style={styles.sectionEyebrow}>CATÁLOGO KLIPP</Text>
-          <Text style={styles.sectionTitle}>Servicios para ti</Text>
+          <Text style={styles.sectionTitle}>¿Qué necesitas hoy?</Text>
         </View>
         <View style={styles.serviceIcon}>
           <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={21} />
@@ -348,7 +363,7 @@ export default function ClientHomeScreen() {
       </ScrollView>
 
       {loading ? (
-        <View style={styles.serviceList}><ServiceSkeleton /><ServiceSkeleton /></View>
+        <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}><ServiceSkeleton /><ServiceSkeleton /></View>
       ) : loadError ? (
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text>
@@ -373,21 +388,21 @@ export default function ClientHomeScreen() {
           </Pressable>
         </View>
       ) : (
-        <View style={styles.serviceList}>
+        <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}>
           {visibleServices.map((service) => {
-            const priceOptions = [
-              ...service.offers.map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })),
-              ...service.tiers.map((tier) => ({ price: tier.price_dop, duration: tier.est_minutes })),
-            ].sort((left, right) => left.price - right.price);
+            const priceOptions = service.offers
+              .filter((offer) => offer.base_price_dop > 0)
+              .map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes }))
+              .sort((left, right) => left.price - right.price);
             const lowestOption = priceOptions[0];
             return (
-              <Pressable
-                accessibilityRole="button"
+              <MotionPressable
+                accessibilityLabel={`Ver detalles de ${service.name}`}
                 key={service.id}
                 onPress={() => showServiceDetails(service)}
-                style={({ pressed }) => [styles.serviceCard, pressed && styles.cardPressed]}>
+                style={[styles.serviceCard, wideLayout && styles.serviceCardWide]}>
                 <View style={styles.serviceCardIcon}>
-                  <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={23} />
+                  <SymbolView name={serviceIcon(service.code)} tintColor={KlippColors.blueDark} size={23} />
                 </View>
                 <View style={styles.serviceCopy}>
                   <View style={styles.serviceCardTop}>
@@ -396,13 +411,13 @@ export default function ClientHomeScreen() {
                   </View>
                   <Text style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
                   <View style={styles.serviceMeta}>
-                    {lowestOption && <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text>}
+                    {lowestOption ? <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text> : <Text style={styles.servicePriceHint}>Precio según modalidad y profesional</Text>}
                     {lowestOption && <Text style={styles.metaDot}>·</Text>}
                     {lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}
                   </View>
                   <Text style={styles.serviceLink}>Ver detalles  <Text style={styles.linkArrow}>›</Text></Text>
                 </View>
-              </Pressable>
+              </MotionPressable>
             );
           })}
           {visiblePros.length > 0 && (
@@ -413,7 +428,7 @@ export default function ClientHomeScreen() {
                   <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
                   <View style={styles.proResultCopy}>
                     <Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional de limpieza verificado'}</Text>
+                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional verificado de Klipp'}</Text>
                   </View>
                 </View>
               ))}
@@ -445,15 +460,15 @@ export default function ClientHomeScreen() {
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.detailIllustration}>
                   <View style={styles.detailIllustrationIcon}>
-                    <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.blueDark} size={34} />
+                    <SymbolView name={serviceIcon(selectedService.code)} tintColor={KlippColors.blueDark} size={34} />
                   </View>
                   <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
                 </View>
                 <Text style={styles.detailTitle}>{selectedService.name}</Text>
-                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio de calidad para que disfrutes de un hogar limpio y cuidado.'}</Text>
+                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio profesional, con tarifa y duración claras antes de confirmar.'}</Text>
                 <View style={styles.equipmentNotice}>
                   <Text style={styles.equipmentNoticeTitle}>El profesional lleva sus propias herramientas</Text>
-                  <Text style={styles.equipmentNoticeBody}>No tendrás que prestar herramientas, equipos ni productos de limpieza. El profesional debe acudir con todo lo necesario para el servicio contratado.</Text>
+                  <Text style={styles.equipmentNoticeBody}>No tendrás que prestar herramientas, equipos ni productos. El profesional acudirá con sus propios materiales para realizar el servicio contratado.</Text>
                   {selectedService.equipmentRequirements.length > 0 && (
                     <View style={styles.equipmentItems}>
                       <Text style={styles.equipmentItemsTitle}>Equipamiento previsto para este servicio</Text>
@@ -470,7 +485,7 @@ export default function ClientHomeScreen() {
                   )}
                 </View>
                 <View style={styles.benefitList}>
-                  {['Profesionales verificados', 'Precio cerrado según el tamaño', 'Reserva en el horario que prefieras'].map((benefit) => (
+                  {['Profesionales verificados', 'Precio confirmado antes del pago', 'Seguimiento desde Klipp'].map((benefit) => (
                     <View key={benefit} style={styles.benefit}>
                       <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor="#047857" size={18} />
                       <Text style={styles.benefitText}>{benefit}</Text>
@@ -492,7 +507,7 @@ export default function ClientHomeScreen() {
                     <Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
                   </Pressable>
                 ))}
-                {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige el tamaño de tu hogar</Text>}
+                {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige la modalidad del servicio</Text>}
                 {selectedService.tiers.map((tier) => (
                   <Pressable
                     accessibilityRole="radio"
@@ -504,7 +519,7 @@ export default function ClientHomeScreen() {
                       <Text style={styles.tierTitle}>{tier.label}</Text>
                       <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
                     </View>
-                    <Text style={styles.tierPrice}>{formatDop(tier.price_dop)}</Text>
+                    <Text style={styles.tierPrice}>{tier.price_dop > 0 ? formatDop(tier.price_dop) : 'Precio del profesional'}</Text>
                   </Pressable>
                 ))}
                 <Pressable
@@ -524,11 +539,12 @@ export default function ClientHomeScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </ScreenEntrance>
   );
 }
 
 const styles = StyleSheet.create({
-  page: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 58, paddingBottom: 32, gap: 22, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1160, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 24, paddingTop: 30, paddingBottom: 44, gap: 22, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
@@ -549,8 +565,8 @@ const styles = StyleSheet.create({
   heroAccent: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#14294B', right: -75, top: -85 },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: '#1B2A42' },
   heroBadgeText: { color: '#D4E1F4', fontSize: 9, fontWeight: '700', letterSpacing: 0.7 },
-  heroTitle: { color: KlippColors.white, fontSize: 30, lineHeight: 35, fontWeight: '700', letterSpacing: -0.6, marginTop: 4 },
-  heroText: { maxWidth: 290, color: '#CBD5E1', fontSize: 14, lineHeight: 21 },
+  heroTitle: { color: KlippColors.white, fontSize: 32, lineHeight: 38, fontWeight: '800', letterSpacing: -0.75, marginTop: 4, maxWidth: 560 },
+  heroText: { maxWidth: 480, color: '#CBD5E1', fontSize: 14, lineHeight: 22 },
   primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, borderRadius: 13, backgroundColor: KlippColors.teal },
   primaryButtonText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
@@ -559,11 +575,13 @@ const styles = StyleSheet.create({
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
   categories: { gap: 9, paddingVertical: 1 },
   categoryPill: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
-  categorySelected: { borderColor: KlippColors.navy, backgroundColor: KlippColors.navy },
+  categorySelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
   categoryText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
   categoryTextSelected: { color: KlippColors.white },
   serviceList: { gap: 14 },
-  serviceCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 14, rowGap: 16 },
+  serviceCard: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 19, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  serviceCardWide: { width: '48.5%' },
   serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
   serviceCopy: { flex: 1, gap: 7 },
   serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
@@ -572,7 +590,8 @@ const styles = StyleSheet.create({
   categoryTagText: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
   serviceDescription: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   serviceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
-  servicePrice: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  servicePrice: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '800' },
+  servicePriceHint: { color: KlippColors.muted, fontSize: 12, fontWeight: '600' },
   metaDot: { color: KlippColors.muted },
   serviceDuration: { color: KlippColors.muted, fontSize: 12 },
   serviceLink: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700', marginTop: 2 },

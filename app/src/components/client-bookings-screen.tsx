@@ -444,11 +444,11 @@ function distanceInKm(from: LocationPoint, to: LocationPoint) {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 35, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   empty: { marginTop: 4, marginHorizontal: 20, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  card: { marginHorizontal: 20, padding: 18, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  card: { marginHorizontal: 20, padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   cardHeader: { gap: 12 },
   serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },

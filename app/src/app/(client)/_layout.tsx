@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { RoleGuard } from '@/components/role-guard';
 import { NotificationTabIcon } from '@/components/notification-tab-icon';
+import { KlippColors, RoleThemes } from '@/lib/brand';
 
 export default function ClientLayout() {
   return (
@@ -10,10 +11,13 @@ export default function ClientLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#0052FF',
-          tabBarInactiveTintColor: '#64748B',
-          tabBarStyle: { backgroundColor: '#fff', borderTopColor: '#E2E8F0' },
-          tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+          tabBarActiveTintColor: RoleThemes.client.accent,
+          tabBarInactiveTintColor: '#8A94A6',
+          tabBarStyle: { height: 76, paddingTop: 9, paddingBottom: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: KlippColors.border, elevation: 0, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: -5 }, shadowRadius: 18 },
+          sceneStyle: { backgroundColor: RoleThemes.client.canvas },
+          animation: 'fade',
+          tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.1 },
+          tabBarItemStyle: { paddingVertical: 3 },
         }}>
         <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={String(color)} size={20} /> }} />
         <Tabs.Screen name="addresses" options={{ title: 'Direcciones', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={String(color)} size={20} /> }} />
