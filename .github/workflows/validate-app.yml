@@ -51,6 +51,12 @@ jobs:
       - name: Run TypeScript
         run: npx tsc --noEmit
 
+      - name: Export web app
+        run: npx expo export --platform web
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
+
   edge-function-checks:
     name: Edge Function checks
     runs-on: ubuntu-latest
