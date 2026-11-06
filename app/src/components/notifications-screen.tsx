@@ -87,7 +87,7 @@ export function NotificationsScreen() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
-  const [savingPreference, setSavingPreference] = useState<string | null>(null);
+  const [savingPreferences, setSavingPreferences] = useState<Record<string, boolean>>({});
   const [pushBusy, setPushBusy] = useState(false);
   const [pushStatus, setPushStatus] = useState<PushStatus>(Platform.OS === 'web' ? 'unknown' : 'checking');
   const [error, setError] = useState<string | null>(null);
@@ -186,11 +186,11 @@ export function NotificationsScreen() {
   async function updatePreference(eventType: keyof PreferenceMap, channel: PreferenceChannel, enabled: boolean) {
     if (!session?.user.id) return;
     const lockKey = eventType + ':' + channel;
-    if (savingPreference === lockKey) return;
+    if (savingPreferences[lockKey]) return;
 
     const previous = preferences[eventType];
     const next = { ...previous, [channel]: enabled };
-    setSavingPreference(lockKey);
+    setSavingPreferences((current) => ({ ...current, [lockKey]: true }));
     setError(null);
     setNotice(null);
     setPreferences((current) => ({ ...current, [eventType]: next }));
@@ -214,7 +214,7 @@ export function NotificationsScreen() {
       setPreferences((current) => ({ ...current, [eventType]: previous }));
       setError(cause instanceof Error ? cause.message : 'No pudimos guardar tus preferencias.');
     } finally {
-      setSavingPreference(null);
+      setSavingPreferences((current) => ({ ...current, [lockKey]: false }));
     }
   }
 
@@ -366,7 +366,7 @@ export function NotificationsScreen() {
           {preferenceOptions.map(({ eventType, title, description }) => {
             const inAppKey = eventType + ':in_app_enabled';
             const pushKey = eventType + ':push_enabled';
-            const rowSaving = savingPreference === inAppKey || savingPreference === pushKey;
+            const rowSaving = Boolean(savingPreferences[inAppKey] || savingPreferences[pushKey]);
             return (
               <View key={eventType} style={styles.preferenceRow}>
                 <View style={styles.preferenceCopy}>
