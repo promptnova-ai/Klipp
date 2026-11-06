@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -36,6 +36,8 @@ const statusLabels: Record<BookingStatus, string> = {
 
 export function ClientBookingsScreen() {
   const router = useRouter();
+  const { bookingId: requestedBookingId } = useLocalSearchParams<{ bookingId?: string }>();
+  const deepLinkChatHandled = useRef<string | null>(null);
   const { session } = useAuth();
   const [bookings, setBookings] = useState<ClientBooking[]>([]);
   const [pros, setPros] = useState<Record<string, ProCard>>({});
@@ -109,6 +111,24 @@ export function ClientBookingsScreen() {
   }, [session?.user.id]);
 
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
+
+  useEffect(() => {
+    if (!requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
+    if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
+
+    deepLinkChatHandled.current = requestedBookingId;
+    setOpenChatId(requestedBookingId);
+    void supabase
+      .from('messages')
+      .select('id, booking_id, sender_id, body, created_at')
+      .eq('booking_id', requestedBookingId)
+      .order('created_at', { ascending: true })
+      .limit(20)
+      .then(({ data, error: messagesError }) => {
+        if (messagesError) setError(messagesError.message);
+        else setMessages((current) => ({ ...current, [requestedBookingId]: (data ?? []) as BookingMessage[] }));
+      });
+  }, [requestedBookingId, bookings]);
 
   useEffect(() => {
     if (!session?.user.id) return;
