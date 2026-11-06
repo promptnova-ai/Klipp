@@ -70,10 +70,9 @@ export function ClientBookingsScreen() {
     setBookings(bookingRows);
     if (bookingRows.length) {
       const bookingIds = bookingRows.map((booking) => booking.id);
-      const proIds = [...new Set(bookingRows.flatMap((booking) => booking.pro_id ? [booking.pro_id] : []))];
       const [reviewResult, proResult] = await Promise.all([
         supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
-        proIds.length ? supabase.from('pro_cards').select('pro_id, full_name, avatar_url, bio, years_experience, base_sector_id, rating_avg, rating_count, jobs_completed, transport_type').in('pro_id', proIds) : Promise.resolve({ data: [], error: null }),
+        supabase.rpc('get_client_booking_pro_cards', { p_booking_ids: bookingIds }),
       ]);
       if (reviewResult.error || proResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? 'No pudimos cargar los detalles.');
       else {
