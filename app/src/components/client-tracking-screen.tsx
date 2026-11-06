@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,7 +12,7 @@ import { supabase } from '../../lib/supabase';
 
 type TrackingBooking = Pick<Booking,
   'id' | 'pro_id' | 'client_lat' | 'client_lng' | 'address_text' | 'landmark_notes' | 'status'
-  | 'scheduled_start' | 'est_minutes' | 'service_type_id' | 'started_at'
+  | 'scheduled_start' | 'est_minutes' | 'service_type_id' | 'started_at' | 'assignment_mode'
 > & { service_types: { name: string } | null };
 type Coordinate = { latitude: number; longitude: number };
 type BookingStatusEvent = { id: number; from_status: BookingStatus | null; to_status: BookingStatus; occurred_at: string };
@@ -44,23 +44,38 @@ function statusLabel(status: BookingStatus) {
   return labels[status];
 }
 
-function statusMessage(status: BookingStatus) {
-  if (status === 'arrived') return 'Tu profesional llegó al punto de servicio.';
-  if (status === 'in_progress') return 'Tu servicio ya está en curso.';
-  if (status === 'completed') return 'El servicio fue completado. ¡Gracias por elegir Klipp!';
-  if (status === 'cancelled') return 'Esta reserva fue cancelada.';
-  return 'El profesional todavía no ha iniciado el traslado. Te avisaremos cuando esté en camino.';
+function statusMessage(status: BookingStatus, assignmentMode: 'manual' | 'auto') {
+  if (status === 'requested') {
+    return assignmentMode === 'auto'
+      ? 'Klipp está buscando un profesional disponible para tu servicio. Te avisaremos en cuanto alguien acepte.'
+      : 'Tu solicitud está pendiente de respuesta del profesional. Te avisaremos cuando acepte o rechace.';
+  }
+  if (status === 'awaiting_payment') {
+    return 'El profesional ha aceptado, pero el pago integrado todavía no está habilitado. No realices transferencias ni pagos fuera de Klipp; la reserva aún no está confirmada.';
+  }
+  if (status === 'scheduled') {
+    return 'Tu reserva está confirmada. El profesional se está preparando y te avisaremos cuando comience el desplazamiento.';
+  }
+  if (status === 'arrived') return 'Tu profesional llegó al punto de servicio. Puedes comunicarte con él desde el chat de Klipp.';
+  if (status === 'in_progress') return 'Tu servicio ya está en curso. Cuando termine, podrás revisar el resultado, confirmar la finalización y dejar una reseña.';
+  if (status === 'completed') return 'El profesional ha marcado el servicio como terminado. Revisa el resultado y confirma la finalización desde Mis reservas.';
+  if (status === 'confirmed') return 'Has confirmado que el servicio terminó correctamente. Gracias por elegir Klipp.';
+  if (status === 'cancelled') return 'Esta reserva fue cancelada. Puedes revisar los detalles en Mis reservas.';
+  if (status === 'disputed') return 'Esta reserva está en revisión por el equipo de Klipp. Conservaremos aquí las actualizaciones del caso.';
+  return 'La solicitud expiró y ya no está activa. Puedes revisar Mis reservas para solicitar el servicio nuevamente.';
 }
 
 export function ClientTrackingScreen() {
   const router = useRouter();
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const { session } = useAuth();
+  const userId = session?.user.id;
+  const trackingRequestId = useRef(0);
   const [booking, setBooking] = useState<TrackingBooking | null>(null);
   const [professional, setProfessional] = useState<ProCard | null>(null);
   const [professionalCoordinate, setProfessionalCoordinate] = useState<Coordinate | null>(null);
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<string | null>(null);
-  const [clockNow, setClockNow] = useState(Date.now());
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
   const [routeEtaMinutes, setRouteEtaMinutes] = useState<number | null>(null);
   const [routeDistanceMeters, setRouteDistanceMeters] = useState<number | null>(null);
@@ -71,20 +86,24 @@ export function ClientTrackingScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const loadTrackingDetails = useCallback(async () => {
-    const userId = session?.user.id;
+    const requestId = ++trackingRequestId.current;
+    const isLatestRequest = () => trackingRequestId.current === requestId;
     if (!userId || !bookingId) {
-      setError('No encontramos la reserva que quieres seguir.');
-      setLoading(false);
+      if (isLatestRequest()) {
+        setError('No encontramos la reserva que quieres seguir.');
+        setLoading(false);
+      }
       return;
     }
 
     setError(null);
     const { data, error: bookingError } = await supabase
       .from('bookings')
-      .select('id, pro_id, client_lat, client_lng, address_text, landmark_notes, status, scheduled_start, est_minutes, service_type_id, started_at, service_types(name)')
+      .select('id, pro_id, client_lat, client_lng, address_text, landmark_notes, status, scheduled_start, est_minutes, service_type_id, started_at, assignment_mode, service_types(name)')
       .eq('id', bookingId)
       .eq('client_id', userId)
       .single();
+    if (!isLatestRequest()) return;
     if (bookingError) {
       setError(bookingError.message);
       setLoading(false);
@@ -99,10 +118,12 @@ export function ClientTrackingScreen() {
       .eq('booking_id', bookingRow.id)
       .order('occurred_at', { ascending: true })
       .order('id', { ascending: true });
+    if (!isLatestRequest()) return;
     if (eventsError) setError(eventsError.message);
     else setStatusEvents((eventRows ?? []) as BookingStatusEvent[]);
     if (bookingRow.pro_id) {
       const { data: acceptanceData, error: acceptanceError } = await supabase.rpc('get_client_visible_pro_acceptance_rate', { p_booking_id: bookingRow.id });
+      if (!isLatestRequest()) return;
       if (acceptanceError) setError(acceptanceError.message);
       else {
         const metric = Array.isArray(acceptanceData) ? acceptanceData[0] : acceptanceData;
@@ -111,6 +132,7 @@ export function ClientTrackingScreen() {
       const { data: proData, error: proError } = await supabase.rpc('get_client_booking_pro_cards', {
         p_booking_ids: [bookingRow.id],
       });
+      if (!isLatestRequest()) return;
       if (proError) setError(proError.message);
       else setProfessional(((proData ?? []) as ProCard[])[0] ?? null);
     }
@@ -121,6 +143,7 @@ export function ClientTrackingScreen() {
         .select('latitude, longitude, updated_at')
         .eq('booking_id', bookingRow.id)
         .maybeSingle();
+      if (!isLatestRequest()) return;
       if (locationError) setError(locationError.message);
       else if (typeof location?.latitude === 'number' && typeof location.longitude === 'number') {
         setProfessionalCoordinate({ latitude: location.latitude, longitude: location.longitude });
@@ -130,16 +153,28 @@ export function ClientTrackingScreen() {
       setProfessionalCoordinate(null);
       setLocationUpdatedAt(null);
     }
-    if (!bookingRow.pro_id) setProfessionalAcceptanceRate(null);
+    if (!bookingRow.pro_id) {
+      setProfessional(null);
+      setProfessionalAcceptanceRate(null);
+    }
     setLoading(false);
-  }, [bookingId, session]);
+  }, [bookingId, userId]);
 
   useEffect(() => {
-    void Promise.resolve().then(loadTrackingDetails);
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) void loadTrackingDetails();
+    });
+    return () => {
+      active = false;
+      trackingRequestId.current += 1;
+    };
   }, [loadTrackingDetails]);
 
   useEffect(() => {
     if (!booking?.id) return;
+    let active = true;
+    const refresh = () => { if (active) void loadTrackingDetails(); };
     const channel = supabase
       .channel(`tracking-booking-status:${booking.id}`)
       .on('postgres_changes', {
@@ -147,15 +182,18 @@ export function ClientTrackingScreen() {
         schema: 'public',
         table: 'bookings',
         filter: `id=eq.${booking.id}`,
-      }, () => { void loadTrackingDetails(); })
+      }, refresh)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'booking_status_events',
         filter: `booking_id=eq.${booking.id}`,
-      }, () => { void loadTrackingDetails(); })
+      }, refresh)
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
   }, [booking?.id, loadTrackingDetails]);
 
   useEffect(() => {
@@ -190,11 +228,15 @@ export function ClientTrackingScreen() {
 
   useEffect(() => {
     if (!booking?.id || booking.status !== 'en_route') {
-      setRouteEtaMinutes(null);
-      setRouteDistanceMeters(null);
-      setRoutePolyline(null);
-      setRouteEtaUpdatedAt(null);
-      return;
+      let active = true;
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setRouteEtaMinutes(null);
+        setRouteDistanceMeters(null);
+        setRoutePolyline(null);
+        setRouteEtaUpdatedAt(null);
+      });
+      return () => { active = false; };
     }
 
     let active = true;
@@ -282,7 +324,7 @@ export function ClientTrackingScreen() {
                     <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
                     <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
                   </View>
-                  <Pressable accessibilityRole="button" onPress={() => router.push('/(client)/bookings')} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
+                  <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/bookings', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
                     <Text style={styles.callButtonText}>Contactar por el chat de Klipp</Text>
                   </Pressable>
                 </View>
@@ -295,7 +337,7 @@ export function ClientTrackingScreen() {
             ) : (
               <View style={styles.statusCard}>
                 <View style={styles.statusIcon}><Text style={styles.statusIconText}>{booking.status === 'in_progress' ? '✓' : 'i'}</Text></View>
-                <Text style={styles.statusMessage}>{statusMessage(booking.status)}</Text>
+                <Text style={styles.statusMessage}>{statusMessage(booking.status, booking.assignment_mode)}</Text>
                 <Text style={styles.body}>Servicio: {booking.service_types?.name ?? 'Servicio Klipp'}</Text>
                 <Text style={styles.body}>Dirección: {booking.address_text || 'Dirección guardada en la reserva'}</Text>
               </View>
