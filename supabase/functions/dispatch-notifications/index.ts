@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse({ error: "Server configuration error" }, 500);
 
-  const bearer = req.headers.get("Authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  const bearer = req.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
   const isServiceRole = bearer === serviceRoleKey;
   const admin = createClient(supabaseUrl, serviceRoleKey);
   const suppliedCronSecret = req.headers.get("x-notification-cron-secret");
