@@ -242,6 +242,7 @@ export function NewBookingScreen() {
 
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
+  const selectedTierIdForQuery = selectedTier?.id ?? null;
   const selectedDuration = selectedOffer?.est_minutes ?? (mode === 'manual' && selectedProId ? manualProDuration ?? selectedTier?.est_minutes : selectedTier?.est_minutes);
   const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' ? (selectedProId ? manualProPrice ?? undefined : undefined) : selectedTier?.price_dop);
 
@@ -310,7 +311,7 @@ export function NewBookingScreen() {
           setManualPriceLoading(false);
           return;
         }
-        if (!selectedTier) {
+        if (!selectedTierIdForQuery) {
           setManualProPrice(Number(proService.base_price_dop));
           setManualProDuration(Number(proService.est_minutes));
           setError(null);
@@ -320,7 +321,7 @@ export function NewBookingScreen() {
         const { data: tierPrice, error: tierPriceError } = await supabase.from('pro_service_tier_prices')
           .select('price_dop, est_minutes')
           .eq('pro_service_id', proService.id)
-          .eq('pricing_tier_id', selectedTier.id)
+          .eq('pricing_tier_id', selectedTierIdForQuery)
           .eq('active', true)
           .maybeSingle();
         if (!active) return;
@@ -342,7 +343,7 @@ export function NewBookingScreen() {
         setError(cause instanceof Error ? cause.message : 'No pudimos consultar la tarifa del profesional.');
       });
     return () => { active = false; };
-  }, [mode, selectedProId, selectedServiceId, selectedTier?.id, selectedOffer]);
+  }, [mode, selectedProId, selectedServiceId, selectedTierIdForQuery, selectedOffer]);
 
   useEffect(() => {
     let active = true;
