@@ -373,7 +373,7 @@ export function ProAgendaScreen() {
         </View>
       </Modal>
       <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
+      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       <View style={styles.presenceCard}>
         <View style={styles.presenceCopy}>
           <View style={styles.presenceStatusRow}>
@@ -443,7 +443,7 @@ export function ProAgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, backgroundColor: 'rgba(15, 23, 42, 0.55)' },
   equipmentModal: { width: '100%', maxWidth: 440, padding: 22, borderRadius: 18, backgroundColor: KlippColors.white, gap: 14 },
   modalTitle: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
   modalSecondaryText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   modalPrimary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 10, backgroundColor: KlippColors.blue },
   modalPrimaryText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
-  presenceCard: { marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white, gap: 12 },
+  presenceCard: { marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 14 },
   presenceCopy: { gap: 7 },
   presenceStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   presenceDot: { width: 11, height: 11, borderRadius: 6 },
@@ -463,10 +463,10 @@ const styles = StyleSheet.create({
   presenceButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
   presenceButtonOnline: { backgroundColor: '#475569' },
   presenceButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: '#18332d', fontSize: 28, fontWeight: '700' },
   subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
-  card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 8 },
+  card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 10 },
   empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
