@@ -289,6 +289,30 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 **Resultado esperado:** La reserva se crea sin pricing_tier_id, el profesional recibe la solicitud y al aceptar se fija su tarifa base real antes del pago.
 
 
+### QA-PRC-06 — Oferta con tarifa individual del profesional
+
+**Prioridad:** Alta  
+**Precondición:** Dos profesionales auto-asignables con precios y duraciones diferentes para la misma modalidad.
+
+1. Crear una reserva automática para una ubicación cubierta por ambos.
+2. Comparar el precio, duración y pago neto que aparece en la oferta de cada profesional.
+3. Consultar la lista de solicitudes entrantes desde ambas cuentas.
+4. Aceptar desde uno de los profesionales.
+
+**Resultado esperado:** Cada profesional ve su propio precio y su pago neto después de comisión, no el precio provisional mínimo de la reserva. La duración de la oferta coincide con la modalidad publicada por ese profesional y la reserva definitiva conserva esos valores.
+
+### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
+
+**Prioridad:** Alta  
+**Precondición:** Reserva automática con al menos un profesional elegible y conectado.
+
+1. Crear una reserva automática inmediata.
+2. Medir el vencimiento de la oferta desde que se inserta en `booking_requests`.
+3. Intentar aceptar antes y después de los 45 segundos.
+4. Comprobar que el siguiente ciclo de despacho puede enviar la oferta a otros candidatos que aún no la hayan recibido.
+
+**Resultado esperado:** La oferta automática vence a los 45 segundos, aunque exista otro plazo configurado para solicitudes manuales. El servidor rechaza una aceptación tardía y el contador de la app coincide con `expires_at`.
+
 ### QA-PRO-REQ-01 — Alerta entrante tipo Uber
 
 **Prioridad:** Alta  
