@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   radioOuterSelected: { borderColor: KlippColors.blue },
   radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.blue },
   tierCard: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border },
-  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 16, backgroundColor: KlippColors.white }
+  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 16, backgroundColor: KlippColors.white },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
   checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
