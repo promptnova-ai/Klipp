@@ -238,18 +238,14 @@ export function ProRequestsScreen() {
                 </Pressable>
               </Animated.View>
 
-              <Pressable
-                accessibilityRole="button"
-                disabled={busyId === activeRequest.id || secondsLeft <= 0}
-                onPress={() => void respond(activeRequest.id, false)}
-                style={[styles.declineButton, (busyId === activeRequest.id || secondsLeft <= 0) && styles.disabled]}>
-                <Text style={styles.declineText}>Rechazar solicitud</Text>
-              </Pressable>
-
               <SlideToAccept
                 disabled={busyId === activeRequest.id || secondsLeft <= 0}
-                label={busyId === activeRequest.id ? 'Enviando respuesta…' : secondsLeft <= 0 ? 'Solicitud expirada' : 'Desliza para aceptar'}
+                label={busyId === activeRequest.id ? 'Enviando…' : secondsLeft <= 0 ? 'Solicitud expirada' : 'Desliza para aceptar'}
                 onAccept={() => void respond(activeRequest.id, true)}
+              />
+              <HoldToReject
+                disabled={busyId === activeRequest.id || secondsLeft <= 0}
+                onReject={() => void respond(activeRequest.id, false)}
               />
               <Text style={styles.offerFootnote}>Para aceptar, confirma primero que llevas tus propias herramientas y materiales.</Text>
               <Text style={styles.offerFootnote}>Si otro profesional acepta primero, esta solicitud dejará de estar disponible.</Text>
@@ -310,50 +306,96 @@ export function ProRequestsScreen() {
 // PanResponder requires mutable refs for gesture state; refs are only read in gesture callbacks.
 /* eslint-disable react-hooks/refs */
 function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label: string; onAccept: () => void }) {
-  // eslint-disable-next-line react-hooks/refs
   const translateX = useRef(new Animated.Value(0)).current;
+  const fillProgress = useRef(new Animated.Value(0)).current;
   const trackWidth = useRef(0);
+  const [ready, setReady] = useState(false);
   const acceptRef = useRef(onAccept);
-  useEffect(() => {
-    acceptRef.current = onAccept;
-  }, [onAccept]);
-  // eslint-disable-next-line react-hooks/refs
+  useEffect(() => { acceptRef.current = onAccept; }, [onAccept]);
   const responder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => !disabled,
     onMoveShouldSetPanResponder: (_, gesture) => !disabled && Math.abs(gesture.dx) > 4,
     onPanResponderMove: (_, gesture) => {
       const max = Math.max(0, trackWidth.current - 58);
-      translateX.setValue(Math.max(0, Math.min(max, gesture.dx)));
+      const x = Math.max(0, Math.min(max, gesture.dx));
+      translateX.setValue(x);
+      const progress = max > 0 ? x / max : 0;
+      fillProgress.setValue(progress);
+      setReady(progress >= 0.72);
     },
     onPanResponderRelease: (_, gesture) => {
       const max = Math.max(0, trackWidth.current - 58);
       if (max > 0 && gesture.dx >= max * 0.72) {
+        Vibration.vibrate(35);
         acceptRef.current();
       }
-      Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 5 }).start();
+      setReady(false);
+      Animated.parallel([
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true, bounciness: 5 }),
+        Animated.timing(fillProgress, { toValue: 0, duration: 180, useNativeDriver: false }),
+      ]).start();
     },
     onPanResponderTerminate: () => {
-      Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
+      setReady(false);
+      Animated.parallel([
+        Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
+        Animated.timing(fillProgress, { toValue: 0, duration: 180, useNativeDriver: false }),
+      ]).start();
     },
-  }), [disabled, translateX]);
-
+  }), [disabled, fillProgress, translateX]);
   useEffect(() => {
-    if (disabled) translateX.setValue(0);
-  }, [disabled, translateX]);
-
+    if (disabled) {
+      translateX.setValue(0);
+      fillProgress.setValue(0);
+      setReady(false);
+    }
+  }, [disabled, fillProgress, translateX]);
+  const fillWidth = fillProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <View style={[styles.slideTrack, disabled && styles.slideDisabled]} onLayout={(event) => { trackWidth.current = event.nativeEvent.layout.width; }}>
-      <Text style={styles.slideLabel}>{label}</Text>
-      <Animated.View
-        // eslint-disable-next-line react-hooks/refs
-        {...responder.panHandlers}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        pointerEvents={disabled ? 'none' : 'auto'}
-        style={[styles.slideThumb, { transform: [{ translateX }] }]}>
+      <Animated.View pointerEvents="none" style={[styles.slideFill, { width: fillWidth }]} />
+      <Text style={styles.slideLabel}>{ready ? 'ACEPTAR TRABAJO' : label}</Text>
+      <Animated.View {...responder.panHandlers} accessibilityRole="button" accessibilityLabel={ready ? 'Aceptar trabajo' : label} pointerEvents={disabled ? 'none' : 'auto'} style={[styles.slideThumb, { transform: [{ translateX }] }]}>
         <Text style={styles.slideArrow}>››</Text>
       </Animated.View>
     </View>
+  );
+}
+
+function HoldToReject({ disabled, onReject }: { disabled: boolean; onReject: () => void }) {
+  const [countdown, setCountdown] = useState<number | null>(null);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const rejectRef = useRef(onReject);
+  useEffect(() => { rejectRef.current = onReject; }, [onReject]);
+  useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
+  const cancel = () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setCountdown(null);
+  };
+  const begin = () => {
+    if (disabled) return;
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setCountdown(2);
+    Vibration.vibrate(70);
+    timers.current.push(setTimeout(() => {
+      setCountdown(1);
+      Vibration.vibrate(70);
+    }, 1000));
+    timers.current.push(setTimeout(() => {
+      setCountdown(0);
+      Vibration.vibrate(120);
+      rejectRef.current();
+      timers.current = [];
+      setTimeout(() => setCountdown(null), 350);
+    }, 2000));
+  };
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Mantén presionado dos segundos para rechazar el trabajo" accessibilityHint="Suelta antes de tiempo para cancelar" disabled={disabled} onPressIn={begin} onPressOut={cancel} style={[styles.holdReject, disabled && styles.slideDisabled]}>
+      <Text style={styles.holdRejectTitle}>{countdown === null ? 'MANTÉN PRESIONADO PARA RECHAZAR' : countdown === 0 ? 'RECHAZANDO…' : `MANTÉN · ${countdown}`}</Text>
+      <Text style={styles.holdRejectSubtitle}>{countdown === null ? '2 segundos · Suelta para cancelar' : countdown === 0 ? 'Solicitud en proceso' : 'No sueltes todavía'}</Text>
+    </Pressable>
   );
 }
 
@@ -406,11 +448,15 @@ const styles = StyleSheet.create({
   materialsSuccess: { color: '#126b50', fontSize: 12, fontWeight: '800' },
   declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: '#b42318', borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#b42318' },
   declineText: { color: '#ffffff', fontSize: 14, fontWeight: '900' },
-  slideTrack: { height: 64, borderRadius: 18, backgroundColor: '#126b60', justifyContent: 'center', padding: 4, overflow: 'hidden' },
+  slideTrack: { height: 66, borderRadius: 18, backgroundColor: '#111820', justifyContent: 'center', padding: 4, overflow: 'hidden' },
+  slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: '#15966f' },
   slideDisabled: { opacity: 0.5 },
-  slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: '#ffffff', fontSize: 14, fontWeight: '900' },
+  slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: '#ffffff', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
   slideThumb: { width: 56, height: 56, borderRadius: 15, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', elevation: 3 },
-  slideArrow: { color: '#126b60', fontSize: 27, fontWeight: '900', letterSpacing: -4, marginRight: 4 },
+  slideArrow: { color: '#111820', fontSize: 27, fontWeight: '900', letterSpacing: -4, marginRight: 4 },
+  holdReject: { minHeight: 58, borderWidth: 1.5, borderColor: '#b42318', borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#b42318', gap: 3, paddingHorizontal: 12 },
+  holdRejectTitle: { color: '#ffffff', fontSize: 12, fontWeight: '900', letterSpacing: 0.45, textAlign: 'center' },
+  holdRejectSubtitle: { color: '#ffe3df', fontSize: 11, fontWeight: '700' },
   offerFootnote: { color: '#718187', fontSize: 11, lineHeight: 16, textAlign: 'center' },
   page: { paddingBottom: 35, gap: 14, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: '#f4f7f5' },
