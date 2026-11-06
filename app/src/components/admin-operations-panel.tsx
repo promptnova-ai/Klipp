@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
+// Expo resolves the .native/.web platform-specific module variants.
+// eslint-disable-next-line import/no-unresolved
 import { AdminOperationsMap } from '@/components/admin-operations-map';
 import { supabase } from '../../lib/supabase';
 
@@ -110,7 +112,6 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     void loadBookings().finally(() => { if (active) setLoading(false); });
     const interval = setInterval(() => { void loadBookings(); }, 15000);
     return () => { active = false; clearInterval(interval); };
@@ -223,7 +224,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
       await openTimeline(bookingId);
     }
     setInterventionBusy(false);
-  }, [interventionReason, loadBookings, openTimeline]);
+  }, [interventionReason, loadBookings]);
 
   const cancelUnassignedBooking = useCallback((bookingId: string) => {
     if (interventionReason.trim().length < 5) {
