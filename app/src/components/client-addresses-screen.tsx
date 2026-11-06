@@ -40,9 +40,6 @@ export function ClientAddressesScreen() {
 
   useFocusEffect(useCallback(() => { void loadAddresses(); }, [loadAddresses]));
 
-  useEffect(() => {
-    void locateCurrentPosition();
-  }, []);
 
   useEffect(() => {
     if (!coordinate) return;
