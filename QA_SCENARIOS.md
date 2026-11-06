@@ -388,3 +388,17 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 6. Repetir ambos gestos con la oferta expirada o mientras se envía una respuesta.
 
 **Resultado esperado:** Aceptar requiere deslizar; rechazar requiere mantener pulsado dos segundos. Los gestos no se confunden, no se ejecutan al soltar antes de tiempo y quedan deshabilitados cuando la oferta expira o hay una respuesta en curso.
+
+
+### QA-PRO-REQ-08 — Mapa y ubicación exacta del servicio en la oferta
+
+**Prioridad:** Alta  
+**Precondición:** Oferta pendiente con dirección y coordenadas del cliente.
+
+1. Abrir la oferta y comprobar que el servicio, modalidad, fecha, duración y dirección aparecen antes de las acciones.
+2. Verificar que el mapa muestra un marcador en las coordenadas `client_lat/client_lng` de la reserva.
+3. Comprobar que el mapa no usa la ubicación del profesional ni una coordenada aproximada inventada.
+4. Abrir una solicitud sin coordenadas y comprobar que se muestra un estado alternativo, sin colocar un pin ficticio.
+5. Verificar que la RPC solo devuelve las coordenadas de las solicitudes pendientes del profesional autenticado.
+
+**Resultado esperado:** El profesional identifica visualmente el punto de prestación del servicio antes de confirmar materiales y aceptar o rechazar. Si no hay coordenadas, la interfaz lo indica con claridad y conserva la dirección textual.
