@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, type ReactNode } from 'react-native';
+import type { ReactNode } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { KlippColors, KlippLayout, RoleThemes, type KlippRole } from '@/lib/brand';
 
