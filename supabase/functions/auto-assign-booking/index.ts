@@ -1,5 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void };
+
+type AdminClient = {
+  from: Function;
+  rpc: Function;
+};
+
 const OFFER_TIMEOUT_MS = 45000;
 const POLL_INTERVAL_MS = 1500;
 
@@ -40,7 +47,7 @@ Deno.serve(async (req) => {
     const { data: userResult, error: authError } = await userClient.auth.getUser(accessToken);
     if (authError || !userResult.user) return jsonResponse({ error: "Invalid session" }, 401);
 
-    const admin = createClient(supabaseUrl, serviceRoleKey);
+    const admin = createClient(supabaseUrl, serviceRoleKey) as unknown as AdminClient;
     const { data: booking, error: bookingError } = await admin
       .from("bookings")
       .select("client_id, assignment_mode, status, pro_id, scheduled_start")
@@ -88,7 +95,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function runAssignment(admin: ReturnType<typeof createClient>, bookingId: string) {
+async function runAssignment(admin: AdminClient, bookingId: string) {
   // This RPC takes a booking-scoped advisory lock and creates one 45-second
   // request per eligible nearby professional. It is shared with the scheduled
   // dispatcher, preventing two workers from creating competing dispatch rounds.
