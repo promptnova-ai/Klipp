@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { ActivityIndicator, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -26,6 +26,8 @@ const nextStep: Partial<Record<BookingStatus, { status: BookingStatus; label: st
 };
 
 export function ProAgendaScreen() {
+  const { bookingId: requestedBookingId } = useLocalSearchParams<{ bookingId?: string }>();
+  const deepLinkChatHandled = useRef<string | null>(null);
   const { session } = useAuth();
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [reassignmentLockedIds, setReassignmentLockedIds] = useState<string[]>([]);
@@ -189,6 +191,24 @@ export function ProAgendaScreen() {
     });
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    if (!requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
+    if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
+
+    deepLinkChatHandled.current = requestedBookingId;
+    setChatBookingId(requestedBookingId);
+    void supabase
+      .from('messages')
+      .select('id, booking_id, sender_id, body, created_at')
+      .eq('booking_id', requestedBookingId)
+      .order('created_at', { ascending: true })
+      .limit(20)
+      .then(({ data, error: messagesError }) => {
+        if (messagesError) setError(messagesError.message);
+        else setChatMessages((data ?? []) as AgendaMessage[]);
+      });
+  }, [requestedBookingId, bookings]);
 
   useEffect(() => {
     const channels = bookings
