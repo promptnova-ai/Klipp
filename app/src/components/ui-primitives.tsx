@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -22,7 +22,7 @@ type ScreenEntranceProps = {
 
 /** Small, consistent entrance motion for routed screens and important panels. */
 export function ScreenEntrance({ children, style, delay = 0 }: ScreenEntranceProps) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress = useMemo(() => new Animated.Value(0), []);
 
   useEffect(() => {
     progress.setValue(0);
@@ -69,7 +69,7 @@ export function MotionPressable({
   accessibilityLabel,
   accessibilityRole = 'button',
 }: MotionPressableProps) {
-  const scale = useRef(new Animated.Value(1)).current;
+  const scale = useMemo(() => new Animated.Value(1), []);
 
   function animateScale(value: number) {
     Animated.spring(scale, {
