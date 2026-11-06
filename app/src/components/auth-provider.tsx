@@ -95,9 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     if (!session) {
-      setProfile(null);
-      setProfileError(null);
-      setLoading(false);
+      void Promise.resolve().then(() => {
+        if (!mounted) return;
+        setProfile(null);
+        setProfileError(null);
+        setLoading(false);
+      });
       return () => {
         mounted = false;
       };
