@@ -155,9 +155,6 @@ export default function ClientHomeScreen() {
     }
   }
 
-  useEffect(() => {
-    void Promise.resolve().then(requestLocation);
-  }, []);
 
   useEffect(() => {
     if (!coordinate) return;
