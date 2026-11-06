@@ -77,10 +77,19 @@ export function ProRequestsScreen() {
     return () => clearInterval(timer);
   }, []);
 
+  const expiryHandledRef = useRef(new Set<string>());
   useEffect(() => {
-    if (!activeRequest || secondsLeft > 0) return;
-    const timeout = setTimeout(() => { void loadRequests(); }, 0);
-    return () => clearTimeout(timeout);
+    if (!activeRequest || secondsLeft > 0 || expiryHandledRef.current.has(activeRequest.id)) return;
+    expiryHandledRef.current.add(activeRequest.id);
+    let cancelled = false;
+    void supabase.rpc('pro_expire_booking_request', { p_request_id: activeRequest.id })
+      .then(async () => {
+        if (!cancelled) await loadRequests();
+      })
+      .catch(() => {
+        if (!cancelled) void loadRequests();
+      });
+    return () => { cancelled = true; };
   }, [activeRequest?.id, secondsLeft, loadRequests]);
 
   useEffect(() => {
