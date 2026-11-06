@@ -1,117 +1,96 @@
-# Klipp notifications setup
+# Notificaciones y despacho de Klipp
 
-This change adds an in-app notification inbox, database-generated booking/chat notifications, a push outbox and an Expo Push dispatcher.
+Última revisión: 6 de noviembre de 2026.
 
-## 1. Apply database migrations
+## Arquitectura
 
-Apply migrations in order, including:
+Klipp separa la notificación in-app del envío push:
 
-- `015_equipment_policy_and_remove_massage.sql`
-- `018_realtime_professional_presence.sql`
-- `024_booking_status_event_history.sql`
-- `025_notifications_center_and_push_outbox.sql`
-- `029_simultaneous_auto_dispatch.sql`
-- `030_professional_variant_pricing_and_7_percent_commission.sql`
-- `031_uber_style_incoming_offer.sql`
-- `032_set_seven_percent_on_all_booking_creation_paths.sql`
-- `033_client_professional_acceptance_rate.sql`
-- `034_enable_pg_net_for_urgent_push.sql`
-- `034_urgent_push_dispatch_webhook.sql`
-- `035_schedule_notification_and_eta_worker.sql`
+1. Los cambios de reserva, mensajes, incidencias, reseñas y solicitudes generan notificaciones en la base de datos.
+2. Las notificaciones que requieren push se colocan en `push_delivery_queue`.
+3. Un trigger de inserción solicita el despacho urgente.
+4. El worker `dispatch-notifications` reclama entregas, llama a Expo Push Service, procesa tickets y elimina tokens que Expo marque como no registrados.
+5. Un trabajo de `pg_cron` ejecuta el worker cada minuto para recordatorios, comprobaciones de ETA y rondas de asignación automática vencidas.
 
-The connected Supabase project has received these migrations in dependency order: 015, 018, 024, 025, 029, 030, 031, 032 and 033. Back up the project before applying them to any other environment.
+La bandeja in-app funciona aunque el usuario no conceda permiso push o el dispositivo no tenga token.
 
-## 2. Deploy the dispatcher
+## Edge Functions
 
-Deploy the Edge Function:
+| Función | Autenticación en gateway | Uso |
+|---|---|---|
+| `dispatch-notifications` | JWT gateway desactivado | Valida internamente bearer de service role o el secreto exclusivo del cron |
+| `auto-assign-booking` | JWT requerido | Inicia el despacho solicitado por el cliente autenticado |
+| `booking-route-eta` | JWT requerido | Calcula/actualiza la ruta de una reserva autorizada |
 
-```bash
-supabase functions deploy dispatch-notifications
-```
+No cambies la verificación JWT de estas funciones sin revisar primero su método de autenticación. El secreto del cron nunca debe enviarse desde la aplicación móvil ni desde el navegador.
 
-Set a long random secret (at least 32 bytes) in Supabase Edge Function secrets. The traffic-aware arrival estimate also requires the server-side Google Routes API key:
+## Configuración de secretos del servidor
 
-```bash
-supabase secrets set NOTIFICATION_CRON_SECRET="<random-secret>" GOOGLE_MAPS_SERVER_API_KEY="<server-google-routes-key>"
-```
+En Supabase Edge Function Secrets:
 
-The function validates either the service-role bearer token or the dedicated `x-notification-cron-secret` header itself. It is deployed with JWT gateway verification disabled so scheduled calls can authenticate with that server-only header. Never put this secret in the mobile app or commit it to Git.
+- `NOTIFICATION_CRON_SECRET`: secreto aleatorio robusto para el worker programado.
+- `GOOGLE_MAPS_SERVER_API_KEY`: clave de servidor restringida a Routes API para ETA con tráfico.
 
-## 3. Urgent offers, reminders and ETA monitoring
+La función valida el secreto del cron mediante el RPC restringido `verify_notification_cron_secret`. No guardes estos valores en variables `EXPO_PUBLIC_*`, en el repositorio ni en logs.
 
-Migrations `034_urgent_push_dispatch_webhook.sql` and `035_schedule_notification_and_eta_worker.sql` automatically configure both delivery paths:
+Las claves Android/iOS de mapas y las credenciales FCM/APNs pertenecen a la configuración de la aplicación/EAS, no a los secretos del worker.
 
-- An `AFTER INSERT` trigger on `public.push_delivery_queue` invokes `dispatch-notifications` immediately for urgent offers.
-- A `pg_cron` job named `klipp-dispatch-notifications` runs every minute for scheduled reminders, background ETA checks and the next automatic-dispatch round when the previous 45-second offer group expires.
-- The credential is generated and stored in Vault by migration 034; the function validates it using a restricted server-only RPC.
+## Programación y disparadores
 
-The cron job and trigger are installed in the connected Supabase project. Verify them in Database → Triggers and Integrations → Cron. Push delivery latency still needs physical-device testing; do not assume a closed-app push always arrives before the 45-second offer expiry.
+El proyecto conectado tiene instalado y activo el trabajo:
 
+- Nombre: `klipp-dispatch-notifications`
+- Frecuencia: cada minuto (`* * * * *`)
 
+También está activo el trigger `push_delivery_queue_dispatch_immediately` después de insertar en `push_delivery_queue`. Los eventos de solicitudes, estados de reserva, mensajes, incidencias, pagos y reseñas tienen sus propios triggers de notificación.
 
-Then schedule the dispatcher once per minute:
+**No programes una segunda copia del cron.** Las migraciones versionadas ya crean la programación y los triggers. Antes de tocar esta configuración, consulta `cron.job`, `pg_trigger` y el historial real de migraciones del proyecto; no ejecutes manualmente bloques SQL antiguos de este documento.
 
-```sql
-select cron.schedule(
-  'klipp-dispatch-notifications',
-  '* * * * *',
-  $$
-    select net.http_post(
-      url := (
-        select decrypted_secret
-        from vault.decrypted_secrets
-        where name = 'klipp_project_url'
-      ) || '/functions/v1/dispatch-notifications',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'x-notification-cron-secret', (
-          select decrypted_secret
-          from vault.decrypted_secrets
-          where name = 'klipp_notification_cron_secret'
-        )
-      ),
-      body := '{}'::jsonb,
-      timeout_milliseconds := 10000
-    );
-  $$
-);
-```
+## Notificaciones y despacho automático
 
-Check the job in Supabase Dashboard → Integrations → Cron. The worker claims a limited batch, uses Expo Push Service and checks Expo receipts after 15 minutes. Invalid device tokens are removed when Expo reports `DeviceNotRegistered`.
+- Una solicitud nueva avisa al profesional destinatario.
+- La oferta automática tiene una ventana de 45 segundos.
+- El despacho avanza al siguiente grupo cuando las ofertas vencen o se rechazan.
+- Las ofertas automáticas rechazadas o vencidas no deben generar ruido al cliente mientras el sistema sigue buscando.
+- Las solicitudes manuales pueden avisar al cliente cuando el profesional rechaza o no responde.
+- Los recordatorios programados se generan aproximadamente 24 horas y una hora antes del servicio, con claves de deduplicación.
+- La ETA se recalcula para reservas `en_route` cuando la ubicación del profesional es reciente. Las notificaciones de retraso deben respetar umbrales y deduplicación para evitar avisos repetidos.
+- Los mensajes push no deben incluir el contenido privado de los mensajes de chat.
 
-## 5. Configure mobile push credentials
+La entrega push no debe considerarse garantizada dentro de los 45 segundos: depende del sistema operativo, conectividad, permisos y proveedor push. La decisión de aceptación/expiración siempre la resuelve el backend.
 
-The app now includes `expo-notifications` and an explicit **Activate push notifications** control in the notification center. The token is registered only after the user grants OS permission and taps that control. On sign-out, the current device token is removed.
+## Configuración móvil
 
-Before testing, link the Expo app to its real EAS project and provide its project ID through EAS configuration or `EXPO_PUBLIC_EAS_PROJECT_ID`. Configure Android FCM v1 credentials and the iOS APNs key in the EAS project, then create a new development build:
+La app ofrece una acción explícita para activar push desde el centro de notificaciones. Solo registra el token después de que el usuario concede permiso y activa la opción. Al cerrar sesión, elimina el token de ese dispositivo.
 
-```bash
-cd app
-eas build --profile development --platform all
-```
+Para pruebas reales:
 
-Install that build on physical iOS and Android devices, sign in, open **Avisos** and activate push. Remote push is not available in Expo Go on Android; use a development or production build. The in-app inbox works without push credentials.
+1. Vincula el proyecto EAS de Klipp.
+2. Configura credenciales FCM v1 para Android.
+3. Configura una clave APNs válida para iOS.
+4. Genera e instala un development build o production build.
+5. Inicia sesión en un dispositivo físico, activa push y comprueba el registro en `notification_devices`.
+6. Envía una solicitud de prueba y comprueba la notificación in-app, la cola, el ticket de Expo y el recibo.
 
-## 6. Current event coverage
+Expo Go no sustituye una prueba de push nativo en builds de producción; en particular, las capacidades push pueden variar por plataforma y versión de Expo.
 
-- Booking status transitions: client and professional receive role-specific notices.
-- Payment events: failed payments warn both parties not to proceed until confirmation; refunds notify the client; released payouts notify the professional.
-- New review: the professional receives a notice.
-- Support issue resolved: the person who reported it receives a notice.
-- New booking request: assigned professional receives a notice. For manual selection, a decline or timeout also notifies the client so they can choose another professional. Automatic dispatch declines stay quiet while Klipp tries the next candidate.
-- New chat message: the other booking participant receives a notice. Message contents are not copied into push previews.
-- Scheduled service reminders: the dispatcher generates 24-hour and one-hour reminders for both booking participants, with deduplication keys.
-- ETA delays: the scheduled worker refreshes active-trip routes approximately every three minutes when the professional GPS is no older than two minutes. If the traffic-aware ETA increases by at least 10 minutes from the last notification baseline, the client receives one update. Improvements of 10 minutes reset the baseline without sending a push, preventing repeated alerts. Route refreshes incur Google Routes API usage; monitor the Google Cloud billing and quota.
-- User preferences: `booking_updates` and `chat_messages` can control in-app and push channels. Missing preferences default to enabled.
-- Every notification has a unique deduplication key. Push delivery is isolated in an outbox so a temporary push-provider outage does not lose the in-app notification.
+## Verificación operativa
 
+Consultas útiles en Supabase:
 
-## 7. Incoming professional offers (Uber-style)
+- `cron.job`: comprobar que `klipp-dispatch-notifications` está activo y tiene una sola entrada.
+- `pg_trigger`: comprobar los triggers de notificaciones y el disparador de `push_delivery_queue`.
+- `public.notifications`: revisar la creación de notificaciones in-app.
+- `public.push_delivery_queue`: revisar pendientes, intentos y fallos.
+- `public.notification_devices`: comprobar tokens registrados por usuario/dispositivo.
 
-When a professional receives a pending `booking_request`, the app displays a full-screen offer with a 45-second countdown. The screen includes the customer's display name, service and variant, service address and reference, scheduled time, estimated duration, and the professional's expected payout. The professional accepts by sliding the control to the end or declines using the separate reject action.
+No borres tokens por errores transitorios. Elimina solo tokens que el proveedor identifique de forma concluyente como no registrados.
 
-The request details are returned by `pro_list_incoming_booking_requests()`. This is a security-definer RPC that only returns pending, unexpired requests belonging to the signed-in professional. Do not loosen the general `profiles` or `bookings` row-level security policies to expose client details globally.
+## Estado observado en producción (6 de noviembre de 2026)
 
-Android devices register a dedicated `klipp-requests` notification channel with maximum importance, sound and vibration. The app also presents notifications while in the foreground.
+- El cron `klipp-dispatch-notifications` está activo cada minuto.
+- El trigger de despacho inmediato está instalado.
+- Las tres Edge Functions están activas; `dispatch-notifications` tiene JWT gateway desactivado y valida el secreto internamente.
+- En el momento de la revisión había cero dispositivos registrados, cero notificaciones y cero elementos en la cola.
 
-**Important delivery timing:** the existing example dispatcher schedule above runs once per minute. That schedule is not fast enough to guarantee delivery of a push notification before a 45-second offer expires. Realtime updates display the offer promptly while the professional app is connected. For reliable background/closed-app alerts, configure an immediate Database Webhook (or another supported sub-minute trigger) on new `push_delivery_queue` rows to invoke `dispatch-notifications`, authenticated with the same server-only secret. Do not rely on the once-per-minute reminder schedule for urgent offers. Verify delivery latency on physical Android and iOS devices before launch.
+Por tanto, la infraestructura está configurada, pero la entrega push de extremo a extremo sigue pendiente de una prueba en dispositivos físicos con credenciales FCM/APNs y tokens reales.
