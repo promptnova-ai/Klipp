@@ -357,3 +357,19 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 3. Tocar la notificación y comprobar que abre el espacio de solicitudes.
 
 **Resultado esperado:** La alerta llega antes de que venza la ventana de 45 segundos. El canal de notificaciones urgente está habilitado en Android y la presentación de iOS se valida en un dispositivo real.
+
+
+### QA-PRO-REQ-06 — Confirmación obligatoria de herramientas y materiales
+
+**Prioridad:** Crítica  
+**Precondición:** Oferta entrante pendiente y no expirada.
+
+1. Abrir la oferta y comprobar que la confirmación aparece en el mismo popup, antes del control deslizante.
+2. Intentar deslizar para aceptar sin marcar la casilla.
+3. Comprobar vibración, movimiento breve del bloque y resaltado del check con un mensaje explicativo.
+4. Marcar la casilla y comprobar el estado visual confirmado.
+5. Deslizar para aceptar y consultar `booking_requests.materials_confirmed_at`.
+6. Intentar llamar al RPC antiguo de dos parámetros como usuario autenticado y comprobar que no tiene permiso.
+7. Intentar llamar al nuevo RPC con `p_materials_confirmed = false`.
+
+**Resultado esperado:** Sin marcar el check, la app no envía la aceptación y el servidor rechaza cualquier intento de aceptación sin confirmación. Al aceptar correctamente, el servidor registra la fecha de confirmación en esa solicitud concreta. La confirmación del perfil profesional no sustituye esta acción por viaje.
