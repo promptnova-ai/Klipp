@@ -170,6 +170,8 @@ export function ClientTrackingScreen() {
 
   useEffect(() => {
     if (!booking?.id) return;
+    let active = true;
+    const refresh = () => { if (active) void loadTrackingDetails(); };
     const channel = supabase
       .channel(`tracking-booking-status:${booking.id}`)
       .on('postgres_changes', {
@@ -177,16 +179,14 @@ export function ClientTrackingScreen() {
         schema: 'public',
         table: 'bookings',
         filter: `id=eq.${booking.id}`,
-      }, () => { void loadTrackingDetails(); })
+      }, refresh)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'booking_status_events',
         filter: `booking_id=eq.${booking.id}`,
-      }, () => { void loadTrackingDetails(); })
+      }, refresh)
       .subscribe();
-    let active = true;
-    const refresh = () => { if (active) void loadTrackingDetails(); };
     return () => {
       active = false;
       void supabase.removeChannel(channel);
