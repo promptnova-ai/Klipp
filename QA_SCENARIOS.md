@@ -373,3 +373,18 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 7. Intentar llamar al nuevo RPC con `p_materials_confirmed = false`.
 
 **Resultado esperado:** Sin marcar el check, la app no envía la aceptación y el servidor rechaza cualquier intento de aceptación sin confirmación. Al aceptar correctamente, el servidor registra la fecha de confirmación en esa solicitud concreta. La confirmación del perfil profesional no sustituye esta acción por viaje.
+
+
+### QA-PRO-REQ-07 — Gestos diferenciados para aceptar y rechazar
+
+**Prioridad:** Alta  
+**Precondición:** Oferta entrante pendiente y confirmación de materiales marcada.
+
+1. Deslizar el control de aceptación lentamente desde el inicio y comprobar que el carril negro se rellena progresivamente en verde, siguiendo el desplazamiento.
+2. Soltar antes del umbral: el control debe volver suavemente al inicio y no aceptar.
+3. Continuar el gesto hasta el umbral: el texto debe cambiar a «ACEPTAR TRABAJO» y completar la aceptación.
+4. En otra oferta, mantener pulsado el botón rojo de rechazo durante menos de dos segundos y soltar: la cuenta atrás se cancela y la solicitud permanece pendiente.
+5. Mantener pulsado durante dos segundos: mostrar la cuenta atrás 2–1, emitir vibración háptica durante el gesto y rechazar al completar el tiempo.
+6. Repetir ambos gestos con la oferta expirada o mientras se envía una respuesta.
+
+**Resultado esperado:** Aceptar requiere deslizar; rechazar requiere mantener pulsado dos segundos. Los gestos no se confunden, no se ejecutan al soltar antes de tiempo y quedan deshabilitados cuando la oferta expira o hay una respuesta en curso.
