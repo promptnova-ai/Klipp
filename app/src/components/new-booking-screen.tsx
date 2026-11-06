@@ -260,7 +260,9 @@ export function NewBookingScreen() {
       });
       return () => { active = false; };
     }
-    setAutoPriceLoading(true);
+    void Promise.resolve().then(() => {
+      if (active) setAutoPriceLoading(true);
+    });
     void Promise.resolve(supabase.rpc('get_auto_service_price_estimate', {
       p_service_type_id: selectedServiceId,
       p_pricing_tier_id: selectedTier?.id ?? null,
