@@ -243,8 +243,12 @@ export function NewBookingScreen() {
   const visibleTiers = tiers.filter((tier) => tier.service_type_id === selectedServiceId);
   const selectedTier = tiers.find((tier) => tier.id === selectedTierId) ?? visibleTiers[0] ?? null;
   const selectedTierIdForQuery = selectedTier?.id ?? null;
-  const selectedDuration = selectedOffer?.est_minutes ?? (mode === 'manual' && selectedProId ? manualProDuration ?? selectedTier?.est_minutes : selectedTier?.est_minutes);
-  const selectedPrice = selectedOffer?.base_price_dop ?? (mode === 'manual' ? (selectedProId ? manualProPrice ?? undefined : undefined) : selectedTier?.price_dop);
+  const selectedDuration = mode === 'manual'
+    ? manualProDuration ?? selectedOffer?.est_minutes ?? selectedTier?.est_minutes
+    : selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
+  const selectedPrice = mode === 'manual'
+    ? manualProPrice ?? selectedOffer?.base_price_dop ?? undefined
+    : selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
 
   useEffect(() => {
     if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId) {
