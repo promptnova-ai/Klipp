@@ -22,6 +22,7 @@ import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
 type PricingTier = { id: number; service_type_id: number; label: string; est_minutes: number };
+type EquipmentRequirement = { id: number; item_name: string; details: string; required: boolean; sort_order: number };
 type TierDraft = { price: string; minutes: string };
 type AvailabilityDraft = { weekday: number; start_time: string; end_time: string };
 type ProOnboardingDraft = {
@@ -64,6 +65,7 @@ export function ProRegistrationScreen() {
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<number | null>(null);
   const [pricingTiers, setPricingTiers] = useState<PricingTier[]>([]);
+  const [equipmentRequirements, setEquipmentRequirements] = useState<EquipmentRequirement[]>([]);
   const [tierDrafts, setTierDrafts] = useState<Record<number, TierDraft>>({});
   const [serviceDetails, setServiceDetails] = useState<Record<string, string>>({});
   const [equipmentConfirmed, setEquipmentConfirmed] = useState(false);
@@ -193,6 +195,7 @@ export function ProRegistrationScreen() {
     const requestId = ++tierRequestId.current;
     setSelectedServiceId(serviceId);
     setPricingTiers([]);
+    setEquipmentRequirements([]);
     setTierDrafts({});
     setServiceDetails({});
     setError(null);
@@ -212,6 +215,19 @@ export function ProRegistrationScreen() {
           price: '',
           minutes: String(tier.est_minutes || 60),
         }])));
+      });
+    void supabase.from('service_equipment_requirements')
+      .select('id, item_name, details, required, sort_order')
+      .eq('service_type_id', serviceId)
+      .eq('active', true)
+      .order('sort_order')
+      .then(({ data, error: queryError }) => {
+        if (requestId !== tierRequestId.current) return;
+        if (queryError) {
+          setError('No pudimos cargar la lista de herramientas recomendadas.');
+          return;
+        }
+        setEquipmentRequirements((data ?? []) as EquipmentRequirement[]);
       });
   }
 
@@ -475,6 +491,21 @@ export function ProRegistrationScreen() {
                     })}
                   </View>
                 )}
+                {equipmentRequirements.length > 0 && (
+                  <View style={styles.card}>
+                    <Text style={styles.cardTitle}>Herramientas y materiales que debes llevar</Text>
+                    <Text style={styles.helper}>Esta es la lista orientativa para tu profesión. Todo el equipo y los productos necesarios corren por cuenta del profesional.</Text>
+                    {equipmentRequirements.map((item) => (
+                      <View key={item.id} style={styles.equipmentItem}>
+                        <Text style={styles.equipmentBullet}>✓</Text>
+                        <View style={styles.serviceCopy}>
+                          <Text style={styles.serviceName}>{item.item_name}</Text>
+                          {!!item.details && <Text style={styles.helper}>{item.details}</Text>}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: equipmentConfirmed }} onPress={() => setEquipmentConfirmed((value) => !value)} style={styles.equipmentConsent}>
                   <View style={[styles.checkbox, equipmentConfirmed && styles.checkboxSelected]}>{equipmentConfirmed && <Text style={styles.checkmark}>✓</Text>}</View>
                   <View style={styles.serviceCopy}>
@@ -638,6 +669,8 @@ const styles = StyleSheet.create({
   radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.blue },
   tierCard: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: KlippColors.border },
   equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 16, backgroundColor: KlippColors.white },
+  equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 7 },
+  equipmentBullet: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '800' },
   serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
   checkboxSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
