@@ -49,6 +49,8 @@ export function ScreenEntrance({ children, style, delay = 0 }: ScreenEntrancePro
   );
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 type MotionPressableProps = {
   children: ReactNode;
   onPress: () => void;
@@ -79,18 +81,16 @@ export function MotionPressable({
   }
 
   return (
-    <Animated.View style={[style, { transform: [{ scale }] }]}>
-      <Pressable
-        accessibilityRole={accessibilityRole}
-        accessibilityLabel={accessibilityLabel}
-        disabled={disabled}
-        onPress={onPress}
-        onPressIn={() => animateScale(KlippMotion.pressScale)}
-        onPressOut={() => animateScale(1)}
-        style={styles.pressable}>
-        {children}
-      </Pressable>
-    </Animated.View>
+    <AnimatedPressable
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      disabled={disabled}
+      onPress={onPress}
+      onPressIn={() => animateScale(KlippMotion.pressScale)}
+      onPressOut={() => animateScale(1)}
+      style={[style, { transform: [{ scale }] }]}>
+      {children}
+    </AnimatedPressable>
   );
 }
 
@@ -192,7 +192,6 @@ export function PrimaryButton({
 }
 
 const styles = StyleSheet.create({
-  pressable: { flex: 1 },
   surface: {
     padding: 20,
     borderWidth: 1,
