@@ -66,13 +66,6 @@ const permissionLabels: Record<string, string> = {
   'audit.read': 'Consultar actividad',
 };
 
-const permissionGroups: { title: string; codes: string[] }[] = [
-  { title: 'Clientes y profesionales', codes: ['accounts.read', 'accounts.manage_clients', 'professionals.manage', 'verification.review'] },
-  { title: 'Operación diaria', codes: ['bookings.read', 'bookings.manage', 'support.manage', 'catalog.manage'] },
-  { title: 'Finanzas', codes: ['finance.read', 'finance.reconcile'] },
-  { title: 'Administración', codes: ['settings.operational', 'staff.manage', 'audit.read'] },
-];
-
 const templateHighlights: Record<string, string> = {
   support: 'Atención al cliente y consulta básica de cuentas.',
   operations: 'Gestión operativa y revisión de profesionales.',
