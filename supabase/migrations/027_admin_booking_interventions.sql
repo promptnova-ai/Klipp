@@ -213,7 +213,7 @@ RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $
+AS $$
 DECLARE
   v_booking public.bookings%rowtype;
 BEGIN
