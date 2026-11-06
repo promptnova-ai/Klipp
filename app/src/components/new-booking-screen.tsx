@@ -902,6 +902,7 @@ const styles = StyleSheet.create({
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
   notesInput: { minHeight: 84, paddingHorizontal: 13, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, textAlignVertical: 'top', backgroundColor: KlippColors.white },
+  locationPermissionPrompt: { gap: 12 },
   adjustLocation: { alignSelf: 'flex-start', paddingVertical: 7 },
   retryLocation: { minHeight: 46, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: '#F8FAFC' },
   adjustLocationText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
