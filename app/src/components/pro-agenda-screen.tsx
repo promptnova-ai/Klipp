@@ -71,19 +71,19 @@ export function ProAgendaScreen() {
     const refreshPresence = async () => {
       const { data, error: presenceError } = await supabase.from('pro_presence')
         .select('is_online, last_seen_at')
-        .eq('pro_id', session.user.id)
+        .eq('pro_id', userId)
         .maybeSingle();
       if (!active) return;
       if (presenceError) setError(presenceError.message);
       else setIsOnline(Boolean(data?.is_online && data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 90000));
     };
     void refreshPresence();
-    const channel = supabase.channel(`pro-presence-status:${session.user.id}`)
+    const channel = supabase.channel(`pro-presence-status:${userId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'pro_presence',
-        filter: `pro_id=eq.${session.user.id}`,
+        filter: `pro_id=eq.${userId}`,
       }, (payload) => {
         const presence = payload.new as { is_online?: boolean; last_seen_at?: string | null };
         setIsOnline(Boolean(presence.is_online && presence.last_seen_at && Date.now() - new Date(presence.last_seen_at).getTime() < 90000));
@@ -178,7 +178,7 @@ export function ProAgendaScreen() {
       active = false;
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, [activeTripKey, loading]);
+  }, [activeTripKey, loading, loadBookings]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -364,7 +364,7 @@ export function ProAgendaScreen() {
     if (!body) return;
     const { data, error: sendError } = await supabase
       .from('messages')
-      .insert({ booking_id: bookingId, sender_id: session.user.id, body })
+      .insert({ booking_id: bookingId, sender_id: userId, body })
       .select('id, booking_id, sender_id, body, created_at')
       .single();
     if (sendError) setError(sendError.message);
