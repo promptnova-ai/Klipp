@@ -505,10 +505,10 @@ export function ProProfileScreen() {
 
   function toggleService(serviceId: number) {
     setSelectedServices((current) => {
-      if (current.includes(serviceId)) return current.filter((id) => id !== serviceId);
+      if (current.includes(serviceId)) return [];
       setServicePrices((prices) => ({ ...prices, [serviceId]: prices[serviceId] ?? '' }));
       setServiceDurations((durations) => ({ ...durations, [serviceId]: durations[serviceId] ?? '60' }));
-      return [...current, serviceId];
+      return [serviceId];
     });
   }
 
@@ -667,7 +667,7 @@ export function ProProfileScreen() {
       </Section>
 
       <Section title="Servicios y tarifas">
-        <Text style={styles.body}>Elige las especialidades y publica tus tarifas en pesos dominicanos. Klipp retiene una comisión del 7% del precio del servicio; recibirás el 93% restante antes de posibles impuestos o costes de pago.</Text>
+        <Text style={styles.body}>Mantén una sola profesión principal y publica sus tarifas en pesos dominicanos. Klipp retiene una comisión del 7% del precio del servicio; recibirás el 93% restante antes de posibles impuestos o costes de pago.</Text>
         {catalog.map((service) => {
           const selected = selectedServices.includes(service.id);
           const requirements = equipmentByService[service.id] ?? [];
