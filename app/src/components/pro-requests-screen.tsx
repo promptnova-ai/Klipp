@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration } from 'react-native';
+import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -25,6 +26,8 @@ type IncomingRequest = {
   pro_payout_dop: number;
   address_text: string | null;
   landmark_notes: string | null;
+  client_lat: number | null;
+  client_lng: number | null;
 };
 type IncomingReassignment = { request_id: string; booking_id: string; original_professional_name: string | null; scheduled_start: string; est_minutes: number; pro_payout_dop: number; address_text: string | null; landmark_notes: string | null; service_name: string | null; pricing_tier_label: string | null; expires_at: string };
 
@@ -208,6 +211,47 @@ export function ProRequestsScreen() {
                 <Text style={styles.detailLabel}>CUÁNDO</Text>
                 <Text style={styles.detailValue}>{formatBusinessDate(activeRequest.scheduled_start)}</Text>
                 <Text style={styles.detailMuted}>Duración estimada: {activeRequest.est_minutes} min</Text>
+              </View>
+
+              <View style={styles.mapCard}>
+                <View style={styles.mapHeading}>
+                  <View style={styles.mapHeadingCopy}>
+                    <Text style={styles.detailLabel}>PUNTO DEL SERVICIO</Text>
+                    <Text style={styles.mapAddress}>{activeRequest.address_text || 'Ubicación del cliente'}</Text>
+                    {!!activeRequest.landmark_notes && <Text style={styles.detailMuted}>Referencia: {activeRequest.landmark_notes}</Text>}
+                  </View>
+                  <View style={styles.mapPinBadge}><Text style={styles.mapPinGlyph}>⌖</Text></View>
+                </View>
+                {activeRequest.client_lat != null && activeRequest.client_lng != null && Platform.OS !== 'web' ? (
+                  <MapView
+                    style={styles.offerMap}
+                    initialRegion={{
+                      latitude: activeRequest.client_lat,
+                      longitude: activeRequest.client_lng,
+                      latitudeDelta: 0.006,
+                      longitudeDelta: 0.006,
+                    }}
+                    scrollEnabled={false}
+                    zoomEnabled
+                    rotateEnabled={false}
+                    pitchEnabled={false}
+                    toolbarEnabled={false}>
+                    <Marker
+                      coordinate={{ latitude: activeRequest.client_lat, longitude: activeRequest.client_lng }}
+                      title="Lugar del servicio"
+                      description={activeRequest.address_text || 'Punto indicado por el cliente'}
+                      pinColor="#15966f"
+                    />
+                  </MapView>
+                ) : (
+                  <View style={styles.mapUnavailable}>
+                    <Text style={styles.mapUnavailableTitle}>{Platform.OS === 'web' ? 'Mapa disponible en la app móvil' : 'Ubicación exacta no disponible'}</Text>
+                    <Text style={styles.mapUnavailableText}>{Platform.OS === 'web' ? 'Consulta el punto del servicio desde Klipp PRO en tu móvil.' : 'El cliente no ha compartido coordenadas para esta solicitud. Usa la dirección y referencia indicadas.'}</Text>
+                  </View>
+                )}
+                {activeRequest.client_lat != null && activeRequest.client_lng != null && (
+                  <Text style={styles.mapCoordinates}>Punto exacto compartido por el cliente</Text>
+                )}
               </View>
 
               <View style={styles.earningCard}>
@@ -430,6 +474,17 @@ const styles = StyleSheet.create({
   serviceName: { color: '#142c36', fontSize: 22, fontWeight: '900' },
   detailValue: { color: '#344950', fontSize: 15, lineHeight: 22, fontWeight: '600' },
   detailDivider: { height: 1, backgroundColor: '#e8eeee', marginVertical: 7 },
+  mapCard: { padding: 14, borderRadius: 18, backgroundColor: '#ffffff', gap: 10 },
+  mapHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  mapHeadingCopy: { flex: 1, gap: 4 },
+  mapAddress: { color: '#142c36', fontSize: 14, fontWeight: '800', lineHeight: 20 },
+  mapPinBadge: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#e0f3eb', alignItems: 'center', justifyContent: 'center' },
+  mapPinGlyph: { color: '#126b50', fontSize: 25, fontWeight: '900' },
+  offerMap: { height: 190, borderRadius: 14, overflow: 'hidden' },
+  mapUnavailable: { minHeight: 110, borderRadius: 14, backgroundColor: '#eef3f1', alignItems: 'center', justifyContent: 'center', padding: 16, gap: 6 },
+  mapUnavailableTitle: { color: '#344950', fontSize: 13, fontWeight: '900', textAlign: 'center' },
+  mapUnavailableText: { color: '#64747a', fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  mapCoordinates: { color: '#16836f', fontSize: 11, fontWeight: '800', textAlign: 'center' },
   earningCard: { padding: 19, borderRadius: 18, backgroundColor: '#e0f3eb', alignItems: 'center', gap: 5 },
   earningLabel: { color: '#36745f', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   earningAmount: { color: '#126b50', fontSize: 32, fontWeight: '900' },
