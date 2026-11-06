@@ -155,6 +155,7 @@ export function ProRegistrationScreen() {
       if (catalog.length === 0) return 'No hay profesiones disponibles ahora mismo.';
       if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
       if (tiersLoading || equipmentLoading) return 'Espera mientras cargamos las modalidades y el equipamiento de esta profesión.';
+      if (equipmentRequirements.length === 0) return 'No pudimos cargar el equipamiento de esta profesión. Reintenta o vuelve a seleccionar la profesión.';
       if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
       if (pricingTiers.some((tier) => {
         const draft = tierDrafts[tier.id];
