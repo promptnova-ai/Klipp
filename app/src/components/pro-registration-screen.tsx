@@ -77,6 +77,7 @@ export function ProRegistrationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const transition = useRef(new Animated.Value(1)).current;
+  const tierRequestId = useRef(0);
   const progress = useRef(new Animated.Value(0)).current;
   const progressWidth = useMemo(
     () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
@@ -189,6 +190,7 @@ export function ProRegistrationScreen() {
   }
 
   function chooseProfession(serviceId: number) {
+    const requestId = ++tierRequestId.current;
     setSelectedServiceId(serviceId);
     setPricingTiers([]);
     setTierDrafts({});
@@ -199,6 +201,7 @@ export function ProRegistrationScreen() {
       .eq('service_type_id', serviceId)
       .order('id')
       .then(({ data, error: queryError }) => {
+        if (requestId !== tierRequestId.current) return;
         if (queryError) {
           setError('No pudimos cargar las modalidades de esta profesión.');
           return;
