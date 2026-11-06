@@ -18,6 +18,18 @@ reales.
 - Registrar para cada caso el resultado: **Aprobado**, **Fallido** o **Bloqueado**,
   más el mensaje observado y una captura sin datos personales.
 
+## QA-SEC-01 — Privilegios del rol anónimo
+
+**Prioridad:** Alta  
+**Precondición:** Sesión cerrada.
+
+1. Abrir el registro profesional.
+2. Comprobar que se leen profesiones, modalidades y requisitos de herramientas.
+3. Comprobar que no se puede acceder a perfiles, reservas, mensajes, notificaciones ni ubicaciones de profesionales sin iniciar sesión.
+4. Verificar en Supabase que `anon` solo tiene SELECT sobre `service_types`, `pricing_tiers` y `service_equipment_requirements`, sin permisos de escritura.
+
+**Resultado esperado:** El registro puede cargar el catálogo público; el resto de los datos de la plataforma no son accesibles para el rol anónimo.
+
 ## Casos de prueba
 
 ### QA-PRO-01 — Validación del formulario profesional
