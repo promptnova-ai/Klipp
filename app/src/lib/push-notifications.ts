@@ -63,6 +63,21 @@ export async function registerPushDeviceAsync(userId: string) {
   return token;
 }
 
+export async function isPushDeviceRegisteredAsync(userId: string) {
+  if (Platform.OS === 'web') return false;
+  const token = await AsyncStorage.getItem(REGISTERED_TOKEN_KEY);
+  if (!token) return false;
+
+  const { data, error } = await supabase
+    .from('notification_devices')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('expo_push_token', token)
+    .maybeSingle();
+  if (error) throw error;
+  return Boolean(data);
+}
+
 export async function unregisterPushDeviceAsync(userId: string) {
   if (Platform.OS === 'web') return;
   await Notifications.clearLastNotificationResponseAsync();

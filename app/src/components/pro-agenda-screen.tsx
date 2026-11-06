@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { ActivityIndicator, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -26,7 +26,10 @@ const nextStep: Partial<Record<BookingStatus, { status: BookingStatus; label: st
 };
 
 export function ProAgendaScreen() {
+  const { bookingId: requestedBookingId } = useLocalSearchParams<{ bookingId?: string }>();
+  const deepLinkChatHandled = useRef<string | null>(null);
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [bookings, setBookings] = useState<AgendaBooking[]>([]);
   const [reassignmentLockedIds, setReassignmentLockedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,12 +48,12 @@ export function ProAgendaScreen() {
     .join(',');
 
   const loadBookings = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
       .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
-      .eq('pro_id', session.user.id)
+      .eq('pro_id', userId)
       .in('status', ['scheduled', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_start');
     if (queryError) setError(queryError.message);
@@ -59,28 +62,28 @@ export function ProAgendaScreen() {
     if (lockedError) setError(lockedError.message);
     else setReassignmentLockedIds((lockedData ?? []).map((row: { booking_id: string }) => row.booking_id));
     setLoading(false);
-  }, [session?.user.id]);
+  }, [userId]);
 
   useFocusEffect(useCallback(() => {
     void loadBookings();
-    if (!session?.user.id) return;
+    if (!userId) return;
     let active = true;
     const refreshPresence = async () => {
       const { data, error: presenceError } = await supabase.from('pro_presence')
         .select('is_online, last_seen_at')
-        .eq('pro_id', session.user.id)
+        .eq('pro_id', userId)
         .maybeSingle();
       if (!active) return;
       if (presenceError) setError(presenceError.message);
       else setIsOnline(Boolean(data?.is_online && data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 90000));
     };
     void refreshPresence();
-    const channel = supabase.channel(`pro-presence-status:${session.user.id}`)
+    const channel = supabase.channel(`pro-presence-status:${userId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'pro_presence',
-        filter: `pro_id=eq.${session.user.id}`,
+        filter: `pro_id=eq.${userId}`,
       }, (payload) => {
         const presence = payload.new as { is_online?: boolean; last_seen_at?: string | null };
         setIsOnline(Boolean(presence.is_online && presence.last_seen_at && Date.now() - new Date(presence.last_seen_at).getTime() < 90000));
@@ -90,7 +93,7 @@ export function ProAgendaScreen() {
       active = false;
       void supabase.removeChannel(channel);
     };
-  }, [loadBookings, session?.user.id]));
+  }, [loadBookings, userId]));
 
   useEffect(() => {
     const userId = session?.user.id;
@@ -175,7 +178,7 @@ export function ProAgendaScreen() {
       active = false;
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, [activeTripKey, loading]);
+  }, [activeTripKey, loading, loadBookings]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (state) => {
@@ -189,6 +192,29 @@ export function ProAgendaScreen() {
     });
     return () => subscription.remove();
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active || !requestedBookingId || deepLinkChatHandled.current === requestedBookingId) return;
+      if (!bookings.some((booking) => booking.id === requestedBookingId)) return;
+
+      deepLinkChatHandled.current = requestedBookingId;
+      setChatBookingId(requestedBookingId);
+      void supabase
+        .from('messages')
+        .select('id, booking_id, sender_id, body, created_at')
+        .eq('booking_id', requestedBookingId)
+        .order('created_at', { ascending: true })
+        .limit(20)
+        .then(({ data, error: messagesError }) => {
+          if (!active) return;
+          if (messagesError) setError(messagesError.message);
+          else setChatMessages((data ?? []) as AgendaMessage[]);
+        });
+    });
+    return () => { active = false; };
+  }, [requestedBookingId, bookings]);
 
   useEffect(() => {
     const channels = bookings
@@ -338,7 +364,7 @@ export function ProAgendaScreen() {
     if (!body) return;
     const { data, error: sendError } = await supabase
       .from('messages')
-      .insert({ booking_id: bookingId, sender_id: session.user.id, body })
+      .insert({ booking_id: bookingId, sender_id: userId, body })
       .select('id, booking_id, sender_id, body, created_at')
       .single();
     if (sendError) setError(sendError.message);
