@@ -65,14 +65,31 @@ export function ProAgendaScreen() {
     void loadBookings();
     if (!session?.user.id) return;
     let active = true;
-    void supabase.from('pro_presence').select('is_online, last_seen_at')
-      .eq('pro_id', session.user.id).maybeSingle()
-      .then(({ data, error: presenceError }) => {
-        if (!active) return;
-        if (presenceError) setError(presenceError.message);
-        else setIsOnline(Boolean(data?.is_online && data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 90000));
-      });
-    return () => { active = false; };
+    const refreshPresence = async () => {
+      const { data, error: presenceError } = await supabase.from('pro_presence')
+        .select('is_online, last_seen_at')
+        .eq('pro_id', session.user.id)
+        .maybeSingle();
+      if (!active) return;
+      if (presenceError) setError(presenceError.message);
+      else setIsOnline(Boolean(data?.is_online && data.last_seen_at && Date.now() - new Date(data.last_seen_at).getTime() < 90000));
+    };
+    void refreshPresence();
+    const channel = supabase.channel(`pro-presence-status:${session.user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'pro_presence',
+        filter: `pro_id=eq.${session.user.id}`,
+      }, (payload) => {
+        const presence = payload.new as { is_online?: boolean; last_seen_at?: string | null };
+        setIsOnline(Boolean(presence.is_online && presence.last_seen_at && Date.now() - new Date(presence.last_seen_at).getTime() < 90000));
+      })
+      .subscribe();
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
   }, [loadBookings, session?.user.id]));
 
   useEffect(() => {
@@ -359,8 +376,11 @@ export function ProAgendaScreen() {
       <BrandScreenHeader eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       <View style={styles.presenceCard}>
         <View style={styles.presenceCopy}>
-          <Text style={styles.presenceTitle}>{isOnline ? 'Estás disponible' : 'Estás desconectado'}</Text>
-          <Text style={styles.body}>{isOnline ? 'Klipp puede mostrarte solicitudes inmediatas mientras mantengas la app activa y tu ubicación actualizada.' : 'Conéctate cuando quieras recibir solicitudes inmediatas. Tus reservas programadas no cambian.'}</Text>
+          <View style={styles.presenceStatusRow}>
+            <View style={[styles.presenceDot, isOnline ? styles.presenceDotOnline : styles.presenceDotOffline]} />
+            <Text style={styles.presenceTitle}>{isOnline ? 'ONLINE · Estás disponible' : 'OFFLINE · No recibirás solicitudes'}</Text>
+          </View>
+          <Text style={styles.body}>{isOnline ? 'Klipp puede enviarte solicitudes inmediatas mientras tu ubicación siga activa. Si dejas vencer una solicitud sin responder, pasarás automáticamente a OFFLINE.' : 'Conéctate cuando quieras recibir solicitudes inmediatas. Tus reservas programadas no cambian.'}</Text>
         </View>
         <Pressable accessibilityRole="switch" accessibilityState={{ checked: isOnline }} disabled={presenceBusy} onPress={() => void togglePresence()} style={[styles.presenceButton, isOnline && styles.presenceButtonOnline, presenceBusy && styles.disabled]}>
           <Text style={styles.presenceButtonText}>{presenceBusy ? 'Actualizando…' : isOnline ? 'Desconectarme' : 'Conectarme'}</Text>
@@ -434,8 +454,12 @@ const styles = StyleSheet.create({
   modalPrimary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 10, backgroundColor: KlippColors.blue },
   modalPrimaryText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   presenceCard: { marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white, gap: 12 },
-  presenceCopy: { gap: 5 },
-  presenceTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '800' },
+  presenceCopy: { gap: 7 },
+  presenceStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  presenceDot: { width: 11, height: 11, borderRadius: 6 },
+  presenceDotOnline: { backgroundColor: '#15966f' },
+  presenceDotOffline: { backgroundColor: '#b42318' },
+  presenceTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '900' },
   presenceButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
   presenceButtonOnline: { backgroundColor: '#475569' },
   presenceButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
