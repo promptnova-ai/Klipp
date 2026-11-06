@@ -21,10 +21,10 @@ export function NotificationTabIcon({ color }: { color: string }) {
       .eq('show_in_app', true)
       .is('read_at', null);
     if (!error) setUnread(count ?? 0);
-  }, [session?.user.id]);
+  }, [session]);
 
   useEffect(() => {
-    void loadUnread();
+    void Promise.resolve().then(loadUnread);
   }, [loadUnread]);
 
   useEffect(() => {
@@ -39,7 +39,7 @@ export function NotificationTabIcon({ color }: { color: string }) {
       }, () => { void loadUnread(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [session?.user.id, loadUnread]);
+  }, [session, loadUnread]);
 
   return (
     <View style={styles.container}>
