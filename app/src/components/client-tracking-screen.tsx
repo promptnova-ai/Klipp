@@ -153,7 +153,10 @@ export function ClientTrackingScreen() {
       setProfessionalCoordinate(null);
       setLocationUpdatedAt(null);
     }
-    if (!bookingRow.pro_id) setProfessionalAcceptanceRate(null);
+    if (!bookingRow.pro_id) {
+      setProfessional(null);
+      setProfessionalAcceptanceRate(null);
+    }
     setLoading(false);
   }, [bookingId, userId]);
 
