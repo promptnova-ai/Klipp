@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -69,11 +69,13 @@ export function ClientTrackingScreen() {
   const router = useRouter();
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const { session } = useAuth();
+  const userId = session?.user.id;
+  const trackingRequestId = useRef(0);
   const [booking, setBooking] = useState<TrackingBooking | null>(null);
   const [professional, setProfessional] = useState<ProCard | null>(null);
   const [professionalCoordinate, setProfessionalCoordinate] = useState<Coordinate | null>(null);
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<string | null>(null);
-  const [clockNow, setClockNow] = useState(Date.now());
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
   const [routeEtaMinutes, setRouteEtaMinutes] = useState<number | null>(null);
   const [routeDistanceMeters, setRouteDistanceMeters] = useState<number | null>(null);
@@ -84,10 +86,13 @@ export function ClientTrackingScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const loadTrackingDetails = useCallback(async () => {
-    const userId = session?.user.id;
+    const requestId = ++trackingRequestId.current;
+    const isLatestRequest = () => trackingRequestId.current === requestId;
     if (!userId || !bookingId) {
-      setError('No encontramos la reserva que quieres seguir.');
-      setLoading(false);
+      if (isLatestRequest()) {
+        setError('No encontramos la reserva que quieres seguir.');
+        setLoading(false);
+      }
       return;
     }
 
@@ -98,6 +103,7 @@ export function ClientTrackingScreen() {
       .eq('id', bookingId)
       .eq('client_id', userId)
       .single();
+    if (!isLatestRequest()) return;
     if (bookingError) {
       setError(bookingError.message);
       setLoading(false);
@@ -112,10 +118,12 @@ export function ClientTrackingScreen() {
       .eq('booking_id', bookingRow.id)
       .order('occurred_at', { ascending: true })
       .order('id', { ascending: true });
+    if (!isLatestRequest()) return;
     if (eventsError) setError(eventsError.message);
     else setStatusEvents((eventRows ?? []) as BookingStatusEvent[]);
     if (bookingRow.pro_id) {
       const { data: acceptanceData, error: acceptanceError } = await supabase.rpc('get_client_visible_pro_acceptance_rate', { p_booking_id: bookingRow.id });
+      if (!isLatestRequest()) return;
       if (acceptanceError) setError(acceptanceError.message);
       else {
         const metric = Array.isArray(acceptanceData) ? acceptanceData[0] : acceptanceData;
@@ -124,6 +132,7 @@ export function ClientTrackingScreen() {
       const { data: proData, error: proError } = await supabase.rpc('get_client_booking_pro_cards', {
         p_booking_ids: [bookingRow.id],
       });
+      if (!isLatestRequest()) return;
       if (proError) setError(proError.message);
       else setProfessional(((proData ?? []) as ProCard[])[0] ?? null);
     }
@@ -134,6 +143,7 @@ export function ClientTrackingScreen() {
         .select('latitude, longitude, updated_at')
         .eq('booking_id', bookingRow.id)
         .maybeSingle();
+      if (!isLatestRequest()) return;
       if (locationError) setError(locationError.message);
       else if (typeof location?.latitude === 'number' && typeof location.longitude === 'number') {
         setProfessionalCoordinate({ latitude: location.latitude, longitude: location.longitude });
@@ -145,10 +155,17 @@ export function ClientTrackingScreen() {
     }
     if (!bookingRow.pro_id) setProfessionalAcceptanceRate(null);
     setLoading(false);
-  }, [bookingId, session]);
+  }, [bookingId, userId]);
 
   useEffect(() => {
-    void Promise.resolve().then(loadTrackingDetails);
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) void loadTrackingDetails();
+    });
+    return () => {
+      active = false;
+      trackingRequestId.current += 1;
+    };
   }, [loadTrackingDetails]);
 
   useEffect(() => {
@@ -168,7 +185,12 @@ export function ClientTrackingScreen() {
         filter: `booking_id=eq.${booking.id}`,
       }, () => { void loadTrackingDetails(); })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    let active = true;
+    const refresh = () => { if (active) void loadTrackingDetails(); };
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
   }, [booking?.id, loadTrackingDetails]);
 
   useEffect(() => {
@@ -203,11 +225,15 @@ export function ClientTrackingScreen() {
 
   useEffect(() => {
     if (!booking?.id || booking.status !== 'en_route') {
-      setRouteEtaMinutes(null);
-      setRouteDistanceMeters(null);
-      setRoutePolyline(null);
-      setRouteEtaUpdatedAt(null);
-      return;
+      let active = true;
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setRouteEtaMinutes(null);
+        setRouteDistanceMeters(null);
+        setRoutePolyline(null);
+        setRouteEtaUpdatedAt(null);
+      });
+      return () => { active = false; };
     }
 
     let active = true;
