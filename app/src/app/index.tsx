@@ -1,12 +1,26 @@
-import { Redirect } from 'expo-router';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { session, profile, loading, profileError, refreshProfile } = useAuth();
 
-  if (loading) {
+  useEffect(() => {
+    if (loading) return;
+    if (!session) {
+      router.replace('/(auth)/login');
+      return;
+    }
+    if (profileError || !profile) return;
+    if (profile.role === 'client') router.replace('/(client)');
+    else if (profile.role === 'pro') router.replace('/(pro)');
+    else router.replace('/admin');
+  }, [loading, session, profile, profileError, router]);
+
+  if (loading || (session && !profileError && !profile)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color="#16766c" />
@@ -14,8 +28,6 @@ export default function HomeScreen() {
       </View>
     );
   }
-
-  if (!session) return <Redirect href="/(auth)/login" />;
 
   if (profileError || !profile) {
     return (
@@ -29,10 +41,12 @@ export default function HomeScreen() {
     );
   }
 
-  if (profile.role === 'client') return <Redirect href="/(client)" />;
-  if (profile.role === 'pro') return <Redirect href="/(pro)" />;
-
-  return <Redirect href="/admin" />;
+  return (
+    <View style={styles.centered}>
+      <ActivityIndicator color="#16766c" />
+      <Text style={styles.message}>Abriendo tu espacio...</Text>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
