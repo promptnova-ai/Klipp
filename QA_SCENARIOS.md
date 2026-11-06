@@ -48,19 +48,19 @@ al retroceder y continuar entre pasos.
 **Resultado esperado:** La elección se conserva en el borrador de registro y se
 recupera en el perfil. La opción **Otro** requiere una descripción.
 
-### QA-PRO-02 — Selección de servicios y tarifas
+### QA-PRO-02 — Profesión única, detalles y tarifas por modalidad
 
 **Prioridad:** Alta  
-**Precondición:** Estar en el paso de servicios del registro profesional.
+**Precondición:** Estar en el paso de profesión del registro profesional.
 
-1. Continuar sin seleccionar servicios.
-2. Seleccionar una especialidad y dejar el precio vacío.
-3. Introducir un precio positivo en RD$ y una duración positiva en minutos.
-4. Seleccionar una segunda especialidad y completar sus propios valores.
+1. Intentar continuar sin elegir una profesión.
+2. Seleccionar una profesión y comprobar que solo puede quedar una seleccionada.
+3. Cambiar a otra profesión y comprobar que se limpian los detalles y precios de la anterior.
+4. Completar el campo de especialidad y el dato específico que corresponda a esa profesión.
+5. Dejar vacía una tarifa de modalidad e intentar continuar.
+6. Completar el precio y la duración de cada modalidad de la profesión.
 
-**Resultado esperado:** No se avanza sin al menos un servicio y sin precio y
-duración válidos para cada servicio seleccionado. Cada servicio conserva su
-precio y duración independientes.
+**Resultado esperado:** Solo se registra una profesión principal. Cada modalidad conserva su propio precio y duración. No se avanza con datos específicos incompletos ni con modalidades sin tarifa válida.
 
 ### QA-PRO-03 — Centro GPS, pin y radio de cobertura
 
@@ -102,6 +102,17 @@ cargando indefinidamente. Conceder el permiso y reintentar debe permitir seguir.
 app informa que hay que confirmar el correo. El enlace vuelve al host de pruebas
 y no a un puerto inexistente. Los datos del onboarding aparecen como borrador
 en el perfil para poder guardarlos.
+
+### QA-PRO-05A — Compromiso de herramientas y materiales
+
+**Prioridad:** Alta  
+**Precondición:** Estar en el paso de profesión del registro profesional.
+
+1. Completar profesión, detalles y tarifas.
+2. Intentar continuar sin aceptar el compromiso de herramientas.
+3. Marcar la confirmación y continuar el registro.
+
+**Resultado esperado:** El registro no se completa sin aceptar expresamente que el profesional llevará sus propias herramientas y materiales y que no utilizará los del cliente. La aceptación queda registrada en `pro_profiles.equipment_policy_accepted_at`.
 
 ### QA-PRO-06 — Guardado del perfil profesional
 
