@@ -654,7 +654,7 @@ export function NewBookingScreen() {
       )}
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
-          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={formatDop(tier.price_dop)} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
+          <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary={tier.price_dop > 0 ? formatDop(tier.price_dop) : "Tarifa del profesional"} onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
         ))}
       </Section>}
       {visibleTiers.length === 0 && <Section title="2. Servicio y profesional">
@@ -831,7 +831,7 @@ export function NewBookingScreen() {
               <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#047857" size={18} />
             </View>
           </View>
-          {selectedTier && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Tamaño</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>}
+          {selectedTier && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Modalidad</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>}
           {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Duración</Text><Text style={styles.summaryValue}>{selectedOffer.est_minutes} min</Text></View>}
           <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Fecha y hora</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Lo antes posible' : `${scheduledDate} · ${formatSlotTime(scheduledTime)}`}</Text></View>
           <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Dirección</Text><Text numberOfLines={2} style={styles.summaryValue}>{addressText || 'Ubicación seleccionada'}</Text></View>
