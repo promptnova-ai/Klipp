@@ -441,3 +441,18 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 6. Cambiar el estado de la reserva a `arrived` o `completed` y verificar que el mapa/ETA anterior deja de mostrarse.
 
 **Resultado esperado:** El CTA abre la conversación correspondiente, conserva el aislamiento por reserva y no deja datos de ubicación o ETA antiguos visibles cuando el servicio deja de estar en camino.
+
+
+### QA-CLI-07 — Reintento seguro al crear una reserva
+
+**Prioridad:** Crítica  
+**Precondición:** Cliente autenticado, servicio y modalidad válidos, ubicación y horario disponibles.
+
+1. Pulsar dos veces rápidamente «Solicitar servicio» y comprobar que solo se crea una reserva.
+2. Repetir una vez en modo «Cerca de mí» inmediato y comprobar que no aparecen dos solicitudes para el mismo envío.
+3. Simular una interrupción de red durante la llamada que crea la reserva, sin asumir que el servidor no llegó a procesarla.
+4. Comprobar que la interfaz no invita a volver a enviar la solicitud y ofrece abrir Mis reservas para verificar el resultado.
+5. Simular un error de validación devuelto por el RPC y comprobar que se muestra el mensaje del servidor y que el cliente puede corregir los datos e intentarlo de nuevo.
+6. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
+
+**Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.
