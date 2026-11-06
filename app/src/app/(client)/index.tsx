@@ -15,7 +15,7 @@ import {
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
-import { ScreenEntrance } from '@/components/ui-primitives';
+import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
@@ -277,7 +277,7 @@ export default function ClientHomeScreen() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Ver mis direcciones"
-          onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()}
+          onPress={() => router.push('/(client)/addresses')}
           style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
           <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.blueDark} size={17} />
           <View>
@@ -323,13 +323,13 @@ export default function ClientHomeScreen() {
           <Text style={styles.heroTitle}>Tu día, más fácil.{'\n'}Tus servicios, en buenas manos.</Text>
           <Text style={styles.heroText}>Limpieza, cuidado personal, vehículos y mantenimiento con profesionales verificados.</Text>
           {featuredService && (
-            <Pressable
-              accessibilityRole="button"
+            <MotionPressable
+              accessibilityLabel="Explorar servicios"
               onPress={() => showServiceDetails(featuredService)}
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}>
+              style={styles.primaryButton}>
               <Text style={styles.primaryButtonText}>Explorar servicios</Text>
               <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.navy} size={17} />
-            </Pressable>
+            </MotionPressable>
           )}
         </View>
       )}
@@ -386,7 +386,7 @@ export default function ClientHomeScreen() {
           </Pressable>
         </View>
       ) : (
-        <View style={styles.serviceList}>
+        <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}>
           {visibleServices.map((service) => {
             const priceOptions = service.offers
               .filter((offer) => offer.base_price_dop > 0)
@@ -394,11 +394,11 @@ export default function ClientHomeScreen() {
               .sort((left, right) => left.price - right.price);
             const lowestOption = priceOptions[0];
             return (
-              <Pressable
-                accessibilityRole="button"
+              <MotionPressable
+                accessibilityLabel={`Ver detalles de ${service.name}`}
                 key={service.id}
                 onPress={() => showServiceDetails(service)}
-                style={({ pressed }) => [styles.serviceCard, wideLayout && styles.serviceCardWide, pressed && styles.cardPressed]}>
+                style={[styles.serviceCard, wideLayout && styles.serviceCardWide]}>
                 <View style={styles.serviceCardIcon}>
                   <SymbolView name={serviceIcon(service.code)} tintColor={KlippColors.blueDark} size={23} />
                 </View>
@@ -415,7 +415,7 @@ export default function ClientHomeScreen() {
                   </View>
                   <Text style={styles.serviceLink}>Ver detalles  <Text style={styles.linkArrow}>›</Text></Text>
                 </View>
-              </Pressable>
+              </MotionPressable>
             );
           })}
           {visiblePros.length > 0 && (
