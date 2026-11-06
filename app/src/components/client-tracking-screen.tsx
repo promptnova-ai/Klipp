@@ -60,7 +60,7 @@ export function ClientTrackingScreen() {
   const [professional, setProfessional] = useState<ProCard | null>(null);
   const [professionalCoordinate, setProfessionalCoordinate] = useState<Coordinate | null>(null);
   const [locationUpdatedAt, setLocationUpdatedAt] = useState<string | null>(null);
-  const [clockNow, setClockNow] = useState(Date.now());
+  const [clockNow, setClockNow] = useState(0);
   const [statusEvents, setStatusEvents] = useState<BookingStatusEvent[]>([]);
   const [routeEtaMinutes, setRouteEtaMinutes] = useState<number | null>(null);
   const [routeDistanceMeters, setRouteDistanceMeters] = useState<number | null>(null);
@@ -189,15 +189,17 @@ export function ClientTrackingScreen() {
   }, []);
 
   useEffect(() => {
-    if (!booking?.id || booking.status !== 'en_route') {
-      setRouteEtaMinutes(null);
-      setRouteDistanceMeters(null);
-      setRoutePolyline(null);
-      setRouteEtaUpdatedAt(null);
-      return;
-    }
-
     let active = true;
+    if (!booking?.id || booking.status !== 'en_route') {
+      void Promise.resolve().then(() => {
+        if (!active) return;
+        setRouteEtaMinutes(null);
+        setRouteDistanceMeters(null);
+        setRoutePolyline(null);
+        setRouteEtaUpdatedAt(null);
+      });
+      return () => { active = false; };
+    }
     const refreshRouteEta = async () => {
       const { data, error: routeError } = await supabase.functions.invoke('booking-route-eta', {
         body: { bookingId: booking.id },
