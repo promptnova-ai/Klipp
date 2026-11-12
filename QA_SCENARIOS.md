@@ -609,3 +609,236 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 7. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
 
 **Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.
+
+
+### QA-PAY-01 — Creación idempotente del intento de pago
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva en `payment_pending`, precio válido y ventana de pago activa.
+
+1. Crear un intento AZUL con referencia de pedido e idempotency key.
+2. Repetir la llamada con la misma idempotency key.
+3. Repetir con una idempotency key distinta mientras el primer intento siga pendiente.
+
+**Resultado esperado:** Las tres llamadas devuelven el mismo intento pendiente; no se crean dos cobros activos para una reserva. El importe y moneda proceden de la reserva (`price_dop`, DOP), nunca del cliente.
+
+### QA-PAY-02 — Confirmación de pago firmada y activación de dispatch
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva en `payment_pending`, intento AZUL pendiente y callback de pruebas con firma válida.
+
+1. Enviar callback aprobado con AuthHash válido, referencia e importe exactos y código de aprobación `00`.
+2. Comprobar que el pago pasa a `held` y registra `auth_hash_verified_at`.
+3. Comprobar que la reserva pasa a `requested`.
+4. Para reserva manual, comprobar que la oferta al profesional se crea solo después del pago.
+5. Para reserva automática, comprobar que el worker de dispatch puede iniciar la búsqueda después de la activación.
+
+**Resultado esperado:** El callback firmado produce una sola transición atómica de pago a reserva pagada. Sin firma validada no se activa la reserva.
+
+### QA-PAY-03 — Callback duplicado o manipulado
+
+**Prioridad:** Crítica  
+**Precondición:** Intento ya aprobado en QA.
+
+1. Repetir exactamente el callback aprobado.
+2. Repetir con importe diferente, referencia diferente o código de respuesta incompatible.
+3. Enviar el callback sin confirmación de AuthHash verificado.
+
+**Resultado esperado:** El callback idéntico es idempotente y no duplica la oferta ni el pago. Los callbacks manipulados o no verificados se rechazan y no alteran el estado de la reserva ni el importe.
+
+### QA-PAY-04 — Pago declinado y reintento
+
+**Prioridad:** Alta  
+**Precondición:** Reserva en `payment_pending` con intento pendiente.
+
+1. Finalizar el intento con un código de declinación y firma válida.
+2. Comprobar que el pago pasa a `failed` y la reserva permanece sin dispatch.
+3. Crear un nuevo intento con nueva referencia e idempotency key mientras siga vigente la ventana de checkout.
+
+**Resultado esperado:** Un pago declinado no genera ofertas. El cliente puede reintentar sin duplicar ni alterar el precio de la reserva.
+
+### QA-PAY-05 — Vencimiento de la ventana de pago
+
+**Prioridad:** Alta  
+**Precondición:** Reserva `payment_pending` con `payment_due_at` vencido.
+
+1. Ejecutar `expire_unpaid_booking_checkouts()`.
+2. Comprobar que los intentos pendientes pasan a `failed` y la reserva pasa a `expired`.
+3. Enviar un callback aprobado tardío.
+
+**Resultado esperado:** La reserva vence y no bloquea profesionales. Si el callback firmado confirma una aprobación tardía, el pago se registra como recibido (`held`) con `refund_required_at`, la reserva permanece `expired` y no se activa dispatch. Si la respuesta firmada es una declinación, el pago queda `failed`. La ventana de checkout inicial es de 10 minutos.
+
+### QA-PAY-06 — No permitir importe o moneda manipulados
+
+**Prioridad:** Crítica  
+**Precondición:** Intento AZUL pendiente con importe y moneda DOP guardados en backend.
+
+1. Enviar callback con importe superior o inferior al guardado.
+2. Enviar callback con moneda distinta de DOP.
+3. Comprobar el estado del pago y la reserva.
+
+**Resultado esperado:** Una respuesta sin HMAC válido se rechaza sin mutación. Si AZUL envía una aprobación con firma válida pero el importe o la moneda no coincide con el snapshot, se registra el importe real como aprobado con `refund_required_at`, no se activa dispatch y la reserva queda para revisión/reembolso.
+
+### QA-PAY-07 — Tarifa profesional inexistente o inválida
+
+**Prioridad:** Crítica  
+**Precondición:** Profesional sin precio activo para la variante, tarifa inactiva o precio nulo/cero.
+
+1. Intentar obtener una cotización final para ese profesional.
+2. Intentar crear una reserva con un precio enviado manualmente desde el cliente.
+3. Intentar generar un intento AZUL para una reserva sin snapshot de tarifa profesional válida.
+
+**Resultado esperado:** El servidor rechaza la cotización y el checkout. No se utiliza el precio genérico de `pricing_tiers`, no se crea pago ni oferta y el profesional no aparece como opción reservable.
+
+### QA-PAY-08 — Rango estimado frente a precio final
+
+**Prioridad:** Crítica  
+**Precondición:** Al menos tres profesionales con precios diferentes para el mismo servicio/variante y zona.
+
+1. Consultar la estimación de búsqueda.
+2. Abrir la reserva y seleccionar un profesional concreto.
+3. Comparar el precio final mostrado con su tarifa activa.
+4. Modificar la tarifa del profesional desde otra sesión antes de confirmar.
+
+**Resultado esperado:** La búsqueda muestra un rango basado en las tarifas profesionales reales. La reserva muestra el precio exacto del profesional seleccionado. Si la tarifa cambió antes de confirmar, el servidor devuelve una nueva cotización y exige aceptación; no crea checkout con el precio antiguo ni cobra el nuevo sin consentimiento.
+
+### QA-PAY-09 — Snapshot financiero inmutable
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva `payment_pending` creada con precio profesional exacto y snapshot de comisión/payout.
+
+1. Cambiar la tarifa del profesional después de crear la reserva, antes de que acepte.
+2. Completar el pago con el importe guardado en el snapshot.
+3. El profesional inicialmente cotizado acepta.
+4. Consultar precio, comisión y payout de la reserva.
+5. Repetir el escenario con un profesional sustituto después de un rechazo.
+
+**Resultado esperado:** El profesional inicialmente cotizado puede aceptar y debe honrar el importe, duración, comisión y payout del snapshot pagado aunque su tarifa pública haya cambiado. Un sustituto solo puede recibir/aceptar la oferta si su tarifa y duración actuales coinciden exactamente con el snapshot. Las nuevas tarifas solo afectan a futuras cotizaciones.
+
+### QA-PAY-10 — Rechazo del profesional cotizado
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva pagada y oferta enviada al profesional cuyo precio fue aceptado por el cliente.
+
+1. Hacer que el profesional rechace o deje vencer la oferta.
+2. Buscar un segundo profesional con la misma tarifa.
+3. Repetir con un segundo profesional cuya tarifa sea distinta.
+
+**Resultado esperado:** Un sustituto con la misma tarifa puede recibir la oferta sin cambiar el importe. Un sustituto con tarifa distinta no puede ser asignado ni cobrar automáticamente una diferencia: requiere nueva aceptación explícita del cliente o cancelación/reembolso.
+
+### QA-PAY-11 — Precio automático de «Cerca de mí»
+
+**Prioridad:** Crítica  
+**Precondición:** Profesionales elegibles en una zona con diferentes tarifas y disponibilidad.
+
+1. Comprobar que la búsqueda muestra el rango aproximado.
+2. Abrir la ventana de reserva en modo «Cerca de mí».
+3. Comprobar que Klipp selecciona un candidato concreto y muestra su nombre, duración y precio final.
+4. Confirmar y pagar.
+5. Verificar que el primer offer corresponde al profesional cotizado y que el importe no cambia.
+
+**Resultado esperado:** Nunca se cobra un rango o importe estimado. Antes de pagar, el cliente ve un precio exacto ligado al profesional elegido/preseleccionado.
+
+
+### QA-PAY-12 — La tarifa cambia entre cotización y confirmación
+
+**Prioridad:** Crítica  
+**Precondición:** El cliente ha visto una cotización exacta de un profesional, pero aún no ha creado la reserva.
+
+1. Obtener una cotización con precio y duración.
+2. Cambiar la tarifa o duración del profesional desde otra sesión.
+3. Enviar la cotización anterior a `create_prepaid_booking_at_location` o `create_prepaid_tier_booking_at_location`.
+4. Consultar reservas, pagos y ofertas creadas.
+5. Volver a cotizar y confirmar el nuevo precio.
+
+**Resultado esperado:** El servidor rechaza la cotización antigua y revierte toda la operación: no queda reserva, pago ni oferta. La app vuelve a mostrar el precio actualizado y requiere aceptación expresa antes de continuar.
+
+
+### QA-PAY-13 — Sesión de checkout de un solo uso
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva `payment_pending` e intento AZUL pendiente.
+
+1. Crear una sesión de checkout firmada con expiración máxima de cinco minutos.
+2. Abrir la URL de checkout y reclamar la sesión.
+3. Repetir la misma URL/token.
+4. Repetir con token manipulado, expirado o de otro intento.
+
+**Resultado esperado:** Solo la primera reclamación válida obtiene los datos para construir el formulario POST. Repeticiones, tokens manipulados, caducados o asociados a otro pago se rechazan.
+
+### QA-PAY-14 — Firma HMAC de respuesta AZUL
+
+**Prioridad:** Crítica  
+**Precondición:** Intento AZUL pendiente y credenciales de pruebas del comercio.
+
+1. Enviar una respuesta aprobada con AuthHash válido, importe y número de orden exactos.
+2. Repetir alterando por separado Amount, OrderNumber, AuthorizationCode, DateTime, ResponseCode, IsoCode, ResponseMessage, ErrorDescription y RRN sin recalcular la firma.
+3. Enviar una respuesta con firma incorrecta.
+4. Repetir la respuesta aprobada original.
+
+**Resultado esperado:** Solo la respuesta íntegra con HMAC-SHA512 válido se procesa. Cualquier cambio en los campos firmados invalida el callback. El callback aprobado duplicado es idempotente y no crea una segunda oferta.
+
+### QA-PAY-15 — Cancelación sin respuesta firmada
+
+**Prioridad:** Alta  
+**Precondición:** Cliente ha abierto AZUL y vuelve por CancelUrl sin parámetros.
+
+1. Abrir CancelUrl sin OrderNumber ni AuthHash.
+2. Consultar el intento y la reserva.
+3. Volver a iniciar el checkout dentro de la ventana de pago.
+4. Repetir cerrando el navegador sin que AZUL redirija al comercio y dejar vencer el checkout.
+5. Comprobar el campo `payments.reconciliation_required_at` y la pantalla de Mis reservas.
+
+**Resultado esperado:** La navegación de cancelación no marca un pago como aprobado ni activa dispatch. Si el navegador se cierra sin callback, el worker vence la reserva y marca el intento para conciliación con AZUL; el cliente ve que no debe volver a pagar hasta verificar el resultado. Si el cliente cancela con una respuesta de AZUL sin firma, no se cambia el estado financiero.
+
+### QA-PAY-16 — Configuración fiscal o de comercio incompleta
+
+**Prioridad:** Crítica  
+**Precondición:** Falta AZUL_AUTH_KEY, AZUL_CURRENCY_CODE, URLs autorizadas o configuración ITBIS.
+
+1. Solicitar checkout para una reserva válida.
+2. Comprobar que la función responde con error de configuración.
+3. Consultar pagos y ofertas de la reserva.
+
+**Resultado esperado:** El checkout se bloquea antes de generar un formulario o cobro. No se crea un intento de pago ni se envía oferta al profesional. La configuración ITBIS nunca se asume por defecto.
+
+
+### QA-PAY-17 — Aprobación tardía después del worker de expiración
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva e intento pendientes; el worker ya ejecutó `expire_unpaid_booking_checkouts()`.
+
+1. Confirmar que el worker dejó el intento `failed` por expiración y la reserva `expired`.
+2. Enviar después un callback AZUL con firma válida, importe y orden correctos y código aprobado `00`.
+3. Consultar pago, reserva y solicitudes profesionales.
+4. Repetir el mismo callback aprobado.
+
+**Resultado esperado:** El callback tardío se reconoce como movimiento real de dinero: el pago pasa a `held`, registra `provider_amount_dop` y `refund_required_at`, y la reserva sigue `expired`. No se crea ninguna oferta. El callback repetido es idempotente y el cliente ve «Pago recibido · devolución en revisión».
+
+
+### QA-PAY-18 — Cola administrativa de conciliación y devolución
+
+**Prioridad:** Crítica  
+**Precondición:** Usuario administrador con permisos `finance.read` y `finance.reconcile`; pagos de prueba en conciliación y devolución pendiente.
+
+1. Consultar la cola desde Finanzas.
+2. Verificar que solo aparecen intentos con `reconciliation_required_at` o `refund_required_at`.
+3. Resolver un intento expirado como «sin cargo» usando una referencia de reporte AZUL y una nota.
+4. Reconciliar otro intento expirado cuyo reporte sí muestra un cargo: introducir importe real, referencia y motivo para pasarlo a devolución pendiente.
+5. Registrar la devolución confirmada con su referencia.
+6. Intentar resolver sin permisos, sin referencia, sin importe real o con un estado incompatible.
+
+**Resultado esperado:** La cola solo muestra casos pendientes. «Sin cargo» solo puede resolver un intento expirado `failed`; «cargo encontrado» convierte ese intento en `held` con devolución requerida y registra el importe real; «devolución confirmada» solo puede cerrar un pago `held` con devolución requerida. Cada acción exige referencia y motivo, queda en `admin_audit_log` y no permite marcar una devolución como completada sin referencia del proveedor.
+
+
+### QA-BOOK-12 — Cotización inmediata ordenada por GPS real
+
+**Prioridad:** Alta  
+**Precondición:** Dos profesionales elegibles, conectados y dentro de su área de cobertura, con posiciones GPS diferentes.
+
+1. Configurar un profesional con centro de cobertura cercano pero GPS real más lejano.
+2. Configurar otro con centro de cobertura más lejano pero GPS real junto al cliente.
+3. Solicitar cotización inmediata con `p_require_online=true`.
+4. Repetir para una reserva programada con `p_require_online=false`.
+
+**Resultado esperado:** La cotización inmediata prioriza la distancia GPS actual del profesional conectado. La cotización programada usa el centro del área de cobertura y disponibilidad futura, ya que no exige presencia online inmediata.

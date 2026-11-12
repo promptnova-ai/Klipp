@@ -29,6 +29,7 @@ function distanceInKm(from: Coordinate, to: Coordinate) {
 
 function statusLabel(status: BookingStatus) {
   const labels: Record<BookingStatus, string> = {
+    payment_pending: 'Pendiente de pago',
     requested: 'Solicitud creada',
     awaiting_payment: 'Pago pendiente',
     scheduled: 'Reserva confirmada',
@@ -45,6 +46,9 @@ function statusLabel(status: BookingStatus) {
 }
 
 function statusMessage(status: BookingStatus, assignmentMode: 'manual' | 'auto') {
+  if (status === 'payment_pending') {
+    return 'Tu precio final está reservado durante 10 minutos. La búsqueda del profesional comenzará únicamente cuando se confirme el pago.';
+  }
   if (status === 'requested') {
     return assignmentMode === 'auto'
       ? 'Klipp está buscando un profesional disponible para tu servicio. Te avisaremos en cuanto alguien acepte.'

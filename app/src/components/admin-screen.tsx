@@ -3,12 +3,13 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, T
 
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { AdminOperationsPanel } from '@/components/admin-operations-panel';
+import { AdminPaymentsPanel } from '@/components/admin-payments-panel';
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type AdminSection = 'operations' | 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
+type AdminSection = 'operations' | 'finance' | 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
@@ -43,6 +44,7 @@ type TierDraft = Pick<PricingTier, 'label' | 'price_dop' | 'est_minutes'>;
 
 const sections: { key: AdminSection; title: string }[] = [
   { key: 'operations', title: 'Operaciones' },
+  { key: 'finance', title: 'Finanzas' },
   { key: 'verification', title: 'Verificaciones' },
   { key: 'accounts', title: 'Cuentas y roles' },
   { key: 'issues', title: 'Incidencias' },
@@ -115,7 +117,7 @@ export function AdminScreen() {
 
       const permissionCodes = [
         'accounts.read', 'accounts.manage_clients', 'verification.review',
-        'catalog.manage', 'bookings.read', 'bookings.manage',
+        'catalog.manage', 'bookings.read', 'bookings.manage', 'finance.read', 'finance.reconcile',
       ];
       const permissionResults = owner
         ? permissionCodes.map(() => ({ data: true, error: null }))
@@ -200,6 +202,7 @@ export function AdminScreen() {
   const canReviewProfessionals = isSuperAdmin || permissions.includes('verification.review');
   const visibleSections = sections.filter((item) => {
     if (item.key === 'operations') return isSuperAdmin || permissions.includes('bookings.read');
+    if (item.key === 'finance') return isSuperAdmin || permissions.includes('finance.read');
     if (item.key === 'staff') return isSuperAdmin;
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
     if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
@@ -409,6 +412,12 @@ export function AdminScreen() {
       {activeSection === 'operations' && (
         <View style={styles.section}>
           <AdminOperationsPanel canManage={isSuperAdmin || permissions.includes('bookings.manage')} />
+        </View>
+      )}
+
+      {activeSection === 'finance' && (isSuperAdmin || permissions.includes('finance.read')) && (
+        <View style={styles.section}>
+          <AdminPaymentsPanel canReconcile={isSuperAdmin || permissions.includes('finance.reconcile')} />
         </View>
       )}
 

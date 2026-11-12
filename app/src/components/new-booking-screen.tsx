@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
@@ -32,6 +33,7 @@ type ServiceOffer = {
   jobs_completed?: number;
   distance_m?: number;
 };
+type AutoServiceQuote = { pro_service_id:string; pro_id:string; price_dop:number; est_minutes:number; pro_name:string|null; avatar_url:string|null; rating_avg:number; rating_count:number; jobs_completed:number; distance_m:number };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
 
 function isAmbiguousBookingRpcError(error: { code?: string; status?: number }) {
@@ -90,6 +92,10 @@ export function NewBookingScreen() {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [autoPriceRange, setAutoPriceRange] = useState<{ min_price_dop: number; max_price_dop: number; professional_count: number } | null>(null);
   const [autoPriceLoading, setAutoPriceLoading] = useState(false);
+  const [autoQuote, setAutoQuote] = useState<AutoServiceQuote | null>(null);
+  const [autoQuoteLoading, setAutoQuoteLoading] = useState(false);
+  const [autoQuoteVersion, setAutoQuoteVersion] = useState(0);
+  const [manualQuoteVersion, setManualQuoteVersion] = useState(0);
   const [manualProPrice, setManualProPrice] = useState<number | null>(null);
   const [manualProDuration, setManualProDuration] = useState<number | null>(null);
   const [manualPriceLoading, setManualPriceLoading] = useState(false);
@@ -117,6 +123,9 @@ export function NewBookingScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submissionUncertain, setSubmissionUncertain] = useState(false);
+  const [pendingPaymentBookingId, setPendingPaymentBookingId] = useState<string | null>(null);
+  const [startingCheckout, setStartingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const dateOptions = useMemo(() => getDateOptions(), []);
   const slotOptions = useMemo(
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
@@ -252,10 +261,10 @@ export function NewBookingScreen() {
   const selectedTierIdForQuery = selectedTier?.id ?? null;
   const selectedDuration = mode === 'manual'
     ? manualProDuration ?? selectedOffer?.est_minutes ?? selectedTier?.est_minutes
-    : selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
+    : autoQuote?.est_minutes ?? selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
   const selectedPrice = mode === 'manual'
     ? manualProPrice ?? selectedOffer?.base_price_dop ?? undefined
-    : selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
+    : autoQuote?.price_dop ?? selectedOffer?.base_price_dop ?? undefined;
 
   useEffect(() => {
     let active = true;
@@ -300,6 +309,38 @@ export function NewBookingScreen() {
 
   useEffect(() => {
     let active = true;
+    const scheduledStart = getScheduledStart();
+    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId || !scheduledStart) {
+      void Promise.resolve().then(() => { if (active) { setAutoQuote(null); setAutoQuoteLoading(false); } });
+      return () => { active = false; };
+    }
+    void Promise.resolve().then(() => { if (active) { setAutoQuote(null); setAutoQuoteLoading(true); } });
+    void Promise.resolve(supabase.rpc('get_auto_service_quote', {
+      p_service_type_id: selectedServiceId,
+      p_pricing_tier_id: selectedTier?.id ?? null,
+      p_lat: coordinate.latitude,
+      p_lng: coordinate.longitude,
+      p_scheduled_start: scheduledStart,
+      p_require_online: timing === 'now',
+    })).then(({ data, error: quoteError }) => {
+      if (!active) return;
+      if (quoteError) { setAutoQuote(null); setError(quoteError.message); }
+      else {
+        const row = (data?.[0] ?? null) as AutoServiceQuote | null;
+        setAutoQuote(row && Number(row.price_dop) > 0 && Number(row.est_minutes) > 0
+          ? { ...row, price_dop: Number(row.price_dop), est_minutes: Number(row.est_minutes) } : null);
+      }
+      setAutoQuoteLoading(false);
+    }).catch((cause: unknown) => {
+      if (!active) return;
+      setAutoQuote(null); setAutoQuoteLoading(false);
+      setError(cause instanceof Error ? cause.message : 'No pudimos obtener una cotización profesional.');
+    });
+    return () => { active = false; };
+  }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id, timing, scheduledDate, scheduledTime, getScheduledStart, autoQuoteVersion]);
+
+  useEffect(() => {
+    let active = true;
     if (mode !== 'manual' || !selectedProId || !selectedServiceId || selectedOffer) {
       void Promise.resolve().then(() => {
         if (!active) return;
@@ -310,7 +351,11 @@ export function NewBookingScreen() {
       return () => { active = false; };
     }
     void Promise.resolve().then(() => {
-      if (active) setManualPriceLoading(true);
+      if (active) {
+        setManualProPrice(null);
+        setManualProDuration(null);
+        setManualPriceLoading(true);
+      }
     });
     void Promise.resolve(supabase.from('pro_services')
       .select('id, base_price_dop, est_minutes')
@@ -359,7 +404,7 @@ export function NewBookingScreen() {
         setError(cause instanceof Error ? cause.message : 'No pudimos consultar la tarifa del profesional.');
       });
     return () => { active = false; };
-  }, [mode, selectedProId, selectedServiceId, selectedTierIdForQuery, selectedOffer]);
+  }, [mode, selectedProId, selectedServiceId, selectedTierIdForQuery, selectedOffer, manualQuoteVersion]);
 
   useEffect(() => {
     let active = true;
@@ -556,8 +601,8 @@ export function NewBookingScreen() {
       setError('Elige una fecha y hora futura válidas.');
       return;
     }
-    if (mode === 'auto' && !selectedOffer && (!autoPriceRange || autoPriceLoading)) {
-      setError('Todavía no hay tarifas publicadas suficientes para estimar este servicio en la zona seleccionada.');
+    if (mode === 'auto' && !selectedOffer && (!autoQuote || autoQuoteLoading)) {
+      setError('Todavía no hay un profesional concreto disponible para mostrarte el precio final.');
       return;
     }
     if (timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) {
@@ -582,19 +627,22 @@ export function NewBookingScreen() {
 
       if (selectedOffer) {
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_booking_at_location', {
           p_pro_service_id: selectedOffer.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
+          p_expected_price_dop: selectedOffer.base_price_dop,
+          p_expected_est_minutes: selectedOffer.est_minutes,
+          p_mode: mode,
         });
         bookingId = result.data;
         rpcError = result.error;
       } else if (selectedTier) {
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_tier_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_tier_booking_at_location', {
           p_pricing_tier_id: selectedTier.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
@@ -602,19 +650,28 @@ export function NewBookingScreen() {
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
           p_mode: mode,
-          p_pro_id: mode === 'manual' ? selectedProId : null,
+          p_pro_id: mode === 'manual' ? selectedProId : autoQuote?.pro_id ?? null,
+          p_expected_price_dop: selectedPrice,
+          p_expected_est_minutes: selectedDuration,
         });
         bookingId = result.data;
         rpcError = result.error;
       } else if (mode === 'auto') {
+        if (!autoQuote) {
+          setError('No hay una cotización profesional válida para este servicio.');
+          return;
+        }
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_auto_service_booking_at_location', {
-          p_service_type_id: selectedServiceId!,
+        const result = await supabase.rpc('create_prepaid_booking_at_location', {
+          p_pro_service_id: autoQuote.pro_service_id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
+          p_expected_price_dop: autoQuote.price_dop,
+          p_expected_est_minutes: autoQuote.est_minutes,
+          p_mode: 'auto',
         });
         bookingId = result.data;
         rpcError = result.error;
@@ -630,19 +687,26 @@ export function NewBookingScreen() {
           return;
         }
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_booking_at_location', {
           p_pro_service_id: proService.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
+          p_expected_price_dop: manualProPrice,
+          p_expected_est_minutes: manualProDuration,
+          p_mode: 'manual',
         });
         bookingId = result.data;
         rpcError = result.error;
       }
 
       if (rpcError) {
+        if (/tariff changed|quote is no longer available/i.test(rpcError.message)) {
+          if (mode === 'auto') setAutoQuoteVersion((version) => version + 1);
+          else setManualQuoteVersion((version) => version + 1);
+        }
         if (isAmbiguousBookingRpcError(rpcError)) {
           setSubmissionUncertain(true);
           setError('No pudimos confirmar si la solicitud llegó a registrarse. Revisa Mis reservas antes de volver a intentarlo para evitar duplicarla.');
@@ -657,20 +721,8 @@ export function NewBookingScreen() {
         return;
       }
 
-      if (!selectedOffer && mode === 'auto' && timing === 'now') {
-        try {
-          const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
-          setSuccess(assignmentError
-            ? 'Solicitud creada. Klipp continuará buscando un profesional; consulta el estado en Mis reservas.'
-            : 'Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
-        } catch {
-          setSuccess('Solicitud creada. Klipp continuará buscando un profesional; consulta el estado en Mis reservas.');
-        }
-      } else if (!selectedOffer && mode === 'auto') {
-        setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
-      } else {
-        setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
-      }
+      setPendingPaymentBookingId(bookingId);
+      setSuccess('Tu precio está reservado durante 10 minutos. Completa el pago seguro con AZUL para activar la solicitud; todavía no se ha enviado ninguna oferta.');
     } catch (cause) {
       if (bookingCreationAttempted) {
         setSubmissionUncertain(true);
@@ -684,13 +736,43 @@ export function NewBookingScreen() {
     }
   }
 
+  async function startAzulCheckout() {
+    if (!pendingPaymentBookingId || startingCheckout) return;
+    setStartingCheckout(true);
+    setCheckoutError(null);
+    try {
+      const { data, error: checkoutInvokeError } = await supabase.functions.invoke('azul-create-checkout', {
+        body: { bookingId: pendingPaymentBookingId },
+      });
+      if (checkoutInvokeError) throw checkoutInvokeError;
+      const checkoutUrl = data?.checkoutUrl;
+      if (typeof checkoutUrl !== 'string' || !/^https:\/\//i.test(checkoutUrl)) {
+        throw new Error('AZUL no devolvió un enlace de pago válido.');
+      }
+      await Linking.openURL(checkoutUrl);
+    } catch (cause) {
+      setCheckoutError(cause instanceof Error
+        ? cause.message
+        : 'No pudimos abrir el pago. Tu reserva sigue pendiente; revisa Mis reservas antes de repetir el proceso.');
+    } finally {
+      setStartingCheckout(false);
+    }
+  }
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
-      {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
+      {success && <View style={styles.successBanner}>
+        <Text style={styles.successTitle}>{success}</Text>
+        {pendingPaymentBookingId && <Pressable accessibilityRole="button" disabled={startingCheckout} onPress={() => void startAzulCheckout()} style={({ pressed }) => [styles.submit, startingCheckout && styles.disabled, pressed && styles.buttonPressed]}>
+          {startingCheckout ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Pagar de forma segura con AZUL</Text>}
+        </Pressable>}
+        {checkoutError && <Text accessibilityRole="alert" style={styles.error}>{checkoutError}</Text>}
+        <Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable>
+      </View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
@@ -827,8 +909,8 @@ export function NewBookingScreen() {
       </Section>}
       <Section title={timing === 'now' ? "5. Profesional" : "6. Profesional"}>
         {timing === 'scheduled' && !selectedOffer && <View style={styles.modeOptions}>
-          <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
-          <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
+          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
+          <ModeOption label="Cerca de mí" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
@@ -902,14 +984,19 @@ export function NewBookingScreen() {
           {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{selectedOffer.pro_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Solicitar ahora' : 'Asignación automática'}</Text></View>}
+          {mode === 'auto' && autoQuote && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional recomendado</Text><Text style={styles.summaryValue}>{autoQuote.pro_name ?? 'Profesional Klipp'}</Text></View>}
           <View style={styles.summaryDivider} />
           {mode === 'auto' && !selectedOffer ? (
             <View>
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Precio estimado</Text>
+                <Text style={styles.priceLabel}>Precio estimado en tu zona</Text>
                 <Text style={styles.priceLine}>{autoPriceLoading ? 'Calculando…' : autoPriceRange ? `${formatDop(autoPriceRange.min_price_dop)} – ${formatDop(autoPriceRange.max_price_dop)}` : 'Sin tarifas disponibles'}</Text>
               </View>
-              <Text style={styles.body}>Estimación basada en las tarifas publicadas por profesionales de la zona. El precio definitivo será el del profesional que acepte y se mostrará antes del pago.</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Precio final del profesional</Text>
+                <Text style={styles.priceLine}>{autoQuoteLoading ? 'Consultando…' : autoQuote ? formatDop(autoQuote.price_dop) : 'No disponible'}</Text>
+              </View>
+              <Text style={styles.body}>El precio final corresponde al profesional recomendado y queda bloqueado para esta reserva. Si no puede atenderte, Klipp buscará otro profesional con la misma tarifa.</Text>
             </View>
           ) : (
             <View style={styles.priceRow}>
@@ -925,8 +1012,8 @@ export function NewBookingScreen() {
           <Text style={styles.submitText}>Revisar Mis reservas</Text>
         </Pressable>
       ) : !success && (
-        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
+        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading || (mode === 'auto' && !selectedOffer && (autoQuoteLoading || !autoQuote))} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading || (mode === 'auto' && !selectedOffer && (autoQuoteLoading || !autoQuote))) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Confirmar precio y preparar reserva</Text>}
         </Pressable>
       )}
     </ScrollView>

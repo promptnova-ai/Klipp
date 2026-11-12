@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
+import * as WebBrowser from 'expo-web-browser';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -11,6 +12,7 @@ import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
 
 type ClientBooking = Booking & {
+  payment_due_at: string | null;
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
   addresses: { label: string | null; street: string | null; references_text: string | null } | null;
@@ -18,9 +20,10 @@ type ClientBooking = Booking & {
 type LocationPoint = { latitude: number; longitude: number };
 type QueueInfo = { previous_stops: number; previous_service_in_progress: boolean; departure_window: string };
 type BookingMessage = { id: number; booking_id: string; sender_id: string; body: string; created_at: string };
-type PaymentSummary = { id: string; booking_id: string; provider: string; amount_dop: number; status: 'pending' | 'held' | 'released' | 'refunded' | 'failed'; created_at: string; held_at: string | null; released_at: string | null };
+type PaymentSummary = { id: string; booking_id: string; provider: string; amount_dop: number; status: 'pending' | 'held' | 'released' | 'refunded' | 'failed'; created_at: string; held_at: string | null; released_at: string | null; refund_required_at: string | null; refund_reason: string | null; provider_amount_dop: number | null; reconciliation_required_at: string | null; provider_refund_id: string | null; reconciliation_resolution: string | null };
 
 const statusLabels: Record<BookingStatus, string> = {
+  payment_pending: 'Pendiente de pago',
   requested: 'Solicitud enviada',
   awaiting_payment: 'Pago pendiente',
   scheduled: 'Programada',
@@ -63,7 +66,7 @@ export function ClientBookingsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, payment_due_at, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('client_id', userId)
       .order('scheduled_start', { ascending: false });
     if (queryError) {
@@ -78,7 +81,7 @@ export function ClientBookingsScreen() {
       const [reviewResult, proResult, paymentResult] = await Promise.all([
         supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
         supabase.rpc('get_client_booking_pro_cards', { p_booking_ids: bookingIds }),
-        supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at').in('booking_id', bookingIds).order('created_at', { ascending: false }),
+        supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at, refund_required_at, refund_reason, provider_amount_dop, reconciliation_required_at, provider_refund_id, reconciliation_resolution').in('booking_id', bookingIds).order('created_at', { ascending: false }),
       ]);
       if (reviewResult.error || proResult.error || paymentResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? paymentResult.error?.message ?? 'No pudimos cargar los detalles.');
       if (!reviewResult.error) setReviews(Object.fromEntries(((reviewResult.data ?? []) as Review[]).map((review) => [review.booking_id, review])));
@@ -227,6 +230,26 @@ export function ClientBookingsScreen() {
     setRefreshing(true);
     await loadBookings();
     setRefreshing(false);
+  }
+
+  async function startAzulCheckout(bookingId: string) {
+    setBusyId(bookingId);
+    setError(null);
+    const { data, error: checkoutError } = await supabase.functions.invoke('azul-create-checkout', {
+      body: { bookingId },
+    });
+    if (checkoutError || typeof data?.checkoutUrl !== 'string') {
+      setError(checkoutError?.message ?? data?.error ?? 'No se pudo iniciar el pago.');
+      setBusyId(null);
+      return;
+    }
+    try {
+      await WebBrowser.openBrowserAsync(data.checkoutUrl);
+      await loadBookings();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo abrir la página segura de AZUL.');
+    }
+    setBusyId(null);
   }
 
   async function confirmService(bookingId: string) {
@@ -426,6 +449,30 @@ export function ClientBookingsScreen() {
               <Text style={styles.priceLabel}>Total</Text>
               <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
             </View>
+            {booking.status === 'payment_pending' && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>Precio reservado · pendiente de pago</Text>
+              <Text style={styles.body}>El precio final queda reservado hasta el vencimiento indicado. La solicitud solo se enviará al profesional cuando AZUL confirme el pago.</Text>
+              <Text style={styles.body}>Válido hasta: {booking.payment_due_at ? formatBusinessDate(booking.payment_due_at) : '10 minutos desde la reserva'}</Text>
+              <Pressable accessibilityRole="button" disabled={busyId === booking.id || !booking.payment_due_at} onPress={() => void startAzulCheckout(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
+                <Text style={styles.buttonText}>{busyId === booking.id ? 'Abriendo pago seguro…' : 'Pagar con tarjeta en AZUL'}</Text>
+              </Pressable>
+            </View>}
+            {payments[booking.id]?.reconciliation_required_at && !payments[booking.id]?.refund_required_at && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>Verificando el resultado con AZUL</Text>
+              <Text style={styles.body}>No hemos recibido la confirmación final del proveedor. Estamos revisando si el pago llegó a procesarse. No realices otro pago por esta reserva hasta que termine la conciliación.</Text>
+            </View>}
+            {payments[booking.id]?.status === 'refunded' && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>Devolución confirmada</Text>
+              <Text style={styles.body}>La devolución se ha registrado tras confirmarse en AZUL. Referencia: {payments[booking.id]?.provider_refund_id ?? 'registrada por Finanzas'}.</Text>
+            </View>}
+            {payments[booking.id]?.reconciliation_resolution?.startsWith('no_charge:') && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>AZUL confirmó que no hubo cargo</Text>
+              <Text style={styles.body}>La conciliación ha finalizado. No se realizó ningún cobro por esta reserva.</Text>
+            </View>}
+            {payments[booking.id]?.refund_required_at && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>Pago recibido · devolución en revisión</Text>
+              <Text style={styles.body}>AZUL confirmó un cobro, pero no se ha activado el servicio. El importe está pendiente de conciliación y revisión para su devolución. No realices otro pago por esta reserva.</Text>
+            </View>}
             {booking.status === 'awaiting_payment' && (() => {
               const payment = payments[booking.id];
               const paymentTitle = payment?.status === 'held' || payment?.status === 'released'

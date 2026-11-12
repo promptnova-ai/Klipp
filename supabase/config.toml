@@ -419,3 +419,13 @@ enabled = true
 # Scheduled notification dispatcher validates its own cron secret header.
 [functions.dispatch-notifications]
 verify_jwt = false
+
+
+[functions.azul-create-checkout]
+verify_jwt = false
+
+[functions.azul-checkout-page]
+verify_jwt = false
+
+[functions.azul-payment-return]
+verify_jwt = false
