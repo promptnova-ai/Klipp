@@ -63,7 +63,7 @@ BEGIN
   END IF;
   v_definition := replace(v_definition, v_old, v_new);
 
-  v_old := 'if p_mode=''manual'' then insert into public.booking_requests(booking_id,pro_id,expires_at) values(v_booking_id,p_pro_id,now()+interval ''2 hours''); end if;';
+  v_old := 'if p_pro_id is not null then insert into public.booking_requests(booking_id,pro_id,expires_at) values(v_booking_id,p_pro_id,now()+interval ''2 hours''); end if;';
   IF position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate early tier booking offer creation';
   END IF;
