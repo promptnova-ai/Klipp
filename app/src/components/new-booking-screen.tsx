@@ -34,6 +34,22 @@ type ServiceOffer = {
 };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
 
+const serviceVisuals: Record<string, { icon: string; tint: string; accent: string }> = {
+  barberia: { icon: '✂️', tint: '#E9EDFF', accent: '#3D5AFE' },
+  peluqueria: { icon: '💇', tint: '#FFF0EC', accent: '#FF7058' },
+  estetica: { icon: '✨', tint: '#E7F7F0', accent: '#247A5A' },
+  carwash: { icon: '🚘', tint: '#E9EDFF', accent: '#3D5AFE' },
+  detailing: { icon: '🧽', tint: '#E7F7F0', accent: '#247A5A' },
+  limpieza_regular: { icon: '🧹', tint: '#FFF0EC', accent: '#FF7058' },
+  limpieza_profunda: { icon: '🧼', tint: '#E9EDFF', accent: '#3D5AFE' },
+  'limpieza-oficinas': { icon: '🏢', tint: '#E7F7F0', accent: '#247A5A' },
+  mantenimiento: { icon: '🛠️', tint: '#FFF0EC', accent: '#FF7058' },
+};
+function getServiceVisual(code: string) {
+  return serviceVisuals[code] ?? { icon: '✦', tint: '#E9EDFF', accent: '#3D5AFE' };
+}
+
+
 function isAmbiguousBookingRpcError(error: { code?: string; status?: number }) {
   if (typeof error.status === 'number') return error.status >= 500;
   return !error.code || !/^[0-9A-Z]{5}$/.test(error.code);
@@ -694,7 +710,20 @@ export function NewBookingScreen() {
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
-        {services.map((service) => <Choice key={service.id} selected={selectedServiceId === service.id} label={service.name} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} />)}
+        {services.map((service) => {
+          const visual = getServiceVisual(service.code);
+          const selected = selectedServiceId === service.id;
+          return (
+            <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} style={[styles.serviceTile, selected && styles.serviceTileSelected]}>
+              <View style={[styles.serviceTileIcon, { backgroundColor: visual.tint }]}><Text style={[styles.serviceTileGlyph, { color: visual.accent }]}>{visual.icon}</Text></View>
+              <View style={styles.serviceTileCopy}>
+                <Text style={styles.serviceTileTitle}>{service.name}</Text>
+                {!!service.description && <Text style={styles.serviceTileDescription}>{service.description}</Text>}
+              </View>
+              <View style={[styles.serviceTileRadio, selected && styles.serviceTileRadioSelected]}>{selected && <View style={styles.serviceTileRadioInner} />}</View>
+            </Pressable>
+          );
+        })}
       </Section>
       {selectedServiceId !== null && (
         <Section title="Equipamiento del servicio">
@@ -960,6 +989,16 @@ const styles = StyleSheet.create({
   equipmentCopy: { flex: 1, gap: 2 },
   equipmentName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   equipmentDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  serviceTile: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
+  serviceTileSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
+  serviceTileIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
+  serviceTileGlyph: { fontSize: 25 },
+  serviceTileCopy: { flex: 1, gap: 4 },
+  serviceTileTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
+  serviceTileDescription: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  serviceTileRadio: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
+  serviceTileRadioSelected: { borderColor: KlippColors.cobalt },
+  serviceTileRadioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.cobalt },
   page: { width: '100%', maxWidth: 1000, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48, gap: 22, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
