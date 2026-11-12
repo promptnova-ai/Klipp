@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
   details: { width: '100%', maxWidth: 720, alignSelf: 'center', marginTop: 12, paddingHorizontal: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, padding: 22, gap: 8 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.navy, fontSize: 16 },
-  signOut: { width: '100%', maxWidth: 720, alignSelf: 'center', marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: '#F2C4C4', borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20, backgroundColor: '#FFFFFF' },
+  signOut: { width: '100%', maxWidth: 720, alignSelf: 'center', marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20, backgroundColor: '#FFFFFF' },
   signOutText: { color: KlippColors.danger, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.75 },
 });
