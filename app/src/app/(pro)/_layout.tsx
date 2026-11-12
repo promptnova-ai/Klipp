@@ -12,7 +12,7 @@ export default function ProLayout() {
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: RoleThemes.pro.accent,
-          tabBarInactiveTintColor: '#8A94A6',
+          tabBarInactiveTintColor: KlippColors.muted,
           tabBarStyle: { height: 76, paddingTop: 9, paddingBottom: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: KlippColors.border, elevation: 0, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: -5 }, shadowRadius: 18 },
           sceneStyle: { backgroundColor: RoleThemes.pro.canvas },
           animation: 'fade',
