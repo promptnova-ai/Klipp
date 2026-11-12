@@ -55,7 +55,11 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
   }, []);
 
   useEffect(() => {
-    void loadQueue();
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) void loadQueue();
+    });
+    return () => { active = false; };
   }, [loadQueue]);
 
   async function resolve(row: ReconciliationRow, action: 'no_charge' | 'charge_found_refund_required' | 'refund_confirmed') {
