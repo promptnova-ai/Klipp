@@ -34,6 +34,11 @@ type ServiceOffer = {
 };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
 
+function isAmbiguousBookingRpcError(error: { code?: string; status?: number }) {
+  if (typeof error.status === 'number') return error.status >= 500;
+  return !error.code || !/^[0-9A-Z]{5}$/.test(error.code);
+}
+
 function getBusinessDateKey(date: Date) {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: 'America/Santo_Domingo',
@@ -573,7 +578,7 @@ export function NewBookingScreen() {
 
     try {
       let bookingId: unknown = null;
-      let rpcError: { message: string } | null = null;
+      let rpcError: { message: string; code?: string; status?: number } | null = null;
 
       if (selectedOffer) {
         bookingCreationAttempted = true;
@@ -638,7 +643,12 @@ export function NewBookingScreen() {
       }
 
       if (rpcError) {
-        setError(rpcError.message);
+        if (isAmbiguousBookingRpcError(rpcError)) {
+          setSubmissionUncertain(true);
+          setError('No pudimos confirmar si la solicitud llegó a registrarse. Revisa Mis reservas antes de volver a intentarlo para evitar duplicarla.');
+        } else {
+          setError(rpcError.message);
+        }
         return;
       }
       if (typeof bookingId !== 'string') {
