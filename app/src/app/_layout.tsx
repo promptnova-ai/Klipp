@@ -29,7 +29,13 @@ export default function RootLayout() {
     <AuthProvider>
       <NativeNotificationBootstrap />
       <NotificationResponseHandler />
-      <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          animation: 'slide_from_right',
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
+        }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="admin" />
         <Stack.Screen name="(auth)" />
