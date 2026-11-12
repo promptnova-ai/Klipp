@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
+import { useReducedMotion } from '@/components/ui-primitives';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors, RoleThemes } from '@/lib/brand';
 import type { ServiceType } from '@/lib/types';
@@ -88,6 +89,7 @@ export function ProRegistrationScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [transition] = useState(() => new Animated.Value(1));
+  const reducedMotion = useReducedMotion();
   const tierRequestId = useRef(0);
   const [progress] = useState(() => new Animated.Value(0));
   const progressWidth = useMemo(
@@ -136,6 +138,12 @@ export function ProRegistrationScreen() {
   function animateToStep(nextStep: number) {
     setError(null);
     setNotice(null);
+    if (reducedMotion) {
+      setStep(nextStep);
+      transition.setValue(1);
+      progress.setValue(nextStep);
+      return;
+    }
     Animated.timing(transition, { toValue: 0, duration: 100, useNativeDriver: Platform.OS !== 'web' }).start(() => {
       setStep(nextStep);
       transition.setValue(0);
