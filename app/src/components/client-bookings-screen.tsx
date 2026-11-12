@@ -471,11 +471,11 @@ function distanceInKm(from: LocationPoint, to: LocationPoint) {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 56, gap: 24, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   empty: { marginTop: 4, marginHorizontal: 20, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  card: { marginHorizontal: 20, padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: KlippColors.ink, shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  card: { marginHorizontal: 20, padding: 22, width: '100%', maxWidth: 900, alignSelf: 'center', borderRadius: 26, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 17, shadowColor: KlippColors.ink, shadowOpacity: 0.06, shadowOffset: { width: 0, height: 12 }, shadowRadius: 24, elevation: 3 },
   cardHeader: { gap: 12 },
   serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.whiteBlue, alignItems: 'center', justifyContent: 'center' },

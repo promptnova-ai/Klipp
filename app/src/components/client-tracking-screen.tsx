@@ -365,7 +365,7 @@ export function ClientTrackingScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  page: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 20, paddingBottom: 36, gap: 18 },
+  page: { width: '100%', maxWidth: 820, alignSelf: 'center', padding: 22, paddingBottom: 52, gap: 22 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: KlippColors.canvas },
   backButton: { alignSelf: 'flex-start', paddingVertical: 8 },
   backText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   etaValue: { color: KlippColors.white, fontSize: 32, fontWeight: '800' },
   etaHint: { color: '#E9EDFF', fontSize: 12, lineHeight: 18 },
   mapPlaceholder: { height: 280, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: KlippColors.whiteBlue, gap: 10 },
-  professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
+  professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 22, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 2 },
   avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: KlippColors.whiteBlue },
   avatarText: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '800' },
   professionalDetails: { flex: 1, gap: 3 },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   statusIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.whiteBlue },
   statusIconText: { color: KlippColors.blue, fontSize: 20, fontWeight: '800' },
   statusMessage: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  stepsCard: { padding: 17, borderRadius: 18, backgroundColor: KlippColors.white, gap: 13 },
+  stepsCard: { padding: 22, borderRadius: 24, borderWidth: 1, borderColor: '#EAE7E0', backgroundColor: KlippColors.white, gap: 15, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 18, elevation: 2 },
   stepsTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800', marginBottom: 2 },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: KlippColors.whiteMint, color: KlippColors.success, fontSize: 13, fontWeight: '800' },

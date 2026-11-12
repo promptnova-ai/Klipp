@@ -528,7 +528,7 @@ export function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  page: { width: '100%', maxWidth: 900, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 22, paddingBottom: 42, gap: 18 },
+  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 26, paddingBottom: 56, gap: 22 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 16 },
   headerCopy: { flex: 1, gap: 5 },
   eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
@@ -537,7 +537,7 @@ const styles = StyleSheet.create({
   headerIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   markAllButton: { minHeight: 38, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12 },
   markAllText: { fontSize: 12, fontWeight: '800' },
-  preferencesCard: { padding: 21, borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 2 },
+  preferencesCard: { padding: 24, borderRadius: 26, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 17, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: 11 }, shadowRadius: 24, elevation: 3 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingBottom: 3 },
   sectionCopy: { flex: 1, gap: 5 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, lineHeight: 24, fontWeight: '900', letterSpacing: -0.25 },
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   preferenceChannelCopy: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 5 },
   preferenceChannelLabel: { color: KlippColors.slate, fontSize: 11, fontWeight: '700' },
   webPushHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 17, paddingTop: 10 },
-  pushCard: { padding: 20, borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 2 },
+  pushCard: { padding: 23, borderRadius: 26, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 17, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: 11 }, shadowRadius: 24, elevation: 3 },
   pushHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pushIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   pushCopy: { flex: 1, gap: 4 },
