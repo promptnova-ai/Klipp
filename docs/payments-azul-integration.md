@@ -50,6 +50,46 @@ Guardar exclusivamente en Supabase Edge Function Secrets:
 
 También hacen falta URLs autorizadas de aprobado/declinado/cancelado, credenciales de certificación, confirmación de HOLD/POST, liquidación, devoluciones, contracargos y calendario de abono.
 
+## Implementación de funciones Edge
+
+La rama contiene estas funciones, todavía no desplegadas:
+
+- `azul-create-checkout`: autentica al cliente, verifica que la reserva le pertenece y sigue en `payment_pending`, crea/reutiliza un intento idempotente y genera una URL de checkout de corta duración.
+- `azul-checkout-page`: consume una sesión de un solo uso y genera el formulario HTML POST que el navegador envía a AZUL. Esto respeta el requisito de AZUL de que el POST lo ejecute el navegador del cliente, no el servidor de Klipp.
+- `azul-payment-return`: procesa la redirección de AZUL, verifica el AuthHash de respuesta en servidor y solo entonces llama a `finalize_azul_payment_attempt`. Las redirecciones de cancelación sin firma no cambian el estado financiero.
+- `_shared/azul.ts`: genera/verifica HMAC-SHA512, sesiones firmadas y conversión de importes.
+
+La sesión de checkout se guarda como hash SHA-256 en `payments`, expira como máximo a los 5 minutos o al vencer el checkout y solo puede reclamarse una vez. El pago conserva su ventana máxima de 10 minutos.
+
+## AuthHash según el manual oficial AZUL
+
+El manual de AZUL indica HMAC-SHA512 y exige concatenar los campos sin separadores, en este orden.
+
+**Requerimiento de venta:**
+
+`MerchantId + MerchantName + MerchantType + CurrencyCode + OrderNumber + Amount + ITBIS + ApprovedUrl + DeclinedUrl + CancelUrl + UseCustomField1 + CustomField1Label + CustomField1Value + UseCustomField2 + CustomField2Label + CustomField2Value + AuthKey`
+
+**Respuesta de AZUL:**
+
+`OrderNumber + Amount + AuthorizationCode + DateTime + ResponseCode + IsoCode + ResponseMessage + ErrorDescription + RRN + AuthKey`
+
+El manual especifica codificación Unicode; el código usa UTF-16LE para el mensaje HMAC. No se confía en la URL de retorno ni en el texto visual de AZUL: el callback debe llevar una firma válida y coincidir con el número de orden y el importe guardados en Supabase.
+
+Fuente oficial: https://dev.azul.com.do/Pages/developer/documentos/plugins/Documento-E-Commerce-AZUL-Pagina-Pagos-(Espanol)-2023-08.pdf
+
+## Configuración obligatoria antes de usar el checkout
+
+Además de las credenciales de comercio, las funciones requieren:
+- `AZUL_CHECKOUT_PAGE_URL`: URL pública de `azul-checkout-page`.
+- `AZUL_CHECKOUT_TOKEN_SECRET`: secreto independiente para firmar la sesión de navegador.
+- `AZUL_APPROVED_URL`, `AZUL_DECLINED_URL`, `AZUL_CANCEL_URL`: URLs públicas registradas/autorizadas por AZUL.
+- `AZUL_PAYMENT_PAGE_URL` y `AZUL_PAYMENT_PAGE_FALLBACK_URL`: opcionales; si no se indican, se usan las URLs documentadas para el ambiente.
+- `AZUL_ITBIS_RATE` o `AZUL_ITBIS_EXEMPT=true`: configuración fiscal explícita. No se inventa ni se asume una exención.
+- `KLIPP_WEB_APP_URL`: URL de retorno web de Klipp (por defecto, la URL de preview/producción conocida).
+- `AZUL_ENABLE_LIVE_PAYMENTS=true`: requisito adicional para permitir el ambiente de producción. Sin este valor, producción permanece bloqueada.
+
+El campo `Amount` se envía en unidades menores (dos decimales, sin punto ni coma), y representa el total aceptado por el cliente. `ITBIS` se calcula como componente incluido en ese total según la política fiscal aprobada; si la configuración fiscal no está definida, el checkout se bloquea.
+
 ## Condiciones para activar pagos
 
 No habilitar checkout real hasta:
