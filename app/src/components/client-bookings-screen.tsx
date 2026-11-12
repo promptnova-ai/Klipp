@@ -453,10 +453,9 @@ export function ClientBookingsScreen() {
               <Text style={styles.paymentTitle}>Precio reservado · pendiente de pago</Text>
               <Text style={styles.body}>El precio final queda reservado hasta el vencimiento indicado. La solicitud solo se enviará al profesional cuando AZUL confirme el pago.</Text>
               <Text style={styles.body}>Válido hasta: {booking.payment_due_at ? formatBusinessDate(booking.payment_due_at) : '10 minutos desde la reserva'}</Text>
-              <Pressable accessibilityRole="button" disabled={busyId === booking.id || !booking.payment_due_at || new Date(booking.payment_due_at).getTime() <= Date.now()} onPress={() => void startAzulCheckout(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
+              <Pressable accessibilityRole="button" disabled={busyId === booking.id || !booking.payment_due_at} onPress={() => void startAzulCheckout(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
                 <Text style={styles.buttonText}>{busyId === booking.id ? 'Abriendo pago seguro…' : 'Pagar con tarjeta en AZUL'}</Text>
               </Pressable>
-              {booking.payment_due_at && new Date(booking.payment_due_at).getTime() <= Date.now() && <Text style={styles.body}>El plazo de pago ha vencido. Actualiza tus reservas para consultar el estado.</Text>}
             </View>}
             {payments[booking.id]?.reconciliation_required_at && !payments[booking.id]?.refund_required_at && <View style={styles.payment}>
               <Text style={styles.paymentTitle}>Verificando el resultado con AZUL</Text>
