@@ -119,6 +119,7 @@ La rama de trabajo implementa:
 - La reserva nace en `payment_pending` con una ventana de 10 minutos y sin ofertas.
 - La aprobación AZUL verificada activa la reserva y envía la primera oferta al profesional cotizado.
 - La aceptación comprueba pago `held` y tarifa/duración coincidentes; no reescribe precio, comisión ni payout.
+- El profesional inicialmente cotizado respeta el snapshot ya pagado aunque cambie su tarifa pública después; solo los sustitutos deben seguir coincidiendo con el precio y duración bloqueados.
 - En asignación automática, un rechazo/vencimiento libera al primer profesional y busca alternativas con el mismo precio y duración. Una tarifa diferente no recibe oferta.
 
 **QA Sandbox:** validada transacción completa con cotización, rechazo de precio manipulado, creación sin oferta anticipada, intento de pago idempotente, callback aprobado, oferta posterior al pago y aceptación sin alterar el precio. También se probó rechazo y sustitución por profesional con la misma tarifa, y se comprobó que una tarifa distinta no recibe oferta. Todos los datos sintéticos se revirtieron.
