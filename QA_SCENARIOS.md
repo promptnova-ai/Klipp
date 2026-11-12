@@ -824,7 +824,8 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 1. Consultar la cola desde Finanzas.
 2. Verificar que solo aparecen intentos con `reconciliation_required_at` o `refund_required_at`.
 3. Resolver un intento expirado como «sin cargo» usando una referencia de reporte AZUL y una nota.
-4. Crear un pago aprobado que requiera devolución y registrar la devolución confirmada con su referencia.
-5. Intentar resolver sin permisos, sin referencia o con un estado incompatible.
+4. Reconciliar otro intento expirado cuyo reporte sí muestra un cargo: introducir importe real, referencia y motivo para pasarlo a devolución pendiente.
+5. Registrar la devolución confirmada con su referencia.
+6. Intentar resolver sin permisos, sin referencia, sin importe real o con un estado incompatible.
 
-**Resultado esperado:** La cola solo muestra casos pendientes. «Sin cargo» solo puede resolver un intento expirado `failed`; «devolución confirmada» solo puede cerrar un pago `held` con devolución requerida. Cada acción exige referencia y motivo, queda en `admin_audit_log` y no permite marcar una devolución como completada sin referencia del proveedor.
+**Resultado esperado:** La cola solo muestra casos pendientes. «Sin cargo» solo puede resolver un intento expirado `failed`; «cargo encontrado» convierte ese intento en `held` con devolución requerida y registra el importe real; «devolución confirmada» solo puede cerrar un pago `held` con devolución requerida. Cada acción exige referencia y motivo, queda en `admin_audit_log` y no permite marcar una devolución como completada sin referencia del proveedor.
