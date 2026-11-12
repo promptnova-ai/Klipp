@@ -12,10 +12,12 @@ Se mantienen dos modalidades, con un único motor de asignación:
 ## Precio y catálogo
 
 - El precio mostrado en el checkout es el total final del servicio seleccionado.
-- El precio se obtiene del catálogo/tarifa vigente en el momento de crear el pedido y se guarda como snapshot en la reserva.
-- La asignación nunca cambia el precio pagado.
-- La duración estimada y las condiciones del servicio también se guardan como snapshot para calcular disponibilidad, desplazamiento y conflictos.
+- El precio debe proceder de una tarifa de catálogo aprobada y guardarse como snapshot en la reserva antes de abrir AZUL.
+- La asignación nunca cambia el precio pagado. La tarifa individual del profesional no puede sobrescribir el importe que el cliente ya aceptó.
+- La duración operativa puede ajustarse a la modalidad del profesional solo si sigue cumpliendo el tiempo y alcance que se vendieron; no debe alterar el precio.
 - La comisión de Klipp es 7% del importe del servicio; payout profesional 93%, salvo ajustes fiscales o contractuales que se definan antes de operar.
+- No permitir checkout con tarifas placeholder (p. ej. DOP 1). La base de datos debe rechazar esos intentos. Un servicio sin precio real aprobado permanece no vendible hasta que administración configure su tarifa.
+- Antes de activar prepago, hay que armonizar las tarifas profesionales por variante con el precio de catálogo: la implementación anterior permitía que el precio final cambiara cuando el profesional aceptaba, lo cual no es compatible con prepago.
 
 ## Estados de negocio propuestos
 
