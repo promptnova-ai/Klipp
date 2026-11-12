@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import { ActivityIndicator, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -6,6 +7,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import { getProLocationTaskError, updateActiveProTrackingBookings } from '@/lib/pro-location-task';
@@ -406,7 +408,7 @@ export function ProAgendaScreen() {
             <View style={[styles.presenceDot, isOnline ? styles.presenceDotOnline : styles.presenceDotOffline]} />
             <Text style={styles.presenceTitle}>{isOnline ? 'ONLINE · Estás disponible' : 'OFFLINE · No recibirás solicitudes'}</Text>
           </View>
-          <Text style={styles.body}>{isOnline ? 'Klipp puede enviarte solicitudes inmediatas mientras tu ubicación siga activa. Si dejas vencer una solicitud sin responder, pasarás automáticamente a OFFLINE.' : 'Conéctate cuando quieras recibir solicitudes inmediatas. Tus reservas programadas no cambian.'}</Text>
+          <Text style={styles.presenceBody}>{isOnline ? 'Klipp puede enviarte solicitudes inmediatas mientras tu ubicación siga activa. Si dejas vencer una solicitud sin responder, pasarás automáticamente a OFFLINE.' : 'Conéctate cuando quieras recibir solicitudes inmediatas. Tus reservas programadas no cambian.'}</Text>
         </View>
         <Pressable accessibilityRole="switch" accessibilityState={{ checked: isOnline }} disabled={presenceBusy} onPress={() => void togglePresence()} style={[styles.presenceButton, isOnline && styles.presenceButtonOnline, presenceBusy && styles.disabled]}>
           <Text style={styles.presenceButtonText}>{presenceBusy ? 'Actualizando…' : isOnline ? 'Desconectarme' : 'Conectarme'}</Text>
@@ -423,8 +425,13 @@ export function ProAgendaScreen() {
         const step = nextStep[booking.status];
         return (
           <View key={booking.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
-            <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
+            <View style={styles.agendaIdentity}>
+              <Image source={serviceArt(booking.service_types?.name ?? '')} contentFit="cover" style={styles.servicePhoto} />
+              <View style={styles.agendaIdentityCopy}>
+                <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
+                <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
+              </View>
+            </View>
             <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
             <Text style={styles.body}>Ubicación: {booking.address_text || booking.addresses?.label || booking.addresses?.street || 'No disponible'}</Text>
             {(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.body}>Referencia: {booking.landmark_notes || booking.addresses?.references_text}</Text>}
@@ -470,7 +477,7 @@ export function ProAgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 12, paddingBottom: 56, gap: 22, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, backgroundColor: 'rgba(15, 23, 42, 0.55)' },
   equipmentModal: { width: '100%', maxWidth: 440, padding: 22, borderRadius: 18, backgroundColor: KlippColors.white, gap: 14 },
   modalTitle: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
@@ -480,24 +487,28 @@ const styles = StyleSheet.create({
   modalSecondaryText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   modalPrimary: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 10, backgroundColor: KlippColors.cobalt },
   modalPrimaryText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
-  presenceCard: { marginHorizontal: 16, padding: 20, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 24, backgroundColor: KlippColors.white, gap: 16, shadowColor: KlippColors.ink, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 10 }, shadowRadius: 20, elevation: 2 },
+  presenceCard: { marginHorizontal: 0, paddingVertical: 20, paddingHorizontal: 19, borderWidth: 0, borderRadius: 16, backgroundColor: '#171B2D', gap: 15, shadowOpacity: 0, elevation: 0 },
   presenceCopy: { gap: 7 },
   presenceStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   presenceDot: { width: 11, height: 11, borderRadius: 6 },
   presenceDotOnline: { backgroundColor: KlippColors.success },
   presenceDotOffline: { backgroundColor: KlippColors.danger },
-  presenceTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '900' },
-  presenceButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
+  presenceTitle: { color: KlippColors.white, fontSize: 16, fontWeight: '900' },
+  presenceBody: { color: '#D5D8E2', fontSize: 13, lineHeight: 19 },
+  agendaIdentity: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  agendaIdentityCopy: { flex: 1, minWidth: 0, gap: 4 },
+  servicePhoto: { width: 78, height: 68, borderRadius: 10, backgroundColor: KlippColors.surfaceMuted },
+  presenceButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.coral },
   presenceButtonOnline: { backgroundColor: KlippColors.slate },
   presenceButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   subtitle: { color: KlippColors.slate, fontSize: 15, marginTop: -8 },
-  card: { padding: 22, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 24, backgroundColor: KlippColors.white, gap: 13, shadowColor: KlippColors.ink, shadowOpacity: 0.05, shadowOffset: { width: 0, height: 10 }, shadowRadius: 20, elevation: 2 },
-  empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 7 },
+  card: { paddingVertical: 19, paddingHorizontal: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', gap: 13, shadowOpacity: 0, elevation: 0 },
+  empty: { marginTop: 10, paddingVertical: 22, paddingHorizontal: 0, borderTopWidth: 1, borderColor: KlippColors.border, borderRadius: 0, backgroundColor: 'transparent', gap: 7 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  payout: { color: KlippColors.cobaltDark, fontSize: 15, fontWeight: '800', marginTop: 3 },
+  payout: { color: '#E65C45', fontSize: 16, fontWeight: '900', marginTop: 3 },
   reassignmentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.goldLight, borderRadius: 12, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: '700' },
   paymentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.goldLight, borderRadius: 10, padding: 10, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   locationNotice: { color: KlippColors.success, fontSize: 13, fontWeight: '700' },

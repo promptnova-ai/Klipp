@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
@@ -21,6 +22,7 @@ import { useAuth } from '@/components/auth-provider';
 import { useReducedMotion } from '@/components/ui-primitives';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors, RoleThemes } from '@/lib/brand';
+import { serviceArt } from '@/lib/service-art';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
@@ -467,9 +469,7 @@ export function ProRegistrationScreen() {
                     const selected = selectedServiceId === service.id;
                     return (
                       <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => chooseProfession(service.id)} style={[styles.professionOption, selected && styles.professionOptionSelected]}>
-                        <View style={[styles.professionIcon, { backgroundColor: getProfessionVisual(service.code).tint }]}>
-                          <Text style={[styles.professionIconText, { color: getProfessionVisual(service.code).accent }]}>{getProfessionVisual(service.code).icon}</Text>
-                        </View>
+                        <Image source={serviceArt(service.code)} contentFit="cover" style={styles.professionPhoto} />
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
                           <Text style={styles.serviceDescription}>{service.description || getProfessionVisual(service.code).caption}</Text>
@@ -700,8 +700,8 @@ const styles = StyleSheet.create({
   progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
   progressFill: { height: 5, borderRadius: 0, backgroundColor: KlippColors.coral },
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 22, paddingBottom: 36 },
-  proHero: { width: '100%', maxWidth: 920, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 24, backgroundColor: '#27334B', marginBottom: 26 },
-  proHeroImage: { borderRadius: 24 },
+  proHero: { width: '100%', maxWidth: 920, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 16, backgroundColor: '#27334B', marginBottom: 22 },
+  proHeroImage: { borderRadius: 16 },
   proHeroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15,22,39,0.43)' },
   proHeroCopy: { padding: 24, gap: 8, maxWidth: 620 },
   proHeroEyebrow: { color: '#FFB7A8', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
@@ -710,12 +710,12 @@ const styles = StyleSheet.create({
   stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 26 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.ink, fontSize: 36, lineHeight: 42, fontWeight: '900', letterSpacing: -1.1 },
+  title: { color: KlippColors.ink, fontSize: 34, lineHeight: 40, fontWeight: '900', letterSpacing: -1.1 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, maxWidth: 620 },
-  card: { padding: 26, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 28, backgroundColor: KlippColors.white, gap: 20, shadowColor: KlippColors.ink, shadowOpacity: 0.065, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 3 },
+  card: { paddingVertical: 19, paddingHorizontal: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', gap: 18, shadowOpacity: 0, elevation: 0 },
   field: { flex: 1, gap: 8, minWidth: 0 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 56, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD', color: KlippColors.ink, fontSize: 15 },
+  input: { minHeight: 54, paddingHorizontal: 14, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 10, backgroundColor: '#FFFFFF', color: KlippColors.ink, fontSize: 15 },
   multiline: { minHeight: 112, paddingTop: 13, textAlignVertical: 'top' },
   transportSection: { gap: 10, paddingTop: 3 },
   twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 14 },
@@ -729,11 +729,12 @@ const styles = StyleSheet.create({
   retryButtonText: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800' },
   serviceCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 14, shadowColor: KlippColors.ink, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 14, elevation: 2 },
   serviceCardSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.whiteBlue },
-  professionOption: { minHeight: 82, flexDirection: 'row', alignItems: 'center', gap: 15, padding: 17, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 20, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 14, elevation: 1 },
+  professionOption: { minHeight: 90, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 12, paddingHorizontal: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 },
   professionIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
+  professionPhoto: { width: 76, height: 66, borderRadius: 10, backgroundColor: KlippColors.surfaceMuted },
   professionIconText: { fontSize: 25 },
   professionHint: { color: KlippColors.slate, fontSize: 10, fontWeight: '700', marginTop: 2 },
-  professionOptionSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: KlippColors.whiteMint },
+  professionOptionSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: 'rgba(255,112,88,0.055)' },
   radioOuter: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   radioOuterSelected: { borderColor: RoleThemes.pro.accent },
   radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: RoleThemes.pro.accent },
