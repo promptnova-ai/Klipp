@@ -27,8 +27,8 @@ BEGIN
   IF v_booking.payment_due_at IS NULL OR v_booking.payment_due_at <= clock_timestamp() THEN
     RAISE EXCEPTION 'booking payment window has expired';
   END IF;
-  IF v_booking.price_dop <= 1 THEN
-    RAISE EXCEPTION 'catalog price is not configured; checkout is disabled for this service';
+  IF v_booking.price_dop IS NULL OR v_booking.price_dop <= 0 THEN
+    RAISE EXCEPTION 'professional quote is missing or invalid; checkout is disabled';
   END IF;
 
   SELECT * INTO v_payment FROM public.payments WHERE idempotency_key = p_idempotency_key FOR UPDATE;
