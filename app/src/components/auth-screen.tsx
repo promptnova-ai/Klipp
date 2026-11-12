@@ -51,6 +51,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
       resizeMode="cover"
       imageStyle={styles.showcaseImage}
       style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
+      {fullBleedRegister && <View pointerEvents="none" style={styles.showcasePhotoWash} />}
       <View style={styles.showcaseCopy}>
         <View style={styles.showcaseBrandLine}>
           <View style={[styles.showcaseMark, compactLogin && styles.showcaseMarkLogin]}><Text style={styles.showcaseMarkLetter}>K</Text></View>
@@ -131,7 +132,6 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
           </View>
         </View>
       )}
-      {fullBleedRegister && <View pointerEvents="none" style={styles.showcasePhotoWash} />}
     </ImageBackground>
   );
 }
