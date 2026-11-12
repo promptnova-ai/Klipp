@@ -156,7 +156,7 @@ BEGIN
     RETURN false;
   END IF;
 
-  IF p_response_code <> '00' THEN
+  IF coalesce(p_response_code, '') <> '00' THEN
     UPDATE public.payments
     SET status = 'failed', response_code = p_response_code,
         authorization_code = p_authorization_code, rrn = p_rrn,
