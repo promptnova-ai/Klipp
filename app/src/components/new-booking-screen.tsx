@@ -118,6 +118,10 @@ export function NewBookingScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submissionUncertain, setSubmissionUncertain] = useState(false);
+  const [activeStep, setActiveStep] = useState(0);
+  const wizardSteps = ['Servicio', 'Modalidad', 'Cuándo', 'Ubicación', 'Fecha y hora', 'Profesional', 'Resumen'];
+  const visibleWizardSteps = timing === 'now' ? wizardSteps.filter((_, index) => index !== 4) : wizardSteps;
+  const visibleStepIndex = timing === 'now' && activeStep > 4 ? activeStep - 1 : activeStep;
   const dateOptions = useMemo(() => getDateOptions(), []);
   const slotOptions = useMemo(
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
@@ -685,14 +689,37 @@ export function NewBookingScreen() {
     }
   }
 
+  function continueWizard() {
+    if (activeStep === 0 && selectedServiceId === null) { setError('Selecciona un servicio para continuar.'); return; }
+    if (activeStep === 3 && !coordinate) { setError('Indica el lugar donde se realizará el servicio.'); return; }
+    if (activeStep === 4 && timing === 'scheduled' && !scheduledTime) { setError('Selecciona una fecha y un horario disponible.'); return; }
+    if (activeStep === 5 && timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) { setError('Elige un profesional o cambia a asignación automática.'); return; }
+    setError(null);
+    const nextStep = activeStep === 3 && timing === 'now' ? 5 : Math.min(6, activeStep + 1);
+    setActiveStep(nextStep);
+  }
+
+  function previousWizardStep() {
+    setError(null);
+    const previousStep = activeStep === 5 && timing === 'now' ? 3 : Math.max(0, activeStep - 1);
+    setActiveStep(previousStep);
+  }
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
-      <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
+      <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Unos pasos y queda organizado." />
+      <View style={styles.wizardHeader}>
+        <View style={styles.wizardHeading}><Text style={styles.wizardEyebrow}>PASO {visibleStepIndex + 1} DE {visibleWizardSteps.length}</Text><Text style={styles.wizardCurrent}>{visibleWizardSteps[visibleStepIndex]}</Text></View>
+        <View style={styles.wizardTrack}><View style={[styles.wizardFill, { width: `${((visibleStepIndex + 1) / visibleWizardSteps.length) * 100}%` }]} /></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.wizardLabels}>{visibleWizardSteps.map((label, index) => <Text key={label} style={[styles.wizardLabel, index === visibleStepIndex && styles.wizardLabelActive]}>{String(index + 1).padStart(2, '0')} {label}</Text>)}</ScrollView>
+      </View>
       {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
+
+      {activeStep === 0 && (<>
 
       <Section title="1. Servicio">
         {services.map((service) => {
@@ -725,6 +752,10 @@ export function NewBookingScreen() {
           ))}
         </Section>
       )}
+      </>)}
+
+      {activeStep === 1 && (<>
+
       {visibleTiers.length > 0 && <Section title="2. Tamaño / modalidad">
         {visibleTiers.map((tier) => (
           <Choice key={tier.id} selected={(selectedTier?.id ?? null) === tier.id} label={tier.label} secondary="Tarifa del profesional" onPress={() => { resetAppointmentSelection(); setSelectedTierId(tier.id); }} />
@@ -743,13 +774,21 @@ export function NewBookingScreen() {
             />
           ))}
       </Section>}
-      {!selectedOffer && selectedTier && <Section title="3. ¿Cuándo necesitas el servicio?">
-        <View style={styles.modeOptions}>
+      </>)}
+
+      {activeStep === 2 && (<>
+
+      {!selectedOffer && <Section title="3. ¿Cuándo necesitas el servicio?">
+        {selectedOffer ? <Text style={styles.body}>Has elegido a {selectedOffer.pro_name ?? 'un profesional'} para este servicio. La reserva se programará según su disponibilidad.</Text> : <View style={styles.modeOptions}>
           <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); setMode('auto'); }} />
-          <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); }} />
-        </View>
+          <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); if (!selectedTier) setMode('auto'); }} />
+        </View>}
         {timing === 'now' && <Text style={styles.body}>Buscaremos inmediatamente un profesional conectado y disponible cerca de tu ubicación.</Text>}
       </Section>}
+      </>)}
+
+      {activeStep === 3 && (<>
+
       <Section title="4. Ubicación del servicio">
         {locationLoading ? (
           <View style={styles.slotsLoading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Obteniendo tu ubicación...</Text></View>
@@ -789,6 +828,10 @@ export function NewBookingScreen() {
         )}
         {locationError && <Text accessibilityRole="alert" style={styles.error}>{locationError}</Text>}
       </Section>
+      </>)}
+
+      {activeStep === 4 && timing === 'scheduled' && (<>
+
       {timing === 'scheduled' && <Section title="5. Fecha y hora">
         <Text style={styles.label}>Elige el día</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dateList}>
@@ -838,6 +881,10 @@ export function NewBookingScreen() {
           </View>
         )}
       </Section>}
+      </>)}
+
+      {activeStep === 5 && (<>
+
       <Section title={timing === 'now' ? "5. Profesional" : "6. Profesional"}>
         {timing === 'scheduled' && !selectedOffer && <View style={styles.modeOptions}>
           <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
@@ -896,7 +943,9 @@ export function NewBookingScreen() {
         {!selectedOffer && mode === 'auto' && timing === 'scheduled' && <Text style={styles.body}>Tu reserva quedará en espera. Cerca de la hora acordada, Klipp buscará profesionales conectados, disponibles y con el equipamiento necesario para llegar a tiempo.</Text>}
       </Section>
 
-      {(selectedTier || selectedOffer || (mode === 'auto' && selectedServiceId)) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
+      </>)}
+
+      {activeStep === 6 && (selectedTier || selectedOffer || (mode === 'auto' && selectedServiceId)) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeading}>
             <View>
@@ -933,7 +982,11 @@ export function NewBookingScreen() {
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
-      {submissionUncertain ? (
+      <View style={styles.wizardNavigation}>
+        {activeStep > 0 ? <Pressable accessibilityRole="button" onPress={previousWizardStep} style={({ pressed }) => [styles.wizardBack, pressed && styles.buttonPressed]}><Text style={styles.wizardBackText}>Volver</Text></Pressable> : <View style={styles.wizardBackSpacer} />}
+        {activeStep < 6 ? <Pressable accessibilityRole="button" onPress={continueWizard} style={({ pressed }) => [styles.wizardNext, pressed && styles.buttonPressed]}><Text style={styles.wizardNextText}>Continuar</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} /></Pressable> : null}
+      </View>
+      {activeStep === 6 && (submissionUncertain ? (
         <Pressable accessibilityRole="button" onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => [styles.submit, pressed && styles.buttonPressed]}>
           <Text style={styles.submitText}>Revisar Mis reservas</Text>
         </Pressable>
@@ -941,6 +994,7 @@ export function NewBookingScreen() {
         <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
         </Pressable>
+      )}
       )}
     </ScrollView>
   );
@@ -982,8 +1036,8 @@ const styles = StyleSheet.create({
   equipmentCopy: { flex: 1, gap: 2 },
   equipmentName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   equipmentDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
-  serviceTile: { minHeight: 104, flexDirection: 'row', alignItems: 'center', gap: 16, padding: 17, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 20, backgroundColor: '#FFFFFF', shadowColor: '#171B2D', shadowOpacity: 0.025, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
-  serviceTileSelected: { borderColor: '#3D5AFE', backgroundColor: '#F1F3FF', shadowColor: '#3D5AFE', shadowOpacity: 0.08, shadowRadius: 12 },
+  serviceTile: { minHeight: 104, flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 11, paddingHorizontal: 0, borderBottomWidth: 1, borderColor: '#E8E5DE', borderRadius: 0, backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 },
+  serviceTileSelected: { borderColor: '#3D5AFE', backgroundColor: 'rgba(61,90,254,0.045)' },
   serviceTileIcon: { width: 88, height: 66, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderRadius: 17, borderWidth: 1, borderColor: 'rgba(23,27,45,0.04)', backgroundColor: '#F7F5F0' },
   serviceTileArt: { width: '100%', height: '100%' },
   serviceTileCopy: { flex: 1, gap: 4 },
@@ -992,13 +1046,28 @@ const styles = StyleSheet.create({
   serviceTileRadio: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   serviceTileRadioSelected: { borderColor: KlippColors.cobalt },
   serviceTileRadioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.cobalt },
-  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 28, paddingTop: 22, paddingBottom: 84, gap: 24, backgroundColor: '#F7F5F0', flexGrow: 1 },
+  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 16, paddingBottom: 72, gap: 18, backgroundColor: '#F7F5F0', flexGrow: 1 },
+  wizardHeader: { width: '100%', maxWidth: 1080, alignSelf: 'center', gap: 11 },
+  wizardHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
+  wizardEyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
+  wizardCurrent: { color: KlippColors.ink, fontSize: 16, fontWeight: '900' },
+  wizardTrack: { height: 4, overflow: 'hidden', borderRadius: 4, backgroundColor: '#E5E2DA' },
+  wizardFill: { height: 4, borderRadius: 4, backgroundColor: KlippColors.cobalt },
+  wizardLabels: { flexDirection: 'row', alignItems: 'center', gap: 17, paddingVertical: 2 },
+  wizardLabel: { color: '#9295A0', fontSize: 10, fontWeight: '700' },
+  wizardLabelActive: { color: KlippColors.ink, fontWeight: '900' },
+  wizardNavigation: { width: '100%', maxWidth: 1080, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 12, paddingTop: 3 },
+  wizardBack: { minHeight: 54, minWidth: 104, alignItems: 'center', justifyContent: 'center', borderRadius: 12, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: 'transparent' },
+  wizardBackText: { color: KlippColors.slate, fontSize: 14, fontWeight: '800' },
+  wizardBackSpacer: { width: 104 },
+  wizardNext: { flex: 1, minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 12, backgroundColor: KlippColors.cobalt },
+  wizardNextText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   back: { alignSelf: 'flex-start', paddingVertical: 9, paddingHorizontal: 14, marginHorizontal: 0, marginTop: 2, borderRadius: 999, backgroundColor: '#E9EDFF' },
   pressed: { opacity: 0.88 },
   backText: { color: '#3048D8', fontSize: 13, fontWeight: '900' },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  section: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, padding: 25, borderRadius: 26, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E5DE', gap: 18, shadowColor: '#171B2D', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 9 }, shadowRadius: 24, elevation: 2 },
+  section: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, paddingVertical: 19, paddingHorizontal: 0, borderRadius: 0, backgroundColor: 'transparent', borderWidth: 0, borderBottomWidth: 1, borderColor: '#E8E5DE', gap: 16, shadowOpacity: 0, elevation: 0 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 2 },
   sectionStep: { width: 38, height: 38, borderRadius: 14, backgroundColor: '#3D5AFE', alignItems: 'center', justifyContent: 'center' },
   sectionStepText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
