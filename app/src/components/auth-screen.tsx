@@ -56,6 +56,25 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
         <Text style={[styles.showcaseDescription, compactLogin && styles.showcaseDescriptionLogin]}>
           {compactLogin ? 'Entra y gestiona tus servicios desde un solo lugar.' : 'Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.'}
         </Text>
+        {compactLogin && (
+          <View style={styles.loginServiceShowcase}>
+            <View style={[styles.loginServiceCard, styles.loginServiceCardBlue]}>
+              <View style={styles.loginServiceGlyph}><SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={KlippColors.cobalt} size={22} /></View>
+              <Text style={styles.loginServiceName}>Barbería</Text>
+              <Text style={styles.loginServiceCaption}>En tu casa</Text>
+            </View>
+            <View style={[styles.loginServiceCard, styles.loginServiceCardCoral]}>
+              <View style={styles.loginServiceGlyph}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.coral} size={22} /></View>
+              <Text style={styles.loginServiceName}>Belleza</Text>
+              <Text style={styles.loginServiceCaption}>A tu manera</Text>
+            </View>
+            <View style={[styles.loginServiceCard, styles.loginServiceCardMint]}>
+              <View style={styles.loginServiceGlyph}><SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.success} size={22} /></View>
+              <Text style={styles.loginServiceName}>Hogar</Text>
+              <Text style={styles.loginServiceCaption}>Sin moverte</Text>
+            </View>
+          </View>
+        )}
         {!compactLogin && <View style={styles.showcaseHighlights}>
           {serviceHighlights.map((item) => (
             <View key={item.title} style={styles.showcaseHighlight}>
@@ -323,13 +342,21 @@ const styles = StyleSheet.create({
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
   showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
-  showcaseCompactLogin: { padding: 22, borderRadius: 24, borderColor: KlippColors.navy, backgroundColor: KlippColors.navy, shadowOpacity: 0, elevation: 0 },
-  showcaseMarkLogin: { backgroundColor: KlippColors.coral },
-  showcaseBrandLogin: { color: KlippColors.white },
-  showcaseRegionLogin: { color: KlippColors.mint },
-  showcaseKickerLogin: { color: KlippColors.mint, fontSize: 9, lineHeight: 14 },
-  showcaseTitleLogin: { color: KlippColors.white, fontSize: 27, lineHeight: 32, maxWidth: 360 },
-  showcaseDescriptionLogin: { color: '#D5D9E5', fontSize: 13, lineHeight: 19 },
+  showcaseCompactLogin: { padding: 24, borderRadius: 26, borderColor: '#DCE3FF', backgroundColor: '#E9EDFF', shadowOpacity: 0, elevation: 0 },
+  showcaseMarkLogin: { backgroundColor: KlippColors.cobalt },
+  showcaseBrandLogin: { color: KlippColors.ink },
+  showcaseRegionLogin: { color: KlippColors.cobaltDark },
+  showcaseKickerLogin: { color: KlippColors.coral, fontSize: 9, lineHeight: 14 },
+  showcaseTitleLogin: { color: KlippColors.ink, fontSize: 29, lineHeight: 35, maxWidth: 360 },
+  showcaseDescriptionLogin: { color: '#555D78', fontSize: 13, lineHeight: 20 },
+  loginServiceShowcase: { flexDirection: 'row', gap: 8, marginTop: 7 },
+  loginServiceCard: { flex: 1, minWidth: 0, minHeight: 92, padding: 10, borderRadius: 16, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(23,27,45,0.06)' },
+  loginServiceCardBlue: { backgroundColor: '#FFFFFF' },
+  loginServiceCardCoral: { backgroundColor: '#FFF7F4' },
+  loginServiceCardMint: { backgroundColor: '#F3FBF7' },
+  loginServiceGlyph: { width: 32, height: 32, borderRadius: 11, backgroundColor: '#F7F5F0', alignItems: 'center', justifyContent: 'center' },
+  loginServiceName: { color: KlippColors.ink, fontSize: 11, fontWeight: '900', marginTop: 7 },
+  loginServiceCaption: { color: KlippColors.muted, fontSize: 9, marginTop: 1 },
   showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
   showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
