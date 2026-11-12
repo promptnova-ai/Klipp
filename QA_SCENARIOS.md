@@ -432,6 +432,18 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** El servidor calcula disponibilidad y margen de desplazamiento usando la duración del sustituto. La reasignación se rechaza si existe solapamiento.
 
+### QA-BOOK-08 — Bloquear reasignación con fondos retenidos
+
+**Prioridad:** Alta  
+**Precondición:** Reserva futura con un pago en estado `held`.
+
+1. Crear una reserva de prueba con pago retenido.
+2. Consultar candidatos de reasignación desde administración.
+3. Intentar crear y aceptar una reasignación.
+4. Repetir con una reserva sin pago o con un intento fallido.
+
+**Resultado esperado:** Un pago `held` bloquea la reasignación y exige revisión financiera. Los intentos fallidos no se confunden con fondos retenidos; se aplica la política de reintento correspondiente.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
