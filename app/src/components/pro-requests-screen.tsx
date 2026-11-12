@@ -40,15 +40,12 @@ export function ProRequestsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
-  const [materialsConfirmed, setMaterialsConfirmed] = useState(false);
-  const [materialsError, setMaterialsError] = useState(false);
+  const [materialsConfirmedFor, setMaterialsConfirmedFor] = useState<string | null>(null);
+  const [materialsErrorFor, setMaterialsErrorFor] = useState<string | null>(null);
   const [materialsShake] = useState(() => new Animated.Value(0));
   const activeRequest = requests[0] ?? null;
-  useEffect(() => {
-    setMaterialsConfirmed(false);
-    setMaterialsError(false);
-    materialsShake.setValue(0);
-  }, [activeRequest?.id, materialsShake]);
+  const materialsConfirmed = Boolean(activeRequest && materialsConfirmedFor === activeRequest.id);
+  const materialsError = Boolean(activeRequest && materialsErrorFor === activeRequest.id);
 
   const secondsLeft = activeRequest ? Math.max(0, Math.ceil((new Date(activeRequest.expires_at).getTime() - nowMs) / 1000)) : 0;
 
@@ -135,7 +132,7 @@ export function ProRequestsScreen() {
 
   async function respond(requestId: string, accept: boolean) {
     if (accept && !materialsConfirmed) {
-      setMaterialsError(true);
+      setMaterialsErrorFor(requestId);
       Vibration.vibrate(90);
       Animated.sequence([
         Animated.timing(materialsShake, { toValue: 1, duration: 55, useNativeDriver: true }),
@@ -274,8 +271,9 @@ export function ProRequestsScreen() {
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: materialsConfirmed }}
                   onPress={() => {
-                    setMaterialsConfirmed((current) => !current);
-                    setMaterialsError(false);
+                    setMaterialsConfirmedFor((current) => current === activeRequest.id ? null : activeRequest.id);
+                    setMaterialsErrorFor(null);
+                    materialsShake.setValue(0);
                     Vibration.vibrate(18);
                   }}
                   style={[styles.materialsCard, materialsError && styles.materialsCardError, materialsConfirmed && styles.materialsCardConfirmed]}>
@@ -396,19 +394,12 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
       ]).start();
     },
   }), [disabled, fillProgress, translateX]);
-  useEffect(() => {
-    if (disabled) {
-      translateX.setValue(0);
-      fillProgress.setValue(0);
-      setReady(false);
-    }
-  }, [disabled, fillProgress, translateX]);
   const fillWidth = fillProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <View style={[styles.slideTrack, disabled && styles.slideDisabled]} onLayout={(event) => { trackWidth.current = event.nativeEvent.layout.width; }}>
       <Animated.View pointerEvents="none" style={[styles.slideFill, { width: fillWidth }]} />
-      <Text style={styles.slideLabel}>{ready ? 'ACEPTAR TRABAJO' : label}</Text>
-      <Animated.View {...responder.panHandlers} accessibilityRole="button" accessibilityLabel={ready ? 'Aceptar trabajo' : label} pointerEvents={disabled ? 'none' : 'auto'} style={[styles.slideThumb, { transform: [{ translateX }] }]}>
+      <Text style={styles.slideLabel}>{ready && !disabled ? 'ACEPTAR TRABAJO' : label}</Text>
+      <Animated.View {...responder.panHandlers} accessibilityRole="button" accessibilityLabel={ready && !disabled ? 'Aceptar trabajo' : label} pointerEvents={disabled ? 'none' : 'auto'} style={[styles.slideThumb, { transform: [{ translateX }] }]}>
         <Text style={styles.slideArrow}>››</Text>
       </Animated.View>
     </View>
