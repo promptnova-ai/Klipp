@@ -1,103 +1,110 @@
 # Modelo de reservas prepago y asignación tipo Uber
 
-## Decisión de producto
+## Decisión de producto: precio profesional, no tarifa central
 
-Klipp funciona como plataforma de servicios bajo demanda. El cliente compra un servicio del catálogo a un precio cerrado y paga antes de que se active la búsqueda del profesional. El profesional acepta una oferta de Klipp; no negocia el precio con el cliente después de la compra.
+Cada profesional define sus propios precios al registrarse y puede actualizarlos desde su configuración. Klipp no sustituye esas tarifas por un precio fijo impuesto por la plataforma.
 
-Se mantienen dos modalidades, con un único motor de asignación:
+La base de datos ya contempla:
+- `pro_services.base_price_dop`: precio del profesional para servicios sin variantes.
+- `pro_service_tier_prices.price_dop`: precio propio del profesional para cada variante.
+- `get_auto_service_price_estimate`: rango indicativo (mínimo/máximo) de profesionales que cubren una ubicación.
 
-- **Inmediata:** pago confirmado -> búsqueda inmediata -> ofertas a profesionales -> aceptación -> confirmación al cliente -> seguimiento.
-- **Programada:** pago confirmado -> reserva futura sin profesional asignado -> activación automática de búsqueda cuando se aproxime la hora -> ofertas -> aceptación -> confirmación al cliente -> recordatorios y seguimiento.
+El cliente debe ver dos niveles de precio, como en Uber:
 
-## Precio y catálogo
+1. **Búsqueda / descubrimiento:** importe aproximado o rango de precios calculado con tarifas reales de profesionales activos que cubren esa zona y variante. Nunca usar el precio genérico de `pricing_tiers` como si fuera la tarifa final.
+2. **Ventana de reserva / confirmación:** importe final exacto, asociado a un profesional concreto (elegido por el cliente o recomendado/preseleccionado por Klipp). Mostrar el profesional, servicio/variante, duración y total DOP antes del botón de confirmar y pagar.
 
-- El precio mostrado en el checkout es el total final del servicio seleccionado.
-- El precio debe proceder de una tarifa de catálogo aprobada y guardarse como snapshot en la reserva antes de abrir AZUL.
-- La asignación nunca cambia el precio pagado. La tarifa individual del profesional no puede sobrescribir el importe que el cliente ya aceptó.
-- La duración operativa puede ajustarse a la modalidad del profesional solo si sigue cumpliendo el tiempo y alcance que se vendieron; no debe alterar el precio.
-- La comisión de Klipp es 7% del importe del servicio; payout profesional 93%, salvo ajustes fiscales o contractuales que se definan antes de operar.
-- No permitir checkout con tarifas placeholder (p. ej. DOP 1). La base de datos debe rechazar esos intentos. Un servicio sin precio real aprobado permanece no vendible hasta que administración configure su tarifa.
-- Antes de activar prepago, hay que armonizar las tarifas profesionales por variante con el precio de catálogo: la implementación anterior permitía que el precio final cambiara cuando el profesional aceptaba, lo cual no es compatible con prepago.
+Al confirmar, el backend vuelve a consultar la tarifa activa del profesional y crea un snapshot inmutable en la reserva: `pro_id`, `pro_service_id`, `price_dop`, `est_minutes`, `commission_pct`, `commission_dop`, `pro_payout_dop`, variante y hora. Si la tarifa cambió entre la pantalla y la confirmación, devolver el nuevo importe y pedir aceptación expresa; nunca cobrar un importe distinto al que el cliente vio.
 
-## Estados de negocio propuestos
+## Modalidades de asignación
 
-No reutilizar `awaiting_payment` como estado normal después de que un profesional acepte: ese estado pertenece al flujo antiguo y contradice el prepago.
+- **Profesional elegido:** la cotización final procede de la tarifa vigente de ese profesional. Tras el pago verificado, se le envía la oferta.
+- **Cerca de mí / asignación automática:** búsqueda muestra un rango. Antes del checkout, Klipp selecciona un profesional candidato según cobertura, disponibilidad, ETA/distancia y ranking; la pantalla de confirmación muestra el nombre y su precio exacto. Tras el pago, la primera oferta va a ese profesional.
+- Si el profesional recomendado rechaza o deja vencer la oferta, Klipp no puede cambiar silenciosamente el precio. Puede buscar otro profesional con exactamente el mismo precio, o solicitar al cliente que acepte una nueva cotización antes de cobrar cualquier diferencia. Si no hay alternativa aceptable, se aplica la política de cancelación/reembolso.
 
-Separar el estado de reserva del estado del pago:
+Así se conserva el flujo prepago sin que un profesional acepte una reserva a un precio distinto del mostrado y aceptado por el cliente.
+
+## Ciclo de reserva
+
+1. Cliente selecciona servicio, variante, ubicación y hora.
+2. Klipp muestra rango aproximado usando tarifas profesionales activas y disponibilidad en la zona.
+3. Klipp resuelve el profesional concreto y consulta su tarifa exacta.
+4. Cliente ve y acepta el precio final y las condiciones.
+5. Backend crea la reserva en `payment_pending`, con snapshot de precio y ventana de pago de 10 minutos. No se envían ofertas ni se activa el despacho.
+6. El cliente paga mediante AZUL alojado.
+7. Solo un callback AZUL firmado y verificado puede pasar el pago a `held` y la reserva a `requested`.
+8. Se crea la oferta para el profesional ya cotizado. La aceptación confirma el servicio; no modifica el precio ni el payout.
+9. Para reservas programadas, el profesional se cotiza antes del pago y la oferta se activa en la ventana programada; si ya no está disponible, se vuelve a cotizar y se pide consentimiento si cambia el importe.
+
+## Comisión y liquidación
+
+- Comisión Klipp: 7 % del importe final aceptado.
+- Payout profesional: 93 % antes de ajustes fiscales/contractuales.
+- La comisión y el payout se calculan en backend y se guardan como snapshot.
+- Un cambio futuro de tarifa del profesional no modifica una reserva ya confirmada.
+- `held` es un estado interno; no implica que AZUL ofrezca escrow o split settlement. Confirmar con AZUL captura, preautorización, liquidación, reembolsos y contracargos.
+
+## Estados de negocio
 
 | Reserva | Significado |
 | --- | --- |
-| `payment_pending` (nuevo) | Pedido creado; esperando confirmación de la pasarela. No se busca profesional. |
-| `requested` | Pago confirmado; pendiente de asignación o con ofertas activas. |
-| `scheduled` | Profesional asignado y reserva pagada/confirmada. |
+| `payment_pending` | Cotización aceptada; esperando pago. Sin oferta/despacho. |
+| `requested` | Pago verificado; oferta pendiente o búsqueda en curso con precio bloqueado. |
+| `scheduled` | Profesional ha aceptado la oferta y la reserva está confirmada. |
 | `en_route`, `arrived`, `in_progress` | Ejecución del servicio. |
 | `completed`, `confirmed` | Servicio terminado y confirmado. |
 | `cancelled`, `disputed`, `expired` | Resolución/cierre según política. |
 
 Pago:
-- `pending`: intento creado, sin confirmación fiable.
-- `held`: cobro aprobado y verificado en backend; Klipp registra el importe como cobrado y pendiente de liquidación al profesional.
-- `released`: payout liberado/conciliado según la política.
-- `refunded`: devolución confirmada por el proveedor.
+- `pending`: intento creado.
+- `held`: aprobación verificada por backend.
+- `released`: liquidación/payout conciliado.
+- `refunded`: devolución confirmada.
 - `failed`: pago rechazado o fallido.
 
-**Importante:** `held` es un estado interno de Klipp, no implica que AZUL ofrezca escrow o split settlement. Confirmar con AZUL la liquidación al comercio, preautorización/captura, reembolsos y contracargos antes de anunciar retención de fondos.
+## Motor de asignación
 
-## Motor unificado de asignación
+La modalidad inmediata y programada utiliza las mismas reglas de elegibilidad. Cambia únicamente cuándo se activa la oferta.
 
-La asignación inmediata y la programada deben invocar las mismas funciones de dominio y las mismas reglas de elegibilidad. Solo cambia el momento de activación.
+- Verificar `payments.status = 'held'` y reserva `requested`.
+- Profesional activo, aprobado, con servicio y variante exactos, tarifa activa, política de equipamiento aceptada, cobertura y disponibilidad.
+- Para servicios inmediatos: online y GPS reciente. Para programados: disponibilidad declarada y reconfirmación antes de enviar oferta.
+- Comprobar duración real del profesional, margen de desplazamiento de 60 minutos y conflictos de agenda.
+- Ordenar por ETA cuando exista proveedor de rutas; fallback a distancia, valoración y rendimiento.
+- No enviar oferta a un profesional cuya tarifa difiera del precio bloqueado de la reserva.
+- Si no existe candidato al mismo precio, solicitar nueva aceptación del cliente o iniciar cancelación/reembolso. No sobrescribir `price_dop`.
+- La aceptación es atómica: asigna una sola vez, conserva el snapshot financiero y cierra ofertas competidoras.
 
-1. Verificar pago confirmado (`payments.status = 'held'`) y que la reserva sigue `requested`.
-2. Buscar profesionales activos, verificados, online y con presencia GPS reciente para servicios inmediatos; para programados, considerar disponibilidad declarada y confirmar presencia/aceptación cuando se active la búsqueda.
-3. Exigir que el profesional ofrezca el servicio y variante exactos, tenga tarifa activa para esa variante y cumpla política de equipamiento.
-4. Filtrar por radio de cobertura, distancia/ETA, disponibilidad, duración real del profesional y conflictos de agenda.
-5. Ordenar por ETA de ruta cuando el proveedor de rutas esté configurado; fallback a distancia geográfica, valoración y rendimiento.
-6. Enviar rondas de ofertas con expiración, sin duplicar ofertas ni asignar al profesional a dos reservas incompatibles.
-7. Al aceptar, bloquear concurrentemente la reserva y al profesional, asignar una única vez, fijar el payout a partir del precio snapshot y cerrar ofertas competidoras.
-8. Si rechaza/expira, continuar con la siguiente ronda automáticamente.
-9. Si no hay profesional, mantener la reserva pagada en estado de búsqueda y escalar a soporte/recuperación; nunca expirar silenciosamente una compra pagada.
+## Reservas programadas
 
-## Reservas programadas: ventana de búsqueda
+- No bloquear profesional durante todo el periodo entre compra y prestación.
+- Cotizar y mostrar el precio final antes del pago, pero programar la oferta para la ventana de asignación.
+- Antes de enviar la oferta, reconfirmar cobertura, disponibilidad, presencia y tarifa.
+- Si el profesional ya no puede atender, buscar una alternativa con el mismo precio o pedir consentimiento para la nueva cotización.
+- Si no hay alternativa, aplicar cancelación/reembolso; nunca cambiar el importe pagado sin consentimiento.
 
-- No bloquear a un profesional desde que el cliente compra la reserva.
-- El worker programado calcula el momento de activación usando ETA estimada, margen operativo y duración del servicio.
-- Cuando llega la ventana, ejecutar el mismo motor de búsqueda de la modalidad inmediata.
-- Antes de aceptar, comprobar que el profesional puede llegar al punto de servicio y terminar dentro de su disponibilidad.
-- Si el primer profesional cancela o pierde disponibilidad, reabrir la búsqueda con el mismo motor y conservar precio/condiciones del cliente.
-- Enviar notificación al cliente solo cuando exista una asignación confirmada; antes puede mostrarse “Reserva pagada; Klipp asignará un profesional más cerca de la fecha”.
-- Enviar recordatorios separados para cliente y profesional, con deduplicación.
+## Cancelaciones y reembolsos
 
-## Cancelaciones, falta de asignación y reembolsos
-
-Antes de activar el flujo real se debe acordar y publicar una política para:
-- cancelación por cliente antes/después de asignación;
-- cancelación por profesional;
-- no-show del profesional o cliente;
-- ausencia de profesionales disponibles;
-- reasignación y hora límite para garantizar el servicio;
-- reembolso total/parcial, contracargos y disputas.
-
-Un pago no puede quedarse indefinidamente en estado pendiente de asignación sin un límite de resolución. El sistema debe disparar recuperación, ofrecer alternativas cuando proceda y ejecutar reembolso mediante una operación idempotente confirmada por AZUL.
+Antes de producción hay que definir y publicar política para cancelación del cliente, cancelación/no-show profesional, ausencia de oferta, reasignación, reembolso parcial/total, contracargos y disputas. Reembolsos deben ser idempotentes y confirmados por AZUL.
 
 ## Seguridad e idempotencia
 
-- El importe, moneda, comisión y payout se calculan exclusivamente en backend.
-- El cliente nunca puede marcar un pago como aprobado ni llamar directamente a la función de dispatch.
-- Solo un callback firmado y validado de AZUL puede pasar un pago a `held`.
-- Verificar firma, número de orden, importe exacto, moneda, comercio, resultado y estado esperado.
-- Idempotencia por referencia/orden del proveedor; soportar callbacks duplicados y fuera de orden.
-- No iniciar dispatch antes de la confirmación del pago.
-- No guardar PAN, CVV ni fecha de expiración de tarjeta en Klipp.
-- Los reintentos de creación de pedido/pago no deben crear cobros ni reservas duplicados.
+- Precio, moneda, comisión y payout calculados en backend.
+- El cliente no puede marcar un pago aprobado ni llamar a dispatch directamente.
+- Validar firma, orden, importe exacto, moneda, comercio y código de respuesta.
+- Callbacks duplicados idénticos son idempotentes; callbacks contradictorios se rechazan.
+- Ningún despacho antes del pago verificado.
+- No guardar PAN, CVV ni fecha de expiración.
+- Toda modificación de tarifa posterior a la reserva afecta solo a nuevas cotizaciones.
 
 ## Plan de implementación
 
-1. Migración de estados y guardas DB para que ningún dispatch ocurra sin pago verificado.
-2. Cambiar RPC de creación: crear pedido y snapshot de precio; no enviar ofertas ni activar asignación antes del pago.
-3. Implementar checkout AZUL y callback firmado/idempotente con credenciales de certificación.
-4. Tras confirmar pago, activar el motor unificado; aceptación profesional pasa a `scheduled`, no a `awaiting_payment`.
-5. Ajustar UI cliente y profesional, notificaciones, agenda y panel admin.
-6. Implementar cancelación/reembolso/reasignación y payout conciliado.
-7. Ejecutar pruebas de concurrencia, pago duplicado, callback tardío, pago rechazado, reserva futura, falta de oferta, cancelación y reembolso en QA.
+1. Adaptar RPCs de cotización y creación para profesional concreto y snapshot de precio.
+2. Crear flujo de preselección de candidato para «Cerca de mí» y precio final visible antes del checkout.
+3. Asegurar que ninguna oferta se crea hasta que AZUL confirma el pago.
+4. Cambiar aceptación para que nunca recalcule ni cambie el precio cobrado.
+5. Conectar checkout alojado AZUL y callback firmado.
+6. Adaptar UI cliente, profesional, reservas programadas y panel de operaciones.
+7. Probar cambios concurrentes de tarifa, rechazo del primer candidato, sustitución con precio distinto, callbacks y reembolsos en QA.
 
-No activar pagos reales hasta recibir credenciales de comercio, completar homologación AZUL y validar las políticas comerciales/legales.
+No activar pagos reales hasta completar homologación AZUL, pruebas de extremo a extremo y políticas comerciales/legales.
