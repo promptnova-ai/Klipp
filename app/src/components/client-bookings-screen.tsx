@@ -427,6 +427,10 @@ export function ClientBookingsScreen() {
               <Text style={styles.priceLabel}>Total</Text>
               <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
             </View>
+            {booking.status === 'payment_pending' && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>Precio reservado · pendiente de pago</Text>
+              <Text style={styles.body}>El importe mostrado queda reservado durante 10 minutos. El checkout con tarjeta todavía no está habilitado en esta versión; no se ha enviado ninguna solicitud al profesional ni debes pagar fuera de Klipp.</Text>
+            </View>}
             {booking.status === 'awaiting_payment' && (() => {
               const payment = payments[booking.id];
               const paymentTitle = payment?.status === 'held' || payment?.status === 'released'
