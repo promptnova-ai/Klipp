@@ -37,6 +37,7 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [references, setReferences] = useState<Record<string, string>>({});
   const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [providerAmounts, setProviderAmounts] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -57,11 +58,16 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
     void loadQueue();
   }, [loadQueue]);
 
-  async function resolve(row: ReconciliationRow, action: 'no_charge' | 'refund_confirmed') {
+  async function resolve(row: ReconciliationRow, action: 'no_charge' | 'charge_found_refund_required' | 'refund_confirmed') {
     const providerReference = references[row.payment_id]?.trim() ?? '';
     const reason = reasons[row.payment_id]?.trim() ?? '';
+    const providerAmount = Number(providerAmounts[row.payment_id]);
     if (providerReference.length < 4 || reason.length < 5) {
       setError('Introduce la referencia del reporte/devolución de AZUL y una explicación de al menos 5 caracteres.');
+      return;
+    }
+    if (action === 'charge_found_refund_required' && (!Number.isFinite(providerAmount) || providerAmount <= 0)) {
+      setError('Introduce el importe cobrado que aparece en el reporte de AZUL.');
       return;
     }
     setBusyId(row.payment_id);
@@ -72,6 +78,7 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
       p_action: action,
       p_provider_reference: providerReference,
       p_reason: reason,
+      p_provider_amount_dop: action === 'charge_found_refund_required' ? providerAmount : null,
     });
     if (actionError) {
       setError(actionError.message);
@@ -81,6 +88,7 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
         : 'Conciliación registrada: AZUL confirmó que no hubo cargo.');
       setReferences((current) => ({ ...current, [row.payment_id]: '' }));
       setReasons((current) => ({ ...current, [row.payment_id]: '' }));
+      setProviderAmounts((current) => ({ ...current, [row.payment_id]: '' }));
       await loadQueue();
     }
     setBusyId(null);
@@ -144,14 +152,43 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
                   style={[styles.input, styles.reasonInput]}
                   multiline
                 />
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy}
-                  onPress={() => void resolve(row, refund ? 'refund_confirmed' : 'no_charge')}
-                  style={[styles.actionButton, busy && styles.disabled]}
-                >
-                  {busy ? <ActivityIndicator color="#111" /> : <Text style={styles.actionButtonText}>{refund ? 'Registrar devolución confirmada' : 'Confirmar que AZUL no cobró'}</Text>}
-                </Pressable>
+                {!refund && <TextInput
+                  value={providerAmounts[row.payment_id] ?? ''}
+                  onChangeText={(value) => setProviderAmounts((current) => ({ ...current, [row.payment_id]: value }))}
+                  placeholder="Importe cobrado según AZUL (DOP), si hubo cargo"
+                  placeholderTextColor={KlippColors.muted}
+                  keyboardType="decimal-pad"
+                  style={styles.input}
+                />}
+                {refund ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={busy}
+                    onPress={() => void resolve(row, 'refund_confirmed')}
+                    style={[styles.actionButton, busy && styles.disabled]}
+                  >
+                    {busy ? <ActivityIndicator color="#111" /> : <Text style={styles.actionButtonText}>Registrar devolución confirmada</Text>}
+                  </Pressable>
+                ) : (
+                  <View style={styles.actionButtons}>
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={busy}
+                      onPress={() => void resolve(row, 'no_charge')}
+                      style={[styles.secondaryButton, busy && styles.disabled]}
+                    >
+                      <Text style={styles.secondaryButtonText}>Confirmar que no hubo cargo</Text>
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      disabled={busy}
+                      onPress={() => void resolve(row, 'charge_found_refund_required')}
+                      style={[styles.actionButton, busy && styles.disabled]}
+                    >
+                      <Text style={styles.actionButtonText}>AZUL cobró · enviar a devolución</Text>
+                    </Pressable>
+                  </View>
+                )}
                 <Text style={styles.disclaimer}>Registra la acción solo después de comprobarla en el portal o reporte oficial de AZUL. Queda guardada en el historial administrativo.</Text>
               </View>
             ) : (
@@ -192,6 +229,9 @@ const styles = StyleSheet.create({
   meta: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   reason: { color: '#F5C56B', fontSize: 12, lineHeight: 17 },
   actionArea: { borderTopColor: KlippColors.border, borderTopWidth: 1, paddingTop: 12, gap: 8 },
+  actionButtons: { gap: 8 },
+  secondaryButton: { borderColor: KlippColors.border, borderWidth: 1, borderRadius: 10, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },
+  secondaryButtonText: { color: KlippColors.text, fontSize: 12, fontWeight: '800' },
   input: { backgroundColor: '#101012', borderColor: KlippColors.border, borderWidth: 1, borderRadius: 10, color: KlippColors.text, paddingHorizontal: 12, paddingVertical: 10, fontSize: 12 },
   reasonInput: { minHeight: 64, textAlignVertical: 'top' },
   actionButton: { backgroundColor: KlippColors.gold, borderRadius: 10, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 14 },
