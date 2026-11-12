@@ -341,12 +341,23 @@ export default function ClientHomeScreen() {
           <View style={styles.catalogIcon}><SymbolView name={{ ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' }} tintColor={KlippColors.cobalt} size={20} /></View>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
-          {categories.map((category) => {
-            const selected = selectedCategory === category;
-            return <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category} onPress={() => setSelectedCategory(category)} style={({ pressed }) => [styles.categoryPill, selected && styles.categorySelected, pressed && styles.pressed]}><Text style={[styles.categoryText, selected && styles.categoryTextSelected]}>{category}</Text></Pressable>;
+        <View style={styles.categoryGrid}>
+          {categoriesData.map((category) => {
+            const selected = selectedCategory === category.name;
+            const categoryService = services.find((service) => getCategory(service) === category.name);
+            const art = categoryService ? serviceArt(categoryService.code) : heroArt;
+            return (
+              <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category.id} onPress={() => setSelectedCategory(selected ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
+                <Image source={art} contentFit="cover" transition={250} style={styles.categoryTileImage} />
+                <View style={styles.categoryTileShade} />
+                <View style={styles.categoryTileFooter}>
+                  <Text numberOfLines={2} style={styles.categoryTileTitle}>{category.name}</Text>
+                  <View style={[styles.categoryTileArrow, selected && styles.categoryTileArrowSelected]}><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={selected ? '#FFFFFF' : KlippColors.ink} size={14} /></View>
+                </View>
+              </Pressable>
+            );
           })}
-        </ScrollView>
+        </View>
 
         {loading ? <View style={[styles.serviceList, width >= 760 && styles.serviceListWide]}><ServiceSkeleton /><ServiceSkeleton /></View>
         : loadError ? <View style={styles.emptyState}><Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text><Text style={styles.emptyText}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}><Text style={styles.clearButtonText}>Intentar de nuevo</Text></Pressable></View>
@@ -517,6 +528,15 @@ const styles = StyleSheet.create({
   sectionEyebrow: { color: '#3048D8', fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
   sectionTitle: { color: '#171B2D', fontSize: 28, lineHeight: 34, fontWeight: '900', letterSpacing: -0.9, marginTop: 5 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  categoryTile: { width: '48.5%', minHeight: 142, borderRadius: 22, overflow: 'hidden', backgroundColor: '#E9EDFF', borderWidth: 1, borderColor: '#E8E5DE' },
+  categoryTileSelected: { borderWidth: 2, borderColor: '#3D5AFE' },
+  categoryTileImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  categoryTileShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(23,27,45,0.18)' },
+  categoryTileFooter: { flex: 1, minHeight: 142, padding: 13, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
+  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 16, lineHeight: 20, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
+  categoryTileArrow: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
+  categoryTileArrowSelected: { backgroundColor: '#3D5AFE' },
   categories: { gap: 9, paddingVertical: 2 },
   categoryPill: { minHeight: 41, justifyContent: 'center', paddingHorizontal: 17, borderRadius: 999, borderWidth: 1, borderColor: '#E3E0D9', backgroundColor: '#FFFFFF' },
   categorySelected: { borderColor: '#3D5AFE', backgroundColor: '#3D5AFE' },
