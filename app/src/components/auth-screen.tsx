@@ -190,7 +190,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                         autoCapitalize="words"
                         onChangeText={setFullName}
                         placeholder="Tu nombre y apellido"
-                        placeholderTextColor="#8A94A6"
+                        placeholderTextColor={KlippColors.muted}
                         style={styles.input}
                         value={fullName}
                       />
@@ -242,7 +242,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                     keyboardType="email-address"
                     onChangeText={setEmail}
                     placeholder="nombre@correo.com"
-                    placeholderTextColor="#8A94A6"
+                    placeholderTextColor={KlippColors.muted}
                     style={styles.input}
                     value={email}
                   />
@@ -253,7 +253,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                     autoComplete={isRegister ? 'new-password' : 'current-password'}
                     onChangeText={setPassword}
                     placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
-                    placeholderTextColor="#8A94A6"
+                    placeholderTextColor={KlippColors.muted}
                     secureTextEntry
                     style={styles.input}
                     value={password}
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   radio: { width: 19, height: 19, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   radioSelected: { borderColor: KlippColors.blue },
   radioDot: { width: 9, height: 9, borderRadius: 99, backgroundColor: KlippColors.blue },
-  error: { padding: 12, borderWidth: 1, borderColor: '#FECACA', borderRadius: 13, backgroundColor: '#FEF2F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
+  error: { padding: 12, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 13, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
   notice: { padding: 12, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 13, backgroundColor: KlippColors.surfaceMint, color: KlippColors.cobaltDark, fontSize: 13, lineHeight: 19 },
   submit: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 16, backgroundColor: KlippColors.blue },
   submitDisabled: { opacity: 0.5 },
