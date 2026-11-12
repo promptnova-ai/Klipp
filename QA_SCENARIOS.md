@@ -679,12 +679,60 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** El backend rechaza cualquier diferencia exacta de importe o moneda. No se confía en valores enviados por el dispositivo ni en el contenido visual de la página de retorno.
 
-### QA-PAY-07 — Precio de catálogo no configurado
+### QA-PAY-07 — Tarifa profesional inexistente o inválida
 
 **Prioridad:** Crítica  
-**Precondición:** Servicio/variante con precio provisional o placeholder (por ejemplo, DOP 1).
+**Precondición:** Profesional sin precio activo para la variante, tarifa inactiva o precio nulo/cero.
 
-1. Intentar generar el intento de checkout.
-2. Revisar la respuesta y que no exista un intento activo en `payments`.
+1. Intentar obtener una cotización final para ese profesional.
+2. Intentar crear una reserva con un precio enviado manualmente desde el cliente.
+3. Intentar generar un intento AZUL para una reserva sin snapshot de tarifa profesional válida.
 
-**Resultado esperado:** No se cobra ni se despacha un servicio con tarifa placeholder. El checkout queda bloqueado hasta que administración configure un precio real de catálogo.
+**Resultado esperado:** El servidor rechaza la cotización y el checkout. No se utiliza el precio genérico de `pricing_tiers`, no se crea pago ni oferta y el profesional no aparece como opción reservable.
+
+### QA-PAY-08 — Rango estimado frente a precio final
+
+**Prioridad:** Crítica  
+**Precondición:** Al menos tres profesionales con precios diferentes para el mismo servicio/variante y zona.
+
+1. Consultar la estimación de búsqueda.
+2. Abrir la reserva y seleccionar un profesional concreto.
+3. Comparar el precio final mostrado con su tarifa activa.
+4. Modificar la tarifa del profesional desde otra sesión antes de confirmar.
+
+**Resultado esperado:** La búsqueda muestra un rango basado en las tarifas profesionales reales. La reserva muestra el precio exacto del profesional seleccionado. Si la tarifa cambió antes de confirmar, el servidor devuelve una nueva cotización y exige aceptación; no crea checkout con el precio antiguo ni cobra el nuevo sin consentimiento.
+
+### QA-PAY-09 — Snapshot financiero inmutable
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva `payment_pending` creada con precio profesional exacto y snapshot de comisión/payout.
+
+1. Cambiar la tarifa del profesional después de crear la reserva.
+2. Completar el pago con el importe guardado en el snapshot.
+3. Aceptar la oferta y consultar precio, comisión y payout de la reserva.
+
+**Resultado esperado:** El precio cobrado, comisión y payout conservan el snapshot aceptado. La nueva tarifa solo afecta futuras cotizaciones.
+
+### QA-PAY-10 — Rechazo del profesional cotizado
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva pagada y oferta enviada al profesional cuyo precio fue aceptado por el cliente.
+
+1. Hacer que el profesional rechace o deje vencer la oferta.
+2. Buscar un segundo profesional con la misma tarifa.
+3. Repetir con un segundo profesional cuya tarifa sea distinta.
+
+**Resultado esperado:** Un sustituto con la misma tarifa puede recibir la oferta sin cambiar el importe. Un sustituto con tarifa distinta no puede ser asignado ni cobrar automáticamente una diferencia: requiere nueva aceptación explícita del cliente o cancelación/reembolso.
+
+### QA-PAY-11 — Precio automático de «Cerca de mí»
+
+**Prioridad:** Crítica  
+**Precondición:** Profesionales elegibles en una zona con diferentes tarifas y disponibilidad.
+
+1. Comprobar que la búsqueda muestra el rango aproximado.
+2. Abrir la ventana de reserva en modo «Cerca de mí».
+3. Comprobar que Klipp selecciona un candidato concreto y muestra su nombre, duración y precio final.
+4. Confirmar y pagar.
+5. Verificar que el primer offer corresponde al profesional cotizado y que el importe no cambia.
+
+**Resultado esperado:** Nunca se cobra un rango o importe estimado. Antes de pagar, el cliente ve un precio exacto ligado al profesional elegido/preseleccionado.
