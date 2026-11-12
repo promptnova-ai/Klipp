@@ -666,7 +666,7 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 2. Comprobar que los intentos pendientes pasan a `failed` y la reserva pasa a `expired`.
 3. Enviar un callback aprobado tardío.
 
-**Resultado esperado:** La reserva vence sin bloquear profesionales y el callback tardío no activa dispatch ni registra fondos como retenidos. La ventana de checkout inicial es de 10 minutos.
+**Resultado esperado:** La reserva vence y no bloquea profesionales. Si el callback firmado confirma una aprobación tardía, el pago se registra como recibido (`held`) con `refund_required_at`, la reserva permanece `expired` y no se activa dispatch. Si la respuesta firmada es una declinación, el pago queda `failed`. La ventana de checkout inicial es de 10 minutos.
 
 ### QA-PAY-06 — No permitir importe o moneda manipulados
 
@@ -677,7 +677,7 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 2. Enviar callback con moneda distinta de DOP.
 3. Comprobar el estado del pago y la reserva.
 
-**Resultado esperado:** El backend rechaza cualquier diferencia exacta de importe o moneda. No se confía en valores enviados por el dispositivo ni en el contenido visual de la página de retorno.
+**Resultado esperado:** Una respuesta sin HMAC válido se rechaza sin mutación. Si AZUL envía una aprobación con firma válida pero el importe o la moneda no coincide con el snapshot, se registra el importe real como aprobado con `refund_required_at`, no se activa dispatch y la reserva queda para revisión/reembolso.
 
 ### QA-PAY-07 — Tarifa profesional inexistente o inválida
 
@@ -799,3 +799,16 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 3. Consultar pagos y ofertas de la reserva.
 
 **Resultado esperado:** El checkout se bloquea antes de generar un formulario o cobro. No se crea un intento de pago ni se envía oferta al profesional. La configuración ITBIS nunca se asume por defecto.
+
+
+### QA-PAY-17 — Aprobación tardía después del worker de expiración
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva e intento pendientes; el worker ya ejecutó `expire_unpaid_booking_checkouts()`.
+
+1. Confirmar que el worker dejó el intento `failed` por expiración y la reserva `expired`.
+2. Enviar después un callback AZUL con firma válida, importe y orden correctos y código aprobado `00`.
+3. Consultar pago, reserva y solicitudes profesionales.
+4. Repetir el mismo callback aprobado.
+
+**Resultado esperado:** El callback tardío se reconoce como movimiento real de dinero: el pago pasa a `held`, registra `provider_amount_dop` y `refund_required_at`, y la reserva sigue `expired`. No se crea ninguna oferta. El callback repetido es idempotente y el cliente ve «Pago recibido · devolución en revisión».
