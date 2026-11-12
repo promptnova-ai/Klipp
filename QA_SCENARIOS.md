@@ -814,3 +814,17 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 4. Repetir el mismo callback aprobado.
 
 **Resultado esperado:** El callback tardío se reconoce como movimiento real de dinero: el pago pasa a `held`, registra `provider_amount_dop` y `refund_required_at`, y la reserva sigue `expired`. No se crea ninguna oferta. El callback repetido es idempotente y el cliente ve «Pago recibido · devolución en revisión».
+
+
+### QA-PAY-18 — Cola administrativa de conciliación y devolución
+
+**Prioridad:** Crítica  
+**Precondición:** Usuario administrador con permisos `finance.read` y `finance.reconcile`; pagos de prueba en conciliación y devolución pendiente.
+
+1. Consultar la cola desde Finanzas.
+2. Verificar que solo aparecen intentos con `reconciliation_required_at` o `refund_required_at`.
+3. Resolver un intento expirado como «sin cargo» usando una referencia de reporte AZUL y una nota.
+4. Crear un pago aprobado que requiera devolución y registrar la devolución confirmada con su referencia.
+5. Intentar resolver sin permisos, sin referencia o con un estado incompatible.
+
+**Resultado esperado:** La cola solo muestra casos pendientes. «Sin cargo» solo puede resolver un intento expirado `failed`; «devolución confirmada» solo puede cerrar un pago `held` con devolución requerida. Cada acción exige referencia y motivo, queda en `admin_audit_log` y no permite marcar una devolución como completada sin referencia del proveedor.
