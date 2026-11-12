@@ -20,7 +20,7 @@ type ClientBooking = Booking & {
 type LocationPoint = { latitude: number; longitude: number };
 type QueueInfo = { previous_stops: number; previous_service_in_progress: boolean; departure_window: string };
 type BookingMessage = { id: number; booking_id: string; sender_id: string; body: string; created_at: string };
-type PaymentSummary = { id: string; booking_id: string; provider: string; amount_dop: number; status: 'pending' | 'held' | 'released' | 'refunded' | 'failed'; created_at: string; held_at: string | null; released_at: string | null; refund_required_at: string | null; refund_reason: string | null; provider_amount_dop: number | null };
+type PaymentSummary = { id: string; booking_id: string; provider: string; amount_dop: number; status: 'pending' | 'held' | 'released' | 'refunded' | 'failed'; created_at: string; held_at: string | null; released_at: string | null; refund_required_at: string | null; refund_reason: string | null; provider_amount_dop: number | null; reconciliation_required_at: string | null };
 
 const statusLabels: Record<BookingStatus, string> = {
   payment_pending: 'Pendiente de pago',
@@ -81,7 +81,7 @@ export function ClientBookingsScreen() {
       const [reviewResult, proResult, paymentResult] = await Promise.all([
         supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
         supabase.rpc('get_client_booking_pro_cards', { p_booking_ids: bookingIds }),
-        supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at, refund_required_at, refund_reason, provider_amount_dop').in('booking_id', bookingIds).order('created_at', { ascending: false }),
+        supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at, refund_required_at, refund_reason, provider_amount_dop, reconciliation_required_at').in('booking_id', bookingIds).order('created_at', { ascending: false }),
       ]);
       if (reviewResult.error || proResult.error || paymentResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? paymentResult.error?.message ?? 'No pudimos cargar los detalles.');
       if (!reviewResult.error) setReviews(Object.fromEntries(((reviewResult.data ?? []) as Review[]).map((review) => [review.booking_id, review])));
@@ -457,6 +457,10 @@ export function ClientBookingsScreen() {
                 <Text style={styles.buttonText}>{busyId === booking.id ? 'Abriendo pago seguro…' : 'Pagar con tarjeta en AZUL'}</Text>
               </Pressable>
               {booking.payment_due_at && new Date(booking.payment_due_at).getTime() <= Date.now() && <Text style={styles.body}>El plazo de pago ha vencido. Actualiza tus reservas para consultar el estado.</Text>}
+            </View>}
+            {payments[booking.id]?.reconciliation_required_at && !payments[booking.id]?.refund_required_at && <View style={styles.payment}>
+              <Text style={styles.paymentTitle}>Verificando el resultado con AZUL</Text>
+              <Text style={styles.body}>No hemos recibido la confirmación final del proveedor. Estamos revisando si el pago llegó a procesarse. No realices otro pago por esta reserva hasta que termine la conciliación.</Text>
             </View>}
             {payments[booking.id]?.refund_required_at && <View style={styles.payment}>
               <Text style={styles.paymentTitle}>Pago recibido · devolución en revisión</Text>
