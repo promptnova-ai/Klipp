@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
+import * as WebBrowser from 'expo-web-browser';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -11,6 +12,7 @@ import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
 
 type ClientBooking = Booking & {
+  payment_due_at: string | null;
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
   addresses: { label: string | null; street: string | null; references_text: string | null } | null;
@@ -64,7 +66,7 @@ export function ClientBookingsScreen() {
     setError(null);
     const { data, error: queryError } = await supabase
       .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
+      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, payment_due_at, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('client_id', userId)
       .order('scheduled_start', { ascending: false });
     if (queryError) {
@@ -228,6 +230,26 @@ export function ClientBookingsScreen() {
     setRefreshing(true);
     await loadBookings();
     setRefreshing(false);
+  }
+
+  async function startAzulCheckout(bookingId: string) {
+    setBusyId(bookingId);
+    setError(null);
+    const { data, error: checkoutError } = await supabase.functions.invoke('azul-create-checkout', {
+      body: { bookingId },
+    });
+    if (checkoutError || typeof data?.checkoutUrl !== 'string') {
+      setError(checkoutError?.message ?? data?.error ?? 'No se pudo iniciar el pago.');
+      setBusyId(null);
+      return;
+    }
+    try {
+      await WebBrowser.openBrowserAsync(data.checkoutUrl);
+      await loadBookings();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No se pudo abrir la página segura de AZUL.');
+    }
+    setBusyId(null);
   }
 
   async function confirmService(bookingId: string) {
@@ -429,7 +451,12 @@ export function ClientBookingsScreen() {
             </View>
             {booking.status === 'payment_pending' && <View style={styles.payment}>
               <Text style={styles.paymentTitle}>Precio reservado · pendiente de pago</Text>
-              <Text style={styles.body}>El importe mostrado queda reservado durante 10 minutos. El checkout con tarjeta todavía no está habilitado en esta versión; no se ha enviado ninguna solicitud al profesional ni debes pagar fuera de Klipp.</Text>
+              <Text style={styles.body}>El precio final queda reservado hasta el vencimiento indicado. La solicitud solo se enviará al profesional cuando AZUL confirme el pago.</Text>
+              <Text style={styles.body}>Válido hasta: {booking.payment_due_at ? formatBusinessDate(booking.payment_due_at) : '10 minutos desde la reserva'}</Text>
+              <Pressable accessibilityRole="button" disabled={busyId === booking.id || !booking.payment_due_at || new Date(booking.payment_due_at).getTime() <= Date.now()} onPress={() => void startAzulCheckout(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
+                <Text style={styles.buttonText}>{busyId === booking.id ? 'Abriendo pago seguro…' : 'Pagar con tarjeta en AZUL'}</Text>
+              </Pressable>
+              {booking.payment_due_at && new Date(booking.payment_due_at).getTime() <= Date.now() && <Text style={styles.body}>El plazo de pago ha vencido. Actualiza tus reservas para consultar el estado.</Text>}
             </View>}
             {booking.status === 'awaiting_payment' && (() => {
               const payment = payments[booking.id];
