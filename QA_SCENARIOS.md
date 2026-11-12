@@ -325,6 +325,31 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** Cada profesional ve su propio precio y su pago neto después de comisión, no el precio provisional mínimo de la reserva. La duración de la oferta coincide con la modalidad publicada por ese profesional y la reserva definitiva conserva esos valores.
 
+### QA-PRO-REQ-04 — Expiración real y desconexión por oferta no respondida
+
+**Prioridad:** Alta  
+**Precondición:** Profesional online y elegible; reserva automática con una oferta dirigida a su cuenta.
+
+1. Recibir una oferta y no aceptar ni rechazar.
+2. Esperar hasta que el servidor alcance `expires_at` y ejecute el proceso programado de expiración.
+3. Consultar la fila de `booking_requests` y el estado de `pro_presence`.
+4. Comprobar que se inicia otra ronda sin volver a ofrecer la misma reserva al profesional que no respondió.
+5. Repetir aceptando o rechazando explícitamente una oferta para comprobar que esos casos no se marcan como ausencia.
+
+**Resultado esperado:** La oferta queda `expired`, `missed_at` queda informado y el profesional pasa a offline. Un rechazo explícito no se considera una ausencia. La siguiente ronda conserva sus propios 45 segundos completos.
+
+### QA-PRO-REQ-04A — Temporizador independiente por ronda
+
+**Prioridad:** Alta  
+**Precondición:** Al menos dos rondas de profesionales elegibles para la misma reserva automática.
+
+1. Rechazar una oferta pocos segundos después de recibirla.
+2. Comprobar que el servidor inicia la siguiente ronda.
+3. Medir el plazo de la nueva oferta desde su propio `expires_at`.
+4. Verificar que el temporizador de la ronda anterior no caduca la nueva antes de tiempo.
+
+**Resultado esperado:** Cada oferta dispone de 45 segundos completos desde su creación. Ningún temporizador de una ronda anterior puede expirar ofertas posteriores.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
