@@ -15,7 +15,7 @@ export default function ProLayout() {
           tabBarInactiveTintColor: KlippColors.muted,
           tabBarStyle: { height: 76, paddingTop: 9, paddingBottom: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: KlippColors.border, elevation: 0, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: -5 }, shadowRadius: 18 },
           sceneStyle: { backgroundColor: RoleThemes.pro.canvas },
-          animation: 'fade',
+          animation: 'shift',
           tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.1 },
           tabBarItemStyle: { paddingVertical: 3 },
         }}>
