@@ -384,6 +384,20 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** La aceptación no hace desaparecer la reserva de la agenda. El profesional entiende que todavía no debe prestar el servicio.
 
+### QA-BOOK-04 — No despachar reservas vencidas
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva automática con inicio programado hace más de 10 minutos y profesionales conectados, online y elegibles.
+
+1. Crear una reserva de prueba cuyo `scheduled_start` haya pasado más de 10 minutos.
+2. Invocar manualmente `dispatch_auto_booking`.
+3. Ejecutar `process_scheduled_booking_dispatch`.
+4. Simular una oferta que sigue pendiente cuando la reserva supera el margen de 10 minutos.
+5. Intentar aceptar esa oferta desde la sesión profesional.
+6. Repetir con una reserva que todavía esté dentro del margen de tolerancia.
+
+**Resultado esperado:** Una reserva vencida pasa a `expired`, no recibe nuevas ofertas y no puede aceptarse aunque el contador de una oferta siga activo. El profesional que no respondió a una oferta vencida se marca como ausencia. Una reserva dentro del margen de 10 minutos conserva el flujo normal.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
