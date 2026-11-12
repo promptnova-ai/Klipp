@@ -342,12 +342,12 @@ export default function ClientHomeScreen() {
         </View>
 
         <View style={styles.categoryGrid}>
-          {categoriesData.map((category) => {
+          {categoriesData.map((category, index) => {
             const selected = selectedCategory === category.name;
             const categoryService = services.find((service) => getCategory(service) === category.name);
             const art = categoryService ? serviceArt(categoryService.code) : heroArt;
             return (
-              <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category.id} onPress={() => setSelectedCategory(selected ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
+              <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category.id} onPress={() => setSelectedCategory(selected ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, index % 5 === 0 && styles.categoryTileFeature, index % 5 === 3 && styles.categoryTileWide, index % 5 === 4 && styles.categoryTileNarrow, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
                 <Image source={art} contentFit="cover" transition={250} style={styles.categoryTileImage} />
                 <View style={styles.categoryTileShade} />
                 <View style={styles.categoryTileFooter}>
@@ -529,12 +529,15 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#171B2D', fontSize: 28, lineHeight: 34, fontWeight: '900', letterSpacing: -0.9, marginTop: 5 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  categoryTile: { width: '48.5%', minHeight: 142, borderRadius: 22, overflow: 'hidden', backgroundColor: '#E9EDFF', borderWidth: 1, borderColor: '#E8E5DE' },
+  categoryTile: { width: '48.5%', minHeight: 150, borderRadius: 18, overflow: 'hidden', backgroundColor: '#E9EDFF', borderWidth: 1, borderColor: '#E8E5DE' },
+  categoryTileFeature: { width: '100%', minHeight: 214, borderRadius: 24 },
+  categoryTileWide: { width: '62%', minHeight: 174 },
+  categoryTileNarrow: { width: '34.5%', minHeight: 174 },
   categoryTileSelected: { borderWidth: 2, borderColor: '#3D5AFE' },
-  categoryTileImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
-  categoryTileShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(23,27,45,0.18)' },
-  categoryTileFooter: { flex: 1, minHeight: 142, padding: 13, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
-  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 16, lineHeight: 20, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
+  categoryTileImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  categoryTileShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.18)' },
+  categoryTileFooter: { flex: 1, minHeight: 150, padding: 14, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
+  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 17, lineHeight: 21, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
   categoryTileArrow: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
   categoryTileArrowSelected: { backgroundColor: '#3D5AFE' },
   categories: { gap: 9, paddingVertical: 2 },
