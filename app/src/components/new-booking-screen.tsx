@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
@@ -122,6 +123,9 @@ export function NewBookingScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submissionUncertain, setSubmissionUncertain] = useState(false);
+  const [pendingPaymentBookingId, setPendingPaymentBookingId] = useState<string | null>(null);
+  const [startingCheckout, setStartingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const dateOptions = useMemo(() => getDateOptions(), []);
   const slotOptions = useMemo(
     () => Array.from({ length: 21 }, (_, index) => `${String(8 + Math.floor(index / 2)).padStart(2, '0')}:${index % 2 ? '30' : '00'}`),
@@ -717,7 +721,8 @@ export function NewBookingScreen() {
         return;
       }
 
-      setSuccess('Cotización bloqueada durante 10 minutos. La reserva está pendiente de pago y todavía no se ha enviado ninguna oferta al profesional.');
+      setPendingPaymentBookingId(bookingId);
+      setSuccess('Tu precio está reservado durante 10 minutos. Completa el pago seguro con AZUL para activar la solicitud; todavía no se ha enviado ninguna oferta.');
     } catch (cause) {
       if (bookingCreationAttempted) {
         setSubmissionUncertain(true);
@@ -731,13 +736,43 @@ export function NewBookingScreen() {
     }
   }
 
+  async function startAzulCheckout() {
+    if (!pendingPaymentBookingId || startingCheckout) return;
+    setStartingCheckout(true);
+    setCheckoutError(null);
+    try {
+      const { data, error: checkoutInvokeError } = await supabase.functions.invoke('azul-create-checkout', {
+        body: { bookingId: pendingPaymentBookingId },
+      });
+      if (checkoutInvokeError) throw checkoutInvokeError;
+      const checkoutUrl = data?.checkoutUrl;
+      if (typeof checkoutUrl !== 'string' || !/^https:\/\//i.test(checkoutUrl)) {
+        throw new Error('AZUL no devolvió un enlace de pago válido.');
+      }
+      await Linking.openURL(checkoutUrl);
+    } catch (cause) {
+      setCheckoutError(cause instanceof Error
+        ? cause.message
+        : 'No pudimos abrir el pago. Tu reserva sigue pendiente; revisa Mis reservas antes de repetir el proceso.');
+    } finally {
+      setStartingCheckout(false);
+    }
+  }
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
-      {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
+      {success && <View style={styles.successBanner}>
+        <Text style={styles.successTitle}>{success}</Text>
+        {pendingPaymentBookingId && <Pressable accessibilityRole="button" disabled={startingCheckout} onPress={() => void startAzulCheckout()} style={({ pressed }) => [styles.submit, startingCheckout && styles.disabled, pressed && styles.buttonPressed]}>
+          {startingCheckout ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Pagar de forma segura con AZUL</Text>}
+        </Pressable>}
+        {checkoutError && <Text accessibilityRole="alert" style={styles.error}>{checkoutError}</Text>}
+        <Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable>
+      </View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
       <Section title="1. Servicio">
