@@ -752,3 +752,50 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 5. Volver a cotizar y confirmar el nuevo precio.
 
 **Resultado esperado:** El servidor rechaza la cotización antigua y revierte toda la operación: no queda reserva, pago ni oferta. La app vuelve a mostrar el precio actualizado y requiere aceptación expresa antes de continuar.
+
+
+### QA-PAY-13 — Sesión de checkout de un solo uso
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva `payment_pending` e intento AZUL pendiente.
+
+1. Crear una sesión de checkout firmada con expiración máxima de cinco minutos.
+2. Abrir la URL de checkout y reclamar la sesión.
+3. Repetir la misma URL/token.
+4. Repetir con token manipulado, expirado o de otro intento.
+
+**Resultado esperado:** Solo la primera reclamación válida obtiene los datos para construir el formulario POST. Repeticiones, tokens manipulados, caducados o asociados a otro pago se rechazan.
+
+### QA-PAY-14 — Firma HMAC de respuesta AZUL
+
+**Prioridad:** Crítica  
+**Precondición:** Intento AZUL pendiente y credenciales de pruebas del comercio.
+
+1. Enviar una respuesta aprobada con AuthHash válido, importe y número de orden exactos.
+2. Repetir alterando por separado Amount, OrderNumber, AuthorizationCode, DateTime, ResponseCode, IsoCode, ResponseMessage, ErrorDescription y RRN sin recalcular la firma.
+3. Enviar una respuesta con firma incorrecta.
+4. Repetir la respuesta aprobada original.
+
+**Resultado esperado:** Solo la respuesta íntegra con HMAC-SHA512 válido se procesa. Cualquier cambio en los campos firmados invalida el callback. El callback aprobado duplicado es idempotente y no crea una segunda oferta.
+
+### QA-PAY-15 — Cancelación sin respuesta firmada
+
+**Prioridad:** Alta  
+**Precondición:** Cliente ha abierto AZUL y vuelve por CancelUrl sin parámetros.
+
+1. Abrir CancelUrl sin OrderNumber ni AuthHash.
+2. Consultar el intento y la reserva.
+3. Volver a iniciar el checkout dentro de la ventana de pago.
+
+**Resultado esperado:** La navegación de cancelación no marca un pago como aprobado ni fallido, no activa dispatch y permite reintentar con una nueva sesión de un solo uso mientras la reserva siga vigente.
+
+### QA-PAY-16 — Configuración fiscal o de comercio incompleta
+
+**Prioridad:** Crítica  
+**Precondición:** Falta AZUL_AUTH_KEY, AZUL_CURRENCY_CODE, URLs autorizadas o configuración ITBIS.
+
+1. Solicitar checkout para una reserva válida.
+2. Comprobar que la función responde con error de configuración.
+3. Consultar pagos y ofertas de la reserva.
+
+**Resultado esperado:** El checkout se bloquea antes de generar un formulario o cobro. No se crea un intento de pago ni se envía oferta al profesional. La configuración ITBIS nunca se asume por defecto.
