@@ -8,6 +8,7 @@ import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, PricingTier, ServiceType, VerificationStatus } from '@/lib/types';
 
@@ -600,6 +601,19 @@ export function ProProfileScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      {selectedServices.length > 0 && (() => {
+        const selectedService = catalog.find((service) => service.id === selectedServices[0]);
+        return selectedService ? (
+          <View style={styles.professionHero}>
+            <View style={styles.professionHeroCopy}>
+              <Text style={styles.professionHeroEyebrow}>TU PROFESIÓN EN KLIPP</Text>
+              <Text style={styles.professionHeroTitle}>{selectedService.name}</Text>
+              <Text style={styles.professionHeroBody}>Tu perfil, tarifas y trabajos publicados se mostrarán a los clientes que busquen este servicio.</Text>
+            </View>
+            <Image source={serviceArt(selectedService.code)} contentFit="cover" style={styles.professionHeroArt} />
+          </View>
+        ) : null;
+      })()}
       <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
         <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
         {proProfile.verification_status !== 'approved' && (
@@ -826,6 +840,12 @@ const styles = StyleSheet.create({
   portfolioImage: { width: '100%', height: 148, borderRadius: 16, backgroundColor: KlippColors.canvas },
   portfolioDelete: { alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 9, borderRadius: 8, backgroundColor: KlippColors.whiteCoral },
   portfolioDeleteText: { color: KlippColors.coral, fontSize: 12, fontWeight: '700' },
+  professionHero: { minHeight: 142, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 22, overflow: 'hidden', backgroundColor: KlippColors.surfaceBlue, borderWidth: 1, borderColor: '#DCE3FF' },
+  professionHeroCopy: { flex: 1, gap: 6 },
+  professionHeroEyebrow: { color: KlippColors.cobaltDark, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  professionHeroTitle: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
+  professionHeroBody: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
+  professionHeroArt: { width: 112, height: 104, borderRadius: 16, backgroundColor: KlippColors.white },
   statusBanner: { padding: 16, borderRadius: 18, backgroundColor: KlippColors.surfaceBlue, borderWidth: 1, borderColor: '#DCE3FF', gap: 7 },
   signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 12, backgroundColor: KlippColors.whiteCoral },
   signOutPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },

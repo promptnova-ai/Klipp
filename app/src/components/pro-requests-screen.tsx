@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { Image } from 'expo-image';
 import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from 'expo-router';
@@ -6,6 +7,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 
@@ -336,7 +338,7 @@ export function ProRequestsScreen() {
       {reassignments.map((request) => (
         <View key={request.request_id} style={styles.requestCard}>
           <View style={styles.requestCardTop}>
-            <View style={styles.requestIcon}><Text style={styles.requestIconText}>↗</Text></View>
+            <View style={styles.requestArt}><Image source={serviceArt(request.service_name ?? '')} contentFit="cover" style={styles.requestArtImage} /></View>
             <View style={styles.requestCardHeading}><Text style={styles.requestEyebrow}>OPORTUNIDAD DE SUSTITUCIÓN</Text><Text style={styles.cardTitle}>{request.service_name ?? 'Servicio Klipp'}</Text></View>
             <View style={styles.requestTag}><Text style={styles.requestTagText}>NUEVA</Text></View>
           </View>
@@ -360,7 +362,7 @@ export function ProRequestsScreen() {
       {requests.map((request) => (
         <View key={request.id} style={styles.requestCard}>
           <View style={styles.requestCardTop}>
-            <View style={styles.requestIcon}><Text style={styles.requestIconText}>✦</Text></View>
+            <View style={styles.requestArt}><Image source={serviceArt(request.service_name)} contentFit="cover" style={styles.requestArtImage} /></View>
             <View style={styles.requestCardHeading}><Text style={styles.requestEyebrow}>NUEVA OPORTUNIDAD</Text><Text style={styles.cardTitle}>{request.service_name}</Text>{!!request.pricing_tier_label && <Text style={styles.requestTier}>{request.pricing_tier_label}</Text>}</View>
             <View style={styles.requestTag}><Text style={styles.requestTagText}>NUEVA</Text></View>
           </View>
