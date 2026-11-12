@@ -24,6 +24,10 @@ Al confirmar, el backend vuelve a consultar la tarifa activa del profesional y c
 
 Así se conserva el flujo prepago sin que un profesional acepte una reserva a un precio distinto del mostrado y aceptado por el cliente.
 
+### Selección de profesional para «Cerca de mí»
+
+Para una reserva inmediata, la cotización exacta se ordena por la ubicación GPS reciente del profesional conectado, no por el centro estático de su zona de cobertura. La zona de cobertura sigue determinando si puede atender la dirección del cliente. Para una reserva programada, Klipp utiliza cobertura y disponibilidad futura, sin exigir que el profesional esté conectado semanas/días antes.
+
 ## Ciclo de reserva
 
 1. Cliente selecciona servicio, variante, ubicación y hora.
