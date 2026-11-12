@@ -362,3 +362,22 @@ BEGIN
   EXECUTE replace(v_definition, v_old, v_new);
 END;
 $migration$;
+
+
+-- An expired first offer must release the pinned pro just like an explicit
+-- rejection, so the trigger can offer the booking to a same-price alternative.
+DO $migration$
+DECLARE
+  v_definition text;
+  v_old text;
+  v_new text;
+BEGIN
+  v_definition := pg_get_functiondef('public.dispatch_next_auto_booking_round_on_response()'::regprocedure);
+  v_old := E'  IF NOT FOUND\n     OR v_booking.assignment_mode <> ''auto''\n     OR v_booking.status <> ''requested''\n     OR v_booking.pro_id IS NOT NULL THEN\n    RETURN new;\n  END IF;';
+  v_new := E'  IF NOT FOUND\n     OR v_booking.assignment_mode <> ''auto''\n     OR v_booking.status <> ''requested'' THEN\n    RETURN new;\n  END IF;\n\n  IF v_booking.pro_id = new.pro_id THEN\n    UPDATE public.bookings\n    SET pro_id = NULL, pro_service_id = NULL\n    WHERE id = new.booking_id AND status = ''requested'' AND assignment_mode = ''auto'';\n    v_booking.pro_id := NULL;\n    v_booking.pro_service_id := NULL;\n  END IF;\n\n  IF v_booking.pro_id IS NOT NULL THEN\n    RETURN new;\n  END IF;';
+  IF position(v_old IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'Could not locate auto response trigger release point';
+  END IF;
+  EXECUTE replace(v_definition, v_old, v_new);
+END;
+$migration$;
