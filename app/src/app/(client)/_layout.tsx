@@ -13,10 +13,10 @@ export default function ClientLayout() {
           headerShown: false,
           tabBarActiveTintColor: RoleThemes.client.accent,
           tabBarInactiveTintColor: KlippColors.muted,
-          tabBarStyle: { height: 76, paddingTop: 9, paddingBottom: 10, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: KlippColors.border, elevation: 0, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: -5 }, shadowRadius: 18 },
+          tabBarStyle: { height: 82, paddingTop: 11, paddingBottom: 12, backgroundColor: '#FFFFFF', borderTopWidth: 0, elevation: 0, shadowColor: '#171B2D', shadowOpacity: 0.075, shadowOffset: { width: 0, height: -8 }, shadowRadius: 24 },
           sceneStyle: { backgroundColor: RoleThemes.client.canvas },
           animation: 'shift',
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '700', letterSpacing: 0.1 },
+          tabBarLabelStyle: { fontSize: 10, fontWeight: '800', letterSpacing: 0.15, marginTop: 4 },
           tabBarItemStyle: { paddingVertical: 3 },
         }}>
         <Tabs.Screen name="index" options={{ title: 'Inicio', tabBarIcon: ({ color }) => <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={String(color)} size={20} /> }} />

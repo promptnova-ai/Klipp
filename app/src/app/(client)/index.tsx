@@ -351,6 +351,13 @@ export default function ClientHomeScreen() {
 
       {!search && (
         <View style={styles.hero}>
+          <Image
+            source={{ uri: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1800&auto=format&fit=crop&q=90' }}
+            contentFit="cover"
+            transition={350}
+            style={styles.heroImage}
+          />
+          <View style={styles.heroScrim} />
           <View style={styles.heroAccent} />
           <View style={styles.heroBadge}>
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
@@ -582,7 +589,7 @@ export default function ClientHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 56, gap: 26, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1280, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 28, paddingTop: 26, paddingBottom: 64, gap: 30, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
@@ -596,39 +603,39 @@ const styles = StyleSheet.create({
   greeting: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.9 },
   wave: { color: KlippColors.gold, fontSize: 20 },
   greetingSubtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  searchBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  searchBar: { minHeight: 62, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, borderRadius: 20, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#E7E4DD', shadowColor: '#171B2D', shadowOpacity: 0.075, shadowOffset: { width: 0, height: 10 }, shadowRadius: 22, elevation: 4 },
   searchInput: { flex: 1, height: 52, color: KlippColors.navy, fontSize: 14 },
   clearSearch: { padding: 5 },
-  hero: { overflow: 'hidden', minHeight: 270, justifyContent: 'center', padding: 30, borderRadius: 30, backgroundColor: '#3048D8', gap: 16, shadowColor: '#3048D8', shadowOpacity: 0.22, shadowOffset: { width: 0, height: 16 }, shadowRadius: 28, elevation: 7 },
-  heroAccent: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: '#6278FF', right: -78, top: -110, opacity: 0.8 },
+  hero: { overflow: 'hidden', minHeight: 360, justifyContent: 'center', padding: 32, borderRadius: 32, backgroundColor: '#26345F', gap: 17, shadowColor: '#171B2D', shadowOpacity: 0.18, shadowOffset: { width: 0, height: 18 }, shadowRadius: 30, elevation: 7 },
+  heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },\n  heroScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(17,24,45,0.56)' },\n  heroAccent: { position: 'absolute', width: 260, height: 260, borderRadius: 130, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', right: -100, top: -120, opacity: 0.8 },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)' },
   heroBadgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
-  heroTitle: { color: '#FFFFFF', fontSize: 38, lineHeight: 44, fontWeight: '900', letterSpacing: -1.2, marginTop: 4, maxWidth: 620 },
+  heroTitle: { color: '#FFFFFF', fontSize: 42, lineHeight: 48, fontWeight: '900', letterSpacing: -1.5, marginTop: 4, maxWidth: 620 },
   heroText: { maxWidth: 480, color: '#E9EDFF', fontSize: 14, lineHeight: 22 },
   primaryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, paddingHorizontal: 18, alignSelf: 'flex-start', borderRadius: 14, backgroundColor: '#FFFFFF' },
   primaryButtonText: { color: KlippColors.cobaltDark, fontSize: 14, fontWeight: '800' },
   catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   sectionEyebrow: { color: KlippColors.blueDark, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 19, fontWeight: '700', marginTop: 5 },
+  sectionTitle: { color: KlippColors.ink, fontSize: 24, fontWeight: '900', letterSpacing: -0.7, marginTop: 5 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
   categories: { gap: 9, paddingVertical: 1 },
   categoryPill: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   categorySelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
   categoryText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
   categoryTextSelected: { color: KlippColors.white },
-  serviceList: { gap: 14 },
+  serviceList: { gap: 18 },
   serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 14, rowGap: 16 },
-  serviceCard: { width: '100%', flexDirection: 'column', alignItems: 'stretch', gap: 14, padding: 10, borderRadius: 24, borderWidth: 1, borderColor: '#EAE7E0', backgroundColor: KlippColors.white, shadowColor: '#171B2D', shadowOpacity: 0.065, shadowOffset: { width: 0, height: 10 }, shadowRadius: 22, elevation: 4 },
+  serviceCard: { width: '100%', flexDirection: 'column', alignItems: 'stretch', gap: 15, padding: 10, borderRadius: 26, borderWidth: 1, borderColor: '#EAE7E0', backgroundColor: KlippColors.white, shadowColor: '#171B2D', shadowOpacity: 0.075, shadowOffset: { width: 0, height: 12 }, shadowRadius: 26, elevation: 4 },
   serviceCardWide: { width: '48.5%' },
   serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
-  servicePhotoWrap: { height: 156, overflow: 'hidden', borderRadius: 18, backgroundColor: KlippColors.surfaceMuted },
+  servicePhotoWrap: { height: 196, overflow: 'hidden', borderRadius: 18, backgroundColor: KlippColors.surfaceMuted },
   servicePhoto: { width: '100%', height: '100%' },
   servicePhotoBadge: { position: 'absolute', left: 12, bottom: 12, width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
   photoLabel: { position: 'absolute', right: 12, top: 12, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(23,27,45,0.78)' },
   photoLabelText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.35 },
   serviceCopy: { flex: 1, gap: 8, paddingHorizontal: 10, paddingBottom: 10 },
   serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  serviceTitle: { flex: 1, color: KlippColors.ink, fontSize: 18, fontWeight: '900', letterSpacing: -0.35 },
+  serviceTitle: { flex: 1, color: KlippColors.ink, fontSize: 19, fontWeight: '900', letterSpacing: -0.55 },
   categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: KlippColors.surfaceMuted },
   categoryTagText: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
   serviceDescription: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
