@@ -197,6 +197,16 @@ export function NotificationsScreen() {
   }, [userId, loadNotifications]);
 
   const unreadCount = items.filter((item) => !item.read_at).length;
+  const todayKey = new Date().toDateString();
+  const yesterdayKey = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
+  const notificationGroups = [
+    { title: 'Hoy', items: items.filter((item) => new Date(item.created_at).toDateString() === todayKey) },
+    { title: 'Ayer', items: items.filter((item) => new Date(item.created_at).toDateString() === yesterdayKey) },
+    { title: 'Anteriores', items: items.filter((item) => {
+      const dateKey = new Date(item.created_at).toDateString();
+      return dateKey !== todayKey && dateKey !== yesterdayKey;
+    }) },
+  ].filter((group) => group.items.length > 0);
 
   async function updatePreference(eventType: keyof PreferenceMap, channel: PreferenceChannel, enabled: boolean) {
     if (!userId) return;
@@ -492,32 +502,37 @@ export function NotificationsScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {items.map((item) => (
-              <Pressable
-                key={item.id}
-                accessibilityRole="button"
-                disabled={openingId !== null}
-                onPress={() => void openNotification(item)}
-                style={({ pressed }) => [
-                  styles.notification,
-                  !item.read_at && [styles.unreadNotification, { borderColor: roleTheme.accent, backgroundColor: roleTheme.accentSoft }],
-                  (pressed || openingId === item.id) && styles.pressed,
-                ]}>
-                <View style={[styles.itemIcon, { backgroundColor: roleTheme.accentSoft }]}>
-                  <SymbolView name={notificationIcon(item.type)} tintColor={roleTheme.accentStrong} size={19} />
-                </View>
-                <View style={styles.itemCopy}>
-                  <View style={styles.itemHeading}>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    {!item.read_at && <View style={[styles.unreadDot, { backgroundColor: roleTheme.accent }]} />}
-                  </View>
-                  <Text style={styles.itemBody}>{item.body}</Text>
-                  <Text style={styles.itemDate}>{relativeDate(item.created_at)}</Text>
-                </View>
-                {openingId === item.id
-                  ? <ActivityIndicator color={roleTheme.accentStrong} size="small" />
-                  : <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={15} />}
-              </Pressable>
+            {notificationGroups.map((group) => (
+              <View key={group.title} style={styles.notificationGroup}>
+                <Text style={styles.groupTitle}>{group.title}</Text>
+                {group.items.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    accessibilityRole="button"
+                    disabled={openingId !== null}
+                    onPress={() => void openNotification(item)}
+                    style={({ pressed }) => [
+                      styles.notification,
+                      !item.read_at && styles.unreadNotification,
+                      (pressed || openingId === item.id) && styles.pressed,
+                    ]}>
+                    <View style={[styles.itemIcon, !item.read_at && { backgroundColor: roleTheme.accentSoft }]}>
+                      <SymbolView name={notificationIcon(item.type)} tintColor={roleTheme.accentStrong} size={19} />
+                    </View>
+                    <View style={styles.itemCopy}>
+                      <View style={styles.itemHeading}>
+                        <Text style={styles.itemTitle}>{item.title}</Text>
+                        {!item.read_at && <View style={[styles.unreadDot, { backgroundColor: roleTheme.accent }]} />}
+                      </View>
+                      <Text style={styles.itemBody}>{item.body}</Text>
+                      <Text style={styles.itemDate}>{relativeDate(item.created_at)}</Text>
+                    </View>
+                    {openingId === item.id
+                      ? <ActivityIndicator color={roleTheme.accentStrong} size="small" />
+                      : <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={15} />}
+                  </Pressable>
+                ))}
+              </View>
             ))}
           </View>
         )}
@@ -528,7 +543,7 @@ export function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 26, paddingBottom: 56, gap: 22 },
+  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 18, paddingBottom: 56, gap: 20 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 16 },
   headerCopy: { flex: 1, gap: 5 },
   eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
@@ -537,7 +552,7 @@ const styles = StyleSheet.create({
   headerIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   markAllButton: { minHeight: 38, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12 },
   markAllText: { fontSize: 12, fontWeight: '800' },
-  preferencesCard: { padding: 24, borderRadius: 26, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 17, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: 11 }, shadowRadius: 24, elevation: 3 },
+  preferencesCard: { paddingVertical: 20, paddingHorizontal: 0, borderRadius: 0, backgroundColor: 'transparent', borderTopWidth: 1, borderBottomWidth: 1, borderColor: KlippColors.border, gap: 17, shadowOpacity: 0, elevation: 0 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingBottom: 3 },
   sectionCopy: { flex: 1, gap: 5 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, lineHeight: 24, fontWeight: '900', letterSpacing: -0.25 },
@@ -553,7 +568,7 @@ const styles = StyleSheet.create({
   preferenceChannelCopy: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 5 },
   preferenceChannelLabel: { color: KlippColors.slate, fontSize: 11, fontWeight: '700' },
   webPushHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 17, paddingTop: 10 },
-  pushCard: { padding: 23, borderRadius: 26, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 17, shadowColor: KlippColors.navy, shadowOpacity: 0.055, shadowOffset: { width: 0, height: 11 }, shadowRadius: 24, elevation: 3 },
+  pushCard: { paddingVertical: 18, paddingHorizontal: 0, borderRadius: 0, backgroundColor: 'transparent', borderBottomWidth: 1, borderColor: KlippColors.border, gap: 15, shadowOpacity: 0, elevation: 0 },
   pushHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pushIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   pushCopy: { flex: 1, gap: 4 },
@@ -569,10 +584,12 @@ const styles = StyleSheet.create({
   listHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingTop: 3 },
   listHeadingCopy: { flex: 1, gap: 4 },
   itemCount: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' },
-  list: { gap: 10 },
-  notification: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: KlippColors.navy, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
-  unreadNotification: { borderWidth: 1.2 },
-  itemIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  list: { gap: 22 },
+  notificationGroup: { gap: 0 },
+  groupTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '900', paddingBottom: 8 },
+  notification: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 15, paddingHorizontal: 0, borderRadius: 0, backgroundColor: 'transparent', borderBottomWidth: 1, borderColor: KlippColors.border, shadowOpacity: 0, elevation: 0 },
+  unreadNotification: { backgroundColor: 'rgba(61,90,254,0.045)' },
+  itemIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceMuted },
   itemCopy: { flex: 1, gap: 4 },
   itemHeading: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   itemTitle: { flex: 1, color: KlippColors.navy, fontSize: 13, lineHeight: 18, fontWeight: '900' },
