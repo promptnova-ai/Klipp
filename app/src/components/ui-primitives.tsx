@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -15,26 +15,44 @@ import {
 
 import { KlippColors, KlippLayout, KlippMotion } from '@/lib/brand';
 
-/** Respect the operating system's reduced-motion accessibility preference. */
-export function useReducedMotion() {
-  const [reducedMotion, setReducedMotion] = useState(false);
+/** One shared OS preference subscription avoids a listener per button or screen. */
+let reducedMotionSnapshot = false;
+let motionPreferenceInitialized = false;
+let motionPreferenceSubscription: { remove: () => void } | null = null;
+const motionPreferenceListeners = new Set<() => void>();
 
-  useEffect(() => {
-    let mounted = true;
+function subscribeToMotionPreference(listener: () => void) {
+  motionPreferenceListeners.add(listener);
+  if (!motionPreferenceInitialized) {
+    motionPreferenceInitialized = true;
     AccessibilityInfo.isReduceMotionEnabled()
       .then((enabled) => {
-        if (mounted) setReducedMotion(enabled);
+        reducedMotionSnapshot = enabled;
+        motionPreferenceListeners.forEach((notify) => notify());
       })
       .catch(() => undefined);
+    motionPreferenceSubscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      reducedMotionSnapshot = enabled;
+      motionPreferenceListeners.forEach((notify) => notify());
+    });
+  }
+  return () => {
+    motionPreferenceListeners.delete(listener);
+    if (motionPreferenceListeners.size === 0) {
+      motionPreferenceSubscription?.remove();
+      motionPreferenceSubscription = null;
+      motionPreferenceInitialized = false;
+    }
+  };
+}
 
-    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
-    return () => {
-      mounted = false;
-      subscription.remove();
-    };
-  }, []);
+function getReducedMotionSnapshot() {
+  return reducedMotionSnapshot;
+}
 
-  return reducedMotion;
+/** Respect the operating system's reduced-motion accessibility preference. */
+export function useReducedMotion() {
+  return useSyncExternalStore(subscribeToMotionPreference, getReducedMotionSnapshot, getReducedMotionSnapshot);
 }
 
 type ScreenEntranceProps = {
