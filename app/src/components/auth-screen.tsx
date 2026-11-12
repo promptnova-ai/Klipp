@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -43,8 +44,13 @@ const serviceHighlights = [
 
 function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: boolean }) {
   const compactLogin = compact && !isRegister;
+  const fullBleedRegister = compact && isRegister;
   return (
-    <View style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin]}>
+    <ImageBackground
+      source={fullBleedRegister ? { uri: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1400&q=85' } : undefined}
+      resizeMode="cover"
+      imageStyle={styles.showcaseImage}
+      style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
       <View style={styles.showcaseCopy}>
         <View style={styles.showcaseBrandLine}>
           <View style={[styles.showcaseMark, compactLogin && styles.showcaseMarkLogin]}><Text style={styles.showcaseMarkLetter}>K</Text></View>
@@ -125,7 +131,8 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
           </View>
         </View>
       )}
-    </View>
+      {fullBleedRegister && <View pointerEvents="none" style={styles.showcasePhotoWash} />}
+    </ImageBackground>
   );
 }
 
@@ -342,6 +349,9 @@ const styles = StyleSheet.create({
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
   showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
+  showcaseImage: { borderRadius: 26 },
+  showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: '#D9E2DF' },
+  showcasePhotoWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
   showcaseCompactLogin: { padding: 30, borderRadius: 30, borderColor: '#DCE3FF', backgroundColor: '#E9EDFF', shadowOpacity: 0, elevation: 0 },
   showcaseMarkLogin: { backgroundColor: KlippColors.cobalt },
   showcaseBrandLogin: { color: KlippColors.ink },
