@@ -455,10 +455,10 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 
 const styles = StyleSheet.create({
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
-  offerBrand: { color: KlippColors.mint, fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
+  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.cobalt, alignItems: 'center', gap: 9 },
+  offerBrand: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: KlippColors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
-  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.cobalt },
+  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)' },
   countdownText: { color: KlippColors.white, fontWeight: '900', fontSize: 18, textAlign: 'center' },
   offerContent: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48, gap: 16, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   offerTitle: { color: KlippColors.navy, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'left' },
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
   materialsSuccess: { color: 'KlippColors.coral', fontSize: 12, fontWeight: '800' },
   declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: KlippColors.coral, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.white },
   declineText: { color: KlippColors.danger, fontSize: 14, fontWeight: '900' },
-  slideTrack: { height: 66, borderRadius: 18, backgroundColor: KlippColors.navyDeep, justifyContent: 'center', padding: 4, overflow: 'hidden' },
+  slideTrack: { height: 66, borderRadius: 18, backgroundColor: KlippColors.ink, justifyContent: 'center', padding: 4, overflow: 'hidden' },
   slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: KlippColors.cobalt },
   slideDisabled: { opacity: 0.5 },
   slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: KlippColors.white, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
