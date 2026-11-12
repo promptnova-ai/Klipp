@@ -40,21 +40,22 @@ const serviceHighlights = [
   },
 ] as const;
 
-function AuthShowcase({ compact }: { compact: boolean }) {
+function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: boolean }) {
+  const compactLogin = compact && !isRegister;
   return (
-    <View style={[styles.showcase, compact && styles.showcaseCompact]}>
+    <View style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin]}>
       <View style={styles.showcaseCopy}>
         <View style={styles.showcaseBrandLine}>
-          <View style={styles.showcaseMark}><Text style={styles.showcaseMarkLetter}>K</Text></View>
-          <Text style={styles.showcaseBrand}>KLIPP</Text>
-          <Text style={styles.showcaseRegion}>SANTO DOMINGO · RD</Text>
+          <View style={[styles.showcaseMark, compactLogin && styles.showcaseMarkLogin]}><Text style={styles.showcaseMarkLetter}>K</Text></View>
+          <Text style={[styles.showcaseBrand, compactLogin && styles.showcaseBrandLogin]}>KLIPP</Text>
+          <Text style={[styles.showcaseRegion, compactLogin && styles.showcaseRegionLogin]}>SANTO DOMINGO · RD</Text>
         </View>
-        <Text style={styles.showcaseKicker}>SERVICIOS A DOMICILIO</Text>
-        <Text style={styles.showcaseTitle}>Tu día, más fácil. Tu servicio, en buenas manos.</Text>
-        <Text style={styles.showcaseDescription}>
-          Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.
+        <Text style={[styles.showcaseKicker, compactLogin && styles.showcaseKickerLogin]}>{compactLogin ? 'SERVICIOS A DOMICILIO, SIN COMPLICACIONES' : 'SERVICIOS A DOMICILIO'}</Text>
+        <Text style={[styles.showcaseTitle, compactLogin && styles.showcaseTitleLogin]}>{compactLogin ? 'Qué bueno tenerte de vuelta.' : 'Tu día, más fácil. Tu servicio, en buenas manos.'}</Text>
+        <Text style={[styles.showcaseDescription, compactLogin && styles.showcaseDescriptionLogin]}>
+          {compactLogin ? 'Entra y gestiona tus servicios desde un solo lugar.' : 'Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.'}
         </Text>
-        <View style={styles.showcaseHighlights}>
+        {!compactLogin && <View style={styles.showcaseHighlights}>
           {serviceHighlights.map((item) => (
             <View key={item.title} style={styles.showcaseHighlight}>
               <View style={styles.showcaseHighlightIcon}>
@@ -66,7 +67,7 @@ function AuthShowcase({ compact }: { compact: boolean }) {
               </View>
             </View>
           ))}
-        </View>
+        </View>}
       </View>
       {!compact && (
         <View style={styles.bookingPreview}>
@@ -171,7 +172,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
             <ScreenEntrance delay={30}>
               <View style={[styles.main, wide && styles.mainWide]}>
-              <AuthShowcase compact={!wide} />
+              <AuthShowcase compact={!wide} isRegister={isRegister} />
               <View style={[styles.formCard, wide && styles.formCardWide]}>
                 <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'QUÉ BUENO VERTE'}</Text>
                 <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
@@ -314,6 +315,13 @@ const styles = StyleSheet.create({
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
   showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
+  showcaseCompactLogin: { padding: 22, borderRadius: 24, borderColor: KlippColors.navy, backgroundColor: KlippColors.navy, shadowOpacity: 0, elevation: 0 },
+  showcaseMarkLogin: { backgroundColor: KlippColors.coral },
+  showcaseBrandLogin: { color: KlippColors.white },
+  showcaseRegionLogin: { color: KlippColors.mint },
+  showcaseKickerLogin: { color: KlippColors.mint, fontSize: 9, lineHeight: 14 },
+  showcaseTitleLogin: { color: KlippColors.white, fontSize: 27, lineHeight: 32, maxWidth: 360 },
+  showcaseDescriptionLogin: { color: '#D5D9E5', fontSize: 13, lineHeight: 19 },
   showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
   showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
