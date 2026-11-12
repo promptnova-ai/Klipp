@@ -42,7 +42,7 @@ const s=StyleSheet.create({
  avatar:{width:52,height:52,borderRadius:26,backgroundColor:colors.surfaceMuted},
  empty:{alignItems:'center',justifyContent:'center',gap:spacing.md,padding:spacing['2xl']},
  emptyMark:{width:54,height:54,borderRadius:27,backgroundColor:colors.surfaceBlue},
- scrim:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(23,27,45,0.35)'},
+ scrim:{...StyleSheet.absoluteFill,backgroundColor:'rgba(23,27,45,0.35)'},
  sheet:{position:'absolute',bottom:0,left:0,right:0,backgroundColor:colors.ivory,borderTopLeftRadius:radius['2xl'],borderTopRightRadius:radius['2xl'],paddingHorizontal:spacing.lg,paddingTop:spacing.md,overflow:'hidden'},
  handle:{alignSelf:'center',width:38,height:4,borderRadius:4,backgroundColor:'#C8C5BD',marginBottom:spacing.lg},
  close:{position:'absolute',right:spacing.md,top:spacing.sm,zIndex:2,width:40,height:40,alignItems:'center',justifyContent:'center'},
