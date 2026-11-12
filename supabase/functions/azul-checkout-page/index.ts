@@ -22,12 +22,11 @@ function htmlResponse(content: string, status = 200) {
   });
 }
 
-function paymentForm(action: string, fields: Record<string, string>, autoSubmit: boolean): string {
+function paymentForm(action: string, fields: Record<string, string>, buttonLabel: string): string {
   const hidden = Object.entries(fields)
     .map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`)
     .join("\n");
-  const button = autoSubmit ? "<noscript><button type=\"submit\">Continuar a AZUL</button></noscript>" : "<button type=\"submit\">Probar sitio alternativo de AZUL</button>";
-  return `<form id="azul-payment-form" action="${escapeHtml(action)}" method="post">${hidden}${button}</form>${autoSubmit ? "<script>document.getElementById('azul-payment-form').submit();</script>" : ""}`;
+  return `<form action="${escapeHtml(action)}" method="post">${hidden}<button type="submit">${escapeHtml(buttonLabel)}</button></form>`;
 }
 
 Deno.serve(async (req) => {
@@ -97,9 +96,9 @@ Deno.serve(async (req) => {
       AuthHash: authHash,
     };
 
-    const primary = paymentForm(config.paymentPageUrl, fields, true);
-    const fallback = paymentForm(config.fallbackPaymentPageUrl, fields, false);
-    return htmlResponse(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago seguro · Klipp</title><style>body{font-family:system-ui,sans-serif;background:#0a0a0b;color:#fff;display:grid;min-height:100vh;place-items:center;margin:0}.card{max-width:440px;padding:32px;text-align:center}.muted{color:#aaa;font-size:14px}button{background:#eab308;color:#111;border:0;border-radius:12px;padding:14px 20px;font-weight:700}</style></head><body><main class="card"><h1>Conectando con AZUL</h1><p class="muted">Serás redirigido a la página segura de pago. Klipp no recibe ni almacena los datos de tu tarjeta.</p>${primary}<p class="muted">Si no se abre la página de pago, puedes intentar con el sitio alternativo de AZUL:</p>${fallback}</main></body></html>`);
+    const primary = paymentForm(config.paymentPageUrl, fields, "Pagar de forma segura con AZUL");
+    const fallback = paymentForm(config.fallbackPaymentPageUrl, fields, "Usar sitio alternativo de AZUL");
+    return htmlResponse(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pago seguro · Klipp</title><style>body{font-family:system-ui,sans-serif;background:#0a0a0b;color:#fff;display:grid;min-height:100vh;place-items:center;margin:0}.card{max-width:440px;padding:32px;text-align:center}.muted{color:#aaa;font-size:14px;line-height:1.5}button{width:100%;background:#eab308;color:#111;border:0;border-radius:12px;padding:14px 20px;font-weight:700;margin:8px 0}</style></head><body><main class="card"><h1>Pago seguro de Klipp</h1><p class="muted">Total: RD$ ${Number(payment.amount_dop).toLocaleString("es-DO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p><p class="muted">Elige la página segura de AZUL. Klipp no recibe ni almacena los datos de tu tarjeta.</p>${primary}<p class="muted">Si la página principal no está disponible, usa el sitio alternativo:</p>${fallback}</main></body></html>`);
   } catch (error) {
     console.error("AZUL hosted checkout page failed", error instanceof Error ? error.message : "unknown error");
     return htmlResponse("<h1>No se pudo abrir el pago.</h1><p>Vuelve a Klipp para iniciar un nuevo intento.</p>", 500);
