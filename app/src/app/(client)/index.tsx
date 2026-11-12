@@ -377,11 +377,9 @@ export default function ClientHomeScreen() {
               <View style={styles.sheetHandle} />
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.detailIllustration}>
-                  <View style={[styles.detailIllustrationIcon, { backgroundColor: serviceSurface(selectedService.code) }]}>
-                    <SymbolView name={serviceIcon(selectedService.code)} tintColor={serviceAccent(selectedService.code)} size={36} />
-                  </View>
-                  <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
+                  <Image source={serviceArt(selectedService.code)} contentFit="cover" transition={260} style={styles.detailArt} />
                 </View>
+                <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
                 <Text style={styles.detailTitle}>{selectedService.name}</Text>
                 <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio profesional, con tarifa y duración claras antes de confirmar.'}</Text>
                 <View style={styles.equipmentNotice}>
@@ -577,8 +575,9 @@ const styles = StyleSheet.create({
   detailSheet: { maxHeight: '92%', paddingTop: 10, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: KlippColors.canvas },
   sheetHandle: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1', marginBottom: 8 },
   sheetContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 14 },
-  detailIllustration: { minHeight: 132, alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 20, backgroundColor: KlippColors.surfaceBlue },
+  detailIllustration: { height: 174, overflow: 'hidden', borderRadius: 20, backgroundColor: KlippColors.surfaceBlue },
   detailIllustrationIcon: { width: 66, height: 66, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.white },
+  detailArt: { width: '100%', height: '100%' },
   detailCategory: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   detailTitle: { color: KlippColors.navy, fontSize: 23, fontWeight: '700' },
   equipmentNotice: { padding: 15, borderRadius: 14, borderWidth: 1, borderColor: '#3F3F46', backgroundColor: KlippColors.surfaceMuted, gap: 8 },

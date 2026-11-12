@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
 import { KlippColors } from '@/lib/brand';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
 import type { ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
@@ -33,22 +34,6 @@ type ServiceOffer = {
   distance_m?: number;
 };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
-
-const serviceVisuals: Record<string, { icon: string; tint: string; accent: string }> = {
-  barberia: { icon: '✂️', tint: '#E9EDFF', accent: '#3D5AFE' },
-  peluqueria: { icon: '💇', tint: '#FFF0EC', accent: '#FF7058' },
-  estetica: { icon: '✨', tint: '#E7F7F0', accent: '#247A5A' },
-  carwash: { icon: '🚘', tint: '#E9EDFF', accent: '#3D5AFE' },
-  detailing: { icon: '🧽', tint: '#E7F7F0', accent: '#247A5A' },
-  limpieza_regular: { icon: '🧹', tint: '#FFF0EC', accent: '#FF7058' },
-  limpieza_profunda: { icon: '🧼', tint: '#E9EDFF', accent: '#3D5AFE' },
-  'limpieza-oficinas': { icon: '🏢', tint: '#E7F7F0', accent: '#247A5A' },
-  mantenimiento: { icon: '🛠️', tint: '#FFF0EC', accent: '#FF7058' },
-};
-function getServiceVisual(code: string) {
-  return serviceVisuals[code] ?? { icon: '✦', tint: '#E9EDFF', accent: '#3D5AFE' };
-}
-
 
 function isAmbiguousBookingRpcError(error: { code?: string; status?: number }) {
   if (typeof error.status === 'number') return error.status >= 500;
@@ -711,11 +696,10 @@ export function NewBookingScreen() {
 
       <Section title="1. Servicio">
         {services.map((service) => {
-          const visual = getServiceVisual(service.code);
           const selected = selectedServiceId === service.id;
           return (
             <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} style={[styles.serviceTile, selected && styles.serviceTileSelected]}>
-              <View style={[styles.serviceTileIcon, { backgroundColor: visual.tint }]}><Text style={[styles.serviceTileGlyph, { color: visual.accent }]}>{visual.icon}</Text></View>
+              <View style={styles.serviceTileIcon}><Image source={serviceArt(service.code)} contentFit="cover" style={styles.serviceTileArt} /></View>
               <View style={styles.serviceTileCopy}>
                 <Text style={styles.serviceTileTitle}>{service.name}</Text>
                 {!!service.description && <Text style={styles.serviceTileDescription}>{service.description}</Text>}
@@ -1000,8 +984,8 @@ const styles = StyleSheet.create({
   equipmentDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   serviceTile: { minHeight: 104, flexDirection: 'row', alignItems: 'center', gap: 16, padding: 17, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 20, backgroundColor: '#FFFFFF', shadowColor: '#171B2D', shadowOpacity: 0.025, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
   serviceTileSelected: { borderColor: '#3D5AFE', backgroundColor: '#F1F3FF', shadowColor: '#3D5AFE', shadowOpacity: 0.08, shadowRadius: 12 },
-  serviceTileIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', borderRadius: 21, borderWidth: 1, borderColor: 'rgba(23,27,45,0.04)', shadowColor: '#171B2D', shadowOpacity: 0.09, shadowOffset: { width: 0, height: 5 }, shadowRadius: 10, elevation: 2 },
-  serviceTileGlyph: { fontSize: 28 },
+  serviceTileIcon: { width: 88, height: 66, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', borderRadius: 17, borderWidth: 1, borderColor: 'rgba(23,27,45,0.04)', backgroundColor: '#F7F5F0' },
+  serviceTileArt: { width: '100%', height: '100%' },
   serviceTileCopy: { flex: 1, gap: 4 },
   serviceTileTitle: { color: '#171B2D', fontSize: 16, lineHeight: 21, fontWeight: '900', letterSpacing: -0.35 },
   serviceTileDescription: { color: '#72778A', fontSize: 12, lineHeight: 18 },
