@@ -130,11 +130,11 @@ type StatusPillProps = {
 };
 
 const toneStyles = {
-  info: { backgroundColor: '#EEF2FF', color: KlippColors.blueDark },
-  success: { backgroundColor: '#E8F6F1', color: KlippColors.tealDark },
-  warning: { backgroundColor: '#FFF5D9', color: '#946200' },
-  danger: { backgroundColor: '#FEF0F0', color: KlippColors.danger },
-  neutral: { backgroundColor: '#F1F5F9', color: KlippColors.slate },
+  info: { backgroundColor: KlippColors.surfaceBlue, color: KlippColors.cobaltDark },
+  success: { backgroundColor: KlippColors.surfaceMint, color: KlippColors.success },
+  warning: { backgroundColor: KlippColors.surfaceCoral, color: KlippColors.warning },
+  danger: { backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger },
+  neutral: { backgroundColor: KlippColors.surfaceMuted, color: KlippColors.slate },
 } as const;
 
 export function StatusPill({ label, tone = 'neutral' }: StatusPillProps) {
