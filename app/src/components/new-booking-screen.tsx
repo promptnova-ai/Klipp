@@ -347,7 +347,11 @@ export function NewBookingScreen() {
       return () => { active = false; };
     }
     void Promise.resolve().then(() => {
-      if (active) setManualPriceLoading(true);
+      if (active) {
+        setManualProPrice(null);
+        setManualProDuration(null);
+        setManualPriceLoading(true);
+      }
     });
     void Promise.resolve(supabase.from('pro_services')
       .select('id, base_price_dop, est_minutes')
