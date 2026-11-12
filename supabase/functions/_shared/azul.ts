@@ -42,6 +42,8 @@ export function getAzulConfig(): AzulConfig {
     throw new Error("Live AZUL payments are disabled until merchant certification is complete");
   }
 
+  const checkoutTokenSecret = requiredEnv("AZUL_CHECKOUT_TOKEN_SECRET");
+  if (checkoutTokenSecret.length < 32) throw new Error("AZUL_CHECKOUT_TOKEN_SECRET must contain at least 32 characters");
   const itbisExempt = Deno.env.get("AZUL_ITBIS_EXEMPT") === "true";
   const rawRate = Deno.env.get("AZUL_ITBIS_RATE");
   const itbisRate = rawRate ? Number(rawRate) : null;
@@ -69,7 +71,7 @@ export function getAzulConfig(): AzulConfig {
     declinedUrl: requiredEnv("AZUL_DECLINED_URL"),
     cancelUrl: requiredEnv("AZUL_CANCEL_URL"),
     checkoutPageUrl: requiredEnv("AZUL_CHECKOUT_PAGE_URL"),
-    checkoutTokenSecret: requiredEnv("AZUL_CHECKOUT_TOKEN_SECRET"),
+    checkoutTokenSecret,
     itbisExempt,
     itbisRate,
   };
@@ -82,11 +84,11 @@ export function toMinorUnits(amountDop: number): string {
 
 export function calculateItbisMinor(amountMinor: number, config: AzulConfig): string {
   if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) throw new Error("Invalid transaction amount");
-  if (config.itbisExempt) return "0";
+  if (config.itbisExempt) return "000";
   const rate = config.itbisRate;
   if (rate === null) throw new Error("ITBIS configuration is missing");
   // AZUL's Amount is the customer total (tax included); ITBIS is its tax component.
-  return String(Math.round(amountMinor * rate / (1 + rate)));
+  return String(Math.round(amountMinor * rate / (1 + rate))).padStart(3, "0");
 }
 
 function utf16le(value: string): Uint8Array {
