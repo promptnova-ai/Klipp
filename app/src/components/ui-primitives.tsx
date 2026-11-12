@@ -1,5 +1,6 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Animated,
   Easing,
@@ -13,6 +14,28 @@ import {
 } from 'react-native';
 
 import { KlippColors, KlippLayout, KlippMotion } from '@/lib/brand';
+
+/** Respect the operating system's reduced-motion accessibility preference. */
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (mounted) setReducedMotion(enabled);
+      })
+      .catch(() => undefined);
+
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, []);
+
+  return reducedMotion;
+}
 
 type ScreenEntranceProps = {
   children: ReactNode;
@@ -35,7 +58,7 @@ export function ScreenEntrance({ children, style, delay = 0 }: ScreenEntrancePro
     });
     animation.start();
     return () => animation.stop();
-  }, [delay, progress]);
+  }, [delay, progress, reducedMotion]);
 
   const translateY = progress.interpolate({
     inputRange: [0, 1],
