@@ -169,7 +169,7 @@ export function ProRequestsScreen() {
     setBusyId(null);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
 
   return (
     <>
@@ -249,7 +249,7 @@ export function ProRequestsScreen() {
                       coordinate={{ latitude: activeRequest.client_lat, longitude: activeRequest.client_lng }}
                       title="Lugar del servicio"
                       description={activeRequest.address_text || 'Punto indicado por el cliente'}
-                      pinColor="#15966f"
+                      pinColor={KlippColors.cobalt}
                     />
                   </MapView>
                 ) : (
@@ -308,7 +308,7 @@ export function ProRequestsScreen() {
       </Modal>
     <ScrollView
       contentContainerStyle={styles.page}
-      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />}>
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && requests.length === 0 && reassignments.length === 0 && (
@@ -499,18 +499,18 @@ const styles = StyleSheet.create({
   earningAmount: { color: KlippColors.cobaltDark, fontSize: 32, fontWeight: '900' },
   earningNote: { color: KlippColors.slate, fontSize: 11, textAlign: 'center' },
   materialsCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 18, borderRadius: 20, borderWidth: 1.5, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
-  materialsCardError: { borderColor: '#d94841', backgroundColor: '#fff4f2' },
+  materialsCardError: { borderColor: KlippColors.danger, backgroundColor: KlippColors.surfaceCoral },
   materialsCardConfirmed: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceMint },
   materialsCheck: { width: 27, height: 27, borderRadius: 8, borderWidth: 2, borderColor: KlippColors.border, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center' },
   materialsCheckSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.cobalt },
-  materialsCheckError: { borderColor: '#d94841' },
+  materialsCheckError: { borderColor: KlippColors.danger },
   materialsCheckmark: { color: KlippColors.white, fontSize: 19, fontWeight: '900', lineHeight: 22 },
   materialsCopy: { flex: 1, gap: 5 },
   materialsTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '900', lineHeight: 21 },
   materialsDescription: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
-  materialsErrorText: { color: '#b42318', fontSize: 12, fontWeight: '800', lineHeight: 17 },
+  materialsErrorText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800', lineHeight: 17 },
   materialsSuccess: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '800' },
-  declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: '#F2C4C4', borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.white },
+  declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: KlippColors.coral, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.white },
   declineText: { color: KlippColors.danger, fontSize: 14, fontWeight: '900' },
   slideTrack: { height: 66, borderRadius: 18, backgroundColor: KlippColors.navyDeep, justifyContent: 'center', padding: 4, overflow: 'hidden' },
   slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: KlippColors.cobalt },
@@ -518,14 +518,14 @@ const styles = StyleSheet.create({
   slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: KlippColors.white, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
   slideThumb: { width: 56, height: 56, borderRadius: 15, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center', elevation: 3 },
   slideArrow: { color: '#111820', fontSize: 27, fontWeight: '900', letterSpacing: -4, marginRight: 4 },
-  holdReject: { minHeight: 58, borderWidth: 1.5, borderColor: '#b42318', borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#b42318', gap: 3, paddingHorizontal: 12 },
+  holdReject: { minHeight: 58, borderWidth: 1.5, borderColor: KlippColors.danger, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.danger, gap: 3, paddingHorizontal: 12 },
   holdRejectTitle: { color: KlippColors.white, fontSize: 12, fontWeight: '900', letterSpacing: 0.45, textAlign: 'center' },
-  holdRejectSubtitle: { color: '#ffe3df', fontSize: 11, fontWeight: '700' },
-  offerFootnote: { color: '#718187', fontSize: 11, lineHeight: 16, textAlign: 'center' },
+  holdRejectSubtitle: { color: KlippColors.surfaceCoral, fontSize: 11, fontWeight: '700' },
+  offerFootnote: { color: KlippColors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
   page: { width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '800' },
-  subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
+  subtitle: { color: KlippColors.slate, fontSize: 15, marginTop: -8 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   empty: { width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: 12, padding: 22, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 8 },
   emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
@@ -534,11 +534,11 @@ const styles = StyleSheet.create({
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   payout: { color: KlippColors.cobaltDark, fontSize: 15, fontWeight: '700' },
   expiration: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
-  warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
+  warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 12, backgroundColor: KlippColors.goldLight },
   actions: { flexDirection: 'row', gap: 10, marginTop: 8 },
   button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.cobalt },
-  secondaryButton: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#CBD5E1' },
-  buttonText: { color: '#fff', fontWeight: '700' },
+  secondaryButton: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
+  buttonText: { color: KlippColors.white, fontWeight: '700' },
   secondaryText: { color: KlippColors.muted },
   disabled: { opacity: 0.45 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
