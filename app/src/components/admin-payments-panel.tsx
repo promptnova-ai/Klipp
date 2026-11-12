@@ -61,7 +61,7 @@ export function AdminPaymentsPanel({ canReconcile }: Props) {
   async function resolve(row: ReconciliationRow, action: 'no_charge' | 'charge_found_refund_required' | 'refund_confirmed') {
     const providerReference = references[row.payment_id]?.trim() ?? '';
     const reason = reasons[row.payment_id]?.trim() ?? '';
-    const providerAmount = Number(providerAmounts[row.payment_id]);
+    const providerAmount = Number((providerAmounts[row.payment_id] ?? '').replace(',', '.'));
     if (providerReference.length < 4 || reason.length < 5) {
       setError('Introduce la referencia del reporte/devolución de AZUL y una explicación de al menos 5 caracteres.');
       return;
