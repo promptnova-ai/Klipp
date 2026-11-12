@@ -584,7 +584,7 @@ export function ProProfileScreen() {
   }
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando perfil...</Text></View>;
+    return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando perfil...</Text></View>;
   }
 
   if (!proProfile) {
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceMint },
   locationButtonText: { color: KlippColors.cobaltDark, fontSize: 14, fontWeight: '700' },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
-  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.white },
+  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.white },
   choiceSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceMint },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.cobaltDark },
@@ -857,7 +857,7 @@ const styles = StyleSheet.create({
   durationField: { flex: 1 },
   timeRow: { flexDirection: 'row', gap: 12 },
   timeField: { flex: 1, gap: 6 },
-  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.cobalt },
+  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.cobalt },
   actionText: { color: KlippColors.white, fontWeight: '700', fontSize: 15 },
   buttonDisabled: { opacity: 0.55 },
   slotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: KlippColors.border },
@@ -867,5 +867,5 @@ const styles = StyleSheet.create({
   empty: { color: KlippColors.muted, fontSize: 14, paddingVertical: 6 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
   success: { color: KlippColors.success, fontSize: 14, lineHeight: 20 },
-  warning: { color: KlippColors.warning, fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
+  warning: { color: KlippColors.warning, fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 12, backgroundColor: KlippColors.goldLight },
 });
