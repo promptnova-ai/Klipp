@@ -32,6 +32,7 @@ type ServiceOffer = {
   jobs_completed?: number;
   distance_m?: number;
 };
+type AutoServiceQuote = { pro_service_id:string; pro_id:string; price_dop:number; est_minutes:number; pro_name:string|null; avatar_url:string|null; rating_avg:number; rating_count:number; jobs_completed:number; distance_m:number };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
 
 function isAmbiguousBookingRpcError(error: { code?: string; status?: number }) {
@@ -90,6 +91,8 @@ export function NewBookingScreen() {
   const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
   const [autoPriceRange, setAutoPriceRange] = useState<{ min_price_dop: number; max_price_dop: number; professional_count: number } | null>(null);
   const [autoPriceLoading, setAutoPriceLoading] = useState(false);
+  const [autoQuote, setAutoQuote] = useState<AutoServiceQuote | null>(null);
+  const [autoQuoteLoading, setAutoQuoteLoading] = useState(false);
   const [manualProPrice, setManualProPrice] = useState<number | null>(null);
   const [manualProDuration, setManualProDuration] = useState<number | null>(null);
   const [manualPriceLoading, setManualPriceLoading] = useState(false);
@@ -252,10 +255,10 @@ export function NewBookingScreen() {
   const selectedTierIdForQuery = selectedTier?.id ?? null;
   const selectedDuration = mode === 'manual'
     ? manualProDuration ?? selectedOffer?.est_minutes ?? selectedTier?.est_minutes
-    : selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
+    : autoQuote?.est_minutes ?? selectedOffer?.est_minutes ?? selectedTier?.est_minutes;
   const selectedPrice = mode === 'manual'
     ? manualProPrice ?? selectedOffer?.base_price_dop ?? undefined
-    : selectedOffer?.base_price_dop ?? selectedTier?.price_dop;
+    : autoQuote?.price_dop ?? selectedOffer?.base_price_dop ?? undefined;
 
   useEffect(() => {
     let active = true;
@@ -297,6 +300,38 @@ export function NewBookingScreen() {
     });
     return () => { active = false; };
   }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id]);
+
+  useEffect(() => {
+    let active = true;
+    const scheduledStart = getScheduledStart();
+    if (mode !== 'auto' || selectedOffer || !coordinate || !selectedServiceId || !scheduledStart) {
+      void Promise.resolve().then(() => { if (active) { setAutoQuote(null); setAutoQuoteLoading(false); } });
+      return () => { active = false; };
+    }
+    void Promise.resolve().then(() => { if (active) setAutoQuoteLoading(true); });
+    void supabase.rpc('get_auto_service_quote', {
+      p_service_type_id: selectedServiceId,
+      p_pricing_tier_id: selectedTier?.id ?? null,
+      p_lat: coordinate.latitude,
+      p_lng: coordinate.longitude,
+      p_scheduled_start: scheduledStart,
+      p_require_online: timing === 'now',
+    }).then(({ data, error: quoteError }) => {
+      if (!active) return;
+      if (quoteError) { setAutoQuote(null); setError(quoteError.message); }
+      else {
+        const row = (data?.[0] ?? null) as AutoServiceQuote | null;
+        setAutoQuote(row && Number(row.price_dop) > 0 && Number(row.est_minutes) > 0
+          ? { ...row, price_dop: Number(row.price_dop), est_minutes: Number(row.est_minutes) } : null);
+      }
+      setAutoQuoteLoading(false);
+    }).catch((cause: unknown) => {
+      if (!active) return;
+      setAutoQuote(null); setAutoQuoteLoading(false);
+      setError(cause instanceof Error ? cause.message : 'No pudimos obtener una cotización profesional.');
+    });
+    return () => { active = false; };
+  }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id, timing, scheduledDate, scheduledTime, getScheduledStart]);
 
   useEffect(() => {
     let active = true;
@@ -556,8 +591,8 @@ export function NewBookingScreen() {
       setError('Elige una fecha y hora futura válidas.');
       return;
     }
-    if (mode === 'auto' && !selectedOffer && (!autoPriceRange || autoPriceLoading)) {
-      setError('Todavía no hay tarifas publicadas suficientes para estimar este servicio en la zona seleccionada.');
+    if (mode === 'auto' && !selectedOffer && (!autoQuote || autoQuoteLoading)) {
+      setError('Todavía no hay un profesional concreto disponible para mostrarte el precio final.');
       return;
     }
     if (timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) {
@@ -582,7 +617,7 @@ export function NewBookingScreen() {
 
       if (selectedOffer) {
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_booking_at_location', {
+        const result = await supabase.rpc(mode === 'auto' ? 'create_auto_booking_at_location' : 'create_booking_at_location', {
           p_pro_service_id: selectedOffer.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
@@ -602,14 +637,18 @@ export function NewBookingScreen() {
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
           p_mode: mode,
-          p_pro_id: mode === 'manual' ? selectedProId : null,
+          p_pro_id: mode === 'manual' ? selectedProId : autoQuote?.pro_id ?? null,
         });
         bookingId = result.data;
         rpcError = result.error;
       } else if (mode === 'auto') {
+        if (!autoQuote) {
+          setError('No hay una cotización profesional válida para este servicio.');
+          return;
+        }
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_auto_service_booking_at_location', {
-          p_service_type_id: selectedServiceId!,
+        const result = await supabase.rpc('create_auto_booking_at_location', {
+          p_pro_service_id: autoQuote.pro_service_id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
@@ -657,20 +696,7 @@ export function NewBookingScreen() {
         return;
       }
 
-      if (!selectedOffer && mode === 'auto' && timing === 'now') {
-        try {
-          const { error: assignmentError } = await supabase.functions.invoke('auto-assign-booking', { body: { bookingId } });
-          setSuccess(assignmentError
-            ? 'Solicitud creada. Klipp continuará buscando un profesional; consulta el estado en Mis reservas.'
-            : 'Buscando un profesional conectado y disponible ahora mismo. Sigue el estado en Mis reservas.');
-        } catch {
-          setSuccess('Solicitud creada. Klipp continuará buscando un profesional; consulta el estado en Mis reservas.');
-        }
-      } else if (!selectedOffer && mode === 'auto') {
-        setSuccess('Reserva creada. Quedará en espera y Klipp buscará un profesional disponible cuando se acerque la hora acordada. Puedes seguirla en Mis reservas.');
-      } else {
-        setSuccess('Solicitud enviada al profesional. Te avisaremos cuando responda.');
-      }
+      setSuccess('Cotización bloqueada durante 10 minutos. La reserva está pendiente de pago y todavía no se ha enviado ninguna oferta al profesional.');
     } catch (cause) {
       if (bookingCreationAttempted) {
         setSubmissionUncertain(true);
