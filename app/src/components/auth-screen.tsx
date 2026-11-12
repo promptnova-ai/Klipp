@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
   showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: KlippColors.surface, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
-  showcaseCompactLogin: { padding: 22, borderRadius: 24, borderColor: KlippColors.navy, backgroundColor: KlippColors.navy, shadowOpacity: 0, elevation: 0 },
+  showcaseCompactLogin: { padding: 22, borderRadius: 24, borderColor: KlippColors.navy, backgroundColor: '#0A0A0B', shadowOpacity: 0, elevation: 0 },
   showcaseMarkLogin: { backgroundColor: KlippColors.coral },
   showcaseBrandLogin: { color: KlippColors.white },
   showcaseRegionLogin: { color: KlippColors.mint },
