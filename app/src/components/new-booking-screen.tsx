@@ -308,7 +308,7 @@ export function NewBookingScreen() {
       void Promise.resolve().then(() => { if (active) { setAutoQuote(null); setAutoQuoteLoading(false); } });
       return () => { active = false; };
     }
-    void Promise.resolve().then(() => { if (active) setAutoQuoteLoading(true); });
+    void Promise.resolve().then(() => { if (active) { setAutoQuote(null); setAutoQuoteLoading(true); } });
     void Promise.resolve(supabase.rpc('get_auto_service_quote', {
       p_service_type_id: selectedServiceId,
       p_pricing_tier_id: selectedTier?.id ?? null,
@@ -967,7 +967,7 @@ export function NewBookingScreen() {
           <Text style={styles.submitText}>Revisar Mis reservas</Text>
         </Pressable>
       ) : !success && (
-        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
+        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading || (mode === 'auto' && !selectedOffer && (autoQuoteLoading || !autoQuote))} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading || (mode === 'auto' && !selectedOffer && (autoQuoteLoading || !autoQuote))) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
           {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Confirmar precio y preparar reserva</Text>}
         </Pressable>
       )}
