@@ -40,8 +40,8 @@ jobs:
           GITHUB_PAGES: "true"
           # Real values are optional for a UI-only preview. Authentication and
           # database requests require the repository variables/secrets to be set.
-          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || 'https://preview-placeholder.supabase.co' }}
-          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'preview-placeholder-anon-key' }}
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL || 'https://laneosajzwskktschhex.supabase.co' }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_K0AsNyOGGOkLXNuLCRyb4w_J78cmZIg' }}
           EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
         run: npx expo export --platform web --output-dir dist
       - name: Verify web export and SPA entry point
