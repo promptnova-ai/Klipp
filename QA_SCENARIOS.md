@@ -736,3 +736,17 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 5. Verificar que el primer offer corresponde al profesional cotizado y que el importe no cambia.
 
 **Resultado esperado:** Nunca se cobra un rango o importe estimado. Antes de pagar, el cliente ve un precio exacto ligado al profesional elegido/preseleccionado.
+
+
+### QA-PAY-12 — La tarifa cambia entre cotización y confirmación
+
+**Prioridad:** Crítica  
+**Precondición:** El cliente ha visto una cotización exacta de un profesional, pero aún no ha creado la reserva.
+
+1. Obtener una cotización con precio y duración.
+2. Cambiar la tarifa o duración del profesional desde otra sesión.
+3. Enviar la cotización anterior a `create_prepaid_booking_at_location` o `create_prepaid_tier_booking_at_location`.
+4. Consultar reservas, pagos y ofertas creadas.
+5. Volver a cotizar y confirmar el nuevo precio.
+
+**Resultado esperado:** El servidor rechaza la cotización antigua y revierte toda la operación: no queda reserva, pago ni oferta. La app vuelve a mostrar el precio actualizado y requiere aceptación expresa antes de continuar.
