@@ -90,9 +90,7 @@ Deno.serve(async (req) => {
 
     const normalizedCode = responseFields.responseCode === "00" && responseFields.isoCode === "00"
       ? "00"
-      : (responseFields.responseCode && responseFields.responseCode !== "00"
-        ? responseFields.responseCode
-        : responseFields.isoCode || "DECLINED");
+      : `DECLINED_${responseFields.responseCode || responseFields.isoCode || "UNKNOWN"}`;
     const { data: finalized, error: finalizeError } = await admin.rpc("finalize_azul_payment_attempt", {
       p_payment_id: payment.id,
       p_provider_order_number: orderNumber,
