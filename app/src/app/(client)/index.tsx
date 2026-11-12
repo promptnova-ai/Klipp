@@ -1,4 +1,5 @@
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentProps } from 'react';
@@ -58,6 +59,17 @@ function serviceIcon(code: string): ComponentProps<typeof SymbolView>['name'] {
   if (code.includes('mantenimiento')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' };
   if (code.includes('oficinas')) return { ios: 'building.2.fill', android: 'business', web: 'business' };
   return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
+}
+
+function serviceImage(code: string) {
+  if (code.includes('barber')) return 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1000&auto=format&fit=crop&q=85';
+  if (code.includes('peluquer')) return 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1000&auto=format&fit=crop&q=85';
+  if (code.includes('estetica')) return 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1000&auto=format&fit=crop&q=85';
+  if (code.includes('carwash')) return 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=1000&auto=format&fit=crop&q=85';
+  if (code.includes('detailing')) return 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=1000&auto=format&fit=crop&q=85';
+  if (code.includes('mantenimiento')) return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1000&auto=format&fit=crop&q=85';
+  if (code.includes('oficinas')) return 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1000&auto=format&fit=crop&q=85';
+  return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1000&auto=format&fit=crop&q=85';
 }
 
 function serviceAccent(code: string) {
@@ -423,8 +435,12 @@ export default function ClientHomeScreen() {
                 key={service.id}
                 onPress={() => showServiceDetails(service)}
                 style={[styles.serviceCard, wideLayout && styles.serviceCardWide]}>
-                <View style={[styles.serviceCardIcon, { backgroundColor: serviceSurface(service.code) }]}>
-                  <SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={24} />
+                <View style={styles.servicePhotoWrap}>
+                  <Image source={{ uri: serviceImage(service.code) }} contentFit="cover" transition={240} style={styles.servicePhoto} />
+                  <View style={[styles.servicePhotoBadge, { backgroundColor: serviceSurface(service.code) }]}>
+                    <SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={21} />
+                  </View>
+                  <View style={styles.photoLabel}><Text style={styles.photoLabelText}>{getCategory(service)}</Text></View>
                 </View>
                 <View style={styles.serviceCopy}>
                   <View style={styles.serviceCardTop}>
@@ -566,7 +582,7 @@ export default function ClientHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1160, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 24, paddingTop: 30, paddingBottom: 44, gap: 22, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 56, gap: 26, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
@@ -577,17 +593,17 @@ const styles = StyleSheet.create({
   locationText: { color: KlippColors.navy, fontSize: 13, fontWeight: '600', marginTop: 2 },
   locationError: { color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
   greetingBlock: { gap: 5, marginTop: 2 },
-  greeting: { color: KlippColors.navy, fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5 },
+  greeting: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.9 },
   wave: { color: KlippColors.gold, fontSize: 20 },
   greetingSubtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
   searchBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   searchInput: { flex: 1, height: 52, color: KlippColors.navy, fontSize: 14 },
   clearSearch: { padding: 5 },
-  hero: { overflow: 'hidden', padding: 24, borderRadius: 26, backgroundColor: '#3D5AFE', gap: 14, shadowColor: '#3048D8', shadowOpacity: 0.16, shadowOffset: { width: 0, height: 12 }, shadowRadius: 22, elevation: 5 },
+  hero: { overflow: 'hidden', minHeight: 270, justifyContent: 'center', padding: 30, borderRadius: 30, backgroundColor: '#3048D8', gap: 16, shadowColor: '#3048D8', shadowOpacity: 0.22, shadowOffset: { width: 0, height: 16 }, shadowRadius: 28, elevation: 7 },
   heroAccent: { position: 'absolute', width: 220, height: 220, borderRadius: 110, backgroundColor: '#6278FF', right: -78, top: -110, opacity: 0.8 },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.18)' },
   heroBadgeText: { color: '#FFFFFF', fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
-  heroTitle: { color: '#FFFFFF', fontSize: 33, lineHeight: 39, fontWeight: '900', letterSpacing: -0.8, marginTop: 4, maxWidth: 560 },
+  heroTitle: { color: '#FFFFFF', fontSize: 38, lineHeight: 44, fontWeight: '900', letterSpacing: -1.2, marginTop: 4, maxWidth: 620 },
   heroText: { maxWidth: 480, color: '#E9EDFF', fontSize: 14, lineHeight: 22 },
   primaryButton: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, paddingHorizontal: 18, alignSelf: 'flex-start', borderRadius: 14, backgroundColor: '#FFFFFF' },
   primaryButtonText: { color: KlippColors.cobaltDark, fontSize: 14, fontWeight: '800' },
@@ -602,12 +618,17 @@ const styles = StyleSheet.create({
   categoryTextSelected: { color: KlippColors.white },
   serviceList: { gap: 14 },
   serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 14, rowGap: 16 },
-  serviceCard: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 19, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
-  serviceCardWide: { width: '48%' },
+  serviceCard: { width: '100%', flexDirection: 'column', alignItems: 'stretch', gap: 14, padding: 10, borderRadius: 24, borderWidth: 1, borderColor: '#EAE7E0', backgroundColor: KlippColors.white, shadowColor: '#171B2D', shadowOpacity: 0.065, shadowOffset: { width: 0, height: 10 }, shadowRadius: 22, elevation: 4 },
+  serviceCardWide: { width: '48.5%' },
   serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
-  serviceCopy: { flex: 1, gap: 7 },
+  servicePhotoWrap: { height: 156, overflow: 'hidden', borderRadius: 18, backgroundColor: KlippColors.surfaceMuted },
+  servicePhoto: { width: '100%', height: '100%' },
+  servicePhotoBadge: { position: 'absolute', left: 12, bottom: 12, width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
+  photoLabel: { position: 'absolute', right: 12, top: 12, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(23,27,45,0.78)' },
+  photoLabelText: { color: '#FFFFFF', fontSize: 10, fontWeight: '900', letterSpacing: 0.35 },
+  serviceCopy: { flex: 1, gap: 8, paddingHorizontal: 10, paddingBottom: 10 },
   serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  serviceTitle: { flex: 1, color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  serviceTitle: { flex: 1, color: KlippColors.ink, fontSize: 18, fontWeight: '900', letterSpacing: -0.35 },
   categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: KlippColors.surfaceMuted },
   categoryTagText: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
   serviceDescription: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },

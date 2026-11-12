@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42 },
-  logoMark: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  logoMark: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', shadowColor: KlippColors.ink, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 5 }, shadowRadius: 10, elevation: 3 },
   logoLetter: { color: KlippColors.white, fontSize: 22, fontWeight: '900' },
   brandCopy: { gap: 2 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
@@ -70,6 +70,6 @@ const styles = StyleSheet.create({
   trailing: { marginLeft: 'auto' },
   heading: { gap: 6, marginTop: 2 },
   eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.15 },
-  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '800', letterSpacing: -0.75 },
+  title: { color: KlippColors.navy, fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
   subtitle: { maxWidth: 720, color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
 });
