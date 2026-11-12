@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceRoleKey);
     const { data: payment, error: paymentError } = await admin
       .from("payments")
-      .select("id, booking_id, amount_dop, currency_code")
+      .select("id, booking_id, amount_dop, currency_code, status, refund_required_at, refund_reason, provider_amount_dop")
       .eq("provider", "azul")
       .eq("provider_order_number", orderNumber)
       .maybeSingle();
@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
     if (!payment) return htmlResponse(returnPage("Pago no reconocido", "No encontramos una reserva asociada a esta operación."), 404);
 
     const amountDop = Number(responseFields.amountMinor) / 100;
-    if (payment.currency_code !== "DOP" || !Number.isFinite(amountDop) || amountDop !== Number(payment.amount_dop)) {
-      return htmlResponse(returnPage("Importe no coincidente", "El importe recibido no coincide con el de la reserva. No se ha activado el servicio."), 400);
+    if (!Number.isFinite(amountDop) || amountDop < 0) {
+      return htmlResponse(returnPage("Respuesta de pago no válida", "No se pudo interpretar el importe recibido. La reserva no se ha activado."), 400);
     }
 
     const normalizedCode = responseFields.responseCode === "00" && responseFields.isoCode === "00"
@@ -105,7 +105,26 @@ Deno.serve(async (req) => {
       return htmlResponse(returnPage("Pago pendiente de validación", "No se ha podido confirmar el resultado. Revisa Mis reservas antes de volver a intentarlo.", payment.booking_id), 409);
     }
 
-    if (finalized === true) {
+    const [{ data: paymentOutcome, error: outcomeError }, { data: bookingOutcome, error: bookingOutcomeError }] = await Promise.all([
+      admin.from("payments")
+        .select("status, refund_required_at, refund_reason, provider_amount_dop")
+        .eq("id", payment.id)
+        .single(),
+      admin.from("bookings")
+        .select("status")
+        .eq("id", payment.booking_id)
+        .single(),
+    ]);
+    if (outcomeError || bookingOutcomeError) throw outcomeError ?? bookingOutcomeError;
+
+    if (paymentOutcome.refund_required_at) {
+      return htmlResponse(returnPage(
+        "Pago recibido · revisión necesaria",
+        "AZUL confirmó el cobro, pero no coincide con las condiciones de la reserva o llegó fuera de plazo. No se ha enviado ninguna solicitud al profesional y el importe queda pendiente de revisión para su devolución.",
+        payment.booking_id,
+      ));
+    }
+    if (paymentOutcome.status === "held" && ["requested", "scheduled"].includes(bookingOutcome.status)) {
       return htmlResponse(returnPage("Pago recibido", "Tu reserva se ha activado. Klipp ya puede enviar la solicitud al profesional.", payment.booking_id));
     }
     return htmlResponse(returnPage("Pago no completado", "AZUL no aprobó el pago. No se ha enviado ninguna solicitud al profesional. Puedes reintentarlo desde Mis reservas.", payment.booking_id));
