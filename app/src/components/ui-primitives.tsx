@@ -46,8 +46,13 @@ type ScreenEntranceProps = {
 /** Small, consistent entrance motion for routed screens and important panels. */
 export function ScreenEntrance({ children, style, delay = 0 }: ScreenEntranceProps) {
   const progress = useMemo(() => new Animated.Value(0), []);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) {
+      progress.setValue(1);
+      return undefined;
+    }
     progress.setValue(0);
     const animation = Animated.timing(progress, {
       toValue: 1,
@@ -93,8 +98,10 @@ export function MotionPressable({
   accessibilityRole = 'button',
 }: MotionPressableProps) {
   const scale = useMemo(() => new Animated.Value(1), []);
+  const reducedMotion = useReducedMotion();
 
   function animateScale(value: number) {
+    if (reducedMotion) return;
     Animated.spring(scale, {
       toValue: value,
       speed: 32,
