@@ -10,18 +10,21 @@ Documentación oficial consultada:
 
 AZUL exige afiliación, credenciales de pruebas, pruebas de certificación y credenciales de producción. La URL de pruebas y las credenciales son distintas de producción.
 
-## Flujo previsto
+## Flujo objetivo: prepago antes de asignar
 
-1. El profesional acepta y la reserva queda en `awaiting_payment`.
-2. El cliente pulsa «Pagar» desde su reserva.
-3. Una Edge Function autenticada verifica que el usuario es el cliente propietario, que la reserva sigue en `awaiting_payment`, que tiene profesional asignado y que no existe ya un pago activo.
-4. El backend crea un intento de pago con importe obtenido exclusivamente de `bookings.price_dop`; nunca acepta importe, comisión o destinatario del cliente.
-5. El backend genera el formulario POST de AZUL y su `AuthHash` HMAC-SHA512 usando `AuthKey` guardada como secreto. El navegador envía el formulario a la página de pago AZUL.
-6. AZUL devuelve al cliente a las URLs de aprobado, declinado o cancelado. La página de retorno no cambia por sí sola el estado de la reserva.
-7. Una Edge Function verifica el `AuthHash` de respuesta, el número de orden, el importe exacto, la moneda y el código de respuesta. Debe bloquear repetición de callbacks y resultados incompatibles.
-8. Sólo después de verificar una respuesta aprobada se registra el pago como `held` y se cambia la reserva a `scheduled` dentro de una operación atómica. Se crea o actualiza el payout del profesional con el importe calculado por el backend.
-9. Si se declina, se registra `failed`; la reserva no se confirma. Si se cancela, se mantiene pendiente para que el cliente pueda reintentar mientras la reserva siga siendo válida.
-10. Las conciliaciones y reembolsos deben ejecutarse desde backend y dejar trazabilidad.
+1. El cliente selecciona un servicio/variante del catálogo y ve un precio cerrado antes de confirmar.
+2. El backend crea un pedido en `payment_pending`, guardando snapshots de precio, duración, variante y condiciones. No se envía ninguna oferta a profesionales en este estado.
+3. Una Edge Function autenticada valida que el usuario es el cliente propietario, crea un intento idempotente y calcula el importe exclusivamente desde el snapshot de la reserva.
+4. El backend genera el formulario POST de AZUL y su `AuthHash` HMAC-SHA512 usando `AuthKey` guardada como secreto. El navegador/app abre la página de pago alojada por AZUL.
+5. AZUL devuelve al cliente a las URLs de aprobado, declinado o cancelado. La página de retorno no cambia por sí sola el estado de pago ni activa la búsqueda.
+6. Una Edge Function verifica el `AuthHash` de respuesta, número de orden, importe exacto, moneda, comercio y código de respuesta. Debe bloquear repetición de callbacks y resultados incompatibles.
+7. Sólo después de verificar la aprobación se registra el pago como `held` y el pedido pasa a `requested` de forma atómica. Ese cambio activa el motor de asignación compartido.
+8. El profesional acepta una oferta de Klipp; la reserva pasa a `scheduled`. El precio pagado no cambia por la identidad del profesional que acepte. Se crea/actualiza el payout calculado desde el snapshot.
+9. En una reserva programada, el pedido permanece pagado y sin profesional hasta que el worker alcance la ventana de búsqueda; entonces utiliza el mismo motor de asignación que una solicitud inmediata.
+10. Si AZUL declina, se registra `failed` y no se inicia búsqueda. Si el cliente cancela el checkout, puede reintentarlo mientras el pedido siga siendo válido.
+11. Las cancelaciones, conciliaciones y reembolsos se ejecutan desde backend, son idempotentes y dejan trazabilidad.
+
+El diseño completo de estados, asignación, ventanas programadas y escenarios de recuperación está en `docs/prepaid-booking-dispatch.md`.
 
 ## Reglas financieras
 
