@@ -617,19 +617,22 @@ export function NewBookingScreen() {
 
       if (selectedOffer) {
         bookingCreationAttempted = true;
-        const result = await supabase.rpc(mode === 'auto' ? 'create_auto_booking_at_location' : 'create_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_booking_at_location', {
           p_pro_service_id: selectedOffer.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
+          p_expected_price_dop: selectedOffer.base_price_dop,
+          p_expected_est_minutes: selectedOffer.est_minutes,
+          p_mode: mode,
         });
         bookingId = result.data;
         rpcError = result.error;
       } else if (selectedTier) {
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_tier_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_tier_booking_at_location', {
           p_pricing_tier_id: selectedTier.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
@@ -638,6 +641,8 @@ export function NewBookingScreen() {
           p_scheduled_start: scheduledStart,
           p_mode: mode,
           p_pro_id: mode === 'manual' ? selectedProId : autoQuote?.pro_id ?? null,
+          p_expected_price_dop: selectedPrice,
+          p_expected_est_minutes: selectedDuration,
         });
         bookingId = result.data;
         rpcError = result.error;
@@ -647,13 +652,16 @@ export function NewBookingScreen() {
           return;
         }
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_auto_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_booking_at_location', {
           p_pro_service_id: autoQuote.pro_service_id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
+          p_expected_price_dop: autoQuote.price_dop,
+          p_expected_est_minutes: autoQuote.est_minutes,
+          p_mode: 'auto',
         });
         bookingId = result.data;
         rpcError = result.error;
@@ -669,13 +677,16 @@ export function NewBookingScreen() {
           return;
         }
         bookingCreationAttempted = true;
-        const result = await supabase.rpc('create_booking_at_location', {
+        const result = await supabase.rpc('create_prepaid_booking_at_location', {
           p_pro_service_id: proService.id,
           p_lat: coordinate.latitude,
           p_lng: coordinate.longitude,
           p_address_text: addressText,
           p_landmark_notes: landmarkNotes,
           p_scheduled_start: scheduledStart,
+          p_expected_price_dop: manualProPrice,
+          p_expected_est_minutes: manualProDuration,
+          p_mode: 'manual',
         });
         bookingId = result.data;
         rpcError = result.error;
