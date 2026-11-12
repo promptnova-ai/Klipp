@@ -455,7 +455,7 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 
 const styles = StyleSheet.create({
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
+  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: '#0A0A0B', alignItems: 'center', gap: 9 },
   offerBrand: { color: KlippColors.mint, fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: KlippColors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
   countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.cobalt },
