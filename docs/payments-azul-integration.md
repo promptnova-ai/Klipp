@@ -90,6 +90,16 @@ Además de las credenciales de comercio, las funciones requieren:
 
 El campo `Amount` se envía en unidades menores (dos decimales, sin punto ni coma), y representa el total aceptado por el cliente. `ITBIS` se calcula como componente incluido en ese total según la política fiscal aprobada; si la configuración fiscal no está definida, el checkout se bloquea.
 
+## Aprobaciones tardías o importes no coincidentes
+
+Una respuesta AZUL con HMAC válido que confirme un cobro no puede descartarse como `failed` solo porque llegue tarde o el importe difiera del snapshot. En esos casos el backend:
+- registra el importe real recibido en `provider_amount_dop`;
+- marca el pago como `held` y establece `refund_required_at` y `refund_reason`;
+- deja la reserva `expired` y no activa despacho;
+- muestra al cliente que el cobro está en revisión para devolución.
+
+Esto también cubre callbacks que llegan después de que el worker local haya marcado el intento como expirado. Los callbacks repetidos son idempotentes. Hasta que AZUL y Klipp tengan un flujo de devolución certificado, estos casos requieren conciliación y devolución desde el comercio; no se debe intentar un segundo cobro al cliente.
+
 ## Condiciones para activar pagos
 
 No habilitar checkout real hasta:
