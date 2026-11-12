@@ -322,3 +322,43 @@ BEGIN
   EXECUTE replace(v_definition, v_old, v_new);
 END;
 $migration$;
+
+
+-- Defense in depth: neither dispatch nor professional acceptance is possible
+-- unless a verified AZUL payment exists for this exact booking.
+DO $migration$
+DECLARE
+  v_definition text;
+  v_old text;
+  v_new text;
+BEGIN
+  v_definition := pg_get_functiondef('public.find_auto_candidates(uuid,integer)'::regprocedure);
+  v_old := E'      AND client_lng IS NOT NULL';
+  v_new := v_old || E'\n      AND EXISTS (SELECT 1 FROM public.payments paid WHERE paid.booking_id = public.bookings.id AND paid.status = ''held'')';
+  -- Use a qualified booking alias in the CTE so the payment gate is unambiguous.
+  v_new := E'      AND client_lng IS NOT NULL\n      AND EXISTS (SELECT 1 FROM public.payments paid WHERE paid.booking_id = public.bookings.id AND paid.status = ''held'')';
+  IF position(v_old IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'Could not locate auto candidate payment gate';
+  END IF;
+  v_definition := replace(v_definition, v_old, v_new);
+  -- Qualify the CTE source table to avoid ambiguity with the outer CTE alias.
+  v_definition := replace(v_definition, 'FROM public.bookings\n    WHERE id = p_booking_id', 'FROM public.bookings\n    WHERE id = p_booking_id');
+  EXECUTE v_definition;
+
+  v_definition := pg_get_functiondef('public.respond_to_request_unchecked(uuid,boolean)'::regprocedure);
+  v_old := '  IF NOT FOUND THEN RAISE EXCEPTION ''booking no longer available''; END IF;';
+  v_new := v_old || E'\n  IF NOT EXISTS (SELECT 1 FROM public.payments paid WHERE paid.booking_id = v_booking.id AND paid.status = ''held'') THEN\n    RAISE EXCEPTION ''booking payment has not been verified'';\n  END IF;';
+  IF position(v_old IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'Could not locate acceptance payment gate';
+  END IF;
+  EXECUTE replace(v_definition, v_old, v_new);
+
+  v_definition := pg_get_functiondef('public.create_tier_booking_at_location(integer,double precision,double precision,text,text,timestamptz,public.assignment_mode,uuid)'::regprocedure);
+  v_old := 'if not found or v_pro.service_area_latitude is null then raise exception ''professional is not available in this area''; end if;';
+  v_new := v_old || E'\n    if p_mode=''auto'' and not v_pro.accepts_auto_assign then raise exception ''professional is not enabled for automatic assignment''; end if;';
+  IF position(v_old IN v_definition) = 0 THEN
+    RAISE EXCEPTION 'Could not locate tier professional eligibility gate';
+  END IF;
+  EXECUTE replace(v_definition, v_old, v_new);
+END;
+$migration$;
