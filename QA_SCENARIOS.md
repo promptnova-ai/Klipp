@@ -350,6 +350,40 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** Cada oferta dispone de 45 segundos completos desde su creación. Ningún temporizador de una ronda anterior puede expirar ofertas posteriores.
 
+### QA-BOOK-01 — Servicio desactivado y RPC heredado
+
+**Prioridad:** Alta  
+**Precondición:** Servicio activo y una sesión de cliente autenticada.
+
+1. Cargar el formulario de reserva con un servicio activo.
+2. Desactivar el servicio desde el catálogo de administración mientras el formulario sigue abierto.
+3. Intentar crear una reserva usando el formulario ya abierto.
+4. Intentar invocar el antiguo RPC `create_booking` con el mismo usuario.
+
+**Resultado esperado:** El servidor rechaza la creación porque el servicio ya no está activo. El RPC heredado no está disponible para clientes autenticados; la aplicación usa los RPC actuales con precio profesional.
+
+### QA-BOOK-02 — Servicio que cruza la medianoche
+
+**Prioridad:** Alta  
+**Precondición:** Servicio con duración positiva y cliente autenticado.
+
+1. Intentar crear una reserva que empiece antes de medianoche y termine al día siguiente en hora local de Santo Domingo.
+2. Repetir con una reserva cuyo inicio y fin estén en el mismo día local.
+
+**Resultado esperado:** El servidor rechaza cualquier reserva que cruce el día local, incluso si se invoca directamente el RPC. Las reservas dentro del mismo día siguen funcionando.
+
+### QA-BOOK-03 — Reserva aceptada pendiente de pago visible al profesional
+
+**Prioridad:** Alta  
+**Precondición:** El profesional ha aceptado una solicitud y la reserva está en `awaiting_payment`.
+
+1. Abrir Agenda profesional.
+2. Comprobar que la reserva sigue visible con el estado pendiente de pago.
+3. Verificar que no se ofrece ninguna acción para iniciar el desplazamiento o el servicio.
+4. Confirmar que el mensaje indica que no debe desplazarse hasta que Klipp confirme la reserva.
+
+**Resultado esperado:** La aceptación no hace desaparecer la reserva de la agenda. El profesional entiende que todavía no debe prestar el servicio.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
