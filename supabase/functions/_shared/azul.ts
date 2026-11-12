@@ -91,14 +91,13 @@ export function calculateItbisMinor(amountMinor: number, config: AzulConfig): st
   return String(Math.round(amountMinor * rate / (1 + rate))).padStart(3, "0");
 }
 
-function utf16le(value: string): Uint8Array {
-  const bytes = new Uint8Array(value.length * 2);
+function utf16le(value: string): ArrayBuffer {
+  const buffer = new ArrayBuffer(value.length * 2);
+  const view = new DataView(buffer);
   for (let i = 0; i < value.length; i += 1) {
-    const code = value.charCodeAt(i);
-    bytes[i * 2] = code & 0xff;
-    bytes[i * 2 + 1] = code >>> 8;
+    view.setUint16(i * 2, value.charCodeAt(i), true);
   }
-  return bytes;
+  return buffer;
 }
 
 function toHex(bytes: ArrayBuffer): string {
