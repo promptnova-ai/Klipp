@@ -141,10 +141,10 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
 }
 
 const styles = StyleSheet.create({
-  container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: '#E8EEF7' },
+  container: { height: 430, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
   error: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: '#FFFFFFE8' },
   errorText: { color: KlippColors.slate, fontSize: 13, textAlign: 'center' },
   loading: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
   loadingText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
-  legend: { position: 'absolute', right: 10, bottom: 10, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: KlippColors.navy, fontSize: 11, fontWeight: '700' },
+  legend: { position: 'absolute', right: 12, bottom: 12, overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#FFFFFFF0', color: KlippColors.navy, fontSize: 11, fontWeight: '800' },
 });

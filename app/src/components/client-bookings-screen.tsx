@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
 
+type BookingFilter = 'all' | 'active' | 'scheduled' | 'completed' | 'cancelled';
 type ClientBooking = Booking & {
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
@@ -57,6 +60,7 @@ export function ClientBookingsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [bookingFilter, setBookingFilter] = useState<BookingFilter>('all');
 
   const loadBookings = useCallback(async () => {
     if (!userId) return;
@@ -297,15 +301,45 @@ export function ClientBookingsScreen() {
     }
   }
 
+  const visibleBookings = bookings.filter((booking) => {
+    if (bookingFilter === 'all') return true;
+    if (bookingFilter === 'active') return ['requested', 'awaiting_payment', 'en_route', 'arrived', 'in_progress', 'disputed'].includes(booking.status);
+    if (bookingFilter === 'scheduled') return booking.status === 'scheduled';
+    if (bookingFilter === 'completed') return ['completed', 'confirmed'].includes(booking.status);
+    return ['cancelled', 'expired'].includes(booking.status);
+  });
+  const filterOptions: { id: BookingFilter; label: string }[] = [
+    { id: 'all', label: 'Todas' }, { id: 'active', label: 'Activas' },
+    { id: 'scheduled', label: 'Programadas' }, { id: 'completed', label: 'Finalizadas' },
+    { id: 'cancelled', label: 'Canceladas' },
+  ];
+  const filterCount = (filter: BookingFilter) => bookings.filter((booking) => {
+    if (filter === 'all') return true;
+    if (filter === 'active') return ['requested', 'awaiting_payment', 'en_route', 'arrived', 'in_progress', 'disputed'].includes(booking.status);
+    if (filter === 'scheduled') return booking.status === 'scheduled';
+    if (filter === 'completed') return ['completed', 'confirmed'].includes(booking.status);
+    return ['cancelled', 'expired'].includes(booking.status);
+  }).length;
+
   if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
+      <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Todo lo que has reservado, en un solo lugar." />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        {filterOptions.map((option) => {
+          const selected = bookingFilter === option.id;
+          return <Pressable key={option.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setBookingFilter(option.id)} style={[styles.filterChip, selected && styles.filterChipSelected]}>
+            <Text style={[styles.filterLabel, selected && styles.filterLabelSelected]}>{option.label}</Text>
+            <Text style={[styles.filterCount, selected && styles.filterLabelSelected]}>{filterCount(option.id)}</Text>
+          </Pressable>;
+        })}
+      </ScrollView>
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-      {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.cardTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
-      {bookings.map((booking) => {
+      {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.emptyTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
+      {!error && bookings.length > 0 && visibleBookings.length === 0 && <View style={styles.empty}><Text style={styles.emptyTitle}>No hay reservas en esta sección</Text><Text style={styles.body}>Prueba otra categoría para consultar el resto de tus servicios.</Text></View>}
+      {visibleBookings.map((booking) => {
         const pro = booking.pro_id ? pros[booking.pro_id] : undefined;
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
@@ -339,9 +373,7 @@ export function ClientBookingsScreen() {
           <View key={booking.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.serviceHeading}>
-                <View style={styles.serviceIcon}>
-                  <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={19} />
-                </View>
+                <Image source={serviceArt(booking.service_types?.name ?? '')} contentFit="cover" style={styles.servicePhoto} />
                 <View style={styles.serviceHeadingCopy}>
                   <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
                   <Text style={styles.tier}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
@@ -471,14 +503,22 @@ function distanceInKm(from: LocationPoint, to: LocationPoint) {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 56, gap: 24, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 16, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2, paddingRight: 22 },
+  filterChip: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: 'transparent' },
+  filterChipSelected: { borderColor: KlippColors.ink, backgroundColor: KlippColors.ink },
+  filterLabel: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
+  filterCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '700' },
+  filterLabelSelected: { color: KlippColors.white },
+  emptyTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '800' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  empty: { marginTop: 4, marginHorizontal: 20, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  card: { marginHorizontal: 20, padding: 22, width: '100%', maxWidth: 900, alignSelf: 'center', borderRadius: 26, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 17, shadowColor: KlippColors.ink, shadowOpacity: 0.06, shadowOffset: { width: 0, height: 12 }, shadowRadius: 24, elevation: 3 },
+  empty: { marginTop: 8, paddingVertical: 24, paddingHorizontal: 2, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 8 },
+  card: { marginHorizontal: 0, paddingVertical: 19, paddingHorizontal: 0, width: '100%', maxWidth: 900, alignSelf: 'center', borderRadius: 0, backgroundColor: 'transparent', borderBottomWidth: 1, borderColor: KlippColors.border, gap: 15 },
   cardHeader: { gap: 12 },
   serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.whiteBlue, alignItems: 'center', justifyContent: 'center' },
+  servicePhoto: { width: 72, height: 66, borderRadius: 10, backgroundColor: KlippColors.surfaceMuted },
   serviceHeadingCopy: { flex: 1, gap: 3 },
   cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
   tier: { color: KlippColors.muted, fontSize: 13 },
@@ -521,7 +561,7 @@ const styles = StyleSheet.create({
   proAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: KlippColors.whiteBlue, alignItems: 'center', justifyContent: 'center' },
   proAvatarText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   proText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 13, backgroundColor: KlippColors.whiteBlue },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, paddingHorizontal: 0, borderTopWidth: 1, borderColor: KlippColors.border, backgroundColor: 'transparent' },
   priceLabel: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   price: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '800' },
   payment: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.goldLight, gap: 4 },
