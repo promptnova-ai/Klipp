@@ -54,7 +54,7 @@ export function ProAgendaScreen() {
       .from('bookings')
       .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
       .eq('pro_id', userId)
-      .in('status', ['scheduled', 'en_route', 'arrived', 'in_progress'])
+      .in('status', ['awaiting_payment', 'scheduled', 'en_route', 'arrived', 'in_progress'])
       .order('scheduled_start');
     if (queryError) setError(queryError.message);
     else setBookings((data ?? []) as unknown as AgendaBooking[]);
@@ -458,7 +458,8 @@ export function ProAgendaScreen() {
                 )}
               </>
             )}
-            <Text style={styles.payout}>Pago al profesional: {formatDop(booking.pro_payout_dop)}</Text>
+            {booking.status === 'awaiting_payment' && <Text style={styles.paymentNotice}>Pendiente de pago del cliente. No te desplaces ni inicies el servicio hasta que Klipp confirme la reserva.</Text>}
+            <Text style={styles.payout}>{booking.status === 'awaiting_payment' ? 'Pago estimado al profesional:' : 'Pago al profesional:'} {formatDop(booking.pro_payout_dop)}</Text>
             {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id || reassignmentLockedIds.includes(booking.id)} onPress={() => void advance(booking)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text></Pressable>}
           </View>
         );
@@ -498,6 +499,7 @@ const styles = StyleSheet.create({
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '800', marginTop: 3 },
   reassignmentNotice: { color: '#8A5B00', backgroundColor: '#FFF4D6', borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: '700' },
+  paymentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.goldLight, borderRadius: 10, padding: 10, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   locationNotice: { color: '#047857', fontSize: 13, fontWeight: '700' },
   chatButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
   chatButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },

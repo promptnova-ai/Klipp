@@ -325,6 +325,146 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** Cada profesional ve su propio precio y su pago neto después de comisión, no el precio provisional mínimo de la reserva. La duración de la oferta coincide con la modalidad publicada por ese profesional y la reserva definitiva conserva esos valores.
 
+### QA-PRO-REQ-04 — Expiración real y desconexión por oferta no respondida
+
+**Prioridad:** Alta  
+**Precondición:** Profesional online y elegible; reserva automática con una oferta dirigida a su cuenta.
+
+1. Recibir una oferta y no aceptar ni rechazar.
+2. Esperar hasta que el servidor alcance `expires_at` y ejecute el proceso programado de expiración.
+3. Consultar la fila de `booking_requests` y el estado de `pro_presence`.
+4. Comprobar que se inicia otra ronda sin volver a ofrecer la misma reserva al profesional que no respondió.
+5. Repetir aceptando o rechazando explícitamente una oferta para comprobar que esos casos no se marcan como ausencia.
+
+**Resultado esperado:** La oferta queda `expired`, `missed_at` queda informado y el profesional pasa a offline. Un rechazo explícito no se considera una ausencia. La siguiente ronda conserva sus propios 45 segundos completos.
+
+### QA-PRO-REQ-04A — Temporizador independiente por ronda
+
+**Prioridad:** Alta  
+**Precondición:** Al menos dos rondas de profesionales elegibles para la misma reserva automática.
+
+1. Rechazar una oferta pocos segundos después de recibirla.
+2. Comprobar que el servidor inicia la siguiente ronda.
+3. Medir el plazo de la nueva oferta desde su propio `expires_at`.
+4. Verificar que el temporizador de la ronda anterior no caduca la nueva antes de tiempo.
+
+**Resultado esperado:** Cada oferta dispone de 45 segundos completos desde su creación. Ningún temporizador de una ronda anterior puede expirar ofertas posteriores.
+
+### QA-BOOK-01 — Servicio desactivado y RPC heredado
+
+**Prioridad:** Alta  
+**Precondición:** Servicio activo y una sesión de cliente autenticada.
+
+1. Cargar el formulario de reserva con un servicio activo.
+2. Desactivar el servicio desde el catálogo de administración mientras el formulario sigue abierto.
+3. Intentar crear una reserva usando el formulario ya abierto.
+4. Intentar invocar el antiguo RPC `create_booking` con el mismo usuario.
+
+**Resultado esperado:** El servidor rechaza la creación porque el servicio ya no está activo. El RPC heredado no está disponible para clientes autenticados; la aplicación usa los RPC actuales con precio profesional.
+
+### QA-BOOK-02 — Servicio que cruza la medianoche
+
+**Prioridad:** Alta  
+**Precondición:** Servicio con duración positiva y cliente autenticado.
+
+1. Intentar crear una reserva que empiece antes de medianoche y termine al día siguiente en hora local de Santo Domingo.
+2. Repetir con una reserva cuyo inicio y fin estén en el mismo día local.
+
+**Resultado esperado:** El servidor rechaza cualquier reserva que cruce el día local, incluso si se invoca directamente el RPC. Las reservas dentro del mismo día siguen funcionando.
+
+### QA-BOOK-03 — Reserva aceptada pendiente de pago visible al profesional
+
+**Prioridad:** Alta  
+**Precondición:** El profesional ha aceptado una solicitud y la reserva está en `awaiting_payment`.
+
+1. Abrir Agenda profesional.
+2. Comprobar que la reserva sigue visible con el estado pendiente de pago.
+3. Verificar que no se ofrece ninguna acción para iniciar el desplazamiento o el servicio.
+4. Confirmar que el mensaje indica que no debe desplazarse hasta que Klipp confirme la reserva.
+
+**Resultado esperado:** La aceptación no hace desaparecer la reserva de la agenda. El profesional entiende que todavía no debe prestar el servicio.
+
+### QA-BOOK-04 — No despachar reservas vencidas
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva automática con inicio programado hace más de 10 minutos y profesionales conectados, online y elegibles.
+
+1. Crear una reserva de prueba cuyo `scheduled_start` haya pasado más de 10 minutos.
+2. Invocar manualmente `dispatch_auto_booking`.
+3. Ejecutar `process_scheduled_booking_dispatch`.
+4. Simular una oferta que sigue pendiente cuando la reserva supera el margen de 10 minutos.
+5. Intentar aceptar esa oferta desde la sesión profesional.
+6. Repetir con una reserva que todavía esté dentro del margen de tolerancia.
+
+**Resultado esperado:** Una reserva vencida pasa a `expired`, no recibe nuevas ofertas y no puede aceptarse aunque el contador de una oferta siga activo. El profesional que no respondió a una oferta vencida se marca como ausencia. Una reserva dentro del margen de 10 minutos conserva el flujo normal.
+
+### QA-BOOK-05 — Reasignación con tarifa propia del sustituto
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva futura en estado `scheduled`, profesional original asignado, sustituto aprobado y con servicio activo.
+
+1. Configurar al sustituto con una tarifa y duración distintas para la misma variante.
+2. Crear una reasignación administrativa y aceptar desde la cuenta del sustituto.
+3. Revisar `bookings.pro_id`, `pro_service_id`, `est_minutes`, `price_dop`, `commission_dop` y `pro_payout_dop`.
+4. Si existe una liquidación en estado `pending`, revisar también `payouts.pro_id` y `payouts.amount_dop`.
+
+**Resultado esperado:** La reserva queda vinculada al servicio del sustituto. Precio, duración, comisión y liquidación se recalculan con su tarifa real. La confirmación de equipamiento anterior se reinicia.
+
+### QA-BOOK-06 — No reasignar sin tarifa de variante
+
+**Prioridad:** Alta  
+**Precondición:** Sustituto aprobado con el servicio principal, pero sin precio activo para la variante de la reserva.
+
+1. Abrir la lista de candidatos de reasignación.
+2. Intentar crear una solicitud al sustituto sin tarifa para esa variante.
+3. Repetir después de publicar la tarifa correspondiente.
+
+**Resultado esperado:** El sustituto no aparece como elegible ni puede aceptar mientras no tenga una tarifa activa para esa variante.
+
+### QA-BOOK-07 — Conflicto calculado con la duración del sustituto
+
+**Prioridad:** Alta  
+**Precondición:** El sustituto tiene una duración de servicio mayor que el profesional original y otra reserva cercana en su agenda.
+
+1. Crear una reserva que, con la duración original, no solape el margen de la segunda reserva.
+2. Configurar al sustituto con una duración que sí genere solapamiento.
+3. Consultar candidatos y tratar de reasignar.
+
+**Resultado esperado:** El servidor calcula disponibilidad y margen de desplazamiento usando la duración del sustituto. La reasignación se rechaza si existe solapamiento.
+
+### QA-BOOK-08 — Bloquear reasignación con fondos retenidos
+
+**Prioridad:** Alta  
+**Precondición:** Reserva futura con un pago en estado `held`.
+
+1. Crear una reserva de prueba con pago retenido.
+2. Consultar candidatos de reasignación desde administración.
+3. Intentar crear y aceptar una reasignación.
+4. Repetir con una reserva sin pago o con un intento fallido.
+
+**Resultado esperado:** Un pago `held` bloquea la reasignación y exige revisión financiera. Los intentos fallidos no se confunden con fondos retenidos; se aplica la política de reintento correspondiente.
+
+### QA-BOOK-09 — Despacho concurrente sin ofertas solapadas
+
+**Prioridad:** Crítica  
+**Precondición:** Dos reservas automáticas para la misma zona, servicio y franja; profesionales online y elegibles.
+
+1. Ejecutar `dispatch_auto_booking` para ambas reservas de forma concurrente.
+2. Consultar las ofertas pendientes de las dos reservas.
+3. Repetir con dos reservas cuyas ventanas de servicio y márgenes de desplazamiento no se solapen.
+
+**Resultado esperado:** Ningún profesional recibe ofertas simultáneas para franjas incompatibles. Para franjas no solapadas, el mismo profesional sí puede recibir ambas ofertas. El despacho comparte el bloqueo por profesional con la creación manual.
+
+### QA-BOOK-10 — Aceptación concurrente de dos ofertas incompatibles
+
+**Prioridad:** Crítica  
+**Precondición:** Dos ofertas pendientes de reservas que se solapan, dirigidas al mismo profesional.
+
+1. Aceptar ambas ofertas casi simultáneamente desde dos sesiones del mismo profesional.
+2. Consultar el estado de las dos reservas y sus solicitudes.
+
+**Resultado esperado:** Solo una reserva queda asignada al profesional. La segunda aceptación se rechaza por conflicto de agenda y no modifica la reserva ni confirma materiales.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
@@ -450,9 +590,10 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 1. Pulsar dos veces rápidamente «Solicitar servicio» y comprobar que solo se crea una reserva.
 2. Repetir una vez en modo «Cerca de mí» inmediato y comprobar que no aparecen dos solicitudes para el mismo envío.
-3. Simular una interrupción de red durante la llamada que crea la reserva, sin asumir que el servidor no llegó a procesarla.
+3. Simular una interrupción de red durante la llamada que crea la reserva, incluyendo el caso en que Supabase devuelve un error de transporte en `result.error` en lugar de lanzar una excepción.
 4. Comprobar que la interfaz no invita a volver a enviar la solicitud y ofrece abrir Mis reservas para verificar el resultado.
-5. Simular un error de validación devuelto por el RPC y comprobar que se muestra el mensaje del servidor y que el cliente puede corregir los datos e intentarlo de nuevo.
-6. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
+5. Simular un error SQL de validación devuelto por el RPC y comprobar que se muestra el mensaje del servidor y que el cliente puede corregir los datos e intentarlo de nuevo.
+6. Simular una respuesta HTTP 5xx o una respuesta sin código SQL identificable y comprobar que se trata como resultado incierto.
+7. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
 
 **Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.

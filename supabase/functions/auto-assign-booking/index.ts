@@ -7,9 +7,6 @@ type AdminClient = {
   rpc: Function;
 };
 
-const OFFER_TIMEOUT_MS = 45000;
-const POLL_INTERVAL_MS = 1500;
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -61,6 +58,9 @@ Deno.serve(async (req) => {
     if (booking.status !== "requested" || booking.pro_id) {
       return jsonResponse({ error: "Booking is no longer available for assignment" }, 409);
     }
+    if (new Date(booking.scheduled_start).getTime() <= Date.now() - 10 * 60 * 1000) {
+      return jsonResponse({ error: "Booking has expired because its scheduled start time passed" }, 409);
+    }
     if (new Date(booking.scheduled_start).getTime() > Date.now() + 20 * 60 * 1000) {
       return jsonResponse({ success: true, status: "on_hold" }, 202);
     }
@@ -76,15 +76,11 @@ Deno.serve(async (req) => {
     if (pendingRequests?.length) return jsonResponse({ success: true, status: "searching" }, 202);
 
     EdgeRuntime.waitUntil(
-      runAssignment(admin, bookingId).catch(async (error: unknown) => {
-        console.error("Automatic assignment failed", error);
-        // Keep the booking requested so the scheduled dispatcher can retry.
-        // Do not expire a customer's booking because one dispatch attempt failed.
-        await admin
-          .from("booking_requests")
-          .update({ status: "expired", responded_at: new Date().toISOString() })
-          .eq("booking_id", bookingId)
-          .eq("status", "pending");
+      runAssignment(admin, bookingId).catch((error: unknown) => {
+        // The RPC may have committed even if its response was lost. Never
+        // expire offers here: the database expiry worker owns missed_at,
+        // professional presence, and subsequent dispatch rounds.
+        console.error("Automatic assignment dispatch failed; scheduled worker will reconcile", error);
       }),
     );
 
@@ -96,40 +92,17 @@ Deno.serve(async (req) => {
 });
 
 async function runAssignment(admin: AdminClient, bookingId: string) {
-  // This RPC takes a booking-scoped advisory lock and creates one 45-second
-  // request per eligible nearby professional. It is shared with the scheduled
-  // dispatcher, preventing two workers from creating competing dispatch rounds.
+  // The database owns the full dispatch lifecycle:
+  // - dispatch_auto_booking serializes the first offer round;
+  // - each offer expires at its own expires_at timestamp;
+  // - the scheduled worker marks unanswered offers with missed_at (taking
+  //   that professional offline) and starts the next eligible round;
+  // - explicit rejections can start the next round through the DB trigger.
+  //
+  // Do not run a client-side 45-second timer here. A later round may start
+  // after an early rejection and must receive its own full 45-second window.
   const { error: dispatchError } = await admin.rpc("dispatch_auto_booking", {
     p_booking_id: bookingId,
   });
   if (dispatchError) throw dispatchError;
-
-  const deadline = Date.now() + OFFER_TIMEOUT_MS;
-  while (Date.now() < deadline) {
-    const { data: currentBooking, error: bookingError } = await admin
-      .from("bookings")
-      .select("status, pro_id")
-      .eq("id", bookingId)
-      .maybeSingle();
-    if (bookingError) throw bookingError;
-    if (!currentBooking || currentBooking.status !== "requested" || currentBooking.pro_id) return;
-
-    const { data: requests, error: requestsError } = await admin
-      .from("booking_requests")
-      .select("status")
-      .eq("booking_id", bookingId);
-    if (requestsError) throw requestsError;
-
-    const hasPending = (requests ?? []).some((request: { status: string }) => request.status === "pending");
-    const hasAccepted = (requests ?? []).some((request: { status: string }) => request.status === "accepted");
-    if (hasAccepted || !hasPending) return;
-
-    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-
-  await admin
-    .from("booking_requests")
-    .update({ status: "expired", responded_at: new Date().toISOString() })
-    .eq("booking_id", bookingId)
-    .eq("status", "pending");
 }
