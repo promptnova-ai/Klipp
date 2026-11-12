@@ -309,14 +309,14 @@ export function NewBookingScreen() {
       return () => { active = false; };
     }
     void Promise.resolve().then(() => { if (active) setAutoQuoteLoading(true); });
-    void supabase.rpc('get_auto_service_quote', {
+    void Promise.resolve(supabase.rpc('get_auto_service_quote', {
       p_service_type_id: selectedServiceId,
       p_pricing_tier_id: selectedTier?.id ?? null,
       p_lat: coordinate.latitude,
       p_lng: coordinate.longitude,
       p_scheduled_start: scheduledStart,
       p_require_online: timing === 'now',
-    }).then(({ data, error: quoteError }) => {
+    })).then(({ data, error: quoteError }) => {
       if (!active) return;
       if (quoteError) { setAutoQuote(null); setError(quoteError.message); }
       else {
