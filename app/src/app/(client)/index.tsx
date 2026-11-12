@@ -312,8 +312,8 @@ export default function ClientHomeScreen() {
           <View style={[styles.hero, !wideLayout && styles.heroCompact]}>
             <View style={styles.heroCopy}>
               <View style={styles.heroBadge}><View style={styles.heroBadgeDot} /><Text style={styles.heroBadgeText}>KLIPP · REPÚBLICA DOMINICANA</Text></View>
-              <Text style={styles.heroTitle}>Hola{firstName ? `, ${firstName}` : ''}.{ '\n' }Tu día fluye mejor con Klipp.</Text>
-              <Text style={styles.heroText}>Encuentra profesionales verificados para tu hogar, tu vehículo y tu cuidado personal. Reserva en minutos y sigue cada paso desde la app.</Text>
+              <Text style={styles.heroTitle}>Hola{firstName ? `, ${firstName}` : ''}.{ '\n' }Resuelve tu día. Sin salir de casa.</Text>
+              <Text style={styles.heroText}>Servicios de confianza para tu hogar, tu cuidado personal y tu vehículo. Elige qué necesitas; Klipp se ocupa de conectarte.</Text>
               <View style={styles.heroBenefits}>
                 <View style={styles.heroBenefit}><SymbolView name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }} tintColor="#BCEBD8" size={16} /><Text style={styles.heroBenefitText}>Perfiles verificados</Text></View>
                 <View style={styles.heroBenefit}><SymbolView name={{ ios: 'location.fill', android: 'near_me', web: 'near_me' }} tintColor="#BCEBD8" size={16} /><Text style={styles.heroBenefitText}>Seguimiento en vivo</Text></View>
@@ -323,7 +323,7 @@ export default function ClientHomeScreen() {
             <View style={[styles.heroVisual, !wideLayout && styles.heroVisualCompact]}>
               <Image source={heroArt} contentFit="cover" transition={350} style={styles.heroImage} />
               <View style={styles.heroVisualScrim} />
-              <View style={styles.heroVisualNote}><View style={styles.heroVisualIcon}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.cobaltDark} size={17} /></View><View style={styles.heroVisualCopy}><Text style={styles.heroVisualTitle}>Todo resuelto, en un solo lugar</Text><Text style={styles.heroVisualText}>De la reserva al seguimiento.</Text></View></View>
+              <View style={styles.heroVisualNote}><View style={styles.heroVisualIcon}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.cobaltDark} size={17} /></View><View style={styles.heroVisualCopy}><Text style={styles.heroVisualTitle}>Tu espacio. A tu manera.</Text><Text style={styles.heroVisualText}>Profesionales listos para ayudarte.</Text></View></View>
               <View style={styles.heroVisualOrb} />
             </View>
           </View>
@@ -337,7 +337,7 @@ export default function ClientHomeScreen() {
         </View>
 
         <View style={styles.catalogHeader}>
-          <View style={styles.catalogHeadingCopy}><Text style={styles.sectionEyebrow}>DESCUBRE KLIPP</Text><Text style={styles.sectionTitle}>¿Qué necesitas resolver?</Text><Text style={styles.sectionIntro}>Elige un servicio. Nosotros conectamos contigo al profesional adecuado.</Text></View>
+          <View style={styles.catalogHeadingCopy}><Text style={styles.sectionEyebrow}>DESCUBRE KLIPP</Text><Text style={styles.sectionTitle}>¿Qué te gustaría resolver hoy?</Text><Text style={styles.sectionIntro}>Explora por categoría y encuentra a la persona adecuada para hacerlo.</Text></View>
           <View style={styles.catalogIcon}><SymbolView name={{ ios: 'square.grid.2x2.fill', android: 'grid_view', web: 'grid_view' }} tintColor={KlippColors.cobalt} size={20} /></View>
         </View>
 
@@ -345,7 +345,7 @@ export default function ClientHomeScreen() {
           {categoriesData.map((category, index) => {
             const selected = selectedCategory === category.name;
             const categoryService = services.find((service) => getCategory(service) === category.name);
-            const art = categoryService ? serviceArt(categoryService.code) : heroArt;
+            const art = serviceArt(categoryService?.code ?? category.name);
             return (
               <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category.id} onPress={() => setSelectedCategory(selected ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, index % 5 === 0 && styles.categoryTileFeature, index % 5 === 3 && styles.categoryTileWide, index % 5 === 4 && styles.categoryTileNarrow, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
                 <Image source={art} contentFit="cover" transition={250} style={styles.categoryTileImage} />
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   searchBar: { minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 13, marginTop: -2, paddingHorizontal: 14, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E5DE', shadowColor: '#171B2D', shadowOpacity: 0.055, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 3 },
   searchInput: { flex: 1, height: 54, color: '#171B2D', fontSize: 15, fontWeight: '600' },
   clearSearch: { padding: 5 },
-  hero: { minHeight: 330, flexDirection: 'row', alignItems: 'stretch', overflow: 'hidden', borderRadius: 30, backgroundColor: '#3048D8', shadowColor: '#3048D8', shadowOpacity: 0.16, shadowOffset: { width: 0, height: 16 }, shadowRadius: 28, elevation: 6 },
+  hero: { minHeight: 330, flexDirection: 'row', alignItems: 'stretch', overflow: 'hidden', borderRadius: 22, backgroundColor: '#171B2D' },
   heroImage: { width: '100%', height: '100%' },
   heroScrim: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(17,24,45,0.56)' },
   heroAccent: { position: 'absolute', width: 260, height: 260, borderRadius: 130, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', right: -100, top: -120, opacity: 0.8 },
@@ -529,15 +529,15 @@ const styles = StyleSheet.create({
   sectionTitle: { color: '#171B2D', fontSize: 28, lineHeight: 34, fontWeight: '900', letterSpacing: -0.9, marginTop: 5 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  categoryTile: { width: '48.5%', minHeight: 150, borderRadius: 18, overflow: 'hidden', backgroundColor: '#E9EDFF', borderWidth: 1, borderColor: '#E8E5DE' },
-  categoryTileFeature: { width: '100%', minHeight: 214, borderRadius: 24 },
-  categoryTileWide: { width: '62%', minHeight: 174 },
-  categoryTileNarrow: { width: '34.5%', minHeight: 174 },
+  categoryTile: { width: '48.5%', minHeight: 178, borderRadius: 12, overflow: 'hidden', backgroundColor: '#E9EDFF', borderWidth: 1, borderColor: '#E8E5DE' },
+  categoryTileFeature: { width: '100%', minHeight: 270, borderRadius: 16 },
+  categoryTileWide: { width: '62%', minHeight: 205 },
+  categoryTileNarrow: { width: '34.5%', minHeight: 205 },
   categoryTileSelected: { borderWidth: 2, borderColor: '#3D5AFE' },
   categoryTileImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
-  categoryTileShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.18)' },
-  categoryTileFooter: { flex: 1, minHeight: 150, padding: 14, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
-  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 17, lineHeight: 21, fontWeight: '800', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
+  categoryTileShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.28)' },
+  categoryTileFooter: { flex: 1, minHeight: 150, padding: 18, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
+  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 19, lineHeight: 23, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
   categoryTileArrow: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
   categoryTileArrowSelected: { backgroundColor: '#3D5AFE' },
   categories: { gap: 9, paddingVertical: 2 },
@@ -547,10 +547,10 @@ const styles = StyleSheet.create({
   categoryTextSelected: { color: KlippColors.white },
   serviceList: { flexDirection: 'column', gap: 18 },
   serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', columnGap: '1.7%', rowGap: 20 },
-  serviceCard: { flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 9, borderRadius: 25, borderWidth: 1, borderColor: '#E8E5DE', backgroundColor: '#FFFFFF', shadowColor: '#171B2D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 3 },
+  serviceCard: { flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 9, borderRadius: 16, borderWidth: 0, borderColor: 'transparent', backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 },
   serviceCardWide: { width: '48.5%' },
   serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
-  servicePhotoWrap: { height: 190, overflow: 'hidden', borderRadius: 18, backgroundColor: '#E9EDFF' },
+  servicePhotoWrap: { height: 220, overflow: 'hidden', borderRadius: 12, backgroundColor: '#E9EDFF' },
   servicePhoto: { width: '100%', height: '100%' },
   servicePhotoBadge: { position: 'absolute', left: 12, bottom: 12, width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
   photoLabel: { position: 'absolute', right: 12, top: 12, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(23,27,45,0.78)' },
