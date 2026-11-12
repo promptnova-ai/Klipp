@@ -34,9 +34,24 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: npm ci
+      - name: Verify preview environment configuration
+        env:
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$EXPO_PUBLIC_SUPABASE_URL" || (echo "::error::Missing repository variable EXPO_PUBLIC_SUPABASE_URL"; exit 1)
+          test -n "$EXPO_PUBLIC_SUPABASE_ANON_KEY" || (echo "::error::Missing repository secret EXPO_PUBLIC_SUPABASE_ANON_KEY"; exit 1)
       - name: Export Expo Web
         working-directory: app
+        env:
+          GITHUB_PAGES: "true"
+          EXPO_PUBLIC_SUPABASE_URL: ${{ vars.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: ${{ secrets.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY }}
         run: npx expo export --platform web --output-dir dist
+      - name: Add SPA fallback for GitHub Pages
+        working-directory: app
+        run: cp dist/index.html dist/404.html
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
