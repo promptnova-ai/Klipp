@@ -112,7 +112,7 @@ El panel **Finanzas → Conciliación AZUL** muestra:
 
 Permisos:
 - `finance.read`: consultar la cola;
-- `finance.reconcile`: registrar una conciliación como «AZUL confirma que no hubo cargo» o registrar una devolución ya ejecutada.
+- `finance.reconcile`: registrar que AZUL confirma que no hubo cargo, que el reporte confirma un cargo sin retorno firmado (pasándolo a devolución pendiente), o registrar una devolución ya ejecutada.
 
 Cada resolución exige referencia del reporte/devolución y una nota; se registra en `admin_audit_log`. El panel no inicia una devolución automáticamente ni permite marcarla como completada sin referencia. Hasta que se integre y certifique la API de reembolsos de AZUL, el operador debe ejecutar la devolución en el portal del comercio y luego registrarla en Klipp.
 
