@@ -93,6 +93,8 @@ export function NewBookingScreen() {
   const [autoPriceLoading, setAutoPriceLoading] = useState(false);
   const [autoQuote, setAutoQuote] = useState<AutoServiceQuote | null>(null);
   const [autoQuoteLoading, setAutoQuoteLoading] = useState(false);
+  const [autoQuoteVersion, setAutoQuoteVersion] = useState(0);
+  const [manualQuoteVersion, setManualQuoteVersion] = useState(0);
   const [manualProPrice, setManualProPrice] = useState<number | null>(null);
   const [manualProDuration, setManualProDuration] = useState<number | null>(null);
   const [manualPriceLoading, setManualPriceLoading] = useState(false);
@@ -331,7 +333,7 @@ export function NewBookingScreen() {
       setError(cause instanceof Error ? cause.message : 'No pudimos obtener una cotización profesional.');
     });
     return () => { active = false; };
-  }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id, timing, scheduledDate, scheduledTime, getScheduledStart]);
+  }, [mode, selectedOffer, coordinate, selectedServiceId, selectedTier?.id, timing, scheduledDate, scheduledTime, getScheduledStart, autoQuoteVersion]);
 
   useEffect(() => {
     let active = true;
@@ -394,7 +396,7 @@ export function NewBookingScreen() {
         setError(cause instanceof Error ? cause.message : 'No pudimos consultar la tarifa del profesional.');
       });
     return () => { active = false; };
-  }, [mode, selectedProId, selectedServiceId, selectedTierIdForQuery, selectedOffer]);
+  }, [mode, selectedProId, selectedServiceId, selectedTierIdForQuery, selectedOffer, manualQuoteVersion]);
 
   useEffect(() => {
     let active = true;
@@ -693,6 +695,10 @@ export function NewBookingScreen() {
       }
 
       if (rpcError) {
+        if (/tariff changed|quote is no longer available/i.test(rpcError.message)) {
+          if (mode === 'auto') setAutoQuoteVersion((version) => version + 1);
+          else setManualQuoteVersion((version) => version + 1);
+        }
         if (isAmbiguousBookingRpcError(rpcError)) {
           setSubmissionUncertain(true);
           setError('No pudimos confirmar si la solicitud llegó a registrarse. Revisa Mis reservas antes de volver a intentarlo para evitar duplicarla.');
