@@ -998,27 +998,27 @@ const styles = StyleSheet.create({
   equipmentCopy: { flex: 1, gap: 2 },
   equipmentName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
   equipmentDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
-  serviceTile: { minHeight: 98, flexDirection: 'row', alignItems: 'center', gap: 16, padding: 16, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 22, backgroundColor: '#FCFCFD' },
-  serviceTileSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
-  serviceTileIcon: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 19 },
-  serviceTileGlyph: { fontSize: 25 },
+  serviceTile: { minHeight: 104, flexDirection: 'row', alignItems: 'center', gap: 16, padding: 17, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 20, backgroundColor: '#FFFFFF', shadowColor: '#171B2D', shadowOpacity: 0.025, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 }
+  serviceTileSelected: { borderColor: '#3D5AFE', backgroundColor: '#F1F3FF', shadowColor: '#3D5AFE', shadowOpacity: 0.08, shadowRadius: 12 }
+  serviceTileIcon: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center', borderRadius: 21, borderWidth: 1, borderColor: 'rgba(23,27,45,0.04)', shadowColor: '#171B2D', shadowOpacity: 0.09, shadowOffset: { width: 0, height: 5 }, shadowRadius: 10, elevation: 2 }
+  serviceTileGlyph: { fontSize: 28 }
   serviceTileCopy: { flex: 1, gap: 4 },
-  serviceTileTitle: { color: KlippColors.ink, fontSize: 16, fontWeight: '900', letterSpacing: -0.2 },
-  serviceTileDescription: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  serviceTileTitle: { color: '#171B2D', fontSize: 16, lineHeight: 21, fontWeight: '900', letterSpacing: -0.35 }
+  serviceTileDescription: { color: '#72778A', fontSize: 12, lineHeight: 18 }
   serviceTileRadio: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   serviceTileRadioSelected: { borderColor: KlippColors.cobalt },
   serviceTileRadioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.cobalt },
-  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 18, paddingBottom: 72, gap: 24, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 28, paddingTop: 22, paddingBottom: 84, gap: 24, backgroundColor: '#F7F5F0', flexGrow: 1 }
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
-  back: { alignSelf: 'flex-start', paddingVertical: 8, marginHorizontal: 20, marginTop: 8 },
+  back: { alignSelf: 'flex-start', paddingVertical: 9, paddingHorizontal: 14, marginHorizontal: 0, marginTop: 2, borderRadius: 999, backgroundColor: '#E9EDFF' }
   pressed: { opacity: 0.88 },
-  backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
+  backText: { color: '#3048D8', fontSize: 13, fontWeight: '900' }
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  section: { marginHorizontal: 20, padding: 24, borderRadius: 28, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#EAE7E0', gap: 18, shadowColor: KlippColors.ink, shadowOpacity: 0.06, shadowOffset: { width: 0, height: 12 }, shadowRadius: 24, elevation: 3 },
+  section: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, padding: 25, borderRadius: 26, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E5DE', gap: 18, shadowColor: '#171B2D', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 9 }, shadowRadius: 24, elevation: 2 }
   sectionHeading: { flexDirection: 'row', alignItems: 'center', gap: 11, marginBottom: 2 },
-  sectionStep: { width: 34, height: 34, borderRadius: 12, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
-  sectionStepText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '900' },
-  sectionTitle: { flex: 1, color: KlippColors.ink, fontSize: 19, lineHeight: 24, fontWeight: '900', letterSpacing: -0.4 },
+  sectionStep: { width: 38, height: 38, borderRadius: 14, backgroundColor: '#3D5AFE', alignItems: 'center', justifyContent: 'center' }
+  sectionStepText: { color: '#FFFFFF', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 }
+  sectionTitle: { flex: 1, color: '#171B2D', fontSize: 20, lineHeight: 26, fontWeight: '900', letterSpacing: -0.55 }
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 13, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
   notesInput: { minHeight: 84, paddingHorizontal: 13, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, color: KlippColors.navy, fontSize: 14, textAlignVertical: 'top', backgroundColor: KlippColors.white },
@@ -1028,8 +1028,8 @@ const styles = StyleSheet.create({
   adjustLocationText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700', marginTop: 5 },
   dateList: { gap: 8, paddingVertical: 2 },
-  dateOption: { width: 62, minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 3, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, backgroundColor: KlippColors.white },
-  dateOptionSelected: { borderColor: KlippColors.navy, backgroundColor: KlippColors.navy },
+  dateOption: { width: 68, minHeight: 88, alignItems: 'center', justifyContent: 'center', gap: 4, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 17, backgroundColor: '#FFFFFF' }
+  dateOptionSelected: { borderColor: '#3D5AFE', backgroundColor: '#3D5AFE' }
   dateWeekday: { color: KlippColors.muted, fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   dateDay: { color: KlippColors.navy, fontSize: 19, fontWeight: '700' },
   dateMonth: { color: KlippColors.muted, fontSize: 10, textTransform: 'capitalize' },
@@ -1037,8 +1037,8 @@ const styles = StyleSheet.create({
   slotHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 3 },
   slotCount: { color: KlippColors.success, fontSize: 12, fontWeight: '700' },
   slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  slotOption: { width: '31%', minHeight: 42, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white },
-  slotOptionSelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.whiteBlue },
+  slotOption: { width: '31%', minHeight: 46, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 14, backgroundColor: '#FFFFFF' }
+  slotOptionSelected: { borderColor: '#3D5AFE', backgroundColor: '#E9EDFF' }
   slotUnavailable: { borderColor: KlippColors.surfaceMuted, backgroundColor: KlippColors.whiteMuted },
   slotText: { color: KlippColors.slate, fontSize: 12, fontWeight: '600' },
   slotTextSelected: { color: KlippColors.blueDark },
@@ -1046,23 +1046,23 @@ const styles = StyleSheet.create({
   slotsLoading: { minHeight: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   noSlots: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.whiteMuted, gap: 4 },
   noSlotsTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
-  choice: { minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
-  choiceSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.whiteBlue },
+  choice: { minHeight: 62, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14, paddingHorizontal: 17, paddingVertical: 12, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 17, backgroundColor: '#FFFFFF' }
+  choiceSelected: { borderColor: '#3D5AFE', backgroundColor: '#F1F3FF' }
   choicePressed: { opacity: 0.9 },
   choiceCopy: { flex: 1, gap: 3 },
-  choiceText: { color: KlippColors.slate, fontSize: 14, fontWeight: '600' },
-  choiceTextSelected: { color: KlippColors.blueDark },
-  choiceSecondary: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
+  choiceText: { color: '#3D4358', fontSize: 14, fontWeight: '800' }
+  choiceTextSelected: { color: '#3048D8' }
+  choiceSecondary: { color: '#3048D8', fontSize: 13, fontWeight: '900' }
   radio: { width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: KlippColors.border, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: KlippColors.blue },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: KlippColors.blue },
   empty: { color: KlippColors.muted, fontSize: 14, padding: 16, marginHorizontal: 20, borderRadius: 16, backgroundColor: KlippColors.white },
   emptyInline: { gap: 6 },
   modeOptions: { flexDirection: 'row', gap: 9 },
-  modeOption: { flex: 1, minHeight: 54, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white },
-  proCard: { padding: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 12, shadowColor: KlippColors.ink, shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
-  proCardSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.whiteBlue },
-  proSummary: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  modeOption: { flex: 1, minHeight: 60, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 17, backgroundColor: '#FFFFFF' }
+  proCard: { padding: 17, borderWidth: 1, borderColor: '#E8E5DE', borderRadius: 21, backgroundColor: '#FFFFFF', gap: 13, shadowColor: '#171B2D', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 7 }, shadowRadius: 17, elevation: 2 }
+  proCardSelected: { borderColor: '#3D5AFE', backgroundColor: '#F1F3FF' }
+  proSummary: { flexDirection: 'row', alignItems: 'center', gap: 13 }
   avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: KlippColors.whiteBlue },
   avatarFallback: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.whiteBlue },
   avatarInitial: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '700' },
@@ -1088,19 +1088,19 @@ const styles = StyleSheet.create({
   totalCard: { marginHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 16, borderRadius: 18, backgroundColor: KlippColors.whiteBlue },
   totalLabel: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
   totalHint: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
-  priceLine: { color: '#FFFFFF', fontSize: 20, fontWeight: '900' },
-  summaryCard: { marginHorizontal: 20, padding: 23, borderRadius: 28, borderWidth: 1, borderColor: '#17213B', backgroundColor: '#17213B', gap: 16, shadowColor: '#171B2D', shadowOpacity: 0.16, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 5 },
+  priceLine: { color: '#3048D8', fontSize: 22, fontWeight: '900' }
+  summaryCard: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, padding: 25, borderRadius: 25, borderWidth: 1, borderColor: '#DDE2FF', backgroundColor: '#FFFFFF', gap: 16, shadowColor: '#3048D8', shadowOpacity: 0.055, shadowOffset: { width: 0, height: 10 }, shadowRadius: 22, elevation: 3 }
   summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  summaryTitle: { color: '#FFFFFF', fontSize: 19, fontWeight: '900', marginTop: 5 },
+  summaryTitle: { color: '#171B2D', fontSize: 20, fontWeight: '900', marginTop: 5 }
   summaryIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECFDF5' },
   summaryRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
-  summaryLabel: { color: '#B8C0D8', fontSize: 12 },
-  summaryValue: { flex: 1, color: '#FFFFFF', fontSize: 12, fontWeight: '700', textAlign: 'right' },
-  summaryDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.18)' },
+  summaryLabel: { color: '#72778A', fontSize: 12 }
+  summaryValue: { flex: 1, color: '#171B2D', fontSize: 12, fontWeight: '800', textAlign: 'right' }
+  summaryDivider: { height: 1, backgroundColor: '#E8E5DE' }
   priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  priceLabel: { color: '#D7DCEF', fontSize: 13, fontWeight: '700' },
-  submit: { minHeight: 54, marginHorizontal: 20, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.blue, shadowColor: KlippColors.blue, shadowOpacity: 0.18, shadowOffset: { width: 0, height: 7 }, shadowRadius: 14, elevation: 3 },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  priceLabel: { color: '#555B6F', fontSize: 13, fontWeight: '800' }
+  submit: { width: '100%', maxWidth: 1080, alignSelf: 'center', minHeight: 60, marginHorizontal: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: '#3D5AFE', shadowColor: '#3048D8', shadowOpacity: 0.22, shadowOffset: { width: 0, height: 9 }, shadowRadius: 16, elevation: 4 }
+  submitText: { color: '#FFFFFF', fontSize: 15, fontWeight: '900', letterSpacing: 0.1 }
   disabled: { opacity: 0.55 },
   buttonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   horizontalMargin: { marginHorizontal: 20 },
