@@ -9,6 +9,7 @@ export type VerificationStatus = 'pending' | 'approved' | 'rejected';
 export type GeoPoint = { type: 'Point'; coordinates: [number, number] };
 export type AssignmentMode = 'manual' | 'auto';
 export type BookingStatus =
+  | 'payment_pending'
   | 'requested'
   | 'awaiting_payment'
   | 'scheduled'
