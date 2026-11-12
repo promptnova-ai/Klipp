@@ -90,6 +90,10 @@ Además de las credenciales de comercio, las funciones requieren:
 
 El campo `Amount` se envía en unidades menores (dos decimales, sin punto ni coma), y representa el total aceptado por el cliente. `ITBIS` se calcula como componente incluido en ese total según la política fiscal aprobada; si la configuración fiscal no está definida, el checkout se bloquea.
 
+## Checkout sin retorno del navegador
+
+La Página de Pago AZUL devuelve el resultado mediante redirección del navegador. Si el usuario cierra el navegador antes de que Klipp reciba el retorno firmado, Klipp no puede asumir que el pago no se procesó. Al vencer el checkout, el worker marca `payments.reconciliation_required_at` y la reserva queda `expired`, sin despacho. Mis reservas muestra al cliente que no debe volver a pagar hasta completar la conciliación con los reportes/portal AZUL. Una aprobación firmada tardía pasa a revisión de devolución; una declinación firmada limpia la marca de conciliación.
+
 ## Aprobaciones tardías o importes no coincidentes
 
 Una respuesta AZUL con HMAC válido que confirme un cobro no puede descartarse como `failed` solo porque llegue tarde o el importe difiera del snapshot. En esos casos el backend:
