@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   showcaseCompact: { flexDirection: 'column', padding: 22 },
   showcaseImage: { borderRadius: 26 },
   showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: '#D9E2DF' },
-  showcasePhotoWash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
+  showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
   showcaseCompactLogin: { padding: 30, borderRadius: 30, borderColor: '#DCE3FF', backgroundColor: '#E9EDFF', shadowOpacity: 0, elevation: 0 },
   showcaseMarkLogin: { backgroundColor: KlippColors.cobalt },
   showcaseBrandLogin: { color: KlippColors.ink },

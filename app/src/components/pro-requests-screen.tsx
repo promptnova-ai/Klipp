@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Image } from 'expo-image';
-import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
+import { ActivityIndicator, Animated, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from 'expo-router';
 
@@ -505,6 +505,8 @@ const styles = StyleSheet.create({
   proHeroStatLabel: { color: '#FFF0EC', fontSize: 10, fontWeight: '700' },
   proHeroStatDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.34)' },
   requestCard: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 22, padding: 23, borderRadius: 26, borderWidth: 1, borderColor: '#E8E5DE', backgroundColor: '#FFFFFF', gap: 17, shadowColor: '#171B2D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 11 }, shadowRadius: 22, elevation: 3 },
+  requestArt: { width: 76, height: 62, overflow: 'hidden', borderRadius: 15, backgroundColor: '#F1EFE9' },
+  requestArtImage: { width: '100%', height: '100%' },
   requestCardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   requestIcon: { width: 50, height: 50, borderRadius: 17, backgroundColor: '#FFF0EC', alignItems: 'center', justifyContent: 'center' },
   requestIconText: { color: KlippColors.coral, fontSize: 23, fontWeight: '900' },
