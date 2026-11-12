@@ -29,6 +29,11 @@ export const KlippColors = {
   warning: '#A85A25',
   surfaceTeal: '#E7F7F0',
   surfaceViolet: '#E9EDFF',
+  whiteBlue: '#E9EDFF',
+  whiteMint: '#E7F7F0',
+  whiteCoral: '#FFF0EC',
+  whiteMuted: '#F1EFE9',
+  whiteTeal: '#E7F7F0',
 } as const;
 
 export const RoleThemes = {
