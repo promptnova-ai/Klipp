@@ -374,7 +374,7 @@ export function ProAgendaScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando agenda...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando agenda...</Text></View>;
 
   return (
     <>
@@ -398,7 +398,7 @@ export function ProAgendaScreen() {
           </View>
         </View>
       </Modal>
-      <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
+      <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />}>
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
       <View style={styles.presenceCard}>
         <View style={styles.presenceCopy}>
@@ -484,21 +484,21 @@ const styles = StyleSheet.create({
   presenceCopy: { gap: 7 },
   presenceStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   presenceDot: { width: 11, height: 11, borderRadius: 6 },
-  presenceDotOnline: { backgroundColor: '#15966f' },
-  presenceDotOffline: { backgroundColor: '#b42318' },
+  presenceDotOnline: { backgroundColor: KlippColors.success },
+  presenceDotOffline: { backgroundColor: KlippColors.danger },
   presenceTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '900' },
   presenceButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
-  presenceButtonOnline: { backgroundColor: '#475569' },
-  presenceButtonText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  presenceButtonOnline: { backgroundColor: KlippColors.slate },
+  presenceButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.ink, fontSize: 28, fontWeight: '700' },
   subtitle: { color: KlippColors.slate, fontSize: 15, marginTop: -8 },
   card: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 10 },
-  empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 8, backgroundColor: KlippColors.white, gap: 7 },
+  empty: { marginTop: 20, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 7 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.cobaltDark, fontSize: 15, fontWeight: '800', marginTop: 3 },
-  reassignmentNotice: { color: '#8A5B00', backgroundColor: '#FFF4D6', borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: '700' },
+  reassignmentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.goldLight, borderRadius: 12, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: '700' },
   paymentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.goldLight, borderRadius: 10, padding: 10, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   locationNotice: { color: KlippColors.success, fontSize: 13, fontWeight: '700' },
   chatButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   chatMessageText: { color: KlippColors.slate, fontSize: 13, lineHeight: 18 },
   messageInput: { minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 13 },
   button: { minHeight: 46, marginTop: 7, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.cobalt },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  buttonText: { color: KlippColors.white, fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.5 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
 });
