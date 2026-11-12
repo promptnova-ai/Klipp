@@ -707,11 +707,13 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 **Prioridad:** Crítica  
 **Precondición:** Reserva `payment_pending` creada con precio profesional exacto y snapshot de comisión/payout.
 
-1. Cambiar la tarifa del profesional después de crear la reserva.
+1. Cambiar la tarifa del profesional después de crear la reserva, antes de que acepte.
 2. Completar el pago con el importe guardado en el snapshot.
-3. Aceptar la oferta y consultar precio, comisión y payout de la reserva.
+3. El profesional inicialmente cotizado acepta.
+4. Consultar precio, comisión y payout de la reserva.
+5. Repetir el escenario con un profesional sustituto después de un rechazo.
 
-**Resultado esperado:** El precio cobrado, comisión y payout conservan el snapshot aceptado. La nueva tarifa solo afecta futuras cotizaciones.
+**Resultado esperado:** El profesional inicialmente cotizado puede aceptar y debe honrar el importe, duración, comisión y payout del snapshot pagado aunque su tarifa pública haya cambiado. Un sustituto solo puede recibir/aceptar la oferta si su tarifa y duración actuales coinciden exactamente con el snapshot. Las nuevas tarifas solo afectan a futuras cotizaciones.
 
 ### QA-PAY-10 — Rechazo del profesional cotizado
 
