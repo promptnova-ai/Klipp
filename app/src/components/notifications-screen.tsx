@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   removePushButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 13, borderRadius: 13, backgroundColor: KlippColors.surfaceMuted },
   removePushText: { color: KlippColors.muted, fontSize: 11, fontWeight: '800' },
   notice: { padding: 12, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 13, backgroundColor: KlippColors.surfaceMint, color: KlippColors.success, fontSize: 12, lineHeight: 18 },
-  error: { padding: 12, borderWidth: 1, borderColor: '#FECACA', borderRadius: 13, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
+  error: { padding: 12, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 13, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
   listHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingTop: 3 },
   listHeadingCopy: { flex: 1, gap: 4 },
   itemCount: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' },
