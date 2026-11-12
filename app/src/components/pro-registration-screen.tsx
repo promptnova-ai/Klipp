@@ -53,6 +53,22 @@ const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
 
+const professionVisuals: Record<string, { icon: string; tint: string; accent: string; caption: string }> = {
+  barberia: { icon: '✂️', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Cortes y arreglo de barba' },
+  peluqueria: { icon: '💇', tint: '#FFF0EC', accent: '#FF7058', caption: 'Cabello y peinados' },
+  estetica: { icon: '✨', tint: '#E7F7F0', accent: '#247A5A', caption: 'Cuidado y belleza' },
+  carwash: { icon: '🚘', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Lavado de vehículos' },
+  detailing: { icon: '🧽', tint: '#E7F7F0', accent: '#247A5A', caption: 'Detalle y acabado automotriz' },
+  limpieza_regular: { icon: '🧹', tint: '#FFF0EC', accent: '#FF7058', caption: 'Limpieza del hogar' },
+  limpieza_profunda: { icon: '🧼', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Limpieza a fondo' },
+  'limpieza-oficinas': { icon: '🏢', tint: '#E7F7F0', accent: '#247A5A', caption: 'Espacios de trabajo' },
+  mantenimiento: { icon: '🛠️', tint: '#FFF0EC', accent: '#FF7058', caption: 'Reparaciones y montaje' },
+};
+function getProfessionVisual(code: string) {
+  return professionVisuals[code] ?? { icon: '✦', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Servicio profesional' };
+}
+
+
 export function ProRegistrationScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
@@ -436,11 +452,15 @@ export function ProRegistrationScreen() {
                     const selected = selectedServiceId === service.id;
                     return (
                       <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => chooseProfession(service.id)} style={[styles.professionOption, selected && styles.professionOptionSelected]}>
-                        <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>{selected && <View style={styles.radioInner} />}</View>
+                        <View style={[styles.professionIcon, { backgroundColor: getProfessionVisual(service.code).tint }]}>
+                          <Text style={[styles.professionIconText, { color: getProfessionVisual(service.code).accent }]}>{getProfessionVisual(service.code).icon}</Text>
+                        </View>
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
-                          {!!service.description && <Text style={styles.serviceDescription}>{service.description}</Text>}
+                          <Text style={styles.serviceDescription}>{service.description || getProfessionVisual(service.code).caption}</Text>
+                          <Text style={styles.professionHint}>{getProfessionVisual(service.code).caption}</Text>
                         </View>
+                        <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>{selected && <View style={styles.radioInner} />}</View>
                       </Pressable>
                     );
                   })}
@@ -688,6 +708,9 @@ const styles = StyleSheet.create({
   serviceCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 14, shadowColor: KlippColors.ink, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 14, elevation: 2 },
   serviceCardSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.whiteBlue },
   professionOption: { minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 17, backgroundColor: KlippColors.white },
+  professionIcon: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 16 },
+  professionIconText: { fontSize: 25 },
+  professionHint: { color: KlippColors.slate, fontSize: 10, fontWeight: '700', marginTop: 2 },
   professionOptionSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: KlippColors.whiteMint },
   radioOuter: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   radioOuterSelected: { borderColor: RoleThemes.pro.accent },
