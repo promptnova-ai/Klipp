@@ -450,9 +450,10 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 1. Pulsar dos veces rápidamente «Solicitar servicio» y comprobar que solo se crea una reserva.
 2. Repetir una vez en modo «Cerca de mí» inmediato y comprobar que no aparecen dos solicitudes para el mismo envío.
-3. Simular una interrupción de red durante la llamada que crea la reserva, sin asumir que el servidor no llegó a procesarla.
+3. Simular una interrupción de red durante la llamada que crea la reserva, incluyendo el caso en que Supabase devuelve un error de transporte en `result.error` en lugar de lanzar una excepción.
 4. Comprobar que la interfaz no invita a volver a enviar la solicitud y ofrece abrir Mis reservas para verificar el resultado.
-5. Simular un error de validación devuelto por el RPC y comprobar que se muestra el mensaje del servidor y que el cliente puede corregir los datos e intentarlo de nuevo.
-6. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
+5. Simular un error SQL de validación devuelto por el RPC y comprobar que se muestra el mensaje del servidor y que el cliente puede corregir los datos e intentarlo de nuevo.
+6. Simular una respuesta HTTP 5xx o una respuesta sin código SQL identificable y comprobar que se trata como resultado incierto.
+7. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
 
 **Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.
