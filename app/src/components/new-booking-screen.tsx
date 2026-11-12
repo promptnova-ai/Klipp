@@ -692,7 +692,7 @@ export function NewBookingScreen() {
   function continueWizard() {
     if (activeStep === 0 && selectedServiceId === null) { setError('Selecciona un servicio para continuar.'); return; }
     if (activeStep === 3 && !coordinate) { setError('Indica el lugar donde se realizará el servicio.'); return; }
-    if (activeStep === 4 && timing === 'scheduled' && !scheduledTime) { setError('Selecciona una fecha y un horario disponible.'); return; }
+    if (activeStep === 4 && timing === 'scheduled' && (!scheduledTime || !getScheduledStart())) { setError('Selecciona una fecha y un horario futuro disponible.'); return; }
     if (activeStep === 5 && timing === 'scheduled' && !selectedOffer && mode === 'manual' && !selectedProId) { setError('Elige un profesional o cambia a asignación automática.'); return; }
     setError(null);
     const nextStep = activeStep === 3 && timing === 'now' ? 5 : Math.min(6, activeStep + 1);
@@ -778,13 +778,13 @@ export function NewBookingScreen() {
 
       {activeStep === 2 && (<>
 
-      {!selectedOffer && <Section title="3. ¿Cuándo necesitas el servicio?">
+      <Section title="3. ¿Cuándo necesitas el servicio?">
         {selectedOffer ? <Text style={styles.body}>Has elegido a {selectedOffer.pro_name ?? 'un profesional'} para este servicio. La reserva se programará según su disponibilidad.</Text> : <View style={styles.modeOptions}>
           <ModeOption label="Solicitar ahora" selected={timing === 'now'} onPress={() => { resetAppointmentSelection(); setTiming('now'); setMode('auto'); }} />
           <ModeOption label="Programar servicio" selected={timing === 'scheduled'} onPress={() => { resetAppointmentSelection(); setTiming('scheduled'); if (!selectedTier) setMode('auto'); }} />
         </View>}
         {timing === 'now' && <Text style={styles.body}>Buscaremos inmediatamente un profesional conectado y disponible cerca de tu ubicación.</Text>}
-      </Section>}
+      </Section>
       </>)}
 
       {activeStep === 3 && (<>
