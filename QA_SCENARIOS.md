@@ -609,3 +609,82 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 7. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
 
 **Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.
+
+
+### QA-PAY-01 — Creación idempotente del intento de pago
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva en `payment_pending`, precio válido y ventana de pago activa.
+
+1. Crear un intento AZUL con referencia de pedido e idempotency key.
+2. Repetir la llamada con la misma idempotency key.
+3. Repetir con una idempotency key distinta mientras el primer intento siga pendiente.
+
+**Resultado esperado:** Las tres llamadas devuelven el mismo intento pendiente; no se crean dos cobros activos para una reserva. El importe y moneda proceden de la reserva (`price_dop`, DOP), nunca del cliente.
+
+### QA-PAY-02 — Confirmación de pago firmada y activación de dispatch
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva en `payment_pending`, intento AZUL pendiente y callback de pruebas con firma válida.
+
+1. Enviar callback aprobado con AuthHash válido, referencia e importe exactos y código de aprobación `00`.
+2. Comprobar que el pago pasa a `held` y registra `auth_hash_verified_at`.
+3. Comprobar que la reserva pasa a `requested`.
+4. Para reserva manual, comprobar que la oferta al profesional se crea solo después del pago.
+5. Para reserva automática, comprobar que el worker de dispatch puede iniciar la búsqueda después de la activación.
+
+**Resultado esperado:** El callback firmado produce una sola transición atómica de pago a reserva pagada. Sin firma validada no se activa la reserva.
+
+### QA-PAY-03 — Callback duplicado o manipulado
+
+**Prioridad:** Crítica  
+**Precondición:** Intento ya aprobado en QA.
+
+1. Repetir exactamente el callback aprobado.
+2. Repetir con importe diferente, referencia diferente o código de respuesta incompatible.
+3. Enviar el callback sin confirmación de AuthHash verificado.
+
+**Resultado esperado:** El callback idéntico es idempotente y no duplica la oferta ni el pago. Los callbacks manipulados o no verificados se rechazan y no alteran el estado de la reserva ni el importe.
+
+### QA-PAY-04 — Pago declinado y reintento
+
+**Prioridad:** Alta  
+**Precondición:** Reserva en `payment_pending` con intento pendiente.
+
+1. Finalizar el intento con un código de declinación y firma válida.
+2. Comprobar que el pago pasa a `failed` y la reserva permanece sin dispatch.
+3. Crear un nuevo intento con nueva referencia e idempotency key mientras siga vigente la ventana de checkout.
+
+**Resultado esperado:** Un pago declinado no genera ofertas. El cliente puede reintentar sin duplicar ni alterar el precio de la reserva.
+
+### QA-PAY-05 — Vencimiento de la ventana de pago
+
+**Prioridad:** Alta  
+**Precondición:** Reserva `payment_pending` con `payment_due_at` vencido.
+
+1. Ejecutar `expire_unpaid_booking_checkouts()`.
+2. Comprobar que los intentos pendientes pasan a `failed` y la reserva pasa a `expired`.
+3. Enviar un callback aprobado tardío.
+
+**Resultado esperado:** La reserva vence sin bloquear profesionales y el callback tardío no activa dispatch ni registra fondos como retenidos. La ventana de checkout inicial es de 10 minutos.
+
+### QA-PAY-06 — No permitir importe o moneda manipulados
+
+**Prioridad:** Crítica  
+**Precondición:** Intento AZUL pendiente con importe y moneda DOP guardados en backend.
+
+1. Enviar callback con importe superior o inferior al guardado.
+2. Enviar callback con moneda distinta de DOP.
+3. Comprobar el estado del pago y la reserva.
+
+**Resultado esperado:** El backend rechaza cualquier diferencia exacta de importe o moneda. No se confía en valores enviados por el dispositivo ni en el contenido visual de la página de retorno.
+
+### QA-PAY-07 — Precio de catálogo no configurado
+
+**Prioridad:** Crítica  
+**Precondición:** Servicio/variante con precio provisional o placeholder (por ejemplo, DOP 1).
+
+1. Intentar generar el intento de checkout.
+2. Revisar la respuesta y que no exista un intento activo en `payments`.
+
+**Resultado esperado:** No se cobra ni se despacha un servicio con tarifa placeholder. El checkout queda bloqueado hasta que administración configure un precio real de catálogo.
