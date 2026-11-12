@@ -816,14 +816,14 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 12, paddingBottom: 56, gap: 22, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
-  section: { padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 13, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 9 }, shadowRadius: 18, elevation: 2 },
+  section: { padding: 24, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 26, backgroundColor: KlippColors.white, gap: 16, shadowColor: KlippColors.ink, shadowOpacity: 0.055, shadowOffset: { width: 0, height: 12 }, shadowRadius: 24, elevation: 3 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   portfolioItem: { width: '47%', gap: 5 },
-  portfolioImage: { width: '100%', height: 118, borderRadius: 12, backgroundColor: KlippColors.canvas },
+  portfolioImage: { width: '100%', height: 148, borderRadius: 16, backgroundColor: KlippColors.canvas },
   portfolioDelete: { alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 9, borderRadius: 8, backgroundColor: KlippColors.whiteCoral },
   portfolioDeleteText: { color: KlippColors.coral, fontSize: 12, fontWeight: '700' },
   statusBanner: { padding: 16, borderRadius: 18, backgroundColor: KlippColors.surfaceBlue, borderWidth: 1, borderColor: '#DCE3FF', gap: 7 },
@@ -834,7 +834,7 @@ const styles = StyleSheet.create({
   statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, paddingHorizontal: 13, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  input: { minHeight: 54, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 15, paddingHorizontal: 15, color: KlippColors.ink, backgroundColor: '#FCFCFD', fontSize: 15 },
   multiline: { minHeight: 92, paddingVertical: 10, textAlignVertical: 'top' },
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.whiteMint },
