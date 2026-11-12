@@ -104,6 +104,18 @@ Una respuesta AZUL con HMAC válido que confirme un cobro no puede descartarse c
 
 Esto también cubre callbacks que llegan después de que el worker local haya marcado el intento como expirado. Los callbacks repetidos son idempotentes. Hasta que AZUL y Klipp tengan un flujo de devolución certificado, estos casos requieren conciliación y devolución desde el comercio; no se debe intentar un segundo cobro al cliente.
 
+## Cola administrativa de conciliación
+
+El panel **Finanzas → Conciliación AZUL** muestra:
+- intentos expirados sin callback firmado, pendientes de verificar en el portal/reporte AZUL;
+- cobros aprobados tardíos o con importe distinto, pendientes de devolución.
+
+Permisos:
+- `finance.read`: consultar la cola;
+- `finance.reconcile`: registrar una conciliación como «AZUL confirma que no hubo cargo» o registrar una devolución ya ejecutada.
+
+Cada resolución exige referencia del reporte/devolución y una nota; se registra en `admin_audit_log`. El panel no inicia una devolución automáticamente ni permite marcarla como completada sin referencia. Hasta que se integre y certifique la API de reembolsos de AZUL, el operador debe ejecutar la devolución en el portal del comercio y luego registrarla en Klipp.
+
 ## Condiciones para activar pagos
 
 No habilitar checkout real hasta:
