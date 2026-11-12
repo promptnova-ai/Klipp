@@ -314,7 +314,7 @@ DECLARE
   v_new text;
 BEGIN
   v_definition := pg_get_functiondef('public.finalize_azul_payment_attempt(uuid,text,numeric,text,text,text,boolean)'::regprocedure);
-  v_old := 'IF v_booking.assignment_mode = ''manual'' AND v_booking.pro_id IS NOT NULL THEN';
+  v_old := 'IF v_booking.assignment_mode=''manual'' AND v_booking.pro_id IS NOT NULL THEN';
   v_new := 'IF v_booking.pro_id IS NOT NULL THEN';
   IF position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate paid booking first-offer gate';
