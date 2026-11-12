@@ -19,6 +19,7 @@ import { useAuth } from '@/components/auth-provider';
 import { ScreenEntrance } from '@/components/ui-primitives';
 import { KlippColors } from '@/lib/brand';
 import type { ExtractRole } from '@/lib/types';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
 
@@ -182,6 +183,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                     : 'Entra en tu cuenta y continúa donde lo dejaste.'}
                 </Text>
 
+                {!isSupabaseConfigured && (
+                  <View style={styles.configNotice}>
+                    <Text style={styles.configNoticeTitle}>Vista previa de Klipp</Text>
+                    <Text style={styles.configNoticeText}>La interfaz está disponible, pero el acceso a cuentas y los datos reales se activarán al conectar el proyecto Supabase.</Text>
+                  </View>
+                )}
+
                 {isRegister && (
                   <>
                     <View style={styles.field}>
@@ -267,11 +275,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
                 <Pressable
                   accessibilityRole="button"
-                  disabled={busy || !email.trim() || !password}
+                  disabled={busy || !email.trim() || !password || !isSupabaseConfigured}
                   onPress={() => void handleSubmit()}
                   style={({ pressed }) => [
                     styles.submit,
-                    (busy || !email.trim() || !password) && styles.submitDisabled,
+                    (busy || !email.trim() || !password || !isSupabaseConfigured) && styles.submitDisabled,
                     pressed && !busy && styles.submitPressed,
                   ]}>
                   {busy
@@ -365,6 +373,9 @@ const styles = StyleSheet.create({
   eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, marginBottom: 5 },
+  configNotice: { gap: 5, padding: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue },
+  configNoticeTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '900' },
+  configNoticeText: { color: KlippColors.slate, fontSize: 11, lineHeight: 16 },
   field: { gap: 7 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
   input: { minHeight: 52, paddingHorizontal: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 15 },
