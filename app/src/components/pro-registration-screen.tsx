@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 22, paddingBottom: 36 },
   proHero: { width: '100%', maxWidth: 920, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 24, backgroundColor: '#27334B', marginBottom: 26 },
   proHeroImage: { borderRadius: 24 },
-  proHeroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,22,39,0.43)' },
+  proHeroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15,22,39,0.43)' },
   proHeroCopy: { padding: 24, gap: 8, maxWidth: 620 },
   proHeroEyebrow: { color: '#FFB7A8', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   proHeroTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
