@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   payout: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '800', marginTop: 3 },
   reassignmentNotice: { color: '#8A5B00', backgroundColor: '#FFF4D6', borderRadius: 8, padding: 10, fontSize: 12, lineHeight: 18, fontWeight: '700' },
-  paymentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.warningSoft, borderRadius: 10, padding: 10, fontSize: 13, lineHeight: 19, fontWeight: '600' },
+  paymentNotice: { color: KlippColors.warning, backgroundColor: KlippColors.goldLight, borderRadius: 10, padding: 10, fontSize: 13, lineHeight: 19, fontWeight: '600' },
   locationNotice: { color: '#047857', fontSize: 13, fontWeight: '700' },
   chatButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: KlippColors.navy },
   chatButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
