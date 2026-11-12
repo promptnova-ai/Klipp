@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
+  ImageBackground,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -377,6 +378,20 @@ export function ProRegistrationScreen() {
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          {step === 0 && (
+            <ImageBackground
+              source={{ uri: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1400&q=85' }}
+              resizeMode="cover"
+              imageStyle={styles.proHeroImage}
+              style={styles.proHero}>
+              <View style={styles.proHeroShade} />
+              <View style={styles.proHeroCopy}>
+                <Text style={styles.proHeroEyebrow}>KLIPP PRO · SANTO DOMINGO</Text>
+                <Text style={styles.proHeroTitle}>Tu trabajo, más cerca de nuevos clientes.</Text>
+                <Text style={styles.proHeroSubtitle}>Crea tu perfil profesional y recibe solicitudes en tu zona.</Text>
+              </View>
+            </ImageBackground>
+          )}
           <Animated.View
             style={[
               styles.stepContent,
@@ -684,7 +699,14 @@ const styles = StyleSheet.create({
   stepCount: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 0.7 },
   progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
   progressFill: { height: 5, borderRadius: 0, backgroundColor: KlippColors.coral },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 34, paddingBottom: 36 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 22, paddingBottom: 36 },
+  proHero: { width: '100%', maxWidth: 920, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 24, backgroundColor: '#27334B', marginBottom: 26 },
+  proHeroImage: { borderRadius: 24 },
+  proHeroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15,22,39,0.43)' },
+  proHeroCopy: { padding: 24, gap: 8, maxWidth: 620 },
+  proHeroEyebrow: { color: '#FFB7A8', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+  proHeroTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
+  proHeroSubtitle: { color: '#F5F5F5', fontSize: 13, lineHeight: 19, maxWidth: 460 },
   stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 26 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
