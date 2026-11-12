@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import {
   AccessibilityInfo,
+  type AccessibilityState,
   ActivityIndicator,
   Animated,
   Easing,
@@ -104,6 +105,7 @@ type MotionPressableProps = {
   disabled?: boolean;
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'link' | 'tab' | 'radio' | 'checkbox';
+  accessibilityState?: AccessibilityState;
 };
 
 /** Tactile press feedback that behaves the same in the web and native clients. */
@@ -114,6 +116,7 @@ export function MotionPressable({
   disabled = false,
   accessibilityLabel,
   accessibilityRole = 'button',
+  accessibilityState,
 }: MotionPressableProps) {
   const scale = useMemo(() => new Animated.Value(1), []);
   const reducedMotion = useReducedMotion();
@@ -132,6 +135,7 @@ export function MotionPressable({
     <AnimatedPressable
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
       disabled={disabled}
       onPress={onPress}
       onPressIn={() => animateScale(KlippMotion.pressScale)}

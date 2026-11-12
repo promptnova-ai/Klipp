@@ -484,25 +484,25 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 }
 
 const styles = StyleSheet.create({
-  proHero: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 22, marginTop: 8, padding: 27, borderRadius: 30, backgroundColor: '#FF7058', gap: 19, overflow: 'hidden', shadowColor: '#E65C45', shadowOpacity: 0.16, shadowOffset: { width: 0, height: 15 }, shadowRadius: 28, elevation: 5 }
+  proHero: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 22, marginTop: 8, padding: 27, borderRadius: 30, backgroundColor: '#FF7058', gap: 19, overflow: 'hidden', shadowColor: '#E65C45', shadowOpacity: 0.16, shadowOffset: { width: 0, height: 15 }, shadowRadius: 28, elevation: 5 },
   proHeroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
-  proHeroEyebrow: { color: 'rgba(255,255,255,0.82)', fontSize: 9, fontWeight: '900', letterSpacing: 1.25 }
+  proHeroEyebrow: { color: 'rgba(255,255,255,0.82)', fontSize: 9, fontWeight: '900', letterSpacing: 1.25 },
   proHeroLive: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)' },
   proHeroLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFB19F' },
   proHeroLiveText: { color: '#FFFFFF', fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
   proHeroMain: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   proHeroCopy: { flex: 1, gap: 8 },
-  proHeroTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -0.9 }
-  proHeroDescription: { color: '#FFF0EC', fontSize: 13, lineHeight: 20, maxWidth: 440 }
-  proHeroCount: { width: 86, height: 86, borderRadius: 27, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#A93F30', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 7 }, shadowRadius: 14, elevation: 3 }
-  proHeroCountValue: { color: '#E65C45', fontSize: 31, lineHeight: 34, fontWeight: '900' }
-  proHeroCountLabel: { color: '#E65C45', fontSize: 7, fontWeight: '900', letterSpacing: 0.8 }
-  proHeroStats: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.28)' }
+  proHeroTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -0.9 },
+  proHeroDescription: { color: '#FFF0EC', fontSize: 13, lineHeight: 20, maxWidth: 440 },
+  proHeroCount: { width: 86, height: 86, borderRadius: 27, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#A93F30', shadowOpacity: 0.12, shadowOffset: { width: 0, height: 7 }, shadowRadius: 14, elevation: 3 },
+  proHeroCountValue: { color: '#E65C45', fontSize: 31, lineHeight: 34, fontWeight: '900' },
+  proHeroCountLabel: { color: '#E65C45', fontSize: 7, fontWeight: '900', letterSpacing: 0.8 },
+  proHeroStats: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.28)' },
   proHeroStat: { flex: 1, gap: 2 },
-  proHeroStatValue: { color: '#FFFFFF', fontSize: 21, fontWeight: '900' }
-  proHeroStatLabel: { color: '#FFF0EC', fontSize: 10, fontWeight: '700' }
-  proHeroStatDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.34)' }
-  requestCard: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 22, padding: 23, borderRadius: 26, borderWidth: 1, borderColor: '#E8E5DE', backgroundColor: '#FFFFFF', gap: 17, shadowColor: '#171B2D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 11 }, shadowRadius: 22, elevation: 3 }
+  proHeroStatValue: { color: '#FFFFFF', fontSize: 21, fontWeight: '900' },
+  proHeroStatLabel: { color: '#FFF0EC', fontSize: 10, fontWeight: '700' },
+  proHeroStatDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.34)' },
+  requestCard: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 22, padding: 23, borderRadius: 26, borderWidth: 1, borderColor: '#E8E5DE', backgroundColor: '#FFFFFF', gap: 17, shadowColor: '#171B2D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 11 }, shadowRadius: 22, elevation: 3 },
   requestCardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   requestIcon: { width: 50, height: 50, borderRadius: 17, backgroundColor: '#FFF0EC', alignItems: 'center', justifyContent: 'center' },
   requestIconText: { color: KlippColors.coral, fontSize: 23, fontWeight: '900' },
@@ -515,15 +515,15 @@ const styles = StyleSheet.create({
   requestFact: { width: '47%', minHeight: 62, padding: 12, borderRadius: 15, backgroundColor: '#F7F5F0', gap: 5 },
   requestFactLabel: { color: '#85899A', fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
   requestFactValue: { color: '#171B2D', fontSize: 12, lineHeight: 17, fontWeight: '700' },
-  requestEarnings: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 17, borderRadius: 18, backgroundColor: '#FFF0EC', borderWidth: 1, borderColor: '#FFE0D8' }
+  requestEarnings: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 17, borderRadius: 18, backgroundColor: '#FFF0EC', borderWidth: 1, borderColor: '#FFE0D8' },
   requestEarningsLabel: { color: '#E65C45', fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   requestEarningsHint: { color: '#8D6D69', fontSize: 10, marginTop: 3 },
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: '#FF7058', alignItems: 'center', gap: 9 }
-  offerBrand: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 }
+  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: '#FF7058', alignItems: 'center', gap: 9 },
+  offerBrand: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: KlippColors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
-  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)' }
-  countdownText: { color: '#FFFFFF', fontWeight: '900', fontSize: 18, textAlign: 'center' }
+  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)' },
+  countdownText: { color: '#FFFFFF', fontWeight: '900', fontSize: 18, textAlign: 'center' },
   offerContent: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 28, paddingBottom: 56, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   offerTitle: { color: KlippColors.navy, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'left' },
   offerSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, textAlign: 'left', marginBottom: 4 },
@@ -549,9 +549,9 @@ const styles = StyleSheet.create({
   mapUnavailableTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '900', textAlign: 'center' },
   mapUnavailableText: { color: KlippColors.slate, fontSize: 11, lineHeight: 17, textAlign: 'center' },
   mapCoordinates: { color: KlippColors.coral, fontSize: 11, fontWeight: '800', textAlign: 'center' },
-  earningCard: { padding: 22, borderRadius: 22, backgroundColor: '#FFF0EC', alignItems: 'center', gap: 7, borderWidth: 1, borderColor: '#FFD8D0' }
-  earningLabel: { color: '#E65C45', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 }
-  earningAmount: { color: '#E65C45', fontSize: 34, fontWeight: '900' }
+  earningCard: { padding: 22, borderRadius: 22, backgroundColor: '#FFF0EC', alignItems: 'center', gap: 7, borderWidth: 1, borderColor: '#FFD8D0' },
+  earningLabel: { color: '#E65C45', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  earningAmount: { color: '#E65C45', fontSize: 34, fontWeight: '900' },
   earningNote: { color: KlippColors.slate, fontSize: 11, textAlign: 'center' },
   materialsCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 18, borderRadius: 20, borderWidth: 1.5, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   materialsCardError: { borderColor: KlippColors.danger, backgroundColor: KlippColors.whiteCoral },
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '800', marginTop: 6 },
   card: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 12 },
   cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
-  payout: { color: '#E65C45', fontSize: 19, fontWeight: '900' }
+  payout: { color: '#E65C45', fontSize: 19, fontWeight: '900' },
   expiration: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
   warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 12, backgroundColor: KlippColors.goldLight },
   actions: { flexDirection: 'row', gap: 10, marginTop: 8 },

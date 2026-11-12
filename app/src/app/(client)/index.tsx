@@ -1,5 +1,6 @@
 import { SymbolView } from 'expo-symbols';
 import { Image } from 'expo-image';
+import { heroArt, serviceArt } from '@/lib/service-art';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import type { ComponentProps } from 'react';
@@ -59,17 +60,6 @@ function serviceIcon(code: string): ComponentProps<typeof SymbolView>['name'] {
   if (code.includes('mantenimiento')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' };
   if (code.includes('oficinas')) return { ios: 'building.2.fill', android: 'business', web: 'business' };
   return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
-}
-
-function serviceImage(code: string) {
-  if (code.includes('barber')) return 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1000&auto=format&fit=crop&q=85';
-  if (code.includes('peluquer')) return 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1000&auto=format&fit=crop&q=85';
-  if (code.includes('estetica')) return 'https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?w=1000&auto=format&fit=crop&q=85';
-  if (code.includes('carwash')) return 'https://images.unsplash.com/photo-1607860108855-64acf2078ed9?w=1000&auto=format&fit=crop&q=85';
-  if (code.includes('detailing')) return 'https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=1000&auto=format&fit=crop&q=85';
-  if (code.includes('mantenimiento')) return 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=1000&auto=format&fit=crop&q=85';
-  if (code.includes('oficinas')) return 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=1000&auto=format&fit=crop&q=85';
-  return 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=1000&auto=format&fit=crop&q=85';
 }
 
 function serviceAccent(code: string) {
@@ -331,7 +321,7 @@ export default function ClientHomeScreen() {
               {featuredService && <MotionPressable accessibilityLabel="Explorar servicios" onPress={() => showServiceDetails(featuredService)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Explorar servicios</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={KlippColors.cobaltDark} size={17} /></MotionPressable>}
             </View>
             <View style={[styles.heroVisual, !wideLayout && styles.heroVisualCompact]}>
-              <Image source={{ uri: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1400&auto=format&fit=crop&q=90' }} contentFit="cover" transition={350} style={styles.heroImage} />
+              <Image source={heroArt} contentFit="cover" transition={350} style={styles.heroImage} />
               <View style={styles.heroVisualScrim} />
               <View style={styles.heroVisualNote}><View style={styles.heroVisualIcon}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.cobaltDark} size={17} /></View><View style={styles.heroVisualCopy}><Text style={styles.heroVisualTitle}>Todo resuelto, en un solo lugar</Text><Text style={styles.heroVisualText}>De la reserva al seguimiento.</Text></View></View>
               <View style={styles.heroVisualOrb} />
@@ -366,7 +356,7 @@ export default function ClientHomeScreen() {
               const priceOptions = service.offers.filter((offer) => offer.base_price_dop > 0).map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })).sort((a,b) => a.price-b.price);
               const lowestOption = priceOptions[0];
               return <MotionPressable accessibilityLabel={`Ver detalles de ${service.name}`} key={service.id} onPress={() => showServiceDetails(service)} style={[styles.serviceCard, { width: serviceCardWidth }]}>
-                <View style={styles.servicePhotoWrap}><Image source={{ uri: serviceImage(service.code) }} contentFit="cover" transition={280} style={styles.servicePhoto} /><View style={styles.servicePhotoWash} /><View style={[styles.servicePhotoBadge, { backgroundColor: serviceSurface(service.code) }]}><SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={21} /></View><View style={styles.photoLabel}><Text style={styles.photoLabelText}>{getCategory(service)}</Text></View></View>
+                <View style={styles.servicePhotoWrap}><Image source={serviceArt(service.code)} contentFit="cover" transition={280} style={styles.servicePhoto} /><View style={styles.servicePhotoWash} /><View style={[styles.servicePhotoBadge, { backgroundColor: serviceSurface(service.code) }]}><SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={21} /></View><View style={styles.photoLabel}><Text style={styles.photoLabelText}>{getCategory(service)}</Text></View></View>
                 <View style={styles.serviceCopy}><View style={styles.serviceCardTop}><Text numberOfLines={2} style={styles.serviceTitle}>{service.name}</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={KlippColors.cobalt} size={17} /></View><Text numberOfLines={2} style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text><View style={styles.serviceMeta}>{lowestOption ? <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text> : <Text style={styles.servicePriceHint}>Tarifa según modalidad</Text>}{lowestOption && <Text style={styles.metaDot}>·</Text>}{lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}</View><Text style={styles.serviceLink}>Ver servicio</Text></View>
               </MotionPressable>;
             })}
