@@ -54,6 +54,20 @@ const preferenceOptions = [
   },
 ] as const;
 
+function getNotificationGroups(items: AppNotification[]) {
+  const today = new Date();
+  const todayKey = today.toDateString();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString();
+  return [
+    { title: 'Hoy', items: items.filter((item) => new Date(item.created_at).toDateString() === todayKey) },
+    { title: 'Ayer', items: items.filter((item) => new Date(item.created_at).toDateString() === yesterday) },
+    { title: 'Anteriores', items: items.filter((item) => {
+      const key = new Date(item.created_at).toDateString();
+      return key !== todayKey && key !== yesterday;
+    }) },
+  ].filter((group) => group.items.length > 0);
+}
+
 function relativeDate(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
@@ -197,16 +211,7 @@ export function NotificationsScreen() {
   }, [userId, loadNotifications]);
 
   const unreadCount = items.filter((item) => !item.read_at).length;
-  const todayKey = new Date().toDateString();
-  const yesterdayKey = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString();
-  const notificationGroups = [
-    { title: 'Hoy', items: items.filter((item) => new Date(item.created_at).toDateString() === todayKey) },
-    { title: 'Ayer', items: items.filter((item) => new Date(item.created_at).toDateString() === yesterdayKey) },
-    { title: 'Anteriores', items: items.filter((item) => {
-      const dateKey = new Date(item.created_at).toDateString();
-      return dateKey !== todayKey && dateKey !== yesterdayKey;
-    }) },
-  ].filter((group) => group.items.length > 0);
+  const notificationGroups = getNotificationGroups(items);
 
   async function updatePreference(eventType: keyof PreferenceMap, channel: PreferenceChannel, enabled: boolean) {
     if (!userId) return;
