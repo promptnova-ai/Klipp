@@ -928,14 +928,19 @@ export function NewBookingScreen() {
           {selectedOffer && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{selectedOffer.pro_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'manual' && selectedProId && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional</Text><Text style={styles.summaryValue}>{pros.find((pro) => pro.pro_id === selectedProId)?.full_name ?? 'Profesional seleccionado'}</Text></View>}
           {mode === 'auto' && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Asignación</Text><Text style={styles.summaryValue}>{timing === 'now' ? 'Solicitar ahora' : 'Asignación automática'}</Text></View>}
+          {mode === 'auto' && autoQuote && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Profesional recomendado</Text><Text style={styles.summaryValue}>{autoQuote.pro_name ?? 'Profesional Klipp'}</Text></View>}
           <View style={styles.summaryDivider} />
           {mode === 'auto' && !selectedOffer ? (
             <View>
               <View style={styles.priceRow}>
-                <Text style={styles.priceLabel}>Precio estimado</Text>
+                <Text style={styles.priceLabel}>Precio estimado en tu zona</Text>
                 <Text style={styles.priceLine}>{autoPriceLoading ? 'Calculando…' : autoPriceRange ? `${formatDop(autoPriceRange.min_price_dop)} – ${formatDop(autoPriceRange.max_price_dop)}` : 'Sin tarifas disponibles'}</Text>
               </View>
-              <Text style={styles.body}>Estimación basada en las tarifas publicadas por profesionales de la zona. El precio definitivo será el del profesional que acepte y se mostrará antes del pago.</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceLabel}>Precio final del profesional</Text>
+                <Text style={styles.priceLine}>{autoQuoteLoading ? 'Consultando…' : autoQuote ? formatDop(autoQuote.price_dop) : 'No disponible'}</Text>
+              </View>
+              <Text style={styles.body}>El precio final corresponde al profesional recomendado y queda bloqueado para esta reserva. Si no puede atenderte, Klipp buscará otro profesional con la misma tarifa.</Text>
             </View>
           ) : (
             <View style={styles.priceRow}>
@@ -952,7 +957,7 @@ export function NewBookingScreen() {
         </Pressable>
       ) : !success && (
         <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
+          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Confirmar precio y preparar reserva</Text>}
         </Pressable>
       )}
     </ScrollView>
