@@ -21,6 +21,7 @@ type BookingMessage = { id: number; booking_id: string; sender_id: string; body:
 type PaymentSummary = { id: string; booking_id: string; provider: string; amount_dop: number; status: 'pending' | 'held' | 'released' | 'refunded' | 'failed'; created_at: string; held_at: string | null; released_at: string | null };
 
 const statusLabels: Record<BookingStatus, string> = {
+  payment_pending: 'Pendiente de pago',
   requested: 'Solicitud enviada',
   awaiting_payment: 'Pago pendiente',
   scheduled: 'Programada',
