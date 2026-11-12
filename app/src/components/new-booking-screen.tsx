@@ -874,8 +874,8 @@ export function NewBookingScreen() {
       </Section>}
       <Section title={timing === 'now' ? "5. Profesional" : "6. Profesional"}>
         {timing === 'scheduled' && !selectedOffer && <View style={styles.modeOptions}>
-          <ModeOption label="Cerca de mí" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
-          <ModeOption label="Asignar automáticamente" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
+          <ModeOption label="Elegir profesional" selected={mode === 'manual'} onPress={() => { resetAppointmentSelection(); setMode('manual'); }} />
+          <ModeOption label="Cerca de mí" selected={mode === 'auto'} onPress={() => { resetAppointmentSelection(); setMode('auto'); }} />
         </View>}
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
