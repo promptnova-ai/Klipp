@@ -60,6 +60,28 @@ function serviceIcon(code: string): ComponentProps<typeof SymbolView>['name'] {
   return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
 }
 
+function serviceAccent(code: string) {
+  if (code.includes('barber')) return '#3D5AFE';
+  if (code.includes('peluquer')) return '#FF7058';
+  if (code.includes('estetica')) return '#B879D9';
+  if (code.includes('carwash')) return '#2799C7';
+  if (code.includes('detailing')) return '#2C7A9B';
+  if (code.includes('mantenimiento')) return '#D18A36';
+  if (code.includes('oficinas')) return '#52708C';
+  return '#398B70';
+}
+
+function serviceSurface(code: string) {
+  if (code.includes('barber')) return '#E9EDFF';
+  if (code.includes('peluquer')) return '#FFF0EC';
+  if (code.includes('estetica')) return '#F5ECFA';
+  if (code.includes('carwash')) return '#EAF6FB';
+  if (code.includes('detailing')) return '#E8F2F6';
+  if (code.includes('mantenimiento')) return '#FBF1E5';
+  if (code.includes('oficinas')) return '#EDF2F7';
+  return '#E7F7F0';
+}
+
 function getCategory(service: ServiceType & { category_name?: string | null }) {
   if (service.category_name) return service.category_name;
   const description = `${service.code} ${service.name}`.toLocaleLowerCase();
@@ -401,8 +423,8 @@ export default function ClientHomeScreen() {
                 key={service.id}
                 onPress={() => showServiceDetails(service)}
                 style={[styles.serviceCard, wideLayout && styles.serviceCardWide]}>
-                <View style={styles.serviceCardIcon}>
-                  <SymbolView name={serviceIcon(service.code)} tintColor={KlippColors.blueDark} size={23} />
+                <View style={[styles.serviceCardIcon, { backgroundColor: serviceSurface(service.code) }]}>
+                  <SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={24} />
                 </View>
                 <View style={styles.serviceCopy}>
                   <View style={styles.serviceCardTop}>
@@ -459,8 +481,8 @@ export default function ClientHomeScreen() {
               <View style={styles.sheetHandle} />
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.detailIllustration}>
-                  <View style={styles.detailIllustrationIcon}>
-                    <SymbolView name={serviceIcon(selectedService.code)} tintColor={KlippColors.blueDark} size={34} />
+                  <View style={[styles.detailIllustrationIcon, { backgroundColor: serviceSurface(selectedService.code) }]}>
+                    <SymbolView name={serviceIcon(selectedService.code)} tintColor={serviceAccent(selectedService.code)} size={36} />
                   </View>
                   <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
                 </View>
