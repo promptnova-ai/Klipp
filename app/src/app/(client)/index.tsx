@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   searchBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: KlippColors.surface, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   searchInput: { flex: 1, height: 52, color: KlippColors.ink, fontSize: 14 },
   clearSearch: { padding: 5 },
-  hero: { overflow: 'hidden', padding: 22, borderRadius: 24, backgroundColor: KlippColors.navy, gap: 13 },
+  hero: { overflow: 'hidden', padding: 22, borderRadius: 24, backgroundColor: '#0A0A0B', gap: 13 },
   heroAccent: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#14294B', right: -75, top: -85 },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: '#1B2A42' },
   heroBadgeText: { color: '#D4E1F4', fontSize: 9, fontWeight: '700', letterSpacing: 0.7 },
