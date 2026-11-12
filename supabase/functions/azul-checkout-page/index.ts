@@ -26,7 +26,8 @@ function paymentForm(action: string, fields: Record<string, string>, autoSubmit:
   const hidden = Object.entries(fields)
     .map(([name, value]) => `<input type="hidden" name="${escapeHtml(name)}" value="${escapeHtml(value)}">`)
     .join("\n");
-  return `<form id="azul-payment-form" action="${escapeHtml(action)}" method="post">${hidden}<noscript><button type="submit">Continuar a AZUL</button></noscript></form>${autoSubmit ? "<script>document.getElementById('azul-payment-form').submit();</script>" : ""}`;
+  const button = autoSubmit ? "<noscript><button type=\"submit\">Continuar a AZUL</button></noscript>" : "<button type=\"submit\">Probar sitio alternativo de AZUL</button>";
+  return `<form id="azul-payment-form" action="${escapeHtml(action)}" method="post">${hidden}${button}</form>${autoSubmit ? "<script>document.getElementById('azul-payment-form').submit();</script>" : ""}`;
 }
 
 Deno.serve(async (req) => {
