@@ -786,8 +786,10 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 1. Abrir CancelUrl sin OrderNumber ni AuthHash.
 2. Consultar el intento y la reserva.
 3. Volver a iniciar el checkout dentro de la ventana de pago.
+4. Repetir cerrando el navegador sin que AZUL redirija al comercio y dejar vencer el checkout.
+5. Comprobar el campo `payments.reconciliation_required_at` y la pantalla de Mis reservas.
 
-**Resultado esperado:** La navegación de cancelación no marca un pago como aprobado ni fallido, no activa dispatch y permite reintentar con una nueva sesión de un solo uso mientras la reserva siga vigente.
+**Resultado esperado:** La navegación de cancelación no marca un pago como aprobado ni activa dispatch. Si el navegador se cierra sin callback, el worker vence la reserva y marca el intento para conciliación con AZUL; el cliente ve que no debe volver a pagar hasta verificar el resultado. Si el cliente cancela con una respuesta de AZUL sin firma, no se cambia el estado financiero.
 
 ### QA-PAY-16 — Configuración fiscal o de comercio incompleta
 
