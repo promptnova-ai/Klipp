@@ -16,7 +16,7 @@ import {
 import { KlippColors, KlippLayout, KlippMotion } from '@/lib/brand';
 
 /** Respect the operating system's reduced-motion accessibility preference. */
-function useReducedMotion() {
+export function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
