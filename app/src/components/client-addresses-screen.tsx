@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   locationButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12, borderRadius: 10, backgroundColor: KlippColors.surfaceBlue },
   locationButtonText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
   button: { minHeight: 48, marginTop: 6, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.blue },
-  buttonText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  buttonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.55 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
   success: { color: KlippColors.success, fontSize: 14 },
