@@ -101,6 +101,18 @@ jobs:
       - name: Test shared Edge Function utilities
         run: deno test supabase/functions/_shared/auth_test.ts
 
+      - name: Test AZUL HMAC and checkout utilities
+        run: deno test supabase/functions/_shared/azul_test.ts
+
+      - name: Type-check AZUL checkout initializer
+        run: deno check supabase/functions/azul-create-checkout/index.ts
+
+      - name: Type-check AZUL hosted checkout page
+        run: deno check supabase/functions/azul-checkout-page/index.ts
+
+      - name: Type-check AZUL payment return
+        run: deno check supabase/functions/azul-payment-return/index.ts
+
       - name: Type-check notification dispatcher
         run: deno check supabase/functions/dispatch-notifications/index.ts
       
