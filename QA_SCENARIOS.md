@@ -465,6 +465,18 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** Solo una reserva queda asignada al profesional. La segunda aceptación se rechaza por conflicto de agenda y no modifica la reserva ni confirma materiales.
 
+### QA-BOOK-11 — Margen de desplazamiento de 60 minutos
+
+**Prioridad:** Alta  
+**Precondición:** Profesional con una reserva u oferta previa y disponibilidad para una segunda reserva.
+
+1. Crear una reserva previa que termine y dejar una segunda reserva con 90 minutos de separación.
+2. Comprobar la elegibilidad automática y la reasignación del profesional.
+3. Repetir con solo 30 minutos de separación.
+4. Repetir con una oferta pendiente en lugar de una reserva ya aceptada.
+
+**Resultado esperado:** El sistema exige un margen de 60 minutos, no 120. Una separación de 90 minutos es válida; una de 30 minutos bloquea la asignación. La misma regla se aplica a reservas activas, ofertas pendientes y reasignaciones.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
