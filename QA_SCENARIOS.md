@@ -829,3 +829,16 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 6. Intentar resolver sin permisos, sin referencia, sin importe real o con un estado incompatible.
 
 **Resultado esperado:** La cola solo muestra casos pendientes. «Sin cargo» solo puede resolver un intento expirado `failed`; «cargo encontrado» convierte ese intento en `held` con devolución requerida y registra el importe real; «devolución confirmada» solo puede cerrar un pago `held` con devolución requerida. Cada acción exige referencia y motivo, queda en `admin_audit_log` y no permite marcar una devolución como completada sin referencia del proveedor.
+
+
+### QA-BOOK-12 — Cotización inmediata ordenada por GPS real
+
+**Prioridad:** Alta  
+**Precondición:** Dos profesionales elegibles, conectados y dentro de su área de cobertura, con posiciones GPS diferentes.
+
+1. Configurar un profesional con centro de cobertura cercano pero GPS real más lejano.
+2. Configurar otro con centro de cobertura más lejano pero GPS real junto al cliente.
+3. Solicitar cotización inmediata con `p_require_online=true`.
+4. Repetir para una reserva programada con `p_require_online=false`.
+
+**Resultado esperado:** La cotización inmediata prioriza la distancia GPS actual del profesional conectado. La cotización programada usa el centro del área de cobertura y disponibilidad futura, ya que no exige presencia online inmediata.
