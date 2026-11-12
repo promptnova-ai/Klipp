@@ -108,3 +108,19 @@ Antes de producción hay que definir y publicar política para cancelación del 
 7. Probar cambios concurrentes de tarifa, rechazo del primer candidato, sustitución con precio distinto, callbacks y reembolsos en QA.
 
 No activar pagos reales hasta completar homologación AZUL, pruebas de extremo a extremo y políticas comerciales/legales.
+
+
+## Implementación QA — estado actual
+
+La rama de trabajo implementa:
+- `get_auto_service_quote`: elige un profesional concreto elegible y devuelve su precio y duración reales para la pantalla de confirmación.
+- `create_prepaid_booking_at_location` y `create_prepaid_tier_booking_at_location`: exigen el precio y duración que vio el cliente; si la tarifa cambió, la transacción falla y la app debe volver a cotizar.
+- Los RPC inferiores de creación sin precio esperado quedan revocados a clientes autenticados.
+- La reserva nace en `payment_pending` con una ventana de 10 minutos y sin ofertas.
+- La aprobación AZUL verificada activa la reserva y envía la primera oferta al profesional cotizado.
+- La aceptación comprueba pago `held` y tarifa/duración coincidentes; no reescribe precio, comisión ni payout.
+- En asignación automática, un rechazo/vencimiento libera al primer profesional y busca alternativas con el mismo precio y duración. Una tarifa diferente no recibe oferta.
+
+**QA Sandbox:** validada transacción completa con cotización, rechazo de precio manipulado, creación sin oferta anticipada, intento de pago idempotente, callback aprobado, oferta posterior al pago y aceptación sin alterar el precio. También se probó rechazo y sustitución por profesional con la misma tarifa, y se comprobó que una tarifa distinta no recibe oferta. Todos los datos sintéticos se revirtieron.
+
+**Pendiente:** integración de checkout alojado AZUL y su Edge Function de firma/callback real, navegación de pago en la app, expiración programada, pruebas E2E en dispositivos y certificación de AZUL. No aplicar a producción hasta cerrar esos puntos.
