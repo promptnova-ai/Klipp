@@ -398,6 +398,40 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** Una reserva vencida pasa a `expired`, no recibe nuevas ofertas y no puede aceptarse aunque el contador de una oferta siga activo. El profesional que no respondió a una oferta vencida se marca como ausencia. Una reserva dentro del margen de 10 minutos conserva el flujo normal.
 
+### QA-BOOK-05 — Reasignación con tarifa propia del sustituto
+
+**Prioridad:** Crítica  
+**Precondición:** Reserva futura en estado `scheduled`, profesional original asignado, sustituto aprobado y con servicio activo.
+
+1. Configurar al sustituto con una tarifa y duración distintas para la misma variante.
+2. Crear una reasignación administrativa y aceptar desde la cuenta del sustituto.
+3. Revisar `bookings.pro_id`, `pro_service_id`, `est_minutes`, `price_dop`, `commission_dop` y `pro_payout_dop`.
+4. Si existe una liquidación en estado `pending`, revisar también `payouts.pro_id` y `payouts.amount_dop`.
+
+**Resultado esperado:** La reserva queda vinculada al servicio del sustituto. Precio, duración, comisión y liquidación se recalculan con su tarifa real. La confirmación de equipamiento anterior se reinicia.
+
+### QA-BOOK-06 — No reasignar sin tarifa de variante
+
+**Prioridad:** Alta  
+**Precondición:** Sustituto aprobado con el servicio principal, pero sin precio activo para la variante de la reserva.
+
+1. Abrir la lista de candidatos de reasignación.
+2. Intentar crear una solicitud al sustituto sin tarifa para esa variante.
+3. Repetir después de publicar la tarifa correspondiente.
+
+**Resultado esperado:** El sustituto no aparece como elegible ni puede aceptar mientras no tenga una tarifa activa para esa variante.
+
+### QA-BOOK-07 — Conflicto calculado con la duración del sustituto
+
+**Prioridad:** Alta  
+**Precondición:** El sustituto tiene una duración de servicio mayor que el profesional original y otra reserva cercana en su agenda.
+
+1. Crear una reserva que, con la duración original, no solape el margen de la segunda reserva.
+2. Configurar al sustituto con una duración que sí genere solapamiento.
+3. Consultar candidatos y tratar de reasignar.
+
+**Resultado esperado:** El servidor calcula disponibilidad y margen de desplazamiento usando la duración del sustituto. La reasignación se rechaza si existe solapamiento.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
