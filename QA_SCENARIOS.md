@@ -444,6 +444,27 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 
 **Resultado esperado:** Un pago `held` bloquea la reasignación y exige revisión financiera. Los intentos fallidos no se confunden con fondos retenidos; se aplica la política de reintento correspondiente.
 
+### QA-BOOK-09 — Despacho concurrente sin ofertas solapadas
+
+**Prioridad:** Crítica  
+**Precondición:** Dos reservas automáticas para la misma zona, servicio y franja; profesionales online y elegibles.
+
+1. Ejecutar `dispatch_auto_booking` para ambas reservas de forma concurrente.
+2. Consultar las ofertas pendientes de las dos reservas.
+3. Repetir con dos reservas cuyas ventanas de servicio y márgenes de desplazamiento no se solapen.
+
+**Resultado esperado:** Ningún profesional recibe ofertas simultáneas para franjas incompatibles. Para franjas no solapadas, el mismo profesional sí puede recibir ambas ofertas. El despacho comparte el bloqueo por profesional con la creación manual.
+
+### QA-BOOK-10 — Aceptación concurrente de dos ofertas incompatibles
+
+**Prioridad:** Crítica  
+**Precondición:** Dos ofertas pendientes de reservas que se solapan, dirigidas al mismo profesional.
+
+1. Aceptar ambas ofertas casi simultáneamente desde dos sesiones del mismo profesional.
+2. Consultar el estado de las dos reservas y sus solicitudes.
+
+**Resultado esperado:** Solo una reserva queda asignada al profesional. La segunda aceptación se rechaza por conflicto de agenda y no modifica la reserva ni confirma materiales.
+
 ### QA-PRO-REQ-05 — Cuenta atrás real de 45 segundos
 
 **Prioridad:** Alta  
