@@ -67,10 +67,17 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
           fullscreenControl: false,
           clickableIcons: false,
         });
-        const clientMarker = new google.maps.Marker({ map: googleMap, position: clientPosition, title: 'Tu ubicación' });
+        const clientMarker = new google.maps.Marker({ map: googleMap, position: clientPosition, title: 'Tu destino', icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: KlippColors.cobalt,
+          fillOpacity: 1,
+          strokeColor: '#FFFFFF',
+          strokeWeight: 3,
+          scale: 8,
+        } });
         const proMarker = new google.maps.Marker({ map: googleMap, position: proPosition, title: 'Tu profesional', icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: '#F59E0B',
+          fillColor: KlippColors.coral,
           fillOpacity: 1,
           strokeColor: '#FFFFFF',
           strokeWeight: 3,
@@ -79,7 +86,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
         const route = new Polyline({
           map: googleMap,
           path: routePolylineValue.current ? decodePolyline(routePolylineValue.current) : [proPosition, clientPosition],
-          strokeColor: '#208AEF',
+          strokeColor: KlippColors.cobalt,
           strokeOpacity: 0.85,
           strokeWeight: 5,
         });
@@ -141,7 +148,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
 }
 
 const styles = StyleSheet.create({
-  container: { height: 430, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  container: { height: 360, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
   error: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: '#FFFFFFE8' },
   errorText: { color: KlippColors.slate, fontSize: 13, textAlign: 'center' },
   loading: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
