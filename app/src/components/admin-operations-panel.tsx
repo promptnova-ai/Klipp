@@ -222,7 +222,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
       await openTimeline(bookingId);
     }
     setInterventionBusy(false);
-  }, [interventionReason, loadBookings, openTimeline]);
+  }, [interventionReason, loadBookings]);
 
   const cancelUnassignedBooking = useCallback((bookingId: string) => {
     if (interventionReason.trim().length < 5) {
