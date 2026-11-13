@@ -3,6 +3,7 @@ import MapView, { Marker, Polyline, type MapMarker, type Region, type LatLng } f
 import { StyleSheet, View } from 'react-native';
 
 import type { MapCoordinate } from '@/components/location-picker';
+import { KlippColors } from '@/theme/tokens';
 
 function decodePolyline(encoded: string): LatLng[] {
   const points: LatLng[] = [];
@@ -65,9 +66,9 @@ export function TrackingMap({
   return (
     <View style={styles.container}>
       <MapView ref={map} initialRegion={region} style={StyleSheet.absoluteFill}>
-        <Polyline coordinates={routeCoordinates} strokeColor="#208AEF" strokeWidth={4} />
-        <Marker coordinate={clientCoordinate} title="Tu destino" description="Dirección del servicio" pinColor="#208AEF" />
-        <Marker ref={marker} coordinate={proCoordinate} title="Tu profesional" description="Ubicación actual" pinColor="#F59E0B" />
+        <Polyline coordinates={routeCoordinates} strokeColor={KlippColors.cobalt} strokeWidth={4} />
+        <Marker coordinate={clientCoordinate} title="Tu destino" description="Dirección del servicio" pinColor={KlippColors.cobalt} />
+        <Marker ref={marker} coordinate={proCoordinate} title="Tu profesional" description="Ubicación actual" pinColor={KlippColors.coral} />
       </MapView>
     </View>
   );
