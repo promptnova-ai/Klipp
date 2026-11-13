@@ -10,6 +10,7 @@ The application job runs:
 3. Targeted ESLint on redesigned client, PRO, admin, authentication, account, navigation and shared UI files.
 4. `npm run typecheck` (`tsc --noEmit`).
 5. `npx expo export --platform web` with placeholder Supabase public configuration.
+6. Install Chromium and capture the public entry screen at 390×844 and 1440×900. Upload both rendered screenshots as the `klipp-visual-audit-screenshots` workflow artifact for visual review.
 
 The Edge Function job runs:
 1. Deno tests for shared authentication utilities.
@@ -22,7 +23,7 @@ Local commands from `app/`:
 
 ## Manual release acceptance matrix
 
-Automated compilation is necessary but does not prove that the app is usable. Before removing draft status or merging, review each item on a real browser preview and, where relevant, a device/simulator.
+Automated compilation and screenshot capture are necessary but do not prove that the app is usable. The screenshots cover the public entry only; authenticated Client, PRO and Admin routes still require a controlled test session. Before removing draft status or merging, review each item on a real browser preview and, where relevant, a device/simulator.
 
 | Area | Scenarios to verify | Pass criteria |
 | --- | --- | --- |
@@ -45,4 +46,6 @@ Automated compilation is necessary but does not prove that the app is usable. Be
 - Never use production payment credentials, customer data or live dispatch to validate a preview.
 - Record failed scenarios with the route, test account role, viewport/device, steps and expected/actual result.
 - Vercel deployment throttling is an infrastructure limitation, not a successful build. A green GitHub workflow does not replace a working preview.
+- Review the screenshots uploaded by the visual capture step at 390×844 and 1440×900. They are evidence for inspection, not an automated visual pass/fail verdict.
+- Do not merge while authenticated route screenshots, device checks or the manual acceptance matrix remain outstanding.
 - Do not claim end-to-end, payment or push delivery testing unless those integrations have been exercised in a controlled environment.
