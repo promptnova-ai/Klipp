@@ -226,13 +226,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
             <ScreenEntrance delay={30}>
               <View style={[styles.main, wide && styles.mainWide]}>
-              <AuthShowcase compact={!wide} isRegister={isRegister} />
+              {!isRegister && <AuthShowcase compact={!wide} isRegister={false} />}
               <View style={[styles.formCard, wide && styles.formCardWide, !wide && !isRegister && styles.formCardLogin]}>
-                <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'QUÉ BUENO VERTE'}</Text>
-                <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
+                <Text style={styles.eyebrow}>{isRegister ? 'CREAR CUENTA · CLIENTE' : 'QUÉ BUENO VERTE'}</Text>
+                <Text style={styles.title}>{isRegister ? 'Empieza con lo esencial.' : 'Inicia sesión'}</Text>
                 <Text style={styles.subtitle}>
                   {isRegister
-                    ? 'Configura tu acceso para reservar servicios de profesionales de confianza.'
+                    ? 'Un número de teléfono y estarás listo para reservar servicios en casa.'
                     : 'Entra en tu cuenta y continúa donde lo dejaste.'}
                 </Text>
 
@@ -379,7 +379,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 24 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 28 },
   loginScrollContent: { paddingHorizontal: 16, paddingVertical: 12 },
   loginAuthShell: { gap: 12 },
   authShell: { width: '100%', maxWidth: 1200, alignSelf: 'center', gap: 22 },
