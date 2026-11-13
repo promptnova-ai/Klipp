@@ -174,7 +174,6 @@ export function ClientAddressesScreen() {
 const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 14, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.ivory, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24, backgroundColor: KlippColors.ivory },
-  title: { color: KlippColors.ink, fontSize: 28, fontWeight: '700' },
   body: { color: KlippColors.slate, fontSize: 14, lineHeight: 21 },
   addressHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, paddingTop: 6 },
   addressCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '700' },
