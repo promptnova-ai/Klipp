@@ -191,8 +191,14 @@ export function CoverageRadiusPicker({
       {(!hasApiKey || loadError) && (
         <>
           <View style={styles.coordinateFields}>
-            <TextInput accessibilityLabel="Latitud del centro de cobertura" keyboardType="numbers-and-punctuation" onChangeText={setLatitude} style={styles.coordinateInput} value={latitude} />
-            <TextInput accessibilityLabel="Longitud del centro de cobertura" keyboardType="numbers-and-punctuation" onChangeText={setLongitude} style={styles.coordinateInput} value={longitude} />
+            <View style={styles.coordinateField}>
+              <Text style={styles.fieldLabel}>Latitud</Text>
+              <TextInput accessibilityLabel="Latitud del centro de cobertura" keyboardType="numbers-and-punctuation" onChangeText={setLatitude} style={styles.coordinateInput} value={latitude} />
+            </View>
+            <View style={styles.coordinateField}>
+              <Text style={styles.fieldLabel}>Longitud</Text>
+              <TextInput accessibilityLabel="Longitud del centro de cobertura" keyboardType="numbers-and-punctuation" onChangeText={setLongitude} style={styles.coordinateInput} value={longitude} />
+            </View>
           </View>
           <Pressable accessibilityRole="button" onPress={applyCoordinates} style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}>
             <Text style={styles.applyText}>Aplicar centro de cobertura</Text>
@@ -216,6 +222,8 @@ const styles = StyleSheet.create({
   mapHint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignSelf: 'center', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: KlippColors.slate, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   coordinates: { color: KlippColors.slate, fontSize: 12, textAlign: 'center' },
   coordinateFields: { flexDirection: 'row', gap: 8 },
+  coordinateField: { flex: 1, minWidth: 0, gap: 4 },
+  fieldLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' }
   coordinateInput: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white, color: KlippColors.slate, fontSize: 12 },
   applyButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 12, backgroundColor: KlippColors.cobalt },
   applyText: { color: KlippColors.white, fontSize: 12, fontWeight: '800' },
