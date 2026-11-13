@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   title: { color: C.ink, fontSize: 36, lineHeight: 41, fontWeight: '800', letterSpacing: -1.4, maxWidth: 360 },
   subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, maxWidth: 330 },
   form: { gap: 17, padding: 20, borderWidth: 1, borderColor: C.border, borderRadius: 24, backgroundColor: C.white },
-  methodSwitch: { flexDirection: 'row', padding: 4, borderRadius: 15, backgroundColor: '#ECEAE4', gap: 4 },
+  methodSwitch: { flexDirection: 'row', padding: 4, borderRadius: 15, backgroundColor: C.surfaceMuted, gap: 4 },
   methodOption: { flex: 1, minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
   methodActive: { backgroundColor: C.white, shadowColor: C.ink, shadowOpacity: 0.08, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   methodText: { color: C.muted, fontSize: 13, fontWeight: '800' },
