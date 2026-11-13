@@ -12,7 +12,7 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
   const { profile, signOut } = useAuth();
   const role: KlippRole = profile?.role === 'pro' ? 'pro' : profile?.role === 'admin' ? 'admin' : 'client';
   const displayName = profile?.full_name?.trim() || 'Tu cuenta';
-  const initials = displayName.split(/\\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
+  const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
 
   return (
     <View style={styles.screen}>
