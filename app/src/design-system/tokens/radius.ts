@@ -1,1 +1,7 @@
-export const radius = { sm: 8, md: 12, lg: 16, xl: 24, '2xl': 32, pill: 999 } as const;
+import { KlippRadii } from '@/theme/tokens';
+
+/** Legacy radius names mapped to canonical Klipp radii. */
+export const radius = {
+  sm: 8, md: 12, lg: KlippRadii.control, xl: KlippRadii.card,
+  '2xl': KlippRadii.cardLarge, pill: KlippRadii.pill,
+} as const;
