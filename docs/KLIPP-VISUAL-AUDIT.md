@@ -79,7 +79,8 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 
 - Source-level audit and code corrections: in progress / applied in the active development branch.
 - TypeScript, lint and web export: passed on commit `0505c704cbb01255976e01ce5d6263a2d58e60a5`; rerunning after the latest auth visual refinements.
-- Public entry screenshots: generated and visually reviewed at 360×800, 390×844, 768×1024, 1024×768 and 1440×900.
+- Login screenshots: generated and visually reviewed at 360×800, 390×844, 768×1024, 1024×768 and 1440×900.
+- Client and PRO registration screenshots: added to CI at 390×844, 768×1024 and 1440×900; visual review follows the latest capture.
 - Authenticated Client, PRO and Admin screens: still require a real test session for rendered review; static source review is not sign-off.
 - Live SMS, payment and production dispatch: outside this visual audit and must not be inferred from a successful export.
 - PR #25 remains draft until visual screenshots and the manual release matrix have been reviewed.
