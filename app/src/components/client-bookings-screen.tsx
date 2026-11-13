@@ -325,7 +325,7 @@ export function ClientBookingsScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Todo lo que has reservado, en un solo lugar." />
+      <BrandScreenHeader inset={false} eyebrow="SERVICIOS" title="Mis reservas" subtitle="Todo lo que has reservado, en un solo lugar." />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
         {filterOptions.map((option) => {
           const selected = bookingFilter === option.id;
