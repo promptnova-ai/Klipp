@@ -15,6 +15,8 @@ type AuthContextValue = {
   profileError: string | null;
   authError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
+  sendPhoneOtp: (phone: string, fullName: string, role: UserRole, shouldCreateUser: boolean) => Promise<void>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole, metadata?: Record<string, unknown>) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -127,6 +129,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function sendPhoneOtp(phone: string, fullName: string, role: UserRole, shouldCreateUser: boolean) {
+    setAuthError(null);
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
+      options: {
+        shouldCreateUser,
+        data: { role, full_name: fullName, phone },
+      },
+    });
+    if (error) throw error;
+  }
+
+  async function verifyPhoneOtp(phone: string, token: string) {
+    setAuthError(null);
+    const { data, error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
+    if (error) throw error;
+    if (!data.session) throw new Error('El código se ha validado, pero no se ha iniciado la sesión. Solicita un nuevo código.');
+  }
+
   async function signUp(
     email: string,
     password: string,
@@ -191,6 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profileError,
         authError,
         signIn,
+        sendPhoneOtp,
+        verifyPhoneOtp,
         signUp,
         signOut,
         refreshProfile,
