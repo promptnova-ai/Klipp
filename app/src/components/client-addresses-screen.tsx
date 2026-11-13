@@ -6,7 +6,7 @@ import { useFocusEffect } from 'expo-router';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
-import { KlippColors } from '@/lib/brand';
+import {  KlippColors, KlippLayout  } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import type { Address } from '@/lib/types';
 
@@ -172,7 +172,7 @@ export function ClientAddressesScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 980, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 14, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   body: { color: KlippColors.slate, fontSize: 14, lineHeight: 21 },
