@@ -502,8 +502,6 @@ const styles = StyleSheet.create({
   presenceButtonOnline: { backgroundColor: KlippColors.slate },
   presenceButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.ivory },
-  title: { color: KlippColors.ink, fontSize: 28, fontWeight: '700' },
-  subtitle: { color: KlippColors.slate, fontSize: 15, marginTop: -8 },
   card: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 14, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   empty: { marginTop: 10, paddingVertical: 22, paddingHorizontal: 0, borderTopWidth: 1, borderColor: KlippColors.border, borderRadius: 0, backgroundColor: 'transparent', gap: 7 },
   cardTitle: { color: KlippColors.ink, fontSize: 17, fontWeight: '700' },
