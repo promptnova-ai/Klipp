@@ -35,7 +35,7 @@ export function CoverageRadiusPicker({
         <Circle
           center={center}
           radius={radiusMeters}
-          fillColor="rgba(32,138,239,0.16)"
+          fillColor="rgba(61,90,254,0.14)"
           strokeColor={KlippColors.cobalt}
           strokeWidth={2}
         />
