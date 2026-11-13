@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     elevation: 9,
   },
-  centerButtonDesktop: { width: 52, height: 52, marginTop: 0, borderWidth: 0, backgroundColor: KlippColors.ivory, shadowOpacity: 0.04, elevation: 1 },\n  markPlate: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  centerButtonDesktop: { width: 52, height: 52, marginTop: 0, borderWidth: 0, backgroundColor: KlippColors.ivory, shadowOpacity: 0.04, elevation: 1 },
+  markPlate: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.9 },
 });
