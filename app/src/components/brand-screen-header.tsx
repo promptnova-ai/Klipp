@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { KlippMark } from '@/components/klipp-mark';
+import { Image } from 'expo-image';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { KlippColors, KlippLayout, KlippSpacing, KlippTypography } from '@/theme/tokens';
@@ -28,13 +28,15 @@ export function BrandScreenHeader({
   const gutter = width < 390 ? KlippLayout.pageGutterCompact : KlippLayout.pageGutter;
   const roleLabel = role === 'pro' ? 'PRO' : role === 'admin' ? 'ADMIN' : 'RD';
 
+  const wordmark = require('../../assets/images/klipp-wordmark.png');
+
   return (
     <View style={[styles.header, { paddingHorizontal: inset ? gutter : 0, paddingTop: compact ? 18 : 28, gap: compact ? 14 : 18 }]}>
       <View style={styles.brandRow}>
-        <View style={styles.logoMark}><KlippMark size={40} /></View>
+        <Image source={wordmark} contentFit="contain" accessibilityLabel="Klipp" style={styles.wordmark} />
         <View style={styles.brandCopy}>
           <View style={styles.brandLine}>
-            <Text style={styles.brand}>klipp</Text>
+            
             <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}>
               <Text style={[styles.badgeText, { color: theme.accentStrong }]}>{roleLabel}</Text>
             </View>
@@ -63,14 +65,14 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 18,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[3], minHeight: 76, paddingHorizontal: 18, paddingVertical: 12, borderRadius: 18, backgroundColor: '#111827' },
-  logoMark: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[3], minHeight: 64, paddingHorizontal: 0, paddingVertical: 8, backgroundColor: 'transparent' },
+  wordmark: { width: 132, height: 40 },
   brandCopy: { gap: 3 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[2] },
-  brand: { color: '#FFFFFF', fontSize: 27, lineHeight: 31, fontWeight: '800', letterSpacing: -1.8 },
+  
   badge: { paddingHorizontal: KlippSpacing[2], paddingVertical: KlippSpacing[1], borderRadius: KlippLayout.radiusPill },
   badgeText: { fontSize: KlippTypography.size.micro, fontWeight: '800', letterSpacing: KlippTypography.tracking.label },
-  location: { color: '#AAB3C2', fontSize: 8, fontWeight: '700', letterSpacing: 1.3 },
+  location: { color: KlippColors.muted, fontSize: 8, fontWeight: '700', letterSpacing: 1.1 },
   trailing: { marginLeft: 'auto' },
   heading: { gap: KlippSpacing[2], marginTop: KlippSpacing[1] },
   eyebrow: { fontSize: KlippTypography.size.caption, fontWeight: '800', letterSpacing: KlippTypography.tracking.eyebrow },
