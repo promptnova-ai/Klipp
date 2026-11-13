@@ -142,7 +142,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
   const router = useRouter();
-  const { session, signIn, signUp, sendPhoneOtp, verifyPhoneOtp, authError } = useAuth();
+  const { session, signIn, sendPhoneOtp, verifyPhoneOtp, authError } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
