@@ -277,25 +277,35 @@ export default function ClientHomeScreen() {
   const selectedDetailTier = selectedService?.tiers.find((tier) => tier.id === selectedDetailTierId);
   const selectedDetailOffer = selectedService?.offers.find((offer) => offer.id === selectedOfferId);
   const serviceCardWidth = width >= 1180 ? '31.8%' : width >= 760 ? '48.6%' : '100%';
+  const compact = width < 560;
   const categoryTileWidth = width >= 1180 ? '23%' : width >= 760 ? '31.5%' : '47.5%';
 
   return (
     <ScreenEntrance style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={[styles.page, { paddingHorizontal: width < 390 ? KlippLayout.pageGutterCompact : KlippLayout.pageGutter }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.topBar}>
-          <View style={styles.brandRow}>
-            <View style={styles.logoMark}><KlippMark size={38} /></View>
-            <View style={styles.brandCopy}><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>SERVICIOS A DOMICILIO</Text></View>
+        <View style={[styles.topBar, compact && styles.topBarCompact]}>
+          <View style={[styles.brandRow, compact && styles.brandRowCompact]}>
+            <View style={styles.brandLockup}>
+              <View style={styles.logoMark}><KlippMark size={38} /></View>
+              <View style={styles.brandCopy}><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>SERVICIOS A DOMICILIO</Text></View>
+            </View>
+            {compact && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" onPress={() => router.push('/(client)/notifications')} style={({ pressed }) => [styles.notificationButton, pressed && styles.pressed]}>
+                <SymbolView name={{ ios: 'bell', android: 'notifications_none', web: 'notifications_none' }} tintColor={KlippColors.ink} size={20} />
+              </Pressable>
+            )}
           </View>
-          <View style={styles.topBarActions}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Cambiar ubicación" onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
+          <View style={[styles.topBarActions, compact && styles.topBarActionsCompact]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Cambiar ubicación" onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()} style={({ pressed }) => [styles.locationButton, compact && styles.locationButtonCompact, pressed && styles.pressed]}>
               <View style={styles.locationPin}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.cobalt} size={18} /></View>
               <View style={styles.locationCopy}><Text style={styles.locationLabel}>SERVICIO EN</Text><Text numberOfLines={1} style={styles.locationText}>{locationLabel}</Text>{!!locationError && <Text numberOfLines={1} style={styles.locationError}>{locationError}</Text>}</View>
               <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor={KlippColors.muted} size={15} />
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" onPress={() => router.push('/(client)/notifications')} style={({ pressed }) => [styles.notificationButton, pressed && styles.pressed]}>
-              <SymbolView name={{ ios: 'bell', android: 'notifications_none', web: 'notifications_none' }} tintColor={KlippColors.ink} size={20} />
-            </Pressable>
+            {!compact && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" onPress={() => router.push('/(client)/notifications')} style={({ pressed }) => [styles.notificationButton, pressed && styles.pressed]}>
+                <SymbolView name={{ ios: 'bell', android: 'notifications_none', web: 'notifications_none' }} tintColor={KlippColors.ink} size={20} />
+              </Pressable>
+            )}
           </View>
         </View>
 
@@ -453,6 +463,7 @@ const styles = StyleSheet.create({
   greeting: { color: KlippColors.ink, fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -0.9 },
   greetingSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 20 },
   topBarActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  topBarActionsCompact: { width: '100%' },
   notificationButton: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   brandCaption: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
   locationPin: { width: 36, height: 36, borderRadius: 12, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
@@ -463,10 +474,14 @@ const styles = StyleSheet.create({
   trustArrow: { width: 34, height: 34, borderRadius: 12, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center' },
   page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', flexGrow: 1, paddingTop: 22, paddingBottom: 76, gap: 23, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 4 },
+  topBarCompact: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandRowCompact: { width: '100%', justifyContent: 'space-between' },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoMark: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   brand: { color: KlippColors.ink, fontSize: 25, lineHeight: 27, fontWeight: '900', letterSpacing: -1 },
   locationButton: { flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 310, minWidth: 0, flexShrink: 1, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 16, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  locationButtonCompact: { width: '100%', maxWidth: '100%' },
   locationLabel: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   locationText: { color: KlippColors.ink, fontSize: 12, fontWeight: '800', marginTop: 3 },
   locationError: { color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
