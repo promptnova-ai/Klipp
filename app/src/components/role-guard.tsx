@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 
 import { useAuth } from '@/components/auth-provider';
 import type { ExtractRole } from '@/lib/types';
+import { KlippColors } from '@/theme/tokens';
 
 export function RoleGuard({ role, children }: { role: ExtractRole; children: ReactNode }) {
   const { session, profile, loading, profileError, refreshProfile, signOut } = useAuth();
@@ -11,7 +12,7 @@ export function RoleGuard({ role, children }: { role: ExtractRole; children: Rea
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#16766c" />
+        <ActivityIndicator color=KlippColors.cobalt />
         <Text style={styles.message}>Cargando tu cuenta...</Text>
       </View>
     );
@@ -44,7 +45,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
   title: { color: '#18332d', fontSize: 20, fontWeight: '700', textAlign: 'center' },
   message: { color: '#52615b', fontSize: 14, textAlign: 'center' },
-  button: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 7, backgroundColor: '#16766c' },
+  button: { paddingHorizontal: 20, paddingVertical: 12, borderRadius: 7, backgroundColor: KlippColors.cobalt },
   buttonText: { color: '#fff', fontWeight: '700' },
   link: { padding: 10 },
   linkText: { color: '#125e56', fontWeight: '700' },
