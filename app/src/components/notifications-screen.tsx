@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors, RoleThemes } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import {
@@ -355,18 +356,13 @@ export function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { color: roleTheme.accentStrong }]}>TU ESPACIO · KLIPP</Text>
-            <Text style={styles.title}>Notificaciones</Text>
-            <Text style={styles.subtitle}>
-              {unreadCount > 0 ? unreadCount + (unreadCount === 1 ? ' aviso sin leer' : ' avisos sin leer') : 'Todo está al día'}
-            </Text>
-          </View>
-          <View style={[styles.headerIcon, { backgroundColor: roleTheme.accentSoft }]}>
-            <SymbolView name={{ ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' }} tintColor={roleTheme.accentStrong} size={25} />
-          </View>
-        </View>
+        <BrandScreenHeader
+          role={isPro ? 'pro' : 'client'}
+          eyebrow={isPro ? 'KLIPP PRO · AVISOS' : 'TU ESPACIO · AVISOS'}
+          title="Notificaciones"
+          subtitle={unreadCount > 0 ? unreadCount + (unreadCount === 1 ? ' aviso sin leer' : ' avisos sin leer') : 'Todo está al día'}
+          trailing={<View style={[styles.headerIcon, { backgroundColor: roleTheme.accentSoft }]}><SymbolView name={{ ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' }} tintColor={roleTheme.accentStrong} size={25} /></View>}
+        />
 
         {unreadCount > 0 && (
           <Pressable
