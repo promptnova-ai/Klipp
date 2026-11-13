@@ -54,8 +54,8 @@ export function ClientAddressesScreen() {
       } else {
         setStreet(`${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}`);
       }
-    }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : 'No pudimos encontrar la dirección de este punto.');
+    }).catch(() => {
+      if (active) setStreet(`${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}`);
     });
     return () => { active = false; };
   }, [coordinate]);
