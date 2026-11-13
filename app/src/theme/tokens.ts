@@ -53,8 +53,8 @@ export const KlippSpacing = {
 
 export const KlippTypography = {
   family: { regular: 'System', medium: 'System', semibold: 'System', bold: 'System' },
-  size: { caption: 11, small: 12, bodySmall: 13, body: 15, bodyLarge: 17, titleSmall: 19, title: 22, titleLarge: 30, display: 36 },
-  lineHeight: { caption: 15, small: 17, bodySmall: 19, body: 22, bodyLarge: 25, titleSmall: 25, title: 29, titleLarge: 36, display: 42 },
+  size: { micro: 10, caption: 11, small: 12, bodySmall: 13, body: 15, bodyLarge: 17, titleSmall: 19, title: 22, compactTitle: 27, titleLarge: 30, display: 36 },
+  lineHeight: { micro: 13, caption: 15, small: 17, bodySmall: 19, body: 22, bodyLarge: 25, titleSmall: 25, title: 29, compactTitle: 33, titleLarge: 36, display: 42 },
   weight: { regular: '400', medium: '500', semibold: '600', bold: '700', heavy: '800' },
   tracking: { tight: -0.45, normal: 0, label: 0.8, eyebrow: 1.1 },
 } as const;
