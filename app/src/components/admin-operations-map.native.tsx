@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
   heading: { gap: 3 },
   title: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
   caption: { color: KlippColors.muted, fontSize: 11 },
-  map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: '#E8EEF7' },
+  map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue },
   empty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#FFFFFFB8' },
   emptyText: { color: KlippColors.slate, textAlign: 'center', fontSize: 13 },
   legend: { color: KlippColors.muted, fontSize: 10 },
