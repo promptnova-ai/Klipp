@@ -11,12 +11,13 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippMark } from '@/components/klipp-mark';
-import { KlippColors as C } from '@/theme/tokens';
+import { KlippColors as C, KlippLayout } from '@/theme/tokens';
 import { serviceArt } from '@/lib/service-art';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
@@ -25,6 +26,8 @@ type CatalogCategory = { id: number; name: string };
 type CatalogService = ServiceType & { category_name: string | null };
 
 export default function ClientHomeNative() {
+  const { width } = useWindowDimensions();
+  const categoryTileWidth = width >= 1180 ? '23%' : width >= 760 ? '31.5%' : '48%';
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
@@ -137,7 +140,7 @@ export default function ClientHomeNative() {
                 const active = selectedCategory === category.name;
                 const categoryService = services.find((service) => service.category_name === category.name);
                 return (
-                  <Pressable key={category.id} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSelectedCategory(active ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, active && styles.categoryTileSelected, pressed && styles.servicePressed]}>
+                  <Pressable key={category.id} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSelectedCategory(active ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, { width: categoryTileWidth }, active && styles.categoryTileSelected, pressed && styles.servicePressed]}>
                     <Image source={serviceArt(categoryService?.code ?? category.name)} contentFit="cover" transition={220} style={styles.categoryTileImage} />
                     <View style={styles.categoryTileShade} />
                     <View style={styles.categoryTileFooter}>
@@ -175,7 +178,7 @@ export default function ClientHomeNative() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.ivory },
-  content: { paddingHorizontal: 16, paddingTop: 8, gap: 0 },
+  content: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, gap: 0 },
   topLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   brand: { color: C.ink, fontSize: 23, fontWeight: '900', letterSpacing: -1 },
@@ -197,7 +200,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: C.ink, fontSize: 19, fontWeight: '900', letterSpacing: -0.5 },
   sectionAside: { color: C.muted, fontSize: 12, fontWeight: '700' },
   categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  categoryTile: { width: '48%', minHeight: 120, overflow: 'hidden', borderRadius: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceBlue },
+  categoryTile: { minHeight: 120, overflow: 'hidden', borderRadius: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceBlue },
   categoryTileSelected: { borderWidth: 2, borderColor: C.cobalt },
   categoryTileImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   categoryTileShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(23,27,45,0.30)' },
