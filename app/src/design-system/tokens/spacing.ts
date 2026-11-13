@@ -1,1 +1,8 @@
-export const spacing = { xs: 4, sm: 8, md: 12, base: 16, lg: 24, xl: 32, '2xl': 48, '3xl': 64 } as const;
+import { KlippSpacing } from '@/theme/tokens';
+
+/** Legacy scale names mapped to the single canonical spacing scale. */
+export const spacing = {
+  xs: KlippSpacing[1], sm: KlippSpacing[2], md: KlippSpacing[3],
+  base: KlippSpacing[4], lg: KlippSpacing[6], xl: KlippSpacing[8],
+  '2xl': KlippSpacing[12], '3xl': KlippSpacing[16],
+} as const;
