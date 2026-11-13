@@ -8,7 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
-import {  KlippColors, KlippLayout  } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
 import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
