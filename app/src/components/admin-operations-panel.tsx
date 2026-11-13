@@ -222,7 +222,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
       await openTimeline(bookingId);
     }
     setInterventionBusy(false);
-  }, [interventionReason, loadBookings]);
+  }, [interventionReason, loadBookings, openTimeline]);
 
   const cancelUnassignedBooking = useCallback((bookingId: string) => {
     if (interventionReason.trim().length < 5) {
@@ -254,7 +254,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
         } },
       ],
     );
-  }, [interventionReason, loadBookings, openTimeline]);
+  }, [interventionReason, loadBookings]);
 
   const attentionCount = useMemo(() => bookings.filter((item) => attentionReason(item)).length, [bookings]);
   const visibleBookings = useMemo(() => bookings.filter((item) => {
