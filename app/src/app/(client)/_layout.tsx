@@ -1,7 +1,7 @@
-import { Tabs, TabSlot } from 'expo-router/ui';
+import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
 
 import { RoleGuard } from '@/components/role-guard';
-import { KlippTabBar } from '@/components/klipp-tab-bar';
+import { KlippTabBar, type KlippTabItem } from '@/components/klipp-tab-bar';
 
 const clientTabs = [
   { name: 'home', href: '/(client)', label: 'Inicio', icon: { ios: 'house.fill', android: 'home', web: 'home' } },
@@ -11,12 +11,15 @@ const clientTabs = [
   { name: 'addresses', href: '/(client)/addresses', label: 'Direcciones', icon: { ios: 'mappin.and.ellipse', android: 'place', web: 'place' } },
   { name: 'new-booking', href: '/(client)/new-booking', label: 'Reservar un servicio', icon: { ios: 'plus', android: 'add', web: 'add' } },
   { name: 'tracking', href: '/(client)/tracking', label: 'Seguimiento', icon: { ios: 'location', android: 'location_on', web: 'location_on' } },
-];
+] satisfies KlippTabItem[];
 
 export default function ClientLayout() {
   return (
     <RoleGuard role="client">
       <Tabs>
+        <TabList style={{ display: 'none' }}>
+          {clientTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
+        </TabList>
         <TabSlot detachInactiveScreens={false} />
         <KlippTabBar items={clientTabs} actionName="new-booking" actionLabel="Reservar un servicio" />
       </Tabs>
