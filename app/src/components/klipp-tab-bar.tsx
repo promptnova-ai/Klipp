@@ -14,6 +14,7 @@ type KlippTabBarProps = {
   items: KlippTabItem[];
   actionHref: string;
   actionLabel: string;
+  role?: KlippRole;
 };
 
 type TabButtonProps = TabTriggerSlotProps & {
@@ -35,10 +36,9 @@ function TabButton({ label, icon, isFocused, onPress, accent }: TabButtonProps &
   );
 }
 
-export function KlippTabBar({ items, actionHref, actionLabel }: KlippTabBarProps) {
+export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }: KlippTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { role = 'client' } = arguments[0] as KlippTabBarProps;
   const accent = RoleThemes[role].accent;
 
   return (
@@ -58,7 +58,7 @@ export function KlippTabBar({ items, actionHref, actionLabel }: KlippTabBarProps
         </Pressable>
         {items.slice(2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
-            <TabButton label={item.label} icon={item.icon} />
+            <TabButton label={item.label} icon={item.icon} accent={accent} />
           </TabTrigger>
         ))}
       </View>
@@ -68,10 +68,10 @@ export function KlippTabBar({ items, actionHref, actionLabel }: KlippTabBarProps
 
 const styles = StyleSheet.create({
   navigation: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: KlippColors.white,
     borderTopWidth: 1,
-    borderTopColor: '#EEECE6',
-    shadowColor: '#171B2D',
+    borderTopColor: KlippColors.border,
+    shadowColor: KlippColors.ink,
     shadowOpacity: 0.06,
     shadowOffset: { width: 0, height: -5 },
     shadowRadius: 16,
