@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 
 type KlippMarkProps = { size?: number };
 
-/** Official Klipp location-and-motion symbol from the supplied brand artwork. */
+/** Scalable vector reconstruction of the Klipp mark, guided by the supplied identity artwork. */
 export function KlippMark({ size = 36 }: KlippMarkProps) {
   return (
     <Image
