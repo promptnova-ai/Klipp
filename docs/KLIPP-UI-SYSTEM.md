@@ -100,3 +100,17 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - Klipp PRO onboarding step one now prioritizes name and mobile number. Experience, profile introduction and transport are optional and collapsed by default, so they do not block the first action.
 - The PRO step-one hero banner was removed to reduce competing visual hierarchy. The original Klipp mark, shared palette and existing onboarding/business logic remain in place.
 - This is an implementation pass, not visual sign-off. CI and a rendered preview still need to be checked before calling the redesign complete.
+
+
+### Cross-route visual consistency pass — 13 November 2026
+
+- Client bookings and address management now use consistent rounded white surfaces, clearer filter chips, and larger touch-friendly form controls.
+- Booking creation now presents service choices and wizard sections as distinct selectable surfaces rather than flat divider-only rows.
+- Client tracking uses grouped cards for ETA, professional identity, destination and booking milestones so the live journey is easier to scan.
+- PRO agenda and profile now use the same elevated surface, field and control language as onboarding. Availability remains the coral role action.
+- PRO incoming requests now use structured request cards, grouped facts and a distinct earnings surface; the full-screen offer retains a high-contrast urgent hierarchy.
+- Notifications, account details and account actions use consistent grouped surfaces and clearer unread states.
+- Admin operational sections, metrics, filters and dispatch actions now share the same spacing, radii and control sizing.
+- The PRO registration steps use card-based profession choices and modality pricing, with larger inputs and a consistent persistent action area.
+- No booking, dispatch, payment, profile persistence, notification or permission logic was intentionally changed in this visual pass.
+- Validation still requires the current branch's lint, TypeScript and web export jobs plus a rendered preview review at 360px, 390px, tablet and desktop widths.
