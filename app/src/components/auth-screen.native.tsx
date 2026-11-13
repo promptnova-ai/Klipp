@@ -74,7 +74,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           setOtpSent(true);
           setNotice(`Enviamos un código de 6 dígitos a ${fullPhone}.`);
         } else {
-          if (!/^\\d{6}$/.test(otp)) throw new Error('Introduce el código de 6 dígitos que recibiste por SMS.');
+          if (!/^\d{6}$/.test(otp)) throw new Error('Introduce el código de 6 dígitos que recibiste por SMS.');
           await verifyPhoneOtp(fullPhone, otp);
           router.replace('/');
         }
@@ -127,7 +127,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               <>
                 {isRegister && <Field label="Nombre y apellido" value={fullName} onChangeText={setFullName} placeholder="Cómo te llamas" autoCapitalize="words" />}
                 <Field label="Número de teléfono" value={phone} onChangeText={setPhone} placeholder="+1 809 555 0123" keyboardType="phone-pad" autoCapitalize="none" editable={!otpSent} />
-                {otpSent && <Field label="Código SMS" value={otp} onChangeText={(value) => setOtp(value.replace(/\\D/g, '').slice(0, 6))} placeholder="000000" keyboardType="number-pad" />}
+                {otpSent && <Field label="Código SMS" value={otp} onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" keyboardType="number-pad" />}
                 {otpSent && (
                   <View style={styles.otpActions}>
                     <Pressable disabled={busy} onPress={() => void resendCode()}><Text style={styles.changeNumber}>{busy ? 'Enviando…' : 'Reenviar código'}</Text></Pressable>
