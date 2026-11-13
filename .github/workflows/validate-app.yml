@@ -126,7 +126,7 @@ jobs:
 
       - name: Capture responsive public entry screenshots
         run: |
-          python3 -m http.server 4173 --directory app/dist >/tmp/klipp-http.log 2>&1 &
+          python3 -m http.server 4173 --directory dist >/tmp/klipp-http.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
