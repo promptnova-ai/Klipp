@@ -20,7 +20,7 @@ Use `src/theme/tokens.ts` as the single token source and `src/theme/themes.ts` f
 3. Same type scale: one page title, clear section headings, readable body, quiet metadata.
 4. Same controls: shared button, field, chip, card, status and icon treatment. Avoid one-off radii, shadows and arbitrary colors.
 5. Same states: loading, empty, error, offline, disabled and success states use the shared primitives.
-6. Same navigation: role-aware five-position bottom navigation with the original Klipp mark centered; hidden workflow routes remain reachable through their intended actions.
+6. Same navigation: compact screens use the role-aware five-position bottom bar with the original Klipp mark centered; tablet/desktop use a centered floating top bar with the same destinations and role accent. Hidden workflow routes remain reachable through their intended actions.
 7. Same motion: short, restrained transitions; respect reduced-motion preferences. Do not reload the app shell between tab changes.
 8. Responsive: no overlap or clipped controls at 360px, 390px, tablet widths and desktop. Content max width and gutters adapt without changing the design language.
 
@@ -138,3 +138,5 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - The splash/animated mark uses the supplied Klipp symbol rather than Expo starter artwork. Motion is short and restrained, and reduced-motion users receive a static mark.
 - Web location selection now uses the same interactive map model as native: click-to-place and drag-to-adjust a cobalt marker. If the Maps key is unavailable, the browser still permits validated manual coordinates; professional coverage setup has the same fallback.
 - Service, profession and portfolio imagery uses the shared service-art catalog and disk/memory image caching so repeated navigation does not need to reload the same remote photography.
+
+- Desktop login uses a photography-led hero with a dark contrast wash and a vertically centered form card; the same hero asset and visual hierarchy are used by native login.
