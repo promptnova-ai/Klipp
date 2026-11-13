@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { KlippMark } from '@/components/klipp-mark';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { KlippColors, KlippLayout, RoleThemes, type KlippRole } from '@/lib/brand';
 
@@ -20,10 +20,13 @@ export function BrandScreenHeader({
   trailing,
 }: BrandScreenHeaderProps) {
   const theme = RoleThemes[role];
+  const { width } = useWindowDimensions();
+  const compact = width < 600;
+  const gutter = width < 390 ? KlippLayout.pageGutterCompact : KlippLayout.pageGutter;
   const roleLabel = role === 'pro' ? 'PRO' : role === 'admin' ? 'ADMIN' : 'RD';
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { paddingHorizontal: gutter, paddingTop: compact ? 18 : 28, gap: compact ? 14 : 18 }]}>
       <View style={styles.brandRow}>
         <View style={styles.logoMark}><KlippMark size={34} /></View>
         <View style={styles.brandCopy}>
@@ -40,7 +43,7 @@ export function BrandScreenHeader({
 
       <View style={styles.heading}>
         <Text style={[styles.eyebrow, { color: theme.accentStrong }]}>{eyebrow}</Text>
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, compact && styles.titleCompact]}>{title}</Text>
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
     </View>
@@ -69,5 +72,6 @@ const styles = StyleSheet.create({
   heading: { gap: 6, marginTop: 2 },
   eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.15 },
   title: { color: KlippColors.navy, fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
+  titleCompact: { fontSize: 27, lineHeight: 33, letterSpacing: -0.7 },
   subtitle: { maxWidth: 720, color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
 });
