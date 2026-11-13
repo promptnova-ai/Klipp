@@ -135,6 +135,8 @@ export function ClientAddressesScreen() {
         </View>
       ))}
 
+      {error && !formOpen && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
       <View style={styles.form}>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: formOpen }} onPress={() => setFormOpen((value) => !value)} style={styles.formToggle}>
           <View><Text style={styles.formToggleTitle}>{formOpen ? 'Nueva dirección' : 'Añadir un lugar'}</Text><Text style={styles.formToggleHint}>Guarda una ubicación para tus próximas reservas</Text></View>
@@ -160,7 +162,6 @@ export function ClientAddressesScreen() {
         <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
         <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={references} />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-        {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
         <Pressable accessibilityRole="button" disabled={saving} onPress={() => void saveAddress()} style={[styles.button, saving && styles.disabled]}>
           <Text style={styles.buttonText}>{saving ? 'Guardando...' : 'Guardar dirección'}</Text>
         </Pressable>
