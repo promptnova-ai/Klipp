@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KlippMark } from '@/components/klipp-mark';
-import { KlippColors, RoleThemes, type KlippRole } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
+import { RoleThemes, type KlippRole } from '@/theme/themes';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 export type KlippTabItem = { name: string; href: string; label: string; icon: SymbolName };
@@ -22,14 +23,14 @@ type TabButtonProps = TabTriggerSlotProps & {
   icon: SymbolName;
 };
 
-function TabButton({ label, icon, isFocused, onPress, accent }: TabButtonProps & { accent: string }) {
+function TabButton({ label, icon, isFocused, onPress, accent, accentSoft }: TabButtonProps & { accent: string; accentSoft: string }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
-      style={({ pressed }) => [styles.tabButton, isFocused && styles.tabButtonActive, pressed && styles.pressed]}>
+      style={({ pressed }) => [styles.tabButton, isFocused && { backgroundColor: accentSoft }, pressed && styles.pressed]}>
       <SymbolView name={icon} tintColor={isFocused ? accent : KlippColors.muted} size={21} />
       <Text style={[styles.tabLabel, isFocused && { color: accent }]}>{label}</Text>
     </Pressable>
