@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 
 export type CoverageCoordinate = { latitude: number; longitude: number };
@@ -71,9 +71,9 @@ export function CoverageRadiusPicker({
           map: googleMap,
           center: initialCenter,
           radius: radiusRef.current,
-          fillColor: '#208AEF',
+          fillColor: KlippColors.cobalt,
           fillOpacity: 0.16,
-          strokeColor: '#208AEF',
+          strokeColor: KlippColors.cobalt,
           strokeOpacity: 0.9,
           strokeWeight: 2,
           clickable: false,
