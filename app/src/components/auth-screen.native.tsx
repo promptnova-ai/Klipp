@@ -145,9 +145,10 @@ function Field({ label, ...inputProps }: {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
-  keyboardType?: 'default' | 'email-address' | 'number-pad';
+  keyboardType?: 'default' | 'email-address' | 'number-pad' | 'phone-pad';
   autoCapitalize?: 'none' | 'words';
   secureTextEntry?: boolean;
+  editable?: boolean;
 }) {
   return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput {...inputProps} style={styles.input} placeholderTextColor={C.muted} /></View>;
 }
