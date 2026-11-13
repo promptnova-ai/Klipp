@@ -53,7 +53,7 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KlippColors.canvas, paddingBottom: 36 },
-  identity: { width: '100%', maxWidth: 720, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 22, paddingTop: 18, paddingBottom: 20 },
+  identity: { width: '100%', maxWidth: 676, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 8, padding: 19, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 21, backgroundColor: KlippColors.white },
   avatar: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.ink },
   avatarText: { color: KlippColors.white, fontSize: 19, fontWeight: '900' },
   identityCopy: { flex: 1, gap: 4 },
