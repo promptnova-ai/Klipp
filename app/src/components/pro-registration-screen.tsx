@@ -183,7 +183,7 @@ export function ProRegistrationScreen() {
   function validateStep() {
     if (step === 0) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
-      if (phone.replace(/\\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
+      if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
       if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
       if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
@@ -223,12 +223,12 @@ export function ProRegistrationScreen() {
     if (step === 5 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
     if (step === 6) {
       if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
-      if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime) || startTime >= endTime) {
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
         return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
       }
     }
     if (step === 7) {
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     }
@@ -546,7 +546,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 7 && (
+            {step === 3 && (
               <View style={styles.serviceList}>
                                 {selectedProfession && (
                   <View style={styles.card}>
@@ -652,7 +652,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 3 && (
+            {step === 7 && (
               <>
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
