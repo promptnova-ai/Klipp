@@ -1,4 +1,5 @@
 import { TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps, Ref } from 'react';
@@ -10,7 +11,7 @@ export type KlippTabItem = { name: string; href: string; label: string; icon: Sy
 
 type KlippTabBarProps = {
   items: KlippTabItem[];
-  actionName: string;
+  actionHref: string;
   actionLabel: string;
 };
 
@@ -51,8 +52,9 @@ function TabButton({ label, icon, center = false, isFocused, ref, ...props }: Ta
   );
 }
 
-export function KlippTabBar({ items, actionName, actionLabel }: KlippTabBarProps) {
+export function KlippTabBar({ items, actionHref, actionLabel }: KlippTabBarProps) {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <View style={[styles.navigation, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -62,9 +64,13 @@ export function KlippTabBar({ items, actionName, actionLabel }: KlippTabBarProps
             <TabButton label={item.label} icon={item.icon} />
           </TabTrigger>
         ))}
-        <TabTrigger name={actionName} asChild>
-          <TabButton label={actionLabel} center />
-        </TabTrigger>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={actionLabel}
+          onPress={() => router.navigate(actionHref as never)}
+          style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}>
+          <View style={styles.markPlate}><KlippMark size={34} /></View>
+        </Pressable>
         {items.slice(2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
             <TabButton label={item.label} icon={item.icon} />
