@@ -22,7 +22,7 @@ import { useAuth } from '@/components/auth-provider';
 import { KlippMark } from '@/components/klipp-mark';
 import { useReducedMotion } from '@/components/ui-primitives';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
-import { KlippColors, RoleThemes } from '@/lib/brand';
+import { KlippColors, KlippLayout, RoleThemes } from '@/lib/brand';
 import { serviceArt } from '@/lib/service-art';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
@@ -401,7 +401,7 @@ export function ProRegistrationScreen() {
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scrollContent, compact && styles.scrollContentCompact]} keyboardShouldPersistTaps="handled">
           {step === 0 && (
             <View style={styles.proHero}>
               <View style={styles.proHeroShade} />
@@ -747,8 +747,9 @@ const styles = StyleSheet.create({
   stepCount: { color: KlippColors.ink, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 },
   progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
   progressFill: { height: 5, borderRadius: 0, backgroundColor: KlippColors.coral },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 22, paddingBottom: 36 },
-  proHero: { width: '100%', maxWidth: 920, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 16, backgroundColor: '#27334B', marginBottom: 22 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: KlippLayout.pageGutter, paddingTop: 22, paddingBottom: 36 },
+  scrollContentCompact: { paddingHorizontal: KlippLayout.pageGutterCompact, paddingTop: 16 },
+  proHero: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: KlippLayout.radiusCardLarge, backgroundColor: KlippColors.ink, marginBottom: 22 },
   proHeroImage: { borderRadius: 16 },
   proHeroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15,22,39,0.43)' },
   proHeroCopy: { padding: 24, gap: 8, maxWidth: 620 },
