@@ -102,18 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    setLoading(true);
-    void supabase
-      .from('profiles')
-      .select('id, role, full_name, phone, avatar_url, created_at')
-      .eq('id', session.user.id)
-      .single()
-      .then(({ data, error }) => {
-        if (!mounted) return;
-        setProfile(data as Profile | null);
-        setProfileError(error?.message ?? null);
-        setLoading(false);
-      });
+    void Promise.resolve().then(() => {
+      if (!mounted) return null;
+      setLoading(true);
+      return supabase
+        .from('profiles')
+        .select('id, role, full_name, phone, avatar_url, created_at')
+        .eq('id', session.user.id)
+        .single();
+    }).then((result) => {
+      if (!mounted || !result) return;
+      setProfile(result.data as Profile | null);
+      setProfileError(result.error?.message ?? null);
+      setLoading(false);
+    });
 
     return () => {
       mounted = false;
