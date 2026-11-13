@@ -232,7 +232,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             </View>
 
             <ScreenEntrance delay={30}>
-              <View style={[styles.main, wide && styles.mainWide]}>
+              <View style={[styles.main, wide && !isRegister && styles.mainWide]}>
               {!isRegister && <AuthShowcase compact={!wide} isRegister={false} />}
               <View style={[styles.formCard, wide && styles.formCardWide, !wide && !isRegister && styles.formCardLogin]}>
                 <Text style={styles.eyebrow}>{isRegister ? 'CREAR CUENTA · CLIENTE' : 'QUÉ BUENO VERTE'}</Text>
