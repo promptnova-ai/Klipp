@@ -327,7 +327,7 @@ export function ProRequestsScreen() {
     <ScrollView
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />}>
-      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
+      <BrandScreenHeader inset={false} role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
       <View style={styles.proHero}>
         <View style={styles.proHeroTop}>
           <Text style={styles.proHeroEyebrow}>KLIPP PRO · TU ESPACIO DE TRABAJO</Text>
