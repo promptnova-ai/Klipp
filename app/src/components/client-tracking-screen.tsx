@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { TrackingMap } from '@/components/tracking-map';
-import {  KlippColors, KlippLayout  } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
 import { formatBusinessDate } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
