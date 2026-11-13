@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { MapCoordinate } from '@/components/location-picker';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 
 function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
