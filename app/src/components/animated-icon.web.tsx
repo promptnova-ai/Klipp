@@ -72,7 +72,7 @@ export function AnimatedIcon() {
 
 const styles = StyleSheet.create({
   splashOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: KlippColors.ivory,
     alignItems: 'center',
     justifyContent: 'center',
@@ -87,12 +87,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   background: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 36,
     backgroundColor: KlippColors.surfaceBlue,
   },
   imageContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center',
     justifyContent: 'center',
   },
