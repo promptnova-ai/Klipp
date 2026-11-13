@@ -12,18 +12,24 @@ on:
   pull_request:
     branches:
       - main
-      - security/008-profile-permissions
     paths:
       - "app/**"
       - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
+
+  workflow_dispatch:
+
+concurrency:
+  group: klipp-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   app-checks:
-    name: Lint and TypeScript
+    name: Lint, TypeScript and web export
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -77,6 +83,21 @@ jobs:
       - name: Lint shared UI primitives and role-aware header
         run: npx eslint src/components/ui-primitives.tsx src/components/brand-screen-header.tsx
 
+      - name: Lint all redesigned role screens and shared account surfaces
+        run: >-
+          npx eslint
+          src/components/pro-requests-screen.tsx
+          src/components/pro-profile-screen.tsx
+          src/components/pro-agenda-screen.tsx
+          src/components/admin-operations-panel.tsx
+          src/components/account-panel.tsx
+          src/components/auth-screen.native.tsx
+          'src/app/(client)/index.native.tsx'
+          src/components/klipp-tab-bar.tsx
+          src/components/ui-kit.tsx
+          src/theme/tokens.ts
+          src/theme/themes.ts
+
       - name: Run TypeScript
         run: npx tsc --noEmit
 
@@ -88,6 +109,7 @@ jobs:
 
   edge-function-checks:
     name: Edge Function checks
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - name: Check out branch
