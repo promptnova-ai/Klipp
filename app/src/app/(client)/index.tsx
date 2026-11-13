@@ -123,7 +123,6 @@ function ServiceSkeleton() {
 export default function ClientHomeScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const wideLayout = width >= 900;
   const { profile } = useAuth();
   const [services, setServices] = useState<CatalogService[]>([]);
   const [pros, setPros] = useState<SearchablePro[]>([]);
@@ -459,6 +458,9 @@ export default function ClientHomeScreen() {
 
 const styles = StyleSheet.create({
   brandCopy: { gap: 1 },
+  greetingBlock: { gap: 6, marginTop: 4 },
+  greeting: { color: KlippColors.ink, fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -0.9 },
+  greetingSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 20 },
   topBarActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
   notificationButton: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   brandCaption: { color: '#72778A', fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
@@ -494,7 +496,7 @@ const styles = StyleSheet.create({
   categoryTileImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
   categoryTileShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.28)' },
   categoryTileFooter: { flex: 1, minHeight: 118, padding: 13, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
-  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 19, lineHeight: 23, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
+  categoryTileTitle: { flex: 1, color: '#FFFFFF', fontSize: 15, lineHeight: 19, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
   categoryTileArrow: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
   categoryTileArrowSelected: { backgroundColor: '#3D5AFE' },
   categories: { gap: 9, paddingVertical: 2 },
