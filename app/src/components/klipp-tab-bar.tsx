@@ -1,7 +1,8 @@
 import { TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Pressable, StyleSheet, Text, View, type ComponentProps, type Ref } from 'react';
+import type { ComponentProps, Ref } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KlippMark } from '@/components/klipp-mark';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
