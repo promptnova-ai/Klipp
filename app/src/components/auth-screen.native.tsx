@@ -93,16 +93,16 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
           <View style={styles.intro}>
             <View style={styles.introRule} />
-            <Text style={styles.kicker}>{isRegister ? 'EMPIEZA POR AQUÍ' : 'TU CUENTA KLIPP'}</Text>
-            <Text style={styles.title}>{isRegister ? 'Tu próximo servicio, más cerca.' : 'Qué bueno verte de nuevo.'}</Text>
-            <Text style={styles.subtitle}>{isRegister ? 'Crea tu cuenta y recibe profesionales de confianza donde los necesites.' : 'Accede a tus reservas, direcciones y servicios.'}</Text>
+            <Text style={styles.kicker}>{isRegister ? 'CREAR CUENTA · CLIENTE' : 'TU CUENTA KLIPP'}</Text>
+            <Text style={styles.title}>{isRegister ? 'Empieza con lo esencial.' : 'Qué bueno verte de nuevo.'}</Text>
+            <Text style={styles.subtitle}>{isRegister ? 'Un número de teléfono y estarás listo para reservar servicios en casa.' : 'Accede a tus reservas, direcciones y servicios.'}</Text>
           </View>
 
           <View style={styles.form}>
-            <View style={styles.methodSwitch}>
+            {!isRegister && <View style={styles.methodSwitch}>
               <Pressable onPress={() => { setMethod('phone'); setError(null); }} style={[styles.methodOption, method === 'phone' && styles.methodActive]}><Text style={[styles.methodText, method === 'phone' && styles.methodTextActive]}>Teléfono</Text></Pressable>
               <Pressable onPress={() => { setMethod('email'); setError(null); }} style={[styles.methodOption, method === 'email' && styles.methodActive]}><Text style={[styles.methodText, method === 'email' && styles.methodTextActive]}>Correo</Text></Pressable>
-            </View>
+            </View>}
 
             {method === 'phone' ? (
               <>
@@ -156,16 +156,16 @@ function Field({ label, ...inputProps }: {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.ivory },
   flex: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
+  scroll: { flexGrow: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   brand: { color: C.ink, fontSize: 25, fontWeight: '900', letterSpacing: -1.1 },
   brandCaption: { color: C.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
-  intro: { marginTop: 54, marginBottom: 30, gap: 9 },
+  intro: { marginTop: 42, marginBottom: 26, gap: 9 },
   introRule: { width: 42, height: 4, borderRadius: 2, backgroundColor: C.coral, marginBottom: 9 },
   kicker: { color: C.cobalt, fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  title: { color: C.ink, fontSize: 34, lineHeight: 39, fontWeight: '900', letterSpacing: -1.4, maxWidth: 330 },
+  title: { color: C.ink, fontSize: 36, lineHeight: 41, fontWeight: '800', letterSpacing: -1.4, maxWidth: 360 },
   subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, maxWidth: 330 },
-  form: { gap: 17 },
+  form: { gap: 17, padding: 20, borderWidth: 1, borderColor: C.border, borderRadius: 24, backgroundColor: C.white },
   methodSwitch: { flexDirection: 'row', padding: 4, borderRadius: 15, backgroundColor: '#ECEAE4', gap: 4 },
   methodOption: { flex: 1, minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
   methodActive: { backgroundColor: C.white, shadowColor: C.ink, shadowOpacity: 0.08, shadowRadius: 5, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
   submitText: { color: C.white, fontSize: 15, fontWeight: '900' },
   pressed: { transform: [{ scale: 0.985 }] },
   legal: { color: C.muted, fontSize: 10, lineHeight: 16, textAlign: 'center' },
-  bottomLine: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 34 },
+  bottomLine: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 26 },
   bottomText: { color: C.muted, fontSize: 12 },
   bottomLink: { color: C.cobalt, fontSize: 12, fontWeight: '900' },
   secure: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 30 },
