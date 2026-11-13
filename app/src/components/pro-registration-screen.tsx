@@ -19,7 +19,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
-import { KlippMark } from '@/components/klipp-mark';
+
 import { useReducedMotion } from '@/components/ui-primitives';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors, KlippLayout } from '@/theme/tokens';
@@ -407,11 +407,8 @@ export function ProRegistrationScreen() {
             <Text style={styles.backText}>‹</Text>
           </Pressable>
           <View style={styles.brandRow}>
-            <View style={styles.logoMark}><KlippMark size={34} /></View>
-            <View style={styles.brandCopy}>
-              <Text style={styles.brand}>klipp</Text>
-              <Text style={styles.brandRole}>PROFESIONAL</Text>
-            </View>
+            <Image source={require("../../assets/images/klipp-wordmark.png")} contentFit="contain" accessibilityLabel="Klipp" style={styles.proWordmark} />
+            <Text style={styles.brandRole}>PROFESIONAL</Text>
           </View>
           <Text style={styles.stepCount}>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</Text>
         </View>
@@ -685,7 +682,7 @@ export function ProRegistrationScreen() {
                       </Pressable>
                     </View>
                   </Field>
-                  <Text style={styles.privacyNote}>🔒 Tus datos se usan para crear y proteger tu cuenta profesional.</Text>
+                  <Text style={styles.privacyNote}>Tus datos se utilizan para gestionar tu cuenta profesional.</Text>
                 </View>
               </>
             )}
@@ -743,9 +740,7 @@ const styles = StyleSheet.create({
   backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue, paddingLeft: 8 },
   backText: { color: KlippColors.cobaltDark, fontSize: 34, lineHeight: 38 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  brandCopy: { gap: 1 },
-  brand: { color: KlippColors.ink, fontSize: 26, lineHeight: 29, fontWeight: '800', letterSpacing: -1.7 },
+  proWordmark: { width: 116, height: 34 },
   brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
   stepCount: { color: KlippColors.ink, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 },
   progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
