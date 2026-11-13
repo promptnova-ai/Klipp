@@ -488,7 +488,7 @@ export function ProRegistrationScreen() {
                     const selected = selectedServiceId === service.id;
                     return (
                       <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => chooseProfession(service.id)} style={[styles.professionOption, selected && styles.professionOptionSelected]}>
-                        <Image source={serviceArt(service.code)} contentFit="cover" style={styles.professionPhoto} />
+                        <Image cachePolicy="memory-disk" source={serviceArt(service.code)} contentFit="cover" style={styles.professionPhoto} />
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
                           <Text style={styles.serviceDescription}>{service.description || professionCaption(service.code)}</Text>
