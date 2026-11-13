@@ -4,7 +4,7 @@
 Every route in the app must feel like the same Klipp product. Client, Klipp PRO and Admin may have role-specific content and accent colors, but must share layout grammar, navigation behavior, typography, spacing, motion, surface treatment, form controls, loading states, empty states and responsive rules.
 
 ## Brand source of truth
-Use `src/lib/brand.ts` as the token source and `src/components/klipp-mark.tsx` for the actual brand mark. Never redraw, approximate or substitute the logo in previews or UI.
+Use `src/theme/tokens.ts` as the single token source and `src/theme/themes.ts` for role accents. `src/lib/brand.ts` is a temporary compatibility barrel; new code must import directly from `@/theme/tokens` or `@/theme/themes` and `src/components/klipp-mark.tsx` for the actual brand mark. Never redraw, approximate or substitute the logo in previews or UI.
 
 - Canvas: Ivory `#F7F5F0`
 - Ink: `#171B2D`
@@ -61,3 +61,13 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - CI also runs TypeScript, web export, and Edge Function checks on pushes to `feat/caribbean-utility-standalone`.
 - A green export is not a visual sign-off. Every route still needs a real rendered review at narrow mobile and desktop widths, plus interaction checks for navigation, validation, loading, empty, error, and success states.
 - Authenticated Client, PRO, and Admin screens require a test account/session to verify fully. Do not infer their visual or operational correctness from static source review alone.
+
+
+## Centralized design architecture — 13 November 2026
+
+- `app/src/theme/tokens.ts` is the canonical source for palette, spacing, typography, radii, shadows, layout and motion.
+- `app/src/theme/themes.ts` defines role accents. Client, PRO and Admin share the same components and layout grammar.
+- `app/src/lib/brand.ts` remains a compatibility barrel for existing imports; new code must import directly from the theme modules.
+- React Native does not have a browser-style global CSS cascade. Shared visual rules are implemented through typed tokens and reusable React Native components, so web and native stay aligned.
+- New screen-level styles are permitted for composition and one-off content only; repeated controls, surfaces, typography and spacing must use the shared system.
+- Deprecated color aliases remain temporarily to avoid breaking the existing app. Remove them only after a repository-wide usage audit and migration.
