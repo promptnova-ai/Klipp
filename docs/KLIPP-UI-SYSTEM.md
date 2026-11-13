@@ -90,3 +90,13 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - Shared buttons, fields, chips, empty states, cards, status pills and screen headers now consume centralized type, spacing, radius, shadow and role tokens.
 - The legacy web tab component now uses the real Klipp mark and canonical surface, spacing and typography tokens.
 - Validation is pending: GitHub Actions run `43413919964` is queued for lint/TypeScript and Edge Function checks. Vercel preview remains rate-limited, so this pass has not yet received a new rendered visual review.
+
+
+### Registration UX redesign — 13 November 2026
+
+- Registration is being aligned with the low-friction onboarding principles documented by Uber: ask for the minimum account-critical information first, avoid unnecessary choices, and reveal secondary details only when they are useful.
+- Client registration no longer shows the promotional showcase panel; the first screen is focused on account creation and phone verification.
+- Native client registration removes the phone/email method switch from the registration path and presents the form as one focused surface. Login retains the method switch.
+- Klipp PRO onboarding step one now prioritizes name and mobile number. Experience, profile introduction and transport are optional and collapsed by default, so they do not block the first action.
+- The PRO step-one hero banner was removed to reduce competing visual hierarchy. The original Klipp mark, shared palette and existing onboarding/business logic remain in place.
+- This is an implementation pass, not visual sign-off. CI and a rendered preview still need to be checked before calling the redesign complete.
