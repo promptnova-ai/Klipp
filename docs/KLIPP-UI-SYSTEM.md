@@ -137,3 +137,4 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - The client category grid uses a 2/3/4-column responsive layout at phone/tablet/desktop widths in both web and native implementations, constrained by the shared 1120px content width.
 - The splash/animated mark uses the supplied Klipp symbol rather than Expo starter artwork. Motion is short and restrained, and reduced-motion users receive a static mark.
 - Web location selection now uses the same interactive map model as native: click-to-place and drag-to-adjust a cobalt marker. If the Maps key is unavailable, the browser still permits validated manual coordinates; professional coverage setup has the same fallback.
+- Service, profession and portfolio imagery uses the shared service-art catalog and disk/memory image caching so repeated navigation does not need to reload the same remote photography.
