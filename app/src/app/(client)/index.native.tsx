@@ -25,15 +25,6 @@ import { supabase } from '../../../lib/supabase';
 type CatalogCategory = { id: number; name: string };
 type CatalogService = ServiceType & { category_name: string | null };
 
-const categoryGlyph = (name: string) => {
-  const value = name.toLocaleLowerCase();
-  if (value.includes('barber')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' } as const;
-  if (value.includes('peluquer') || value.includes('belleza')) return { ios: 'sparkles', android: 'face_retouching_natural', web: 'face_retouching_natural' } as const;
-  if (value.includes('hogar') || value.includes('limpieza')) return { ios: 'house.fill', android: 'home', web: 'home' } as const;
-  if (value.includes('veh')) return { ios: 'car.side.fill', android: 'directions_car', web: 'directions_car' } as const;
-  return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' } as const;
-};
-
 export default function ClientHomeNative() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -141,19 +132,25 @@ export default function ClientHomeNative() {
               {search.length > 0 && <Pressable onPress={() => setSearch('')} accessibilityLabel="Borrar búsqueda"><SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor={C.muted} size={18} /></Pressable>}
             </View>
 
-            <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Categorías</Text><Text style={styles.sectionAside}>Explora</Text></View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRail}>
-              <Pressable onPress={() => setSelectedCategory('Todos')} style={[styles.categoryChip, selectedCategory === 'Todos' && styles.categoryChipActive]}>
-                <Text style={[styles.categoryChipText, selectedCategory === 'Todos' && styles.categoryChipTextActive]}>Todo</Text>
-              </Pressable>
+            <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Categorías</Text><Text style={styles.sectionAside}>{categories.length} opciones</Text></View>
+            <View style={styles.categoryGrid}>
               {categories.map((category) => {
                 const active = selectedCategory === category.name;
-                return <Pressable key={category.id} onPress={() => setSelectedCategory(active ? 'Todos' : category.name)} style={[styles.categoryChip, active && styles.categoryChipActive]}>
-                  <SymbolView name={categoryGlyph(category.name)} tintColor={active ? C.white : C.ink} size={16} />
-                  <Text style={[styles.categoryChipText, active && styles.categoryChipTextActive]}>{category.name}</Text>
-                </Pressable>;
+                const categoryService = services.find((service) => service.category_name === category.name);
+                return (
+                  <Pressable key={category.id} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSelectedCategory(active ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, active && styles.categoryTileSelected, pressed && styles.servicePressed]}>
+                    <Image source={serviceArt(categoryService?.code ?? category.name)} contentFit="cover" transition={220} style={styles.categoryTileImage} />
+                    <View style={styles.categoryTileShade} />
+                    <View style={styles.categoryTileFooter}>
+                      <Text numberOfLines={2} style={styles.categoryTileTitle}>{category.name}</Text>
+                      <View style={[styles.categoryTileArrow, active && styles.categoryTileArrowSelected]}>
+                        <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={active ? C.white : C.ink} size={14} />
+                      </View>
+                    </View>
+                  </Pressable>
+                );
               })}
-            </ScrollView>
+            </View>
 
             <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>{search || selectedCategory !== 'Todos' ? 'Resultados' : 'Servicios disponibles'}</Text><Text style={styles.sectionAside}>{visibleServices.length} opciones</Text></View>
             {loading && <View style={styles.loadingRow}><ActivityIndicator color={C.cobalt} /><Text style={styles.loadingText}>Cargando servicios…</Text></View>}
@@ -179,7 +176,7 @@ export default function ClientHomeNative() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.ivory },
-  content: { paddingHorizontal: 20, paddingTop: 8, gap: 0 },
+  content: { paddingHorizontal: 16, paddingTop: 8, gap: 0 },
   topLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   brand: { color: C.ink, fontSize: 23, fontWeight: '900', letterSpacing: -1 },
@@ -200,11 +197,15 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 28, marginBottom: 13 },
   sectionTitle: { color: C.ink, fontSize: 19, fontWeight: '900', letterSpacing: -0.5 },
   sectionAside: { color: C.muted, fontSize: 12, fontWeight: '700' },
-  categoryRail: { gap: 9, paddingRight: 20 },
-  categoryChip: { minHeight: 43, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 15, borderRadius: 22, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
-  categoryChipActive: { backgroundColor: C.ink, borderColor: C.ink },
-  categoryChipText: { color: C.ink, fontSize: 12, fontWeight: '800' },
-  categoryChipTextActive: { color: C.white },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  categoryTile: { width: '48%', minHeight: 120, overflow: 'hidden', borderRadius: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceBlue },
+  categoryTileSelected: { borderWidth: 2, borderColor: C.cobalt },
+  categoryTileImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
+  categoryTileShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(23,27,45,0.30)' },
+  categoryTileFooter: { flex: 1, minHeight: 118, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, padding: 12 },
+  categoryTileTitle: { flex: 1, color: C.white, fontSize: 14, lineHeight: 18, fontWeight: '900' },
+  categoryTileArrow: { width: 28, height: 28, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.94)' },
+  categoryTileArrowSelected: { backgroundColor: C.cobalt },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 22 },
   loadingText: { color: C.muted, fontSize: 13 },
   errorCard: { padding: 16, borderRadius: 16, backgroundColor: '#FFF0EC', gap: 5 },
