@@ -50,7 +50,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
                 coordinate={{ latitude: point.latitude, longitude: point.longitude }}
                 title={point.professionalName || 'Profesional'}
                 description={`${point.serviceName || 'Servicio Klipp'} · ${stale ? 'GPS desactualizado' : point.status}`}
-                pinColor={stale ? '#DC2626' : point.selected ? '#F59E0B' : '#208AEF'}
+                pinColor={stale ? KlippColors.danger : point.selected ? KlippColors.coral : KlippColors.cobalt}
                 onPress={point.onSelect}
               />
             );
