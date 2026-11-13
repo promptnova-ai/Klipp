@@ -15,6 +15,7 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
   const map = useRef<google.maps.Map | null>(null);
   const marker = useRef<google.maps.Marker | null>(null);
   const onChangeRef = useRef(onChange);
+  const initialCoordinate = useRef(coordinate);
   const [mapReady, setMapReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [latitude, setLatitude] = useState(String(coordinate.latitude));
@@ -39,7 +40,7 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
 
     void loadGoogleMapsLibrary().then(({ Map }) => {
       if (!active || !mapElement.current) return;
-      const position = { lat: coordinate.latitude, lng: coordinate.longitude };
+      const position = { lat: initialCoordinate.current.latitude, lng: initialCoordinate.current.longitude };
       const instance = new Map(mapElement.current, {
         center: position,
         zoom: 15,
