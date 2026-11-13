@@ -129,7 +129,7 @@ export function ProRegistrationScreen() {
       if (gesture.dx < -72 && step < steps.length - 1) continueRegistration();
       if (gesture.dx > 72 && step > 0) animateToStep(step - 1);
     },
-  }), [step]);
+  }), [step, animateToStep, continueRegistration]);
 
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
