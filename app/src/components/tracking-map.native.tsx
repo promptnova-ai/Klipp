@@ -75,5 +75,5 @@ export function TrackingMap({
 }
 
 const styles = StyleSheet.create({
-  container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: '#E8EEF7' },
+  container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: KlippColors.surfaceBlue },
 });
