@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
-import {  KlippColors, KlippLayout  } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
 import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, PricingTier, ServiceType, VerificationStatus } from '@/lib/types';
