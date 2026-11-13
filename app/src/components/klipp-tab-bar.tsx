@@ -1,44 +1,120 @@
-import { BottomTabBar, type BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { TabList, TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
+import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
+import { Pressable, StyleSheet, Text, View, type ComponentProps, type Ref } from 'react';
 import { KlippMark } from '@/components/klipp-mark';
 
-type KlippTabBarProps = BottomTabBarProps & {
+type SymbolName = ComponentProps<typeof SymbolView>['name'];
+type TabItem = { name: string; href: string; label: string; icon: SymbolName };
+
+type KlippTabBarProps = {
+  items: TabItem[];
+  actionName: string;
   actionLabel: string;
-  actionHref: '/(client)/new-booking' | '/(pro)';
 };
 
-export function KlippTabBar({ actionLabel, actionHref, ...props }: KlippTabBarProps) {
-  const router = useRouter();
+type TabButtonProps = TabTriggerSlotProps & {
+  label: string;
+  icon?: SymbolName;
+  center?: boolean;
+  ref: Ref<View>;
+};
+
+function TabButton({ label, icon, center = false, isFocused, ref, ...props }: TabButtonProps) {
+  if (center) {
+    return (
+      <Pressable
+        {...props}
+        ref={ref}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}>
+        <View style={styles.markPlate}>
+          <KlippMark size={34} />
+        </View>
+      </Pressable>
+    );
+  }
+
+  return (
+    <Pressable
+      {...props}
+      ref={ref}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: isFocused }}
+      style={({ pressed }) => [styles.tabButton, isFocused && styles.tabButtonActive, pressed && styles.pressed]}>
+      {icon ? <SymbolView name={icon} tintColor={isFocused ? '#3D5AFE' : '#8A8D98'} size={21} /> : null}
+      <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+export function KlippTabBar({ items, actionName, actionLabel }: KlippTabBarProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
-      <BottomTabBar {...props} />
-      <View pointerEvents="box-none" style={[styles.centerAction, { bottom: Math.max(insets.bottom, 8) + 28 }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={actionLabel}
-          accessibilityHint="Acceso principal de Klipp"
-          onPress={() => router.navigate(actionHref)}
-          style={({ pressed }) => [styles.actionButton, pressed && styles.actionPressed]}>
-          <View style={styles.markPlate}>
-            <KlippMark size={34} />
-          </View>
-        </Pressable>
+    <View style={[styles.navigation, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <TabList style={styles.hiddenRoutes}>
+        {items.map((item) => (
+          <TabTrigger key={item.name} name={item.name} href={item.href} />
+        ))}
+      </TabList>
+      <View style={styles.bar}>
+        {items.slice(0, 2).map((item) => (
+          <TabTrigger key={item.name} name={item.name} asChild>
+            <TabButton label={item.label} icon={item.icon} />
+          </TabTrigger>
+        ))}
+        <TabTrigger name={actionName} asChild>
+          <TabButton label={actionLabel} center />
+        </TabTrigger>
+        {items.slice(2).map((item) => (
+          <TabTrigger key={item.name} name={item.name} asChild>
+            <TabButton label={item.label} icon={item.icon} />
+          </TabTrigger>
+        ))}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { position: 'relative', backgroundColor: '#FFFFFF' },
-  centerAction: { position: 'absolute', alignSelf: 'center', left: 0, right: 0, alignItems: 'center' },
-  actionButton: {
+  navigation: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#EEECE6',
+    shadowColor: '#171B2D',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: -5 },
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  hiddenRoutes: { display: 'none' },
+  bar: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    paddingHorizontal: 12,
+    paddingTop: 7,
+  },
+  tabButton: {
+    minWidth: 64,
+    minHeight: 54,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    borderRadius: 14,
+  },
+  tabButtonActive: { backgroundColor: '#F4F6FF' },
+  tabLabel: { color: '#8A8D98', fontSize: 10, fontWeight: '700', letterSpacing: 0.1 },
+  tabLabelActive: { color: '#3D5AFE' },
+  centerButton: {
     width: 66,
     height: 66,
+    marginTop: -28,
     borderRadius: 33,
     alignItems: 'center',
     justifyContent: 'center',
@@ -49,8 +125,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.16,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 5 },
-    elevation: 8,
+    elevation: 9,
   },
   markPlate: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  actionPressed: { transform: [{ scale: 0.94 }], opacity: 0.88 },
+  pressed: { transform: [{ scale: 0.94 }], opacity: 0.86 },
 });
