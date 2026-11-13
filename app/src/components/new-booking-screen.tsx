@@ -708,7 +708,8 @@ export function NewBookingScreen() {
   if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+    <View style={styles.screen}>
+      <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader inset={false} eyebrow="RESERVAS" title="Nueva reserva" subtitle="Unos pasos y queda organizado." />
       <View style={styles.wizardHeader}>
@@ -982,21 +983,25 @@ export function NewBookingScreen() {
         </View>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
-      <View style={styles.wizardNavigation}>
-        {activeStep > 0 ? <Pressable accessibilityRole="button" onPress={previousWizardStep} style={({ pressed }) => [styles.wizardBack, pressed && styles.buttonPressed]}><Text style={styles.wizardBackText}>Volver</Text></Pressable> : <View style={styles.wizardBackSpacer} />}
-        {activeStep < 6 ? <Pressable accessibilityRole="button" onPress={continueWizard} style={({ pressed }) => [styles.wizardNext, pressed && styles.buttonPressed]}><Text style={styles.wizardNextText}>Continuar</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} /></Pressable> : null}
-      </View>
-      {activeStep === 6 && (submissionUncertain ? (
-        <Pressable accessibilityRole="button" onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => [styles.submit, pressed && styles.buttonPressed]}>
-          <Text style={styles.submitText}>Revisar Mis reservas</Text>
-        </Pressable>
-      ) : !success && (
-        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
-        </Pressable>
-      )
-      )}
     </ScrollView>
+      <View style={styles.wizardFooter}>
+        <View style={styles.wizardNavigation}>
+          {activeStep > 0 ? <Pressable accessibilityRole="button" onPress={previousWizardStep} style={({ pressed }) => [styles.wizardBack, pressed && styles.buttonPressed]}><Text style={styles.wizardBackText}>Volver</Text></Pressable> : <View style={styles.wizardBackSpacer} />}
+          {activeStep < 6 ? <Pressable accessibilityRole="button" onPress={continueWizard} style={({ pressed }) => [styles.wizardNext, pressed && styles.buttonPressed]}><Text style={styles.wizardNextText}>Continuar</Text><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} /></Pressable> : null}
+        </View>
+        {activeStep === 6 && (submissionUncertain ? (
+          <Pressable accessibilityRole="button" onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => [styles.submit, pressed && styles.buttonPressed]}>
+            <Text style={styles.submitText}>Revisar Mis reservas</Text>
+          </Pressable>
+        ) : !success && (
+          <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
+            {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
+          </Pressable>
+        )
+        )}
+  
+      </View>
+    </View>
   );
 }
 
@@ -1046,7 +1051,9 @@ const styles = StyleSheet.create({
   serviceTileRadio: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   serviceTileRadioSelected: { borderColor: KlippColors.cobalt },
   serviceTileRadioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.cobalt },
-  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 16, paddingBottom: 72, gap: 18, backgroundColor: '#F7F5F0', flexGrow: 1 },
+  screen: { flex: 1, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 16, paddingBottom: 28, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  wizardFooter: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 12, paddingBottom: 12, gap: 10, borderTopWidth: 1, borderTopColor: KlippColors.border, backgroundColor: KlippColors.white },
   wizardHeader: { width: '100%', maxWidth: 1080, alignSelf: 'center', gap: 11 },
   wizardHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
   wizardEyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
