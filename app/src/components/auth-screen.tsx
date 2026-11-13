@@ -208,6 +208,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     ? (otpSent ? otp.length !== 6 : !normalizePhoneNumber(phoneNumber) || (isRegister && !fullName.trim()))
     : !email.trim() || !password);
 
+  const submitInactive = submitDisabled && !busy;
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
@@ -353,13 +355,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   onPress={() => void handleSubmit()}
                   style={({ pressed }) => [
                     styles.submit,
-                    submitDisabled && styles.submitDisabled,
+                    submitInactive && styles.submitDisabled,
                     pressed && !busy && styles.submitPressed,
                   ]}>
                   {busy
                     ? <ActivityIndicator color={KlippColors.white} />
-                    : <Text style={styles.submitText}>{authMethod === 'phone' ? (otpSent ? 'Verificar y continuar' : 'Enviar código') : 'Entrar'}</Text>}
-                  {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.white} size={17} />}
+                    : <Text style={[styles.submitText, submitInactive && styles.submitTextDisabled]}>{authMethod === 'phone' ? (otpSent ? 'Verificar y continuar' : 'Enviar código') : 'Entrar'}</Text>}
+                  {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={submitInactive ? KlippColors.muted : KlippColors.white} size={17} />}
                 </Pressable>
 
                 <View style={styles.switchRow}>
@@ -492,7 +494,8 @@ const styles = StyleSheet.create({
   error: { padding: 12, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 13, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
   notice: { padding: 12, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 13, backgroundColor: KlippColors.surfaceMint, color: KlippColors.cobaltDark, fontSize: 13, lineHeight: 19 },
   submit: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 16, backgroundColor: KlippColors.cobalt },
-  submitDisabled: { opacity: 0.5 },
+  submitDisabled: { backgroundColor: KlippColors.surfaceMuted },
+  submitTextDisabled: { color: KlippColors.muted },
   submitPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   submitText: { color: KlippColors.white, fontSize: 14, fontWeight: '900' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
