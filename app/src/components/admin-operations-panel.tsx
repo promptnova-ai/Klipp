@@ -110,7 +110,6 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
     void loadBookings().finally(() => { if (active) setLoading(false); });
     const interval = setInterval(() => { void loadBookings(); }, 15000);
     return () => { active = false; clearInterval(interval); };
