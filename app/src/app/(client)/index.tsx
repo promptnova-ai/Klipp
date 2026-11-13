@@ -19,7 +19,6 @@ import {
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
-import { KlippMark } from '@/components/klipp-mark';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
@@ -295,7 +294,7 @@ export default function ClientHomeScreen() {
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <View style={styles.brandRow}>
-            <View style={styles.logoMark}><KlippMark size={28} /></View>
+            <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
             <View style={styles.brandCopy}><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>SERVICIOS A DOMICILIO</Text></View>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Cambiar ubicación" onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
@@ -497,7 +496,8 @@ const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: 1320, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 26, paddingTop: 22, paddingBottom: 76, gap: 23, backgroundColor: '#F7F5F0' },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 4 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  logoMark: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#3D5AFE', alignItems: 'center', justifyContent: 'center' },
+  logoLetter: { color: KlippColors.white, fontSize: 21, fontWeight: '800' },
   brand: { color: '#171B2D', fontSize: 25, lineHeight: 27, fontWeight: '900', letterSpacing: -1 },
   locationButton: { flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 310, minWidth: 180, paddingHorizontal: 13, paddingVertical: 10, borderRadius: 16, borderWidth: 1, borderColor: '#E8E5DE', backgroundColor: '#FFFFFF' },
   locationLabel: { color: '#72778A', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
