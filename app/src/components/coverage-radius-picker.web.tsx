@@ -161,13 +161,13 @@ export function CoverageRadiusPicker({
 
 const styles = StyleSheet.create({
   container: { gap: 8 },
-  mapFrame: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  mapFrame: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
   overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
   errorOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, gap: 8, backgroundColor: '#FFFFFFF2' },
-  missingKey: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, backgroundColor: '#FFF7ED', gap: 8 },
+  missingKey: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, backgroundColor: KlippColors.surfaceWarning, gap: 8 },
   errorTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700', textAlign: 'center' },
   overlayText: { color: KlippColors.slate, fontSize: 12, lineHeight: 18, textAlign: 'center' },
-  mapHint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignSelf: 'center', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: '#334155', fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  mapHint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignSelf: 'center', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: KlippColors.slate, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   coordinates: { color: KlippColors.slate, fontSize: 12, textAlign: 'center' },
   hint: { color: KlippColors.muted, fontSize: 11, textAlign: 'center' },
 });
