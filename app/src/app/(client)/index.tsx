@@ -334,7 +334,7 @@ export default function ClientHomeScreen() {
             const art = serviceArt(categoryService?.code ?? category.name);
             return (
               <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category.id} onPress={() => setSelectedCategory(selected ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, { width: categoryTileWidth, minHeight: width < 760 ? 126 : 156 }, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
-                <Image source={art} contentFit="cover" transition={250} style={styles.categoryTileImage} />
+                <Image cachePolicy="memory-disk" source={art} contentFit="cover" transition={250} style={styles.categoryTileImage} />
                 <View style={styles.categoryTileShade} />
                 <View style={styles.categoryTileFooter}>
                   <Text numberOfLines={2} style={styles.categoryTileTitle}>{category.name}</Text>
@@ -353,7 +353,7 @@ export default function ClientHomeScreen() {
               const priceOptions = service.offers.filter((offer) => offer.base_price_dop > 0).map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })).sort((a,b) => a.price-b.price);
               const lowestOption = priceOptions[0];
               return <MotionPressable accessibilityLabel={`Ver detalles de ${service.name}`} key={service.id} onPress={() => showServiceDetails(service)} style={[styles.serviceCard, { width: serviceCardWidth }, width < 760 && styles.serviceCardCompact]}>
-                <View style={[styles.servicePhotoWrap, width < 760 && styles.servicePhotoWrapCompact]}><Image source={serviceArt(service.code)} contentFit="cover" transition={280} style={styles.servicePhoto} /><View style={styles.servicePhotoWash} /><View style={[styles.servicePhotoBadge, { backgroundColor: serviceSurface(service.code) }]}><SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={21} /></View><View style={styles.photoLabel}><Text style={styles.photoLabelText}>{getCategory(service)}</Text></View></View>
+                <View style={[styles.servicePhotoWrap, width < 760 && styles.servicePhotoWrapCompact]}><Image cachePolicy="memory-disk" source={serviceArt(service.code)} contentFit="cover" transition={280} style={styles.servicePhoto} /><View style={styles.servicePhotoWash} /><View style={[styles.servicePhotoBadge, { backgroundColor: serviceSurface(service.code) }]}><SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={21} /></View><View style={styles.photoLabel}><Text style={styles.photoLabelText}>{getCategory(service)}</Text></View></View>
                 <View style={[styles.serviceCopy, width < 760 && styles.serviceCopyCompact]}><View style={styles.serviceCardTop}><Text numberOfLines={2} style={styles.serviceTitle}>{service.name}</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={KlippColors.cobalt} size={17} /></View><Text numberOfLines={2} style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text><View style={styles.serviceMeta}>{lowestOption ? <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text> : <Text style={styles.servicePriceHint}>Tarifa según modalidad</Text>}{lowestOption && <Text style={styles.metaDot}>·</Text>}{lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}</View><Text style={styles.serviceLink}>Ver servicio</Text></View>
               </MotionPressable>;
             })}
@@ -374,7 +374,7 @@ export default function ClientHomeScreen() {
               <View style={styles.sheetHandle} />
               <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
                 <View style={styles.detailIllustration}>
-                  <Image source={serviceArt(selectedService.code)} contentFit="cover" transition={260} style={styles.detailArt} />
+                  <Image cachePolicy="memory-disk" source={serviceArt(selectedService.code)} contentFit="cover" transition={260} style={styles.detailArt} />
                 </View>
                 <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
                 <Text style={styles.detailTitle}>{selectedService.name}</Text>
