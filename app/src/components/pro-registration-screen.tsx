@@ -82,7 +82,7 @@ export function ProRegistrationScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const compact = width < 540;
-  const { signUp } = useAuth();
+  const { signUp, resendSignupConfirmation } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
   const [showOptionalProfile, setShowOptionalProfile] = useState(false);
@@ -113,6 +113,7 @@ export function ProRegistrationScreen() {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
   const [busy, setBusy] = useState(false);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -323,6 +324,19 @@ export function ProRegistrationScreen() {
     }
   }
 
+  async function resendConfirmationEmail() {
+    setError(null);
+    setResendingConfirmation(true);
+    try {
+      await resendSignupConfirmation(email.trim());
+      setNotice('Hemos enviado otro correo de confirmación. Abre el enlace desde ese mismo correo antes de iniciar sesión.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos reenviar el correo de confirmación.');
+    } finally {
+      setResendingConfirmation(false);
+    }
+  }
+
   async function createProfessionalAccount() {
     const validationError = validateStep();
     if (validationError) {
@@ -372,7 +386,7 @@ export function ProRegistrationScreen() {
       if (hasSession) {
         router.replace('/');
       } else {
-        setNotice('¡Tu solicitud está lista! Confirma tu correo y luego inicia sesión. Tu perfil y configuración quedarán preparados para terminar.');
+        setNotice('Tu cuenta profesional está creada. Confirma el correo para activar el acceso; después tendrás que enviar tu documento de identidad y esperar la revisión del equipo antes de recibir solicitudes.');
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No pudimos crear tu cuenta profesional.');
@@ -680,8 +694,11 @@ export function ProRegistrationScreen() {
               <View accessibilityRole="status" style={styles.noticeCard}>
                 <Text style={styles.noticeIcon}>✉</Text>
                 <Text style={styles.noticeText}>{notice}</Text>
+                <Pressable accessibilityRole="button" disabled={resendingConfirmation} onPress={() => void resendConfirmationEmail()} style={[styles.loginButton, resendingConfirmation && styles.buttonDisabled]}>
+                  <Text style={styles.loginButtonText}>{resendingConfirmation ? 'Enviando correo…' : 'Reenviar correo de confirmación'}</Text>
+                </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => router.replace('/(auth)/login')} style={styles.loginButton}>
-                  <Text style={styles.loginButtonText}>Ir a iniciar sesión</Text>
+                  <Text style={styles.loginButtonText}>Volver a iniciar sesión</Text>
                 </Pressable>
               </View>
             )}
