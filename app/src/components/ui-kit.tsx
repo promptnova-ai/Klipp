@@ -143,16 +143,16 @@ export function TextField({ label, error, hint, appRole = 'client', style, onFoc
 }
 
 const kit = StyleSheet.create({
-  skeletonCard: { gap: 10, padding: KlippSpacing[3], borderRadius: KlippLayout.radiusCard, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
-  empty: { alignItems: 'center', gap: 12, padding: KlippSpacing[6] },
+  skeletonCard: { gap: KlippSpacing[2], padding: KlippSpacing[3], borderRadius: KlippLayout.radiusCard, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
+  empty: { alignItems: 'center', gap: KlippSpacing[3], padding: KlippSpacing[6] },
   emptyArt: { width: 220, height: 165, borderRadius: KlippLayout.radiusCardLarge },
   emptyTitle: { color: KlippColors.ink, fontSize: KlippTypography.size.titleSmall, lineHeight: KlippTypography.lineHeight.titleSmall, fontWeight: '800', textAlign: 'center' },
   emptyMessage: { color: KlippColors.muted, fontSize: KlippTypography.size.bodySmall, lineHeight: KlippTypography.lineHeight.bodyLarge, textAlign: 'center', maxWidth: 320 },
-  chip: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: KlippSpacing[4], borderRadius: KlippLayout.radiusPill, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  chip: { minHeight: KlippLayout.minTapTarget, flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[2], paddingHorizontal: KlippSpacing[4], borderRadius: KlippLayout.radiusPill, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   chipText: { color: KlippColors.ink, fontSize: KlippTypography.size.bodySmall, fontWeight: '700' },
-  field: { gap: 6 },
-  fieldLabel: { color: KlippColors.ink, fontSize: 13, fontWeight: '700' },
+  field: { gap: KlippSpacing[2] },
+  fieldLabel: { color: KlippColors.ink, fontSize: KlippTypography.size.bodySmall, fontWeight: '700' },
   input: { minHeight: KlippLayout.controlHeight, paddingHorizontal: KlippSpacing[4], borderRadius: KlippLayout.radiusControl, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, color: KlippColors.ink, fontSize: KlippTypography.size.body },
-  fieldError: { color: KlippColors.danger, fontSize: 12, lineHeight: 17 },
+  fieldError: { color: KlippColors.danger, fontSize: KlippTypography.size.caption, lineHeight: KlippTypography.lineHeight.caption },
   fieldHint: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
 });
