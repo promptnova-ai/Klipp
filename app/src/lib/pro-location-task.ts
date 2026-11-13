@@ -4,6 +4,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
 import { supabase } from '../../lib/supabase';
+import { KlippColors } from '@/theme/tokens';
 
 export const PRO_LOCATION_TASK = 'KLIPP_PRO_LOCATION_TRACKING';
 const ACTIVE_BOOKINGS_KEY = 'klipp.active-pro-location-bookings';
@@ -84,7 +85,7 @@ export async function updateActiveProTrackingBookings(bookingIds: string[]) {
       foregroundService: {
         notificationTitle: 'Klipp está en camino',
         notificationBody: 'Tu ubicación se comparte durante este servicio.',
-        notificationColor: '#208AEF',
+        notificationColor: KlippColors.cobalt,
       },
     });
   }
