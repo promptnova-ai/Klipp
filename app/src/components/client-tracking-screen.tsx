@@ -293,6 +293,7 @@ export function ClientTrackingScreen() {
           <Text style={styles.backText}>‹  Volver a mis reservas</Text>
         </Pressable>
         <BrandScreenHeader
+          inset={false}
           role="client"
           eyebrow="SEGUIMIENTO DE TU SERVICIO"
           title={!booking ? 'Seguimiento' : booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'}
