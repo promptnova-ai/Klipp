@@ -358,6 +358,7 @@ export function NotificationsScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
         <BrandScreenHeader
+          inset={false}
           role={isPro ? 'pro' : 'client'}
           eyebrow={isPro ? 'KLIPP PRO · AVISOS' : 'TU ESPACIO · AVISOS'}
           title="Notificaciones"
