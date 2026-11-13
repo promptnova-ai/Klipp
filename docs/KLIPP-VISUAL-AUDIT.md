@@ -27,6 +27,8 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 | Bottom navigation | Press feedback was stronger than the system motion scale | Reduced press scaling and exposed correct tab semantics |
 | App configuration | The /Klipp base path was set globally despite the app config intending it only for GitHub Pages | Removed the global base path; app.config.js now applies /Klipp only when GITHUB_PAGES=true; pinned the UI to the supported light theme |
 | Maps and system accents | Several maps, notification indicators and loading states retained legacy teal/bright-blue colors | Migrated them to canonical Klipp tokens |
+| Splash and animated mark | Expo starter artwork and high-energy glow/rotation motion were inconsistent with Klipp | Replaced it with the real Klipp mark and a short, restrained animation that respects reduced motion |
+| Tablet home | Native discovery remained a two-column list at all widths | Added the same 2/3/4-column category grid and shared content max-width for phone, tablet and desktop |
 
 ## Product-wide review checklist
 
