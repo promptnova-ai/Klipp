@@ -39,3 +39,25 @@ Role colors must never create a different page template.
 
 ## Acceptance gate
 A route is not considered aligned until it uses shared tokens/components, passes lint and TypeScript, exports to web, and has been visually checked against the same viewport matrix. Do not publish illustrative previews; use screenshots rendered from the actual branch and actual assets only.
+
+
+## Iterative quality audit — 13 November 2026
+
+### Verified in the published web preview
+- Entry/login flow inspected at desktop and 390px mobile viewport.
+- Registration route inspected through the GitHub Pages SPA fallback.
+- The original Klipp symbol is the asset rendered by the app; previews must use this asset, never a generated substitute.
+- Login contained a repeated brand lockup (top bar plus showcase). The duplicate inside the showcase has been removed so the real master mark appears once in the page chrome.
+- Client tracking now uses the shared role-aware brand header instead of a one-off title block.
+
+### Additional corrections
+- PRO onboarding header now follows the shared light canvas and border treatment; coral remains the PRO accent.
+- Client and PRO navigation route identifiers were aligned with Expo Router filenames.
+- Tab bar trigger typing was corrected without forwarding an incompatible component ref.
+- Profile loading and admin operations initial fetch were deferred from effect bodies to avoid synchronous cascading state updates.
+
+### Quality gate policy
+- Project-wide Expo lint is now a blocking CI step; it is no longer allowed to fail silently.
+- CI also runs TypeScript, web export, and Edge Function checks on pushes to `feat/caribbean-utility-standalone`.
+- A green export is not a visual sign-off. Every route still needs a real rendered review at narrow mobile and desktop widths, plus interaction checks for navigation, validation, loading, empty, error, and success states.
+- Authenticated Client, PRO, and Admin screens require a test account/session to verify fully. Do not infer their visual or operational correctness from static source review alone.
