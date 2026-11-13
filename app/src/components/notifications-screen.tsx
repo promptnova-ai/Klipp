@@ -6,7 +6,8 @@ import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors, KlippLayout, RoleThemes } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { RoleThemes } from '@/theme/themes';
 import { supabase } from '../../lib/supabase';
 import {
   isPushDeviceRegisteredAsync,
