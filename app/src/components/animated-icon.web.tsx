@@ -1,108 +1,95 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
-import Animated, { Keyframe, Easing } from 'react-native-reanimated';
+import { useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import Animated, { Easing, Keyframe } from 'react-native-reanimated';
+import { scheduleOnRN } from 'react-native-worklets';
 
-import classes from './animated-icon.module.css';
-const DURATION = 300;
+import { KlippMark } from '@/components/klipp-mark';
+import { useReducedMotion } from '@/components/ui-primitives';
+import { KlippColors } from '@/theme/tokens';
+
+const DURATION = 420;
+
+const splashKeyframe = new Keyframe({
+  0: { opacity: 1 },
+  100: { opacity: 0, easing: Easing.out(Easing.cubic) },
+});
+
+const iconKeyframe = new Keyframe({
+  0: { transform: [{ scale: 0.94 }], opacity: 0 },
+  100: { transform: [{ scale: 1 }], opacity: 1, easing: Easing.out(Easing.cubic) },
+});
+
+const backgroundKeyframe = new Keyframe({
+  0: { transform: [{ scale: 0.96 }] },
+  100: { transform: [{ scale: 1 }], easing: Easing.out(Easing.cubic) },
+});
 
 export function AnimatedSplashOverlay() {
-  return null;
+  const [visible, setVisible] = useState(true);
+  const reducedMotion = useReducedMotion();
+
+  if (!visible) return null;
+
+  const entering = reducedMotion
+    ? undefined
+    : splashKeyframe.duration(DURATION).withCallback((finished) => {
+        'worklet';
+        if (finished) scheduleOnRN(setVisible, false);
+      });
+
+  return (
+    <Animated.View
+      entering={entering}
+            style={styles.splashOverlay}>
+      <View style={styles.splashBrand}>
+        <KlippMark size={92} />
+        <Text style={styles.brandName}>klipp</Text>
+      </View>
+    </Animated.View>
+  );
 }
 
-const keyframe = new Keyframe({
-  0: {
-    transform: [{ scale: 0 }],
-  },
-  60: {
-    transform: [{ scale: 1.2 }],
-    easing: Easing.elastic(1.2),
-  },
-  100: {
-    transform: [{ scale: 1 }],
-    easing: Easing.elastic(1.2),
-  },
-});
-
-const logoKeyframe = new Keyframe({
-  0: {
-    opacity: 0,
-  },
-  60: {
-    transform: [{ scale: 1.2 }],
-    opacity: 0,
-    easing: Easing.elastic(1.2),
-  },
-  100: {
-    transform: [{ scale: 1 }],
-    opacity: 1,
-    easing: Easing.elastic(1.2),
-  },
-});
-
-const glowKeyframe = new Keyframe({
-  0: {
-    transform: [{ rotateZ: '-180deg' }, { scale: 0.8 }],
-    opacity: 0,
-  },
-  [DURATION / 1000]: {
-    transform: [{ rotateZ: '0deg' }, { scale: 1 }],
-    opacity: 1,
-    easing: Easing.elastic(0.7),
-  },
-  100: {
-    transform: [{ rotateZ: '7200deg' }],
-  },
-});
-
 export function AnimatedIcon() {
+  const reducedMotion = useReducedMotion();
   return (
     <View style={styles.iconContainer}>
-      <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>
-        <Image style={styles.glow} source={require('@/assets/images/logo-glow.png')} />
-      </Animated.View>
-
-      <Animated.View style={styles.background} entering={keyframe.duration(DURATION)}>
-        <div className={classes.expoLogoBackground} />
-      </Animated.View>
-
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
+      <Animated.View
+        entering={reducedMotion ? undefined : backgroundKeyframe.duration(DURATION)}
+        style={styles.background}
+      />
+      <Animated.View
+        entering={reducedMotion ? undefined : iconKeyframe.duration(DURATION)}
+        style={styles.imageContainer}>
+        <KlippMark size={76} />
       </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: KlippColors.ivory,
     alignItems: 'center',
-    width: '100%',
+    justifyContent: 'center',
     zIndex: 1000,
-    position: 'absolute',
-    top: 128 / 2 + 138,
   },
-  imageContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  glow: {
-    width: 201,
-    height: 201,
-    position: 'absolute',
-  },
+  splashBrand: { alignItems: 'center', justifyContent: 'center', gap: 10 },
+  brandName: { color: KlippColors.ink, fontSize: 30, fontWeight: '900', letterSpacing: -1.2 },
   iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
     width: 128,
     height: 128,
-  },
-  image: {
-    position: 'absolute',
-    width: 76,
-    height: 71,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   background: {
-    width: 128,
-    height: 128,
-    position: 'absolute',
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 36,
+    backgroundColor: KlippColors.surfaceBlue,
+  },
+  imageContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
