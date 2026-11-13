@@ -132,3 +132,7 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - The audit findings and viewport checklist are recorded in docs/KLIPP-VISUAL-AUDIT.md.
 - CI now captures actual web-entry screenshots at 390×844 and 1440×900 and publishes them as a review artifact. Authenticated routes still require manual review with test sessions.
 - These changes are source-level corrections. The final branch still requires lint, TypeScript, web export, screenshot artifact review and device/browser inspection before visual sign-off.
+
+
+- The client category grid uses a 2/3/4-column responsive layout at phone/tablet/desktop widths in both web and native implementations, constrained by the shared 1120px content width.
+- The splash/animated mark uses the supplied Klipp symbol rather than Expo starter artwork. Motion is short and restrained, and reduced-motion users receive a static mark.
