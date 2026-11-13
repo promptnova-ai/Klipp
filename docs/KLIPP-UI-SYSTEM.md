@@ -71,3 +71,11 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - React Native does not have a browser-style global CSS cascade. Shared visual rules are implemented through typed tokens and reusable React Native components, so web and native stay aligned.
 - New screen-level styles are permitted for composition and one-off content only; repeated controls, surfaces, typography and spacing must use the shared system.
 - Deprecated color aliases remain temporarily to avoid breaking the existing app. Remove them only after a repository-wide usage audit and migration.
+
+
+### Compatibility layers and migration policy
+
+- `app/src/design-system/tokens/*` and `app/src/constants/theme.ts` are compatibility APIs for older components. They must only map to `app/src/theme/tokens.ts` and `app/src/theme/themes.ts`; they must not define independent palette, spacing, typography, radius, shadow or motion values.
+- `app/src/global.css` is reserved for browser font-family variables. Brand colors, dimensions and component styling belong to the TypeScript theme and shared React Native primitives.
+- New components must import from `@/theme/tokens` and `@/theme/themes`. New screen-specific values are allowed only when they express unique content composition, not a repeated design decision.
+- The legacy `app/src/lib/brand.ts` is a temporary compatibility barrel. Existing imports can be migrated incrementally, but new imports must not use it.
