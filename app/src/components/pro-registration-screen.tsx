@@ -123,14 +123,6 @@ export function ProRegistrationScreen() {
     () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
     [progress],
   );
-  const swipeResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) > 24 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
-    onPanResponderRelease: (_event, gesture) => {
-      if (gesture.dx < -72 && step < steps.length - 1) continueRegistration();
-      if (gesture.dx > 72 && step > 0) animateToStep(step - 1);
-    },
-  }), [step, animateToStep, continueRegistration]);
-
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
       .from('service_types')
@@ -169,7 +161,7 @@ export function ProRegistrationScreen() {
     return () => { active = false; };
   }, [fetchCatalog]);
 
-  function animateToStep(nextStep: number) {
+  const animateToStep = useCallback((nextStep: number) => {
     setError(null);
     setNotice(null);
     if (reducedMotion) {
@@ -186,9 +178,9 @@ export function ProRegistrationScreen() {
         Animated.timing(progress, { toValue: nextStep, duration: 250, useNativeDriver: false }),
       ]).start();
     });
-  }
+  }, [progress, reducedMotion, transition]);
 
-  function validateStep() {
+  const validateStep = useCallback(() => {
     if (step === 0) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
       if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
@@ -241,16 +233,24 @@ export function ProRegistrationScreen() {
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     }
     return null;
-  }
+  }, [catalog, center, confirmPassword, email, equipmentConfirmed, equipmentLoading, equipmentRequirements.length, fullName, password, phone, pricingTiers, progress, selectedServiceId, selectedWeekdays, serviceDetails, servicesLoading, startTime, step, endTime, tierDrafts, tiersLoading, transportType, otherTransportType, years]);
 
-  function continueRegistration() {
+  const continueRegistration = useCallback(() => {
     const validationError = validateStep();
     if (validationError) {
       setError(validationError);
       return;
     }
     animateToStep(step + 1);
-  }
+  }, [animateToStep, step, validateStep]);
+
+  const swipeResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) > 24 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
+    onPanResponderRelease: (_event, gesture) => {
+      if (gesture.dx < -72 && step < steps.length - 1) continueRegistration();
+      if (gesture.dx > 72 && step > 0) animateToStep(step - 1);
+    },
+  }), [step, animateToStep, continueRegistration]);
 
   function chooseProfession(serviceId: number) {
     const requestId = ++tierRequestId.current;
