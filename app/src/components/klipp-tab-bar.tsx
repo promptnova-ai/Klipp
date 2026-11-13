@@ -40,14 +40,15 @@ function TabButton({ label, icon, isFocused, onPress, accent, accentSoft }: TabB
 export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }: KlippTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const accent = RoleThemes[role].accent;
+  const theme = RoleThemes[role];
+  const accent = theme.accent;
 
   return (
     <View style={[styles.navigation, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.bar}>
         {items.slice(0, 2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
-            <TabButton label={item.label} icon={item.icon} accent={accent} />
+            <TabButton label={item.label} icon={item.icon} accent={accent} accentSoft={theme.accentSoft} />
           </TabTrigger>
         ))}
         <Pressable
@@ -95,9 +96,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 14,
   },
-  tabButtonActive: { backgroundColor: KlippColors.surfaceBlue },
   tabLabel: { color: '#8A8D98', fontSize: 10, fontWeight: '700', letterSpacing: 0.1 },
-  tabLabelActive: { color: '#3D5AFE' },
   centerButton: {
     width: 66,
     height: 66,
