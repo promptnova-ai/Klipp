@@ -9,6 +9,8 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
   const [latitude, setLatitude] = useState(String(coordinate.latitude));
   const [longitude, setLongitude] = useState(String(coordinate.longitude));
 
+  // Intentional prop-to-draft synchronization: the coordinate editor remains locally editable.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setLatitude(String(coordinate.latitude));
     setLongitude(String(coordinate.longitude));
