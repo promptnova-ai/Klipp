@@ -1,231 +1,584 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Image } from 'expo-image';
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
+import { serviceArt } from '@/lib/service-art';
 import { useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import type { ComponentProps } from 'react';
 import * as Location from 'expo-location';
 import {
-  ActivityIndicator,
-  FlatList,
+  Animated,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippMark } from '@/components/klipp-mark';
-import { KlippColors as C, KlippLayout } from '@/theme/tokens';
-import { serviceArt } from '@/lib/service-art';
-import type { ServiceType } from '@/lib/types';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
+import { formatDop } from '@/lib/format';
+import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
 
+type EquipmentRequirement = { id: number; service_type_id: number; item_name: string; details: string; required: boolean; sort_order: number };
+type CatalogService = ServiceType & {
+  tiers: PricingTier[];
+  category_name: string | null;
+  offers: ServiceOffer[];
+  equipmentRequirements: EquipmentRequirement[];
+};
+type SearchablePro = Pick<ProCard, 'pro_id' | 'full_name' | 'bio'>;
+type ServiceOffer = {
+  id: string;
+  pro_id: string;
+  service_type_id: number;
+  base_price_dop: number;
+  est_minutes: number;
+  pro?: SearchablePro;
+};
 type CatalogCategory = { id: number; name: string };
-type CatalogService = ServiceType & { category_name: string | null };
+type NearbyOffer = ServiceOffer & {
+  pro_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  years_experience: number | null;
+  rating_avg: number;
+  rating_count: number;
+  jobs_completed: number;
+  distance_m: number;
+};
+type HomeCoordinate = { latitude: number; longitude: number };
 
-export default function ClientHomeNative() {
-  const { width } = useWindowDimensions();
-  const categoryTileWidth = width >= 1180 ? '23%' : width >= 760 ? '31.5%' : '48%';
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const { profile } = useAuth();
-  const [services, setServices] = useState<CatalogService[]>([]);
-  const [categories, setCategories] = useState<CatalogCategory[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [search, setSearch] = useState('');
-  const [locationLabel, setLocationLabel] = useState('Añadir dirección');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+function serviceIcon(code: string): ComponentProps<typeof SymbolView>['name'] {
+  if (code.includes('barber') || code.includes('peluquer')) return { ios: 'scissors', android: 'content_cut', web: 'content_cut' };
+  if (code.includes('estetica')) return { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' };
+  if (code.includes('carwash') || code.includes('detailing')) return { ios: 'car.side.fill', android: 'directions_car', web: 'directions_car' };
+  if (code.includes('mantenimiento')) return { ios: 'wrench.and.screwdriver.fill', android: 'build', web: 'build' };
+  if (code.includes('oficinas')) return { ios: 'building.2.fill', android: 'business', web: 'business' };
+  return { ios: 'sparkles', android: 'cleaning_services', web: 'cleaning_services' };
+}
+
+function serviceAccent(code: string) {
+  if (code.includes('peluquer') || code.includes('estetica')) return KlippColors.coral;
+  if (code.includes('limpieza') || code.includes('oficinas')) return KlippColors.success;
+  return KlippColors.cobalt;
+}
+
+function serviceSurface(code: string) {
+  if (code.includes('peluquer') || code.includes('estetica')) return KlippColors.surfaceCoral;
+  if (code.includes('limpieza') || code.includes('oficinas')) return KlippColors.surfaceMint;
+  return KlippColors.surfaceBlue;
+}
+
+function getCategory(service: ServiceType & { category_name?: string | null }) {
+  if (service.category_name) return service.category_name;
+  const description = `${service.code} ${service.name}`.toLocaleLowerCase();
+  if (description.includes('barber')) return 'Barbería';
+  if (description.includes('estet') || description.includes('belleza') || description.includes('uña')) return 'Estética';
+  if (description.includes('limpieza') || description.includes('clean')) return 'Limpieza';
+  return 'Otros';
+}
+
+function ServiceSkeleton() {
+  const opacity = useMemo(() => new Animated.Value(0.45), []);
 
   useEffect(() => {
-    let active = true;
-    async function load() {
-      setLoading(true);
-      const [serviceResult, categoryResult] = await Promise.all([
-        supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
-        supabase.from('service_categories').select('id, name').eq('active', true).order('id'),
-      ]);
-      if (!active) return;
-      const failure = serviceResult.error ?? categoryResult.error;
-      if (failure) {
-        setError(failure.message);
-      } else {
-        const rows = (serviceResult.data ?? []) as (ServiceType & { service_categories: { name: string } | { name: string }[] | null })[];
-        setServices(rows.map((service) => ({
-          ...service,
-          category_name: (Array.isArray(service.service_categories) ? service.service_categories[0]?.name : service.service_categories?.name) ?? null,
-        })));
-        setCategories((categoryResult.data ?? []) as CatalogCategory[]);
-        setError(null);
-      }
-      setLoading(false);
-    }
-    void load();
-    return () => { active = false; };
-  }, []);
-
-  const firstName = profile?.full_name?.trim().split(/\s+/)[0];
-  const visibleServices = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase();
-    return services.filter((service) => {
-      const matchesCategory = selectedCategory === 'Todos' || service.category_name === selectedCategory;
-      const matchesSearch = !term || `${service.name} ${service.description ?? ''} ${service.category_name ?? ''}`.toLocaleLowerCase().includes(term);
-      return matchesCategory && matchesSearch;
-    });
-  }, [search, selectedCategory, services]);
-
-  async function chooseLocation() {
-    const permission = await Location.requestForegroundPermissionsAsync();
-    if (!permission.granted) {
-      router.push('/(client)/addresses');
-      return;
-    }
-    try {
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const places = await Location.reverseGeocodeAsync(position.coords);
-      const place = places[0];
-      setLocationLabel([place?.district || place?.subregion, place?.city || place?.region].filter(Boolean).join(', ') || 'Ubicación actual');
-    } catch {
-      router.push('/(client)/addresses');
-    }
-  }
-
-  function startBooking(service: CatalogService) {
-    router.push({ pathname: '/new-booking', params: { serviceId: String(service.id) } });
-  }
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.85, duration: 650, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.45, duration: 650, useNativeDriver: true }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [opacity]);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <FlatList
-        data={visibleServices}
-        keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 18) + 96 }]}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={
-          <View>
-            <View style={styles.topLine}>
-              <View style={styles.brandLockup}>
-                <KlippMark size={34} />
-                <View><Text style={styles.brand}>klipp</Text><Text style={styles.brandSub}>REPÚBLICA DOMINICANA</Text></View>
-              </View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" onPress={() => router.push('/(client)/notifications')} style={styles.iconButton}>
-                <SymbolView name={{ ios: 'bell', android: 'notifications_none', web: 'notifications_none' }} tintColor={C.ink} size={21} />
-              </Pressable>
-            </View>
+    <View style={styles.skeletonCard}>
+      <Animated.View style={[styles.skeletonIcon, { opacity }]} />
+      <View style={styles.skeletonCopy}>
+        <Animated.View style={[styles.skeletonLine, styles.skeletonTitle, { opacity }]} />
+        <Animated.View style={[styles.skeletonLine, { opacity }]} />
+        <Animated.View style={[styles.skeletonLine, styles.skeletonShort, { opacity }]} />
+      </View>
+    </View>
+  );
+}
 
-            <Pressable accessibilityRole="button" onPress={() => void chooseLocation()} style={styles.locationPill}>
-              <View style={styles.locationGlyph}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={C.cobalt} size={19} /></View>
-              <View style={styles.locationCopy}><Text style={styles.microLabel}>SERVICIO EN</Text><Text numberOfLines={1} style={styles.locationValue}>{locationLabel}</Text></View>
-              <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} tintColor={C.muted} size={17} />
-            </Pressable>
+export default function ClientHomeScreen() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const { profile } = useAuth();
+  const [services, setServices] = useState<CatalogService[]>([]);
+  const [pros, setPros] = useState<SearchablePro[]>([]);
+  const [categoriesData, setCategoriesData] = useState<CatalogCategory[]>([]);
+  const [serviceIds, setServiceIds] = useState<number[]>([]);
+  const [coordinate, setCoordinate] = useState<HomeCoordinate | null>(null);
+  const [locationLabel, setLocationLabel] = useState('Activa tu ubicación');
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [search, setSearch] = useState('');
+  const [selectedService, setSelectedService] = useState<CatalogService | null>(null);
+  const [selectedDetailTierId, setSelectedDetailTierId] = useState<number | null>(null);
+  const [selectedOfferId, setSelectedOfferId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-            <View style={styles.greeting}>
-              <Text style={styles.greetingEyebrow}>TU DÍA, MÁS FÁCIL</Text>
-              <Text style={styles.greetingTitle}>Hola{firstName ? `, ${firstName}` : ''}.<Text style={styles.greetingAccent}> ¿Qué necesitas?</Text></Text>
-              <Text style={styles.greetingSub}>Servicios de confianza, directamente donde estés.</Text>
-            </View>
+  async function loadCatalog() {
+    setLoading(true);
+    setLoadError(null);
+    const [serviceResult, tierResult, categoryResult, equipmentResult] = await Promise.all([
+      supabase.from('service_types').select('id, code, name, description, active, category_id, service_categories(name)').eq('active', true).order('name'),
+      supabase.from('pricing_tiers').select('id, service_type_id, label, bedrooms, bathrooms, price_dop, est_minutes').order('price_dop'),
+      supabase.from('service_categories').select('id, name').eq('active', true).order('id'),
+      supabase.from('service_equipment_requirements').select('id, service_type_id, item_name, details, required, sort_order').eq('active', true).order('sort_order'),
+    ]);
+    const error = serviceResult.error ?? tierResult.error ?? categoryResult.error ?? equipmentResult.error;
+    if (error) {
+      setLoadError(error.message);
+      setLoading(false);
+      return;
+    }
+    const tiers = (tierResult.data ?? []) as PricingTier[];
+    const equipment = (equipmentResult.data ?? []) as EquipmentRequirement[];
+    const serviceRows = (serviceResult.data ?? []) as (ServiceType & {
+      service_categories: { name: string } | { name: string }[] | null;
+    })[];
+    setServices(
+      serviceRows.map((service) => ({
+        ...service,
+        category_name: (Array.isArray(service.service_categories) ? service.service_categories[0]?.name : service.service_categories?.name) ?? null,
+        tiers: tiers.filter((tier) => tier.service_type_id === service.id),
+        offers: [],
+        equipmentRequirements: equipment.filter((item) => item.service_type_id === service.id),
+      })),
+    );
+    setServiceIds(serviceRows.map((service) => service.id));
+    setPros([]);
+    setCategoriesData((categoryResult.data ?? []) as CatalogCategory[]);
+    setLoading(false);
+  }
 
-            <View style={styles.searchBox}>
-              <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={C.muted} size={20} />
-              <TextInput value={search} onChangeText={setSearch} placeholder="Busca un servicio" placeholderTextColor={C.muted} style={styles.searchInput} returnKeyType="search" accessibilityLabel="Buscar servicios" />
-              {search.length > 0 && <Pressable onPress={() => setSearch('')} accessibilityLabel="Borrar búsqueda"><SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor={C.muted} size={18} /></Pressable>}
-            </View>
+  useEffect(() => {
+    void Promise.resolve().then(loadCatalog);
+  }, []);
 
-            <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>Categorías</Text><Text style={styles.sectionAside}>{categories.length} opciones</Text></View>
-            <View style={styles.categoryGrid}>
-              {categories.map((category) => {
-                const active = selectedCategory === category.name;
-                const categoryService = services.find((service) => service.category_name === category.name);
-                return (
-                  <Pressable key={category.id} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSelectedCategory(active ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, { width: categoryTileWidth }, active && styles.categoryTileSelected, pressed && styles.servicePressed]}>
-                    <Image cachePolicy="memory-disk" source={serviceArt(categoryService?.code ?? category.name)} contentFit="cover" transition={220} style={styles.categoryTileImage} />
-                    <View style={styles.categoryTileShade} />
-                    <View style={styles.categoryTileFooter}>
-                      <Text numberOfLines={2} style={styles.categoryTileTitle}>{category.name}</Text>
-                      <View style={[styles.categoryTileArrow, active && styles.categoryTileArrowSelected]}>
-                        <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={active ? C.white : C.ink} size={14} />
-                      </View>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+  async function requestLocation() {
+    setLocationError(null);
+    try {
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (!permission.granted) {
+        setLocationError('Permite el acceso a tu ubicación para mostrar profesionales que trabajan cerca de ti.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      setCoordinate({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+    } catch (cause) {
+      setLocationError(cause instanceof Error ? cause.message : 'No pudimos obtener tu ubicación.');
+    }
+  }
 
-            <View style={styles.sectionHeading}><Text style={styles.sectionTitle}>{search || selectedCategory !== 'Todos' ? 'Resultados' : 'Servicios disponibles'}</Text><Text style={styles.sectionAside}>{visibleServices.length} opciones</Text></View>
-            {loading && <View style={styles.loadingRow}><ActivityIndicator color={C.cobalt} /><Text style={styles.loadingText}>Cargando servicios…</Text></View>}
-            {!!error && <View style={styles.errorCard}><Text style={styles.errorTitle}>No pudimos cargar los servicios</Text><Text style={styles.errorText}>{error}</Text></View>}
-          </View>
+
+  useEffect(() => {
+    if (!coordinate) return;
+    let active = true;
+    void Location.reverseGeocodeAsync(coordinate)
+      .then((places) => {
+        if (!active) return;
+        const place = places[0];
+        setLocationLabel(place ? [place.district || place.subregion, place.city || place.region].filter(Boolean).join(', ') || 'Ubicación actual' : 'Ubicación actual');
+      })
+      .catch((cause: unknown) => {
+        if (active) {
+          setLocationLabel('Ubicación actual');
+          setLocationError(cause instanceof Error ? cause.message : 'No pudimos encontrar el nombre de tu ubicación.');
         }
-        renderItem={({ item, index }) => (
-          <Pressable accessibilityRole="button" accessibilityLabel={`Reservar ${item.name}`} onPress={() => startBooking(item)} style={({ pressed }) => [styles.serviceCard, pressed && styles.servicePressed]}>
-            <Image cachePolicy="memory-disk" source={serviceArt(item.code)} contentFit="cover" transition={180} style={styles.serviceImage} />
-            <View style={styles.serviceInfo}>
-              <View style={styles.serviceTop}><Text style={styles.serviceCategory}>{item.category_name ?? 'KLIPP'}</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={C.cobalt} size={17} /></View>
-              <Text style={styles.serviceName}>{item.name}</Text>
-              <Text numberOfLines={2} style={styles.serviceDescription}>{item.description || 'Reserva con profesionales verificados y recibe el servicio en tu ubicación.'}</Text>
-              <View style={styles.serviceFooter}><Text style={styles.serviceCta}>Ver disponibilidad</Text><View style={styles.serviceArrow}><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={C.white} size={15} /></View></View>
+      });
+    void Promise.all(serviceIds.map((serviceId) => supabase.rpc('get_nearby_service_offers', {
+      p_service_type_id: serviceId,
+      p_latitude: coordinate.latitude,
+      p_longitude: coordinate.longitude,
+    }))).then((results) => {
+      if (!active) return;
+      const failed = results.find((result) => result.error);
+      if (failed?.error) {
+        setLoadError(failed.error.message);
+        return;
+      }
+      const nearby = results.flatMap((result) => (result.data ?? []) as NearbyOffer[]);
+      const nearbyPros = new Map<string, SearchablePro>();
+      const enrichedOffers: ServiceOffer[] = nearby.map((offer) => {
+        nearbyPros.set(offer.pro_id, { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio });
+        return {
+          ...offer,
+          pro: { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio },
+        };
+      });
+      setServices((current) => current.map((service) => ({
+        ...service,
+        offers: enrichedOffers.filter((offer) => offer.service_type_id === service.id),
+      })));
+      setPros([...nearbyPros.values()]);
+      setLoadError(null);
+    }).catch((cause: unknown) => {
+      if (active) setLoadError(cause instanceof Error ? cause.message : 'No pudimos buscar profesionales cercanos.');
+    });
+    return () => { active = false; };
+  }, [coordinate, serviceIds]);
+
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const visibleServices = services.filter((service) => {
+    const matchesCategory = selectedCategory === 'Todos' || getCategory(service) === selectedCategory;
+    const matchesSearch =
+      !normalizedSearch ||
+      `${service.name} ${service.description ?? ''} ${service.tiers.map((tier) => tier.label).join(' ')} ${service.offers.map((offer) => offer.pro?.full_name ?? '').join(' ')}`
+        .toLocaleLowerCase()
+        .includes(normalizedSearch);
+    return matchesCategory && matchesSearch;
+  });
+  const matchingProIds = new Set(
+    services
+      .filter((service) => selectedCategory === 'Todos' || getCategory(service) === selectedCategory)
+      .flatMap((service) => service.offers.map((offer) => offer.pro_id)),
+  );
+  const visiblePros = normalizedSearch
+    ? pros.filter((pro) => matchingProIds.has(pro.pro_id) && `${pro.full_name ?? ''} ${pro.bio ?? ''}`.toLocaleLowerCase().includes(normalizedSearch))
+    : [];
+
+  function openBooking(service: CatalogService, tier?: PricingTier, offer?: ServiceOffer) {
+    setSelectedService(null);
+    router.push({
+      pathname: '/new-booking',
+      params: {
+        serviceId: String(service.id),
+        ...(tier ? { tierId: String(tier.id) } : {}),
+        ...(offer ? { offerId: offer.id } : {}),
+      },
+    });
+  }
+
+  function showServiceDetails(service: CatalogService) {
+    setSelectedService(service);
+    setSelectedDetailTierId(service.offers.length > 0 ? null : service.tiers[0]?.id ?? null);
+    setSelectedOfferId(service.offers[0]?.id ?? null);
+  }
+
+  function clearFilters() {
+    setSearch('');
+    setSelectedCategory('Todos');
+  }
+
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0];
+  const selectedDetailTier = selectedService?.tiers.find((tier) => tier.id === selectedDetailTierId);
+  const selectedDetailOffer = selectedService?.offers.find((offer) => offer.id === selectedOfferId);
+  const serviceCardWidth = width >= 1180 ? '31.8%' : width >= 760 ? '48.6%' : '100%';
+  const compact = width < 560;
+  const categoryTileWidth = width >= 1180 ? '23%' : width >= 760 ? '31.5%' : '47.5%';
+
+  return (
+    <ScreenEntrance style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={[styles.page, { paddingHorizontal: width < 390 ? KlippLayout.pageGutterCompact : KlippLayout.pageGutter }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <View style={[styles.topBar, compact && styles.topBarCompact]}>
+          <View style={[styles.brandRow, compact && styles.brandRowCompact]}>
+            <View style={styles.brandLockup}>
+              <View style={styles.logoMark}><KlippMark size={38} /></View>
+              <View style={styles.brandCopy}><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>SERVICIOS A DOMICILIO</Text></View>
             </View>
-          </Pressable>
+            {compact && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" onPress={() => router.push('/(client)/notifications')} style={({ pressed }) => [styles.notificationButton, pressed && styles.pressed]}>
+                <SymbolView name={{ ios: 'bell', android: 'notifications_none', web: 'notifications_none' }} tintColor={KlippColors.ink} size={20} />
+              </Pressable>
+            )}
+          </View>
+          <View style={[styles.topBarActions, compact && styles.topBarActionsCompact]}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Cambiar ubicación" onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()} style={({ pressed }) => [styles.locationButton, compact && styles.locationButtonCompact, pressed && styles.pressed]}>
+              <View style={styles.locationPin}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.cobalt} size={18} /></View>
+              <View style={styles.locationCopy}><Text style={styles.locationLabel}>SERVICIO EN</Text><Text numberOfLines={1} style={styles.locationText}>{locationLabel}</Text>{!!locationError && <Text numberOfLines={1} style={styles.locationError}>{locationError}</Text>}</View>
+              <SymbolView name={{ ios: 'chevron.down', android: 'keyboard_arrow_down', web: 'keyboard_arrow_down' }} tintColor={KlippColors.muted} size={15} />
+            </Pressable>
+            {!compact && (
+              <Pressable accessibilityRole="button" accessibilityLabel="Notificaciones" onPress={() => router.push('/(client)/notifications')} style={({ pressed }) => [styles.notificationButton, pressed && styles.pressed]}>
+                <SymbolView name={{ ios: 'bell', android: 'notifications_none', web: 'notifications_none' }} tintColor={KlippColors.ink} size={20} />
+              </Pressable>
+            )}
+          </View>
+        </View>
+
+        {!search && (
+          <View style={styles.greetingBlock}>
+            <Text style={styles.greetingEyebrow}>TU DÍA, MÁS FÁCIL</Text>
+            <Text style={styles.greeting}>Hola{firstName ? `, ${firstName}` : ''}. ¿Qué necesitas?</Text>
+            <Text style={styles.greetingSubtitle}>Servicios de confianza, directamente donde estés.</Text>
+          </View>
         )}
-        ListEmptyComponent={!loading && !error ? <View style={styles.empty}><Text style={styles.emptyTitle}>Aún no hay servicios aquí</Text><Text style={styles.emptyText}>Prueba otra categoría o cambia tu búsqueda.</Text><Pressable onPress={() => { setSelectedCategory('Todos'); setSearch(''); }}><Text style={styles.resetText}>Ver todos los servicios</Text></Pressable></View> : undefined}
-      />
-    </SafeAreaView>
+
+        <View style={styles.searchBar}>
+          <View style={styles.searchIcon}><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.cobalt} size={19} /></View>
+          <TextInput accessibilityLabel="Buscar servicios o profesionales" autoCapitalize="none" onChangeText={setSearch} placeholder="Busca un servicio" placeholderTextColor={KlippColors.muted} returnKeyType="search" style={styles.searchInput} value={search} />
+          {!!search && <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setSearch('')} style={styles.clearSearch}><SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor={KlippColors.muted} size={18} /></Pressable>}
+        </View>
+
+        <View style={styles.catalogHeader}>
+          <View style={styles.catalogHeadingCopy}><Text style={styles.sectionEyebrow}>EXPLORA</Text><Text style={styles.sectionTitle}>Categorías</Text></View>
+        </View>
+
+        <View style={styles.categoryGrid}>
+          {categoriesData.map((category) => {
+            const selected = selectedCategory === category.name;
+            const categoryService = services.find((service) => getCategory(service) === category.name);
+            const art = serviceArt(categoryService?.code ?? category.name);
+            return (
+              <Pressable accessibilityRole="button" accessibilityState={{ selected }} key={category.id} onPress={() => setSelectedCategory(selected ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, { width: categoryTileWidth, minHeight: width < 760 ? 126 : 156 }, selected && styles.categoryTileSelected, pressed && styles.pressed]}>
+                <Image cachePolicy="memory-disk" source={art} contentFit="cover" transition={250} style={styles.categoryTileImage} />
+                <View style={styles.categoryTileShade} />
+                <View style={styles.categoryTileFooter}>
+                  <Text numberOfLines={2} style={styles.categoryTileTitle}>{category.name}</Text>
+                  <View style={[styles.categoryTileArrow, selected && styles.categoryTileArrowSelected]}><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={selected ? KlippColors.white : KlippColors.ink} size={14} /></View>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {loading ? <View style={[styles.serviceList, width >= 760 && styles.serviceListWide]}><ServiceSkeleton /><ServiceSkeleton /></View>
+        : loadError ? <View style={styles.emptyState}><Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text><Text style={styles.emptyText}>{loadError}</Text><Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}><Text style={styles.clearButtonText}>Intentar de nuevo</Text></Pressable></View>
+        : visibleServices.length === 0 && visiblePros.length === 0 ? <View style={styles.emptyState}><View style={styles.emptyIcon}><SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.cobalt} size={25} /></View><Text style={styles.emptyTitle}>No encontramos resultados</Text><Text style={styles.emptyText}>{selectedCategory !== 'Todos' ? 'No encontramos servicios en esta categoría. Prueba otra búsqueda o limpia los filtros.' : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}</Text><Pressable accessibilityRole="button" onPress={clearFilters} style={styles.clearButton}><Text style={styles.clearButtonText}>Limpiar filtros</Text></Pressable></View>
+        : <View style={[styles.serviceList, width >= 760 && styles.serviceListWide]}>
+            {visibleServices.map((service) => {
+              const priceOptions = service.offers.filter((offer) => offer.base_price_dop > 0).map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes })).sort((a,b) => a.price-b.price);
+              const lowestOption = priceOptions[0];
+              return <MotionPressable accessibilityLabel={`Ver detalles de ${service.name}`} key={service.id} onPress={() => showServiceDetails(service)} style={[styles.serviceCard, { width: serviceCardWidth }, width < 760 && styles.serviceCardCompact]}>
+                <View style={[styles.servicePhotoWrap, width < 760 && styles.servicePhotoWrapCompact]}><Image cachePolicy="memory-disk" source={serviceArt(service.code)} contentFit="cover" transition={280} style={styles.servicePhoto} /><View style={styles.servicePhotoWash} /><View style={[styles.servicePhotoBadge, { backgroundColor: serviceSurface(service.code) }]}><SymbolView name={serviceIcon(service.code)} tintColor={serviceAccent(service.code)} size={21} /></View><View style={styles.photoLabel}><Text style={styles.photoLabelText}>{getCategory(service)}</Text></View></View>
+                <View style={[styles.serviceCopy, width < 760 && styles.serviceCopyCompact]}><View style={styles.serviceCardTop}><Text numberOfLines={2} style={styles.serviceTitle}>{service.name}</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={KlippColors.cobalt} size={17} /></View><Text numberOfLines={2} style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text><View style={styles.serviceMeta}>{lowestOption ? <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text> : <Text style={styles.servicePriceHint}>Tarifa según modalidad</Text>}{lowestOption && <Text style={styles.metaDot}>·</Text>}{lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}</View><Text style={styles.serviceLink}>Ver servicio</Text></View>
+              </MotionPressable>;
+            })}
+            {visiblePros.length > 0 && <View style={styles.proResults}><Text style={styles.proResultsTitle}>Profesionales</Text>{visiblePros.map((pro) => <View key={pro.pro_id} style={styles.proResult}><View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View><View style={styles.proResultCopy}><Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text><Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional verificado de Klipp'}</Text></View></View>)}</View>}
+          </View>}
+
+        <View style={styles.trustRow}><View style={styles.trustIcon}><SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.success} size={19} /></View><View style={styles.trustCopy}><Text style={styles.trustTitle}>Todo claro antes de reservar</Text><Text style={styles.trustText}>Consulta tarifas, revisa perfiles y sigue tu servicio desde Klipp.</Text></View><View style={styles.trustArrow}><SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.success} size={17} /></View></View>
+
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setSelectedService(null)}
+        transparent
+        visible={!!selectedService}>
+        <View style={styles.modalRoot}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Cerrar detalles" onPress={() => setSelectedService(null)} style={styles.modalBackdrop} />
+          {selectedService && (
+            <View style={styles.detailSheet}>
+              <View style={styles.sheetHandle} />
+              <ScrollView contentContainerStyle={styles.sheetContent} showsVerticalScrollIndicator={false}>
+                <View style={styles.detailIllustration}>
+                  <Image cachePolicy="memory-disk" source={serviceArt(selectedService.code)} contentFit="cover" transition={260} style={styles.detailArt} />
+                </View>
+                <Text style={styles.detailCategory}>{getCategory(selectedService)}</Text>
+                <Text style={styles.detailTitle}>{selectedService.name}</Text>
+                <Text style={styles.detailDescription}>{selectedService.description || 'Un servicio profesional, con tarifa y duración claras antes de confirmar.'}</Text>
+                <View style={styles.equipmentNotice}>
+                  <Text style={styles.equipmentNoticeTitle}>El profesional lleva sus propias herramientas</Text>
+                  <Text style={styles.equipmentNoticeBody}>No tendrás que prestar herramientas, equipos ni productos. El profesional acudirá con sus propios materiales para realizar el servicio contratado.</Text>
+                  {selectedService.equipmentRequirements.length > 0 && (
+                    <View style={styles.equipmentItems}>
+                      <Text style={styles.equipmentItemsTitle}>Equipamiento previsto para este servicio</Text>
+                      {selectedService.equipmentRequirements.map((item) => (
+                        <View key={item.id} style={styles.equipmentItem}>
+                          <Text style={styles.equipmentBullet}>✓</Text>
+                          <View style={styles.equipmentItemCopy}>
+                            <Text style={styles.equipmentItemName}>{item.item_name}</Text>
+                            {!!item.details && <Text style={styles.equipmentItemDetails}>{item.details}</Text>}
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <View style={styles.benefitList}>
+                  {['Profesionales verificados', 'Precio confirmado antes del pago', 'Seguimiento desde Klipp'].map((benefit) => (
+                    <View key={benefit} style={styles.benefit}>
+                      <SymbolView name={{ ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' }} tintColor={KlippColors.success} size={18} />
+                      <Text style={styles.benefitText}>{benefit}</Text>
+                    </View>
+                  ))}
+                </View>
+                {selectedService.offers.length > 0 && <Text style={styles.tierHeading}>Profesionales y precios</Text>}
+                {selectedService.offers.map((offer) => (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: offer.id === selectedOfferId }}
+                    key={offer.id}
+                    onPress={() => { setSelectedOfferId(offer.id); setSelectedDetailTierId(null); }}
+                    style={({ pressed }) => [styles.tierCard, offer.id === selectedOfferId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    <View style={styles.tierCopy}>
+                      <Text style={styles.tierTitle}>{offer.pro?.full_name ?? 'Profesional Klipp'}</Text>
+                      <Text style={styles.tierMeta}>{offer.est_minutes} min · precio base</Text>
+                    </View>
+                    <Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
+                  </Pressable>
+                ))}
+                {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige la modalidad del servicio</Text>}
+                {selectedService.tiers.map((tier) => (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: tier.id === selectedDetailTierId }}
+                    key={tier.id}
+                    onPress={() => { setSelectedDetailTierId(tier.id); setSelectedOfferId(null); }}
+                    style={({ pressed }) => [styles.tierCard, !selectedDetailOffer && tier.id === selectedDetailTierId && styles.tierCardSelected, pressed && styles.pressed]}>
+                    <View style={styles.tierCopy}>
+                      <Text style={styles.tierTitle}>{tier.label}</Text>
+                      <Text style={styles.tierMeta}>{tier.est_minutes} min aprox.</Text>
+                    </View>
+                    <Text style={styles.tierPrice}>{tier.price_dop > 0 ? formatDop(tier.price_dop) : 'Precio del profesional'}</Text>
+                  </Pressable>
+                ))}
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={!selectedDetailOffer && !selectedDetailTier}
+                  onPress={() => {
+                    if (selectedDetailOffer) openBooking(selectedService, undefined, selectedDetailOffer);
+                    else if (selectedDetailTier) openBooking(selectedService, selectedDetailTier);
+                  }}
+                  style={({ pressed }) => [styles.bookButton, pressed && styles.buttonPressed, !selectedDetailOffer && !selectedDetailTier && styles.disabled]}>
+                  <Text style={styles.bookButtonText}>Reservar cita</Text>
+                  <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.white} size={17} />
+                </Pressable>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </Modal>
+    </ScrollView>
+    </ScreenEntrance>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: C.ivory },
-  content: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, gap: 0 },
-  topLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
-  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  brand: { color: C.ink, fontSize: 23, fontWeight: '900', letterSpacing: -1 },
-  brandSub: { color: C.muted, fontSize: 8, fontWeight: '800', letterSpacing: 1 },
-  iconButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, alignItems: 'center', justifyContent: 'center' },
-  locationPill: { minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 13, borderRadius: 17, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
-  locationGlyph: { width: 36, height: 36, borderRadius: 12, backgroundColor: C.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
-  locationCopy: { flex: 1, gap: 2 },
-  microLabel: { color: C.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  locationValue: { color: C.ink, fontSize: 14, fontWeight: '700' },
-  greeting: { paddingTop: 28, paddingBottom: 20, gap: 7 },
-  greetingEyebrow: { color: C.cobalt, fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
-  greetingTitle: { color: C.ink, fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -1.1 },
-  greetingAccent: { color: C.cobalt },
-  greetingSub: { color: C.muted, fontSize: 14, lineHeight: 20 },
-  searchBox: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 16, borderRadius: 17, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
-  searchInput: { flex: 1, minHeight: 54, color: C.ink, fontSize: 15 },
-  sectionHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 28, marginBottom: 13 },
-  sectionTitle: { color: C.ink, fontSize: 19, fontWeight: '900', letterSpacing: -0.5 },
-  sectionAside: { color: C.muted, fontSize: 12, fontWeight: '700' },
-  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  categoryTile: { minHeight: 120, overflow: 'hidden', borderRadius: 16, borderWidth: 1, borderColor: C.border, backgroundColor: C.surfaceBlue },
-  categoryTileSelected: { borderWidth: 2, borderColor: C.cobalt },
+  brandCopy: { gap: 1 },
+  greetingBlock: { gap: 6, marginTop: 4 },
+  greetingEyebrow: { color: KlippColors.cobaltDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.25 },
+  greeting: { color: KlippColors.ink, fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -0.9 },
+  greetingSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 20 },
+  topBarActions: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },
+  topBarActionsCompact: { width: '100%' },
+  notificationButton: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  brandCaption: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
+  locationPin: { width: 36, height: 36, borderRadius: 12, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
+  locationCopy: { flex: 1, minWidth: 0 },
+  searchIcon: { width: 40, height: 40, borderRadius: 13, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
+  catalogHeadingCopy: { flex: 1, gap: 2 },
+  servicePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.035)' },
+  trustArrow: { width: 34, height: 34, borderRadius: 12, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center' },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', flexGrow: 1, paddingTop: 22, paddingBottom: 76, gap: 23, backgroundColor: KlippColors.canvas },
+  topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingBottom: 4 },
+  topBarCompact: { flexDirection: 'column', alignItems: 'stretch', gap: 12 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandRowCompact: { width: '100%', justifyContent: 'space-between' },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  logoMark: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  brand: { color: KlippColors.ink, fontSize: 25, lineHeight: 27, fontWeight: '900', letterSpacing: -1 },
+  locationButton: { flexDirection: 'row', alignItems: 'center', gap: 10, maxWidth: 310, minWidth: 0, flexShrink: 1, paddingHorizontal: 11, paddingVertical: 9, borderRadius: 16, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  locationButtonCompact: { width: '100%', maxWidth: '100%' },
+  locationLabel: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  locationText: { color: KlippColors.ink, fontSize: 12, fontWeight: '800', marginTop: 3 },
+  locationError: { color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
+  searchBar: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 12, borderRadius: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
+  searchInput: { flex: 1, height: 52, color: KlippColors.ink, fontSize: 15, fontWeight: '600' },
+  clearSearch: { padding: 5 },
+  catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
+  sectionEyebrow: { color: KlippColors.cobaltDark, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
+  sectionTitle: { color: KlippColors.ink, fontSize: 20, lineHeight: 25, fontWeight: '900', letterSpacing: -0.5, marginTop: 2 },
+  categoryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  categoryTile: { borderRadius: 17, overflow: 'hidden', backgroundColor: KlippColors.surfaceBlue, borderWidth: 1, borderColor: KlippColors.border },
+  categoryTileSelected: { borderWidth: 2, borderColor: KlippColors.cobalt },
   categoryTileImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
-  categoryTileShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.30)' },
-  categoryTileFooter: { flex: 1, minHeight: 118, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, padding: 12 },
-  categoryTileTitle: { flex: 1, color: C.white, fontSize: 14, lineHeight: 18, fontWeight: '900' },
-  categoryTileArrow: { width: 28, height: 28, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.94)' },
-  categoryTileArrowSelected: { backgroundColor: C.cobalt },
-  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 22 },
-  loadingText: { color: C.muted, fontSize: 13 },
-  errorCard: { padding: 16, borderRadius: 16, backgroundColor: C.surfaceCoral, gap: 5 },
-  errorTitle: { color: C.danger, fontWeight: '800', fontSize: 14 },
-  errorText: { color: C.ink, fontSize: 12, lineHeight: 18 },
-  serviceCard: { flexDirection: 'row', minHeight: 156, padding: 10, marginBottom: 12, gap: 13, backgroundColor: C.white, borderRadius: 20, borderWidth: 1, borderColor: C.border },
-  servicePressed: { transform: [{ scale: 0.985 }], opacity: 0.9 },
-  serviceImage: { width: 112, minHeight: 136, borderRadius: 14, backgroundColor: C.surfaceMuted },
-  serviceInfo: { flex: 1, justifyContent: 'center', paddingVertical: 5 },
-  serviceTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  serviceCategory: { color: C.cobalt, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  serviceName: { color: C.ink, fontSize: 16, fontWeight: '900', marginTop: 6, letterSpacing: -0.3 },
-  serviceDescription: { color: C.muted, fontSize: 11, lineHeight: 16, marginTop: 5 },
-  serviceFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 },
-  serviceCta: { color: C.cobalt, fontSize: 11, fontWeight: '900' },
-  serviceArrow: { width: 28, height: 28, borderRadius: 14, backgroundColor: C.cobalt, alignItems: 'center', justifyContent: 'center' },
-  empty: { paddingVertical: 40, alignItems: 'center', gap: 9 },
-  emptyTitle: { color: C.ink, fontSize: 17, fontWeight: '900' },
-  emptyText: { color: C.muted, fontSize: 13, textAlign: 'center', lineHeight: 19 },
-  resetText: { color: C.cobalt, fontSize: 13, fontWeight: '900', padding: 10 },
+  categoryTileShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(23,27,45,0.28)' },
+  categoryTileFooter: { flex: 1, minHeight: 118, padding: 13, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8 },
+  categoryTileTitle: { flex: 1, color: KlippColors.white, fontSize: 15, lineHeight: 19, fontWeight: '900', textShadowColor: 'rgba(0,0,0,0.35)', textShadowRadius: 8, textShadowOffset: { width: 0, height: 1 } },
+  categoryTileArrow: { width: 30, height: 30, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.94)', alignItems: 'center', justifyContent: 'center' },
+  categoryTileArrowSelected: { backgroundColor: KlippColors.cobalt },
+  serviceList: { flexDirection: 'column', gap: 18 },
+  serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', columnGap: '1.7%', rowGap: 20 },
+  serviceCard: { flexDirection: 'column', alignItems: 'stretch', gap: 0, padding: 9, borderRadius: 16, borderWidth: 0, borderColor: 'transparent', backgroundColor: 'transparent', shadowOpacity: 0, elevation: 0 },
+  serviceCardCompact: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 19, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  servicePhotoWrap: { height: 220, overflow: 'hidden', borderRadius: 12, backgroundColor: KlippColors.surfaceBlue },
+  servicePhotoWrapCompact: { width: 112, height: 136, flexShrink: 0, borderRadius: 14 },
+  servicePhoto: { width: '100%', height: '100%' },
+  servicePhotoBadge: { position: 'absolute', left: 12, bottom: 12, width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: KlippColors.white },
+  photoLabel: { position: 'absolute', right: 12, top: 12, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(23,27,45,0.78)' },
+  photoLabelText: { color: KlippColors.white, fontSize: 10, fontWeight: '900', letterSpacing: 0.35 },
+  serviceCopy: { gap: 9, paddingHorizontal: 12, paddingTop: 14, paddingBottom: 13 },
+  serviceCopyCompact: { flex: 1, minWidth: 0, gap: 6, paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 },
+  serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
+  serviceTitle: { flex: 1, color: KlippColors.ink, fontSize: 17, lineHeight: 22, fontWeight: '900', letterSpacing: -0.4 },
+  serviceDescription: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
+  serviceMeta: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1 },
+  servicePrice: { color: KlippColors.cobaltDark, fontSize: 13, fontWeight: '900' },
+  servicePriceHint: { color: KlippColors.muted, fontSize: 12, fontWeight: '600' },
+  metaDot: { color: KlippColors.muted },
+  serviceDuration: { color: KlippColors.muted, fontSize: 12 },
+  serviceLink: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '900', marginTop: 3 },
+  proResults: { padding: 16, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12 },
+  proResultsTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  proResult: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  proAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceBlue },
+  proAvatarText: { color: KlippColors.blueDark, fontSize: 16, fontWeight: '700' },
+  proResultCopy: { flex: 1, gap: 3 },
+  proResultName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  proResultBio: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
+  emptyState: { alignItems: 'center', padding: 22, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 10 },
+  emptyIcon: { width: 52, height: 52, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceBlue },
+  emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' },
+  emptyText: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  clearButton: { minHeight: 42, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, marginTop: 2, borderRadius: 12, backgroundColor: KlippColors.surfaceBlue },
+  clearButtonText: { color: KlippColors.blueDark, fontSize: 13, fontWeight: '700' },
+  skeletonCard: { flexDirection: 'row', gap: 14, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  skeletonIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
+  skeletonCopy: { flex: 1, gap: 10, paddingVertical: 2 },
+  skeletonLine: { width: '90%', height: 10, borderRadius: 5, backgroundColor: KlippColors.border },
+  skeletonTitle: { width: '55%', height: 13 },
+  skeletonShort: { width: '40%' },
+  trustRow: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 18, borderRadius: 19, backgroundColor: KlippColors.surfaceMint, borderWidth: 1, borderColor: KlippColors.mint },
+  trustIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center' },
+  trustCopy: { flex: 1, gap: 3 },
+  trustTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '900' },
+  trustText: { color: KlippColors.slate, fontSize: 12, lineHeight: 18 },
+  modalRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(15,23,42,0.42)' },
+  modalBackdrop: { ...StyleSheet.absoluteFill },
+  detailSheet: { maxHeight: '92%', paddingTop: 10, borderTopLeftRadius: 28, borderTopRightRadius: 28, backgroundColor: KlippColors.canvas },
+  sheetHandle: { alignSelf: 'center', width: 38, height: 4, borderRadius: 2, backgroundColor: KlippColors.border, marginBottom: 8 },
+  sheetContent: { paddingHorizontal: 20, paddingBottom: 32, gap: 14 },
+  detailIllustration: { height: 174, overflow: 'hidden', borderRadius: 20, backgroundColor: KlippColors.surfaceBlue },
+  detailArt: { width: '100%', height: '100%' },
+  detailCategory: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  detailTitle: { color: KlippColors.navy, fontSize: 23, fontWeight: '700' },
+  equipmentNotice: { padding: 15, borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.surfaceMuted, gap: 8 },
+  equipmentNoticeTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  equipmentNoticeBody: { color: KlippColors.slate, fontSize: 13, lineHeight: 19 },
+  equipmentItems: { marginTop: 4, gap: 9 },
+  equipmentItemsTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
+  equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  equipmentBullet: { color: KlippColors.slate, fontSize: 15, fontWeight: '800' },
+  equipmentItemCopy: { flex: 1, gap: 2 },
+  equipmentItemName: { color: KlippColors.navy, fontSize: 12, fontWeight: '700' },
+  equipmentItemDetails: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  detailDescription: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  benefitList: { gap: 10, paddingVertical: 3 },
+  benefit: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  benefitText: { color: KlippColors.slate, fontSize: 13, fontWeight: '500' },
+  tierHeading: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
+  tierCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  tierCardSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
+  tierCopy: { gap: 4 },
+  tierTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  tierMeta: { color: KlippColors.muted, fontSize: 12 },
+  tierPrice: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '800' },
+  bookButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 14, backgroundColor: KlippColors.blue },
+  bookButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
+  disabled: { opacity: 0.5 },
+  pressed: { opacity: 0.9 },
+  buttonPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
 });
