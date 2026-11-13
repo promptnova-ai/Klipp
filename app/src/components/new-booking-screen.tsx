@@ -708,7 +708,7 @@ export function NewBookingScreen() {
   if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando opciones...</Text></View>;
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.screen}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={styles.screen}>
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
       <BrandScreenHeader inset={false} eyebrow="RESERVAS" title="Nueva reserva" subtitle="Unos pasos y queda organizado." />
