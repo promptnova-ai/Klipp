@@ -1,5 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,6 +21,7 @@ import { ScreenEntrance } from '@/components/ui-primitives';
 import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors } from '@/theme/tokens';
 import { normalizePhoneNumber } from '@/lib/phone';
+import { heroArt } from '@/lib/service-art';
 import type { ExtractRole } from '@/lib/types';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
@@ -48,11 +50,12 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
   const fullBleedRegister = compact && isRegister;
   return (
     <View style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
+      {(compactLogin || !compact) && <Image source={heroArt} cachePolicy="memory-disk" contentFit="cover" transition={350} style={styles.showcaseHeroImage} />}
       {(fullBleedRegister || compactLogin || !compact) && <View pointerEvents="none" style={[styles.showcasePhotoWash, compactLogin && styles.showcaseLoginPhotoWash]} />}
       <View style={styles.showcaseCopy}>
-        <Text style={[styles.showcaseKicker, compactLogin && styles.showcaseKickerLogin]}>{compactLogin ? 'SERVICIOS A DOMICILIO, SIN COMPLICACIONES' : 'SERVICIOS A DOMICILIO'}</Text>
-        <Text style={[styles.showcaseTitle, compactLogin && styles.showcaseTitleLogin]}>{compactLogin ? 'Qué bueno tenerte de vuelta.' : 'Tu día, más fácil. Tu servicio, en buenas manos.'}</Text>
-        <Text style={[styles.showcaseDescription, compactLogin && styles.showcaseDescriptionLogin]}>
+        <Text style={[styles.showcaseKicker, (compactLogin || !compact) && styles.showcaseKickerOnPhoto, compactLogin && styles.showcaseKickerLogin]}>{compactLogin ? 'SERVICIOS A DOMICILIO, SIN COMPLICACIONES' : 'SERVICIOS A DOMICILIO'}</Text>
+        <Text style={[styles.showcaseTitle, (compactLogin || !compact) && styles.showcaseTitleOnPhoto, compactLogin && styles.showcaseTitleLogin]}>{compactLogin ? 'Qué bueno tenerte de vuelta.' : 'Tu día, más fácil. Tu servicio, en buenas manos.'}</Text>
+        <Text style={[styles.showcaseDescription, (compactLogin || !compact) && styles.showcaseDescriptionOnPhoto, compactLogin && styles.showcaseDescriptionLogin]}>
           {compactLogin ? 'Entra y gestiona tus servicios desde un solo lugar.' : 'Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.'}
         </Text>
         {compactLogin && (
@@ -77,12 +80,12 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
         {!compactLogin && <View style={styles.showcaseHighlights}>
           {serviceHighlights.map((item) => (
             <View key={item.title} style={styles.showcaseHighlight}>
-              <View style={styles.showcaseHighlightIcon}>
+              <View style={[styles.showcaseHighlightIcon, (compactLogin || !compact) && styles.showcaseHighlightIconOnPhoto]}>
                 <SymbolView name={item.icon} tintColor={KlippColors.cobalt} size={18} />
               </View>
               <View style={styles.showcaseHighlightCopy}>
-                <Text style={styles.showcaseHighlightTitle}>{item.title}</Text>
-                <Text style={styles.showcaseHighlightDetail}>{item.detail}</Text>
+                <Text style={[styles.showcaseHighlightTitle, (compactLogin || !compact) && styles.showcaseHighlightTitleOnPhoto]}>{item.title}</Text>
+                <Text style={[styles.showcaseHighlightDetail, (compactLogin || !compact) && styles.showcaseHighlightDetailOnPhoto]}>{item.detail}</Text>
               </View>
             </View>
           ))}
@@ -399,9 +402,16 @@ const styles = StyleSheet.create({
   showcase: { width: '100%', flex: 1, minWidth: 0, minHeight: 620, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 32, borderWidth: 0, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: KlippColors.surfaceBlue, overflow: 'hidden', shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
   showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: KlippColors.border },
-  showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
+  showcaseHeroImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,18,34,0.62)', borderRadius: 26 },
+  showcaseKickerOnPhoto: { color: KlippColors.mint },
+  showcaseTitleOnPhoto: { color: KlippColors.white },
+  showcaseDescriptionOnPhoto: { color: 'rgba(255,255,255,0.9)' },
+  showcaseHighlightIconOnPhoto: { backgroundColor: 'rgba(255,255,255,0.94)' },
+  showcaseHighlightTitleOnPhoto: { color: KlippColors.white },
+  showcaseHighlightDetailOnPhoto: { color: 'rgba(255,255,255,0.78)' },
   showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: KlippColors.darkCanvas, shadowOpacity: 0, elevation: 0 },
-  showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.58)' },
+  showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.66)' },
   
   
   showcaseKickerLogin: { color: KlippColors.coral, fontSize: 9, lineHeight: 14 },
