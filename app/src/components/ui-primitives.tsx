@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   buttonQuiet: { backgroundColor: KlippColors.surfaceMuted },
   buttonDanger: { backgroundColor: KlippColors.danger },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: KlippColors.navy, fontSize: KlippTypography.size.bodySmall, fontWeight: '800' },
+  buttonText: { color: KlippColors.ink, fontSize: KlippTypography.size.bodySmall, fontWeight: '800' },
   buttonTextOnColor: { color: KlippColors.white },
-  buttonTextQuiet: { color: KlippColors.blueDark },
+  buttonTextQuiet: { color: KlippColors.cobaltDark },
 });
