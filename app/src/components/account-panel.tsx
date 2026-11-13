@@ -34,7 +34,7 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
           accessibilityRole="button"
           onPress={() => router.navigate('/(client)/addresses')}
           style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
-          <View style={styles.menuIcon}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor="#3D5AFE" size={20} /></View>
+          <View style={styles.menuIcon}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor={KlippColors.cobalt} size={20} /></View>
           <View style={styles.menuCopy}>
             <Text style={styles.menuTitle}>Direcciones guardadas</Text>
             <Text style={styles.menuSubtitle}>Gestiona tus lugares de servicio</Text>
@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
   detailRow: { paddingVertical: 14, gap: 5 },
   detailDivider: { height: 1, backgroundColor: KlippColors.border },
   menuRow: { width: '100%', maxWidth: 676, minHeight: 70, alignSelf: 'center', marginTop: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
-  menuIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#E9EDFF', alignItems: 'center', justifyContent: 'center' },
+  menuIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
   menuCopy: { flex: 1, gap: 3 },
   menuTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   menuSubtitle: { color: KlippColors.muted, fontSize: 11 },
