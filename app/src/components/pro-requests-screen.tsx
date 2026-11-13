@@ -89,7 +89,7 @@ export function ProRequestsScreen() {
         if (!cancelled) void loadRequests();
       });
     return () => { cancelled = true; };
-  }, [activeRequest?.id, secondsLeft, loadRequests]);
+  }, [activeRequest, secondsLeft, loadRequests]);
 
   useEffect(() => {
     const proId = session?.user.id;
