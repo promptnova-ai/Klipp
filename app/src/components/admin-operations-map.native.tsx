@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 
 import type { OperationsMapPoint } from './admin-operations-map.types';
 
