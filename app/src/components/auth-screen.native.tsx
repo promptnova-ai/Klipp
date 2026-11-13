@@ -112,7 +112,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           <View style={styles.brandRow}>
             <View style={styles.brandLockup}>
               <KlippMark size={42} />
-              <View><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>REPÚBLICA DOMINICANA</Text></View>
+              <View><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>SANTO DOMINGO, RD</Text></View>
             </View>
             <View style={styles.secureBadge}>
               <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={C.cobaltDark} size={14} />
