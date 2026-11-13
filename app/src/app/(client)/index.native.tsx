@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   categoryTileArrowSelected: { backgroundColor: C.cobalt },
   loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 22 },
   loadingText: { color: C.muted, fontSize: 13 },
-  errorCard: { padding: 16, borderRadius: 16, backgroundColor: '#FFF0EC', gap: 5 },
+  errorCard: { padding: 16, borderRadius: 16, backgroundColor: C.surfaceCoral, gap: 5 },
   errorTitle: { color: C.danger, fontWeight: '800', fontSize: 14 },
   errorText: { color: C.ink, fontSize: 12, lineHeight: 18 },
   serviceCard: { flexDirection: 'row', minHeight: 156, padding: 10, marginBottom: 12, gap: 13, backgroundColor: C.white, borderRadius: 20, borderWidth: 1, borderColor: C.border },
