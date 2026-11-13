@@ -71,7 +71,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
           path: google.maps.SymbolPath.CIRCLE,
           fillColor: KlippColors.cobalt,
           fillOpacity: 1,
-          strokeColor: '#FFFFFF',
+          strokeColor: KlippColors.white,
           strokeWeight: 3,
           scale: 8,
         } });
@@ -79,7 +79,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
           path: google.maps.SymbolPath.CIRCLE,
           fillColor: KlippColors.coral,
           fillOpacity: 1,
-          strokeColor: '#FFFFFF',
+          strokeColor: KlippColors.white,
           strokeWeight: 3,
           scale: 9,
         } });
@@ -148,7 +148,7 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
 }
 
 const styles = StyleSheet.create({
-  container: { height: 360, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  container: { height: 360, overflow: 'hidden', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
   error: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: '#FFFFFFE8' },
   errorText: { color: KlippColors.slate, fontSize: 13, textAlign: 'center' },
   loading: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
