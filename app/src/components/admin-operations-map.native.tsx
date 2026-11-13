@@ -66,7 +66,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
 const styles = StyleSheet.create({
   container: { gap: 8 },
   heading: { gap: 3 },
-  title: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  title: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
   caption: { color: KlippColors.muted, fontSize: 11 },
   map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue },
   empty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#FFFFFFB8' },
