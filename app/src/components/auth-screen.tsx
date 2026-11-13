@@ -46,31 +46,33 @@ const serviceHighlights = [
 ] as const;
 
 function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: boolean }) {
+  const { width } = useWindowDimensions();
   const compactLogin = compact && !isRegister;
+  const veryCompact = width < 375;
   const fullBleedRegister = compact && isRegister;
   return (
-    <View style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
+    <View style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero, veryCompact && compactLogin && styles.showcaseCompactLoginTight]}>
       {(compactLogin || !compact) && <Image source={heroArt} cachePolicy="memory-disk" contentFit="cover" transition={350} style={styles.showcaseHeroImage} />}
       {(fullBleedRegister || compactLogin || !compact) && <View pointerEvents="none" style={[styles.showcasePhotoWash, compactLogin && styles.showcaseLoginPhotoWash]} />}
-      <View style={styles.showcaseCopy}>
+      <View style={[styles.showcaseCopy, veryCompact && compactLogin && styles.showcaseCopyTight]}>
         <Text style={[styles.showcaseKicker, (compactLogin || !compact) && styles.showcaseKickerOnPhoto, compactLogin && styles.showcaseKickerLogin]}>{compactLogin ? 'SERVICIOS A DOMICILIO, SIN COMPLICACIONES' : 'SERVICIOS A DOMICILIO'}</Text>
-        <Text style={[styles.showcaseTitle, (compactLogin || !compact) && styles.showcaseTitleOnPhoto, compactLogin && styles.showcaseTitleLogin]}>{compactLogin ? 'Qué bueno tenerte de vuelta.' : 'Tu día, más fácil. Tu servicio, en buenas manos.'}</Text>
-        <Text style={[styles.showcaseDescription, (compactLogin || !compact) && styles.showcaseDescriptionOnPhoto, compactLogin && styles.showcaseDescriptionLogin]}>
+        <Text style={[styles.showcaseTitle, (compactLogin || !compact) && styles.showcaseTitleOnPhoto, compactLogin && styles.showcaseTitleLogin, veryCompact && styles.showcaseTitleLoginTight]}>{compactLogin ? 'Qué bueno tenerte de vuelta.' : 'Tu día, más fácil. Tu servicio, en buenas manos.'}</Text>
+        <Text style={[styles.showcaseDescription, (compactLogin || !compact) && styles.showcaseDescriptionOnPhoto, compactLogin && styles.showcaseDescriptionLogin, veryCompact && styles.showcaseDescriptionLoginTight]}>
           {compactLogin ? 'Entra y gestiona tus servicios desde un solo lugar.' : 'Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.'}
         </Text>
         {compactLogin && (
-          <View style={styles.loginServiceShowcase}>
-            <View style={[styles.loginServiceCard, styles.loginServiceCardBlue]}>
+          <View style={[styles.loginServiceShowcase, veryCompact && styles.loginServiceShowcaseTight]}>
+            <View style={[styles.loginServiceCard, styles.loginServiceCardBlue, veryCompact && styles.loginServiceCardTight]}>
               <View style={styles.loginServiceGlyph}><SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={KlippColors.cobalt} size={22} /></View>
               <Text style={styles.loginServiceName}>Barbería</Text>
               <Text style={styles.loginServiceCaption}>En tu casa</Text>
             </View>
-            <View style={[styles.loginServiceCard, styles.loginServiceCardCoral]}>
+            <View style={[styles.loginServiceCard, styles.loginServiceCardCoral, veryCompact && styles.loginServiceCardTight]}>
               <View style={styles.loginServiceGlyph}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.coral} size={22} /></View>
               <Text style={styles.loginServiceName}>Belleza</Text>
               <Text style={styles.loginServiceCaption}>A tu manera</Text>
             </View>
-            <View style={[styles.loginServiceCard, styles.loginServiceCardMint]}>
+            <View style={[styles.loginServiceCard, styles.loginServiceCardMint, veryCompact && styles.loginServiceCardTight]}>
               <View style={styles.loginServiceGlyph}><SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={KlippColors.success} size={22} /></View>
               <Text style={styles.loginServiceName}>Hogar</Text>
               <Text style={styles.loginServiceCaption}>Sin moverte</Text>
@@ -413,6 +415,12 @@ const styles = StyleSheet.create({
   showcaseHighlightTitleOnPhoto: { color: KlippColors.white },
   showcaseHighlightDetailOnPhoto: { color: 'rgba(255,255,255,0.78)' },
   showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: KlippColors.darkCanvas, shadowOpacity: 0, elevation: 0 },
+  showcaseCompactLoginTight: { minHeight: 244, padding: 16 },
+  showcaseCopyTight: { gap: 9 },
+  showcaseTitleLoginTight: { fontSize: 26, lineHeight: 30 },
+  showcaseDescriptionLoginTight: { fontSize: 13, lineHeight: 19 },
+  loginServiceShowcaseTight: { gap: 6, marginTop: 2 },
+  loginServiceCardTight: { minHeight: 58, padding: 7 },
   showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.66)' },
   
   
