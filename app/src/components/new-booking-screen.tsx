@@ -727,7 +727,7 @@ export function NewBookingScreen() {
           const selected = selectedServiceId === service.id;
           return (
             <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => { resetAppointmentSelection(); setSelectedServiceId(service.id); setSelectedTierId(null); setSelectedOfferId(null); }} style={[styles.serviceTile, selected && styles.serviceTileSelected]}>
-              <View style={styles.serviceTileIcon}><Image source={serviceArt(service.code)} contentFit="cover" style={styles.serviceTileArt} /></View>
+              <View style={styles.serviceTileIcon}><Image cachePolicy="memory-disk" source={serviceArt(service.code)} contentFit="cover" style={styles.serviceTileArt} /></View>
               <View style={styles.serviceTileCopy}>
                 <Text style={styles.serviceTileTitle}>{service.name}</Text>
                 {!!service.description && <Text style={styles.serviceTileDescription}>{service.description}</Text>}
@@ -899,7 +899,7 @@ export function NewBookingScreen() {
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
             <Pressable onPress={() => void showProProfile(pro)} style={({ pressed }) => [styles.proSummary, pressed && styles.choicePressed]}>
-              {pro.avatar_url ? <Image source={{ uri: pro.avatar_url }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{pro.full_name?.[0] ?? 'K'}</Text></View>}
+              {pro.avatar_url ? <Image cachePolicy="memory-disk" source={{ uri: pro.avatar_url }} style={styles.avatar} /> : <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{pro.full_name?.[0] ?? 'K'}</Text></View>}
               <View style={styles.proMain}>
                 <Text style={styles.proName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
                 <Text style={styles.body}>{pro.years_experience ?? 0} años de experiencia</Text>
@@ -928,7 +928,7 @@ export function NewBookingScreen() {
                     <Text style={styles.reviewHeading}>Fotos de sus trabajos</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.portfolioList}>
                       {proPortfolio.map((photo) => (
-                        <Image key={photo.id} source={{ uri: supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl }} contentFit="cover" style={styles.publicPortfolioImage} />
+                        <Image cachePolicy="memory-disk" key={photo.id} source={{ uri: supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl }} contentFit="cover" style={styles.publicPortfolioImage} />
                       ))}
                     </ScrollView>
                   </>}
