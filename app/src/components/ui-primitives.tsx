@@ -14,7 +14,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { KlippColors, KlippLayout, KlippMotion } from '@/lib/brand';
+import { KlippColors, KlippLayout, KlippMotion, KlippShadows, KlippSpacing, KlippTypography } from '@/theme/tokens';
 
 /** One shared OS preference subscription avoids a listener per button or screen. */
 let reducedMotionSnapshot = false;
@@ -245,16 +245,12 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   surface: {
-    padding: 20,
+    padding: KlippSpacing[5],
     borderWidth: 1,
     borderColor: KlippColors.border,
     borderRadius: KlippLayout.radiusCard,
     backgroundColor: KlippColors.white,
-    shadowColor: KlippColors.navy,
-    shadowOpacity: 0.035,
-    shadowOffset: { width: 0, height: 7 },
-    shadowRadius: 20,
-    elevation: 2,
+    ...KlippShadows.card,
   },
   sectionHeading: {
     flexDirection: 'row',
@@ -263,15 +259,15 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   sectionCopy: { flex: 1, gap: 5 },
-  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 21, lineHeight: 27, fontWeight: '800', letterSpacing: -0.35 },
-  sectionSubtitle: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
-  statusPill: { alignSelf: 'flex-start', paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999 },
+  eyebrow: { color: KlippColors.blueDark, fontSize: KlippTypography.size.caption, fontWeight: '800', letterSpacing: KlippTypography.tracking.eyebrow },
+  sectionTitle: { color: KlippColors.navy, fontSize: KlippTypography.size.title, lineHeight: KlippTypography.lineHeight.title, fontWeight: '800', letterSpacing: KlippTypography.tracking.tight },
+  sectionSubtitle: { color: KlippColors.muted, fontSize: KlippTypography.size.bodySmall, lineHeight: KlippTypography.lineHeight.bodySmall },
+  statusPill: { alignSelf: 'flex-start', paddingHorizontal: 11, paddingVertical: 7, borderRadius: KlippLayout.radiusPill },
   statusPillText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.25 },
   button: {
-    minHeight: 50,
-    paddingHorizontal: 20,
-    borderRadius: 14,
+    minHeight: KlippLayout.controlHeight,
+    paddingHorizontal: KlippSpacing[5],
+    borderRadius: KlippLayout.radiusControl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -280,7 +276,7 @@ const styles = StyleSheet.create({
   buttonQuiet: { backgroundColor: KlippColors.surfaceMuted },
   buttonDanger: { backgroundColor: KlippColors.danger },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  buttonText: { color: KlippColors.navy, fontSize: KlippTypography.size.bodySmall, fontWeight: '800' },
   buttonTextOnColor: { color: '#FFFFFF' },
   buttonTextQuiet: { color: KlippColors.blueDark },
 });
