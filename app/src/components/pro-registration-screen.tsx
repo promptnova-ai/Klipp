@@ -62,19 +62,20 @@ const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
 
-const professionVisuals: Record<string, { icon: string; tint: string; accent: string; caption: string }> = {
-  barberia: { icon: '✂️', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Cortes y arreglo de barba' },
-  peluqueria: { icon: '💇', tint: KlippColors.surfaceCoral, accent: KlippColors.coral, caption: 'Cabello y peinados' },
-  estetica: { icon: '✨', tint: KlippColors.surfaceMint, accent: KlippColors.success, caption: 'Cuidado y belleza' },
-  carwash: { icon: '🚘', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Lavado de vehículos' },
-  detailing: { icon: '🧽', tint: KlippColors.surfaceMint, accent: KlippColors.success, caption: 'Detalle y acabado automotriz' },
-  limpieza_regular: { icon: '🧹', tint: KlippColors.surfaceCoral, accent: KlippColors.coral, caption: 'Limpieza del hogar' },
-  limpieza_profunda: { icon: '🧼', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Limpieza a fondo' },
-  'limpieza-oficinas': { icon: '🏢', tint: KlippColors.surfaceMint, accent: KlippColors.success, caption: 'Espacios de trabajo' },
-  mantenimiento: { icon: '🛠️', tint: KlippColors.surfaceCoral, accent: KlippColors.coral, caption: 'Reparaciones y montaje' },
+const professionCaptions: Record<string, string> = {
+  barberia: 'Cortes y arreglo de barba',
+  peluqueria: 'Cabello y peinados',
+  estetica: 'Cuidado y belleza',
+  carwash: 'Lavado de vehículos',
+  detailing: 'Detalle y acabado automotriz',
+  limpieza_regular: 'Limpieza del hogar',
+  limpieza_profunda: 'Limpieza a fondo',
+  'limpieza-oficinas': 'Espacios de trabajo',
+  mantenimiento: 'Reparaciones y montaje',
 };
-function getProfessionVisual(code: string) {
-  return professionVisuals[code] ?? { icon: '✦', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Servicio profesional' };
+
+function professionCaption(code: string) {
+  return professionCaptions[code] ?? 'Servicio profesional';
 }
 
 
@@ -490,8 +491,8 @@ export function ProRegistrationScreen() {
                         <Image source={serviceArt(service.code)} contentFit="cover" style={styles.professionPhoto} />
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
-                          <Text style={styles.serviceDescription}>{service.description || getProfessionVisual(service.code).caption}</Text>
-                          <Text style={styles.professionHint}>{getProfessionVisual(service.code).caption}</Text>
+                          <Text style={styles.serviceDescription}>{service.description || professionCaption(service.code)}</Text>
+                          <Text style={styles.professionHint}>{professionCaption(service.code)}</Text>
                         </View>
                         <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>{selected && <View style={styles.radioInner} />}</View>
                       </Pressable>
