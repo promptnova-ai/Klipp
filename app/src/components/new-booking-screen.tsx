@@ -183,8 +183,8 @@ export function NewBookingScreen() {
         const street = [place.street, place.streetNumber].filter(Boolean).join(' ');
         setAddressText([street, place.district || place.subregion, place.city || place.region].filter(Boolean).join(', '));
       })
-      .catch((cause: unknown) => {
-        if (active) setLocationError(cause instanceof Error ? cause.message : 'No pudimos encontrar la dirección de este punto.');
+      .catch(() => {
+        if (active) setAddressText(`${coordinate.latitude.toFixed(5)}, ${coordinate.longitude.toFixed(5)}`);
       });
     return () => { active = false; };
   }, [coordinate]);
