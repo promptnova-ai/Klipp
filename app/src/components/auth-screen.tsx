@@ -252,7 +252,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                         autoCapitalize="words"
                         onChangeText={setFullName}
                         placeholder="Tu nombre y apellido"
-                        placeholderTextColor="#8A94A6"
+                        placeholderTextColor={KlippColors.muted}
                         style={styles.input}
                         value={fullName}
                       />
@@ -282,7 +282,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                           onPress={() => router.push('/(auth)/pro-register')}
                           style={styles.roleOption}>
                           <View style={styles.roleIcon}>
-                            <SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor={KlippColors.cobalt} size={19} />
+                            <SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor={KlippColors.coral} size={19} />
                           </View>
                           <View style={styles.roleCopy}>
                             <Text style={styles.roleTitle}>Soy profesional</Text>
