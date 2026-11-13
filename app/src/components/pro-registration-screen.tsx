@@ -47,10 +47,14 @@ type ProOnboardingDraft = {
 };
 
 const steps = [
-  { eyebrow: 'TU PERFIL', title: 'Cuéntanos sobre ti', subtitle: 'Un buen perfil genera confianza y te ayuda a destacar.' },
-  { eyebrow: 'TU PROFESIÓN', title: 'Elige tu profesión', subtitle: 'Selecciona una profesión principal y configura sus modalidades y tarifas.' },
-  { eyebrow: 'TU COBERTURA', title: 'Define dónde trabajas', subtitle: 'Te conectaremos con clientes dentro de tu radio.' },
-  { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales. Te enviaremos un correo para confirmar.' },
+  { eyebrow: 'PASO 1 DE 8', title: 'Tu perfil profesional', subtitle: 'Empezamos por tus datos de contacto y experiencia.' },
+  { eyebrow: 'PASO 2 DE 8', title: 'Tu profesión', subtitle: 'Elige una única actividad principal para tu cuenta Klipp PRO.' },
+  { eyebrow: 'PASO 3 DE 8', title: 'Tu especialidad', subtitle: 'Cuéntanos qué trabajos realizas dentro de tu profesión.' },
+  { eyebrow: 'PASO 4 DE 8', title: 'Tus tarifas', subtitle: 'Configura el precio y la duración de cada modalidad.' },
+  { eyebrow: 'PASO 5 DE 8', title: 'Tu equipamiento', subtitle: 'Revisa las herramientas necesarias para prestar el servicio.' },
+  { eyebrow: 'PASO 6 DE 8', title: 'Tu zona de trabajo', subtitle: 'Marca en el mapa desde dónde atenderás y hasta dónde te desplazas.' },
+  { eyebrow: 'PASO 7 DE 8', title: 'Tu disponibilidad', subtitle: 'Indica los días y el horario en los que puedes recibir solicitudes.' },
+  { eyebrow: 'PASO 8 DE 8', title: 'Crea tu cuenta', subtitle: 'Comprueba el resumen y crea tus credenciales de acceso.' },
 ];
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
@@ -178,7 +182,7 @@ export function ProRegistrationScreen() {
   function validateStep() {
     if (step === 0) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
-      if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
+      if (phone.replace(/\\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
       if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
       if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
@@ -186,36 +190,44 @@ export function ProRegistrationScreen() {
       if (servicesLoading) return 'Espera un momento mientras cargamos las profesiones.';
       if (catalog.length === 0) return 'No hay profesiones disponibles ahora mismo.';
       if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
-      if (tiersLoading || equipmentLoading) return 'Espera mientras cargamos las modalidades y el equipamiento de esta profesión.';
-      if (equipmentRequirements.length === 0) return 'No pudimos cargar el equipamiento de esta profesión. Reintenta o vuelve a seleccionar la profesión.';
+    }
+    if (step === 2) {
+      if (selectedServiceId === null) return 'Primero selecciona tu profesión.';
+      if (tiersLoading || equipmentLoading) return 'Espera mientras terminamos de cargar los datos de tu profesión.';
+      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
+      const selected = catalog.find((item) => item.id === selectedServiceId);
+      const requiredDetail = selected?.code === 'peluqueria' ? 'hair_lengths'
+        : selected?.code === 'estetica' ? 'hygiene'
+        : selected?.code === 'carwash' ? 'utilities'
+        : selected?.code === 'detailing' ? 'vehicle_types'
+        : ['limpieza_regular', 'limpieza-oficinas'].includes(selected?.code ?? '') ? 'frequency'
+        : selected?.code === 'limpieza_profunda' ? 'extras'
+        : selected?.code === 'mantenimiento' ? 'tools' : null;
+      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
+    }
+    if (step === 3) {
+      if (tiersLoading) return 'Espera mientras cargamos las modalidades de esta profesión.';
       if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
       if (pricingTiers.some((tier) => {
         const draft = tierDrafts[tier.id];
         return !draft || !Number.isFinite(parseDopPrice(draft.price)) || parseDopPrice(draft.price) <= 0
           || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
       })) return 'Indica un precio y una duración válidos para cada modalidad.';
-      const selectedProfession = catalog.find((item) => item.id === selectedServiceId);
-      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
-      const requiredDetail = selectedProfession?.code === 'peluqueria' ? 'hair_lengths'
-        : selectedProfession?.code === 'estetica' ? 'hygiene'
-        : selectedProfession?.code === 'carwash' ? 'utilities'
-        : selectedProfession?.code === 'detailing' ? 'vehicle_types'
-        : ['limpieza_regular', 'limpieza-oficinas'].includes(selectedProfession?.code ?? '') ? 'frequency'
-        : selectedProfession?.code === 'limpieza_profunda' ? 'extras'
-        : selectedProfession?.code === 'mantenimiento' ? 'tools' : null;
-      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
-      if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
-
     }
-    if (step === 2) {
-      if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 4) {
+      if (equipmentLoading) return 'Espera mientras cargamos las herramientas y materiales.';
+      if (equipmentRequirements.length === 0) return 'No pudimos cargar la lista de herramientas de esta profesión. Reintenta la selección.';
+      if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
+    }
+    if (step === 5 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 6) {
       if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
+      if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime) || startTime >= endTime) {
         return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
       }
     }
-    if (step === 3) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+    if (step === 7) {
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     }
@@ -482,7 +494,12 @@ export function ProRegistrationScreen() {
                     );
                   })}
                 </View>
-                {selectedProfession && (
+              </View>
+            )}
+
+            {step === 2 && (
+              <View style={styles.serviceList}>
+                                {selectedProfession && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Detalles de {selectedProfession.name.toLowerCase()}</Text>
                     <Field label="Especialidad o trabajo principal">
@@ -525,7 +542,12 @@ export function ProRegistrationScreen() {
                     )}
                   </View>
                 )}
-                {selectedProfession && (
+              </View>
+            )}
+
+            {step === 7 && (
+              <View style={styles.serviceList}>
+                                {selectedProfession && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Precios por modalidad</Text>
                     <Text style={styles.helper}>Define cuánto cobras y cuánto tiempo necesitas para cada modalidad. El cliente verá estos importes al reservar.</Text>
@@ -551,7 +573,12 @@ export function ProRegistrationScreen() {
                     })}
                   </View>
                 )}
-                {equipmentLoading ? (
+              </View>
+            )}
+
+            {step === 4 && (
+              <View style={styles.serviceList}>
+                                {equipmentLoading ? (
                   <View style={styles.card}><View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando herramientas y materiales...</Text></View></View>
                 ) : equipmentRequirements.length > 0 && (
                   <View style={styles.card}>
@@ -578,7 +605,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 2 && (
+            {step === 5 && (
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -601,7 +628,12 @@ export function ProRegistrationScreen() {
                     <Chip key={radius} label={`${radius} km`} selected={radiusKm === radius} onPress={() => setRadiusKm(radius)} />
                   ))}
                 </View>
-                <View style={styles.divider} />
+              </View>
+            )}
+
+            {step === 6 && (
+              <View style={styles.card}>
+                                <View style={styles.divider} />
                 <Text style={styles.cardTitle}>¿Qué días estás disponible?</Text>
                 <View style={styles.chips}>
                   {weekdays.map((day, index) => (
