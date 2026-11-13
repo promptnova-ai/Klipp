@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
