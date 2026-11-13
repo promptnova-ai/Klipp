@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import {
   ActivityIndicator,
   ImageBackground,
+  PanResponder,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -122,6 +123,13 @@ export function ProRegistrationScreen() {
     () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
     [progress],
   );
+  const swipeResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) > 24 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
+    onPanResponderRelease: (_event, gesture) => {
+      if (gesture.dx < -72 && step < steps.length - 1) continueRegistration();
+      if (gesture.dx > 72 && step > 0) animateToStep(step - 1);
+    },
+  }), [step]);
 
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -174,8 +182,8 @@ export function ProRegistrationScreen() {
       setStep(nextStep);
       transition.setValue(0);
       Animated.parallel([
-        Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(progress, { toValue: nextStep, duration: 350, useNativeDriver: false }),
+        Animated.timing(transition, { toValue: 1, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(progress, { toValue: nextStep, duration: 250, useNativeDriver: false }),
       ]).start();
     });
   }
@@ -412,8 +420,9 @@ export function ProRegistrationScreen() {
           <Animated.View
             style={[
               styles.stepContent,
-              { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
-            ]}>
+              { opacity: transition, transform: [{ translateX: transition.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] },
+            ]}
+            {...swipeResponder.panHandlers}>
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
               <Text style={styles.title}>{currentStep.title}</Text>
