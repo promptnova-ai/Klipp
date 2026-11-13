@@ -7,7 +7,6 @@ import {
   ActivityIndicator,
   FlatList,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -64,7 +63,7 @@ export default function ClientHomeNative() {
     return () => { active = false; };
   }, []);
 
-  const firstName = profile?.full_name?.trim().split(/\\s+/)[0];
+  const firstName = profile?.full_name?.trim().split(/\s+/)[0];
   const visibleServices = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     return services.filter((service) => {
