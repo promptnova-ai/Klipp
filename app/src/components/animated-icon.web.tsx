@@ -28,6 +28,10 @@ export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
   const reducedMotion = useReducedMotion();
 
+  useEffect(() => {
+    if (reducedMotion) setVisible(false);
+  }, [reducedMotion]);
+
   if (!visible) return null;
 
   const entering = reducedMotion
