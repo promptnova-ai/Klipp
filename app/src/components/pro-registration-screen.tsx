@@ -417,7 +417,7 @@ export function ProRegistrationScreen() {
             </View>
 
             {step === 0 && (
-              <View style={styles.identityPanel}>
+              <View style={[styles.identityPanel, compact && styles.identityPanelCompact]}>
                 <View style={styles.identityIntro}>
                   <Text style={styles.identityStep}>01 <Text style={styles.identityStepMuted}>/ 08</Text></Text>
                   <Text style={styles.identityHint}>Solo necesitamos lo esencial para empezar.</Text>
@@ -748,6 +748,7 @@ const styles = StyleSheet.create({
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, maxWidth: 620 },
   card: { padding: 22, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 19, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 7 }, shadowRadius: 20, elevation: 1 },
   identityPanel: { width: '100%', maxWidth: 680, alignSelf: 'center', padding: 24, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 22, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 24, elevation: 2 },
+  identityPanelCompact: { padding: 17, borderRadius: 21, gap: 18 },
   identityIntro: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   identityStep: { color: RoleThemes.pro.accentStrong, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
   identityStepMuted: { color: KlippColors.muted, fontWeight: '600' },
