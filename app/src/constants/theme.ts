@@ -1,8 +1,8 @@
-/** Shared app theme; role labels and accents live in src/lib/brand.ts. */
+/** Compatibility exports for Expo template components; values come from the canonical Klipp theme. */
 import '@/global.css';
 import { Platform } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout, KlippSpacing } from '@/theme/tokens';
 
 export const Colors = {
   light: {
@@ -13,11 +13,11 @@ export const Colors = {
     textSecondary: KlippColors.muted,
   },
   dark: {
-    text: '#F7F5F0',
-    background: '#171B2D',
-    backgroundElement: '#22283D',
-    backgroundSelected: '#303B68',
-    textSecondary: '#B7BDCE',
+    text: KlippColors.darkInk,
+    background: KlippColors.darkCanvas,
+    backgroundElement: KlippColors.darkSurface,
+    backgroundSelected: KlippColors.darkSurfaceSelected,
+    textSecondary: KlippColors.darkMuted,
   },
 } as const;
 
@@ -46,15 +46,15 @@ export const Fonts = Platform.select({
 
 export const Spacing = {
   half: 2,
-  one: 4,
-  two: 8,
-  three: 12,
-  four: 16,
-  five: 24,
-  six: 32,
-  seven: 48,
-  eight: 64,
+  one: KlippSpacing[1],
+  two: KlippSpacing[2],
+  three: KlippSpacing[3],
+  four: KlippSpacing[4],
+  five: KlippSpacing[6],
+  six: KlippSpacing[8],
+  seven: KlippSpacing[12],
+  eight: KlippSpacing[16],
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 1120;
+export const MaxContentWidth = KlippLayout.contentMaxWidth;
