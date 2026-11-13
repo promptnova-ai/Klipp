@@ -68,12 +68,12 @@ function getDateOptions(): BookingDateOption[] {
 
 function formatSlotTime(value: string) {
   const [hours, minutes] = value.split(':').map(Number);
-  return new Date(Date.UTC(2000, 0, 1, hours, minutes)).toLocaleTimeString('en-US', {
-    hour: '2-digit',
+  return new Intl.DateTimeFormat('es-DO', {
+    hour: 'numeric',
     minute: '2-digit',
     hour12: true,
     timeZone: 'UTC',
-  });
+  }).format(new Date(Date.UTC(2000, 0, 1, hours, minutes)));
 }
 
 export function NewBookingScreen() {
