@@ -9,6 +9,7 @@ on:
       - "app/**"
       - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
+      - "docs/KLIPP-QUALITY-GATES.md"
   pull_request:
     branches:
       - main
