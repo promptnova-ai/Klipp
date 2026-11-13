@@ -9,7 +9,7 @@ export function KlippMark({ size = 36 }: KlippMarkProps) {
     <Image
       accessibilityLabel="Klipp"
       contentFit="contain"
-      source={require('../../assets/images/klipp-symbol.png')}
+      source={require('../../assets/images/klipp-symbol.svg')}
       style={[styles.mark, { width: size * 1.27, height: size }]}
     />
   );
