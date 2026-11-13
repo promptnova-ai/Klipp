@@ -131,7 +131,21 @@ jobs:
 
       - name: Capture responsive public entry screenshots
         run: |
-          python3 -m http.server 4173 --directory dist >/tmp/klipp-http.log 2>&1 &
+          python3 - <<'PY' >/tmp/klipp-http.log 2>&1 &
+          import os
+          from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+          class SPAHandler(SimpleHTTPRequestHandler):
+              def __init__(self, *args, **kwargs):
+                  super().__init__(*args, directory="dist", **kwargs)
+
+              def do_GET(self):
+                  if not os.path.exists(self.translate_path(self.path)):
+                      self.path = "/index.html"
+                  super().do_GET()
+
+          ThreadingHTTPServer(("127.0.0.1", 4173), SPAHandler).serve_forever()
+          PY
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 30); do
