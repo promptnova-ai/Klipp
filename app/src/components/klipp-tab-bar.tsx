@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors } from '@/theme/tokens';
 import { RoleThemes, type KlippRole } from '@/theme/themes';
@@ -40,13 +40,15 @@ function TabButton({ label, icon, isFocused, onPress, accent, accentSoft }: TabB
 
 export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }: KlippTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const desktop = width >= 768;
   const router = useRouter();
   const theme = RoleThemes[role];
   const accent = theme.accent;
 
   return (
-    <View style={[styles.navigation, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View style={styles.bar}>
+    <View style={[styles.navigation, desktop && styles.navigationDesktop, { paddingBottom: desktop ? 0 : Math.max(insets.bottom, 8) }]}>
+      <View style={[styles.bar, desktop && styles.barDesktop]}>
         {items.slice(0, 2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
             <TabButton label={item.label} icon={item.icon} accent={accent} accentSoft={theme.accentSoft} />
@@ -56,7 +58,7 @@ export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }:
           accessibilityRole="button"
           accessibilityLabel={actionLabel}
           onPress={() => router.navigate(actionHref as never)}
-          style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}>
+          style={({ pressed }) => [styles.centerButton, desktop && styles.centerButtonDesktop, pressed && styles.pressed]}>
           <View style={styles.markPlate}><KlippMark size={34} /></View>
         </Pressable>
         {items.slice(2).map((item) => (
@@ -114,6 +116,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     elevation: 9,
   },
-  markPlate: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  centerButtonDesktop: { width: 52, height: 52, marginTop: 0, borderWidth: 0, backgroundColor: KlippColors.ivory, shadowOpacity: 0.04, elevation: 1 },\n  markPlate: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.9 },
 });
