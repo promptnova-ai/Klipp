@@ -6,6 +6,7 @@ import { AndroidImportance, AndroidNotificationVisibility } from 'expo-notificat
 import { Platform } from 'react-native';
 
 import { supabase } from '../../lib/supabase';
+import { KlippColors } from '@/theme/tokens';
 
 const REGISTERED_TOKEN_KEY = 'klipp.registered-expo-push-token';
 
@@ -16,7 +17,7 @@ export async function configureNotificationChannelsAsync() {
         name: 'Actualizaciones de Klipp',
         importance: AndroidImportance.DEFAULT,
         vibrationPattern: [0, 150],
-        lightColor: '#208AEF',
+        lightColor: KlippColors.cobalt,
       }),
       Notifications.setNotificationChannelAsync('klipp-requests', {
         name: 'Solicitudes de servicios',
