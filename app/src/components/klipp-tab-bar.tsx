@@ -1,14 +1,14 @@
-import { TabList, TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
+import { TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Pressable, StyleSheet, Text, View, type ComponentProps, type Ref } from 'react';
 import { KlippMark } from '@/components/klipp-mark';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
-type TabItem = { name: string; href: string; label: string; icon: SymbolName };
+export type KlippTabItem = { name: string; href: string; label: string; icon: SymbolName };
 
 type KlippTabBarProps = {
-  items: TabItem[];
+  items: KlippTabItem[];
   actionName: string;
   actionLabel: string;
 };
@@ -55,11 +55,6 @@ export function KlippTabBar({ items, actionName, actionLabel }: KlippTabBarProps
 
   return (
     <View style={[styles.navigation, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <TabList style={styles.hiddenRoutes}>
-        {items.map((item) => (
-          <TabTrigger key={item.name} name={item.name} href={item.href} />
-        ))}
-      </TabList>
       <View style={styles.bar}>
         {items.slice(0, 2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
@@ -90,7 +85,6 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 8,
   },
-  hiddenRoutes: { display: 'none' },
   bar: {
     minHeight: 72,
     flexDirection: 'row',
