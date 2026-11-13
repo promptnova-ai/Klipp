@@ -17,33 +17,18 @@ type KlippTabBarProps = {
 
 type TabButtonProps = TabTriggerSlotProps & {
   label: string;
-  icon?: SymbolName;
-  center?: boolean;
+  icon: SymbolName;
 };
 
-function TabButton({ label, icon, center = false, isFocused, ...props }: TabButtonProps) {
-  if (center) {
-    return (
-      <Pressable
-        {...props}
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}>
-        <View style={styles.markPlate}>
-          <KlippMark size={34} />
-        </View>
-      </Pressable>
-    );
-  }
-
+function TabButton({ label, icon, isFocused, onPress }: TabButtonProps) {
   return (
     <Pressable
-      {...props}
+      onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
       style={({ pressed }) => [styles.tabButton, isFocused && styles.tabButtonActive, pressed && styles.pressed]}>
-      {icon ? <SymbolView name={icon} tintColor={isFocused ? '#3D5AFE' : '#8A8D98'} size={21} /> : null}
+      <SymbolView name={icon} tintColor={isFocused ? '#3D5AFE' : '#8A8D98'} size={21} />
       <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
     </Pressable>
   );
