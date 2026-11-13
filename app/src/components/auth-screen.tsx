@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth-provider';
 import { ScreenEntrance } from '@/components/ui-primitives';
 import { KlippMark } from '@/components/klipp-mark';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { normalizePhoneNumber } from '@/lib/phone';
 import type { ExtractRole } from '@/lib/types';
 import { isSupabaseConfigured } from '../../lib/supabase';
