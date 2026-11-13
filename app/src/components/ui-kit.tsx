@@ -65,16 +65,17 @@ type EmptyStateProps = {
   art?: number;
   actionLabel?: string;
   onAction?: () => void;
+  role?: KlippRole;
 };
 
 /** Empty or error state: illustration, short copy and, only when useful, one real action. */
-export function EmptyState({ title, message, art, actionLabel, onAction }: EmptyStateProps) {
+export function EmptyState({ title, message, art, actionLabel, onAction, role = 'client' }: EmptyStateProps) {
   return (
     <View style={kit.empty} accessibilityRole="summary">
       {art ? <Image source={art} contentFit="cover" style={kit.emptyArt} /> : null}
       <Text style={kit.emptyTitle}>{title}</Text>
       {message ? <Text style={kit.emptyMessage}>{message}</Text> : null}
-      {actionLabel && onAction ? <PrimaryButton title={actionLabel} onPress={onAction} variant="secondary" /> : null}
+      {actionLabel && onAction ? <PrimaryButton title={actionLabel} onPress={onAction} variant="secondary" role={role} /> : null}
     </View>
   );
 }
