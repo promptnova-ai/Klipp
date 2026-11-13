@@ -285,7 +285,7 @@ export function ClientTrackingScreen() {
       : `Ubicación actualizada hace ${locationAgeSeconds} s.`;
 
   if (loading) {
-    return <SafeAreaView style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando seguimiento...</Text></SafeAreaView>;
+    return <SafeAreaView style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando seguimiento...</Text></SafeAreaView>;
   }
 
   return (
@@ -318,7 +318,7 @@ export function ClientTrackingScreen() {
                   <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} routePolyline={routePolyline} />
                 ) : (
                   <View style={styles.mapPlaceholder}>
-                    <ActivityIndicator color={KlippColors.blue} />
+                    <ActivityIndicator color={KlippColors.cobalt} />
                     <Text style={styles.body}>Preparando el mapa de seguimiento…</Text>
                   </View>
                 )}
@@ -371,43 +371,43 @@ export function ClientTrackingScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
+  safeArea: { flex: 1, backgroundColor: KlippColors.ivory },
   page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 12, paddingBottom: 52, gap: 17 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: KlippColors.canvas },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: KlippColors.ivory },
   backButton: { alignSelf: 'flex-start', paddingVertical: 8 },
-  backText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
-  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.8 },
+  backText: { color: KlippColors.cobaltDark, fontSize: 14, fontWeight: '700' },
+  title: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.8 },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   etaCard: { padding: 21, borderRadius: 22, backgroundColor: KlippColors.ink, gap: 6, shadowOpacity: 0, elevation: 0 },
   etaLabel: { color: '#E9EDFF', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   etaValue: { color: KlippColors.white, fontSize: 38, lineHeight: 42, fontWeight: '900', letterSpacing: -1 },
   etaHint: { color: '#E9EDFF', fontSize: 12, lineHeight: 18 },
-  mapPlaceholder: { height: 360, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.whiteBlue, gap: 10 },
+  mapPlaceholder: { height: 360, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue, gap: 10 },
   professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
   professionalCardCompact: { flexDirection: 'column', alignItems: 'stretch' },
   professionalIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: KlippColors.whiteBlue },
-  avatarText: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '800' },
+  avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: KlippColors.surfaceBlue },
+  avatarText: { color: KlippColors.cobaltDark, fontSize: 20, fontWeight: '800' },
   professionalDetails: { flex: 1, gap: 3 },
-  professionalName: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
-  acceptanceRate: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  professionalName: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
+  acceptanceRate: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '700' },
   callButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.cobalt },
   callButtonCompact: { width: '100%' },
   callButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
   destinationCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 19, backgroundColor: KlippColors.white, gap: 6 },
   destinationLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  destinationText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
+  destinationText: { color: KlippColors.ink, fontSize: 14, fontWeight: '700' },
   statusCard: { alignItems: 'flex-start', paddingVertical: 24, paddingHorizontal: 0, backgroundColor: 'transparent', gap: 10 },
-  statusIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.whiteBlue },
-  statusIconText: { color: KlippColors.blue, fontSize: 20, fontWeight: '800' },
-  statusMessage: { color: KlippColors.navy, fontSize: 18, lineHeight: 25, fontWeight: '800', textAlign: 'left' },
+  statusIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.surfaceBlue },
+  statusIconText: { color: KlippColors.cobalt, fontSize: 20, fontWeight: '800' },
+  statusMessage: { color: KlippColors.ink, fontSize: 18, lineHeight: 25, fontWeight: '800', textAlign: 'left' },
   stepsCard: { padding: 19, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 21, backgroundColor: KlippColors.white, gap: 15 },
-  stepsTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800', marginBottom: 2 },
+  stepsTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '800', marginBottom: 2 },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: KlippColors.whiteMint, color: KlippColors.success, fontSize: 13, fontWeight: '800' },
+  stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: KlippColors.surfaceMint, color: KlippColors.success, fontSize: 13, fontWeight: '800' },
   stepText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
   eventDetails: { flex: 1, gap: 2 },
   eventTime: { color: KlippColors.muted, fontSize: 11 },
-  error: { padding: 12, borderRadius: 12, backgroundColor: KlippColors.whiteCoral, color: KlippColors.danger, fontSize: 13 },
+  error: { padding: 12, borderRadius: 12, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 13 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
 });
