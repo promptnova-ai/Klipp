@@ -142,7 +142,12 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
       {!mapReady && !error && <View pointerEvents="none" style={styles.loading}>
         <Text style={styles.loadingText}>Cargando mapa de seguimiento…</Text>
       </View>}
-      {mapReady && <Text pointerEvents="none" style={styles.legend}>● Profesional　 ● Tu destino</Text>}
+      {mapReady && (
+        <View pointerEvents="none" style={styles.legend}>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.coral }]} /><Text style={styles.legendText}>Profesional</Text></View>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.cobalt }]} /><Text style={styles.legendText}>Tu destino</Text></View>
+        </View>
+      )}
     </View>
   );
 }
@@ -153,5 +158,8 @@ const styles = StyleSheet.create({
   errorText: { color: KlippColors.slate, fontSize: 13, textAlign: 'center' },
   loading: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
   loadingText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
-  legend: { position: 'absolute', right: 12, bottom: 12, overflow: 'hidden', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: '#FFFFFFF0', color: KlippColors.navy, fontSize: 11, fontWeight: '800' },
+  legend: { position: 'absolute', right: 12, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.94)' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { color: KlippColors.ink, fontSize: 11, fontWeight: '800' },
 });
