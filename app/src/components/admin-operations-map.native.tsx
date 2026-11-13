@@ -32,7 +32,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
 
   useEffect(() => {
     if (validPoints.length) map.current?.animateToRegion(region, 500);
-  }, [region]);
+  }, [region, validPoints.length]);
 
   return (
     <View style={styles.container}>
