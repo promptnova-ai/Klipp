@@ -106,6 +106,7 @@ jobs:
           src/components/tracking-map.native.tsx
           src/components/tracking-map.web.tsx
           src/components/animated-icon.tsx
+          src/components/animated-icon.web.tsx
           src/lib/push-notifications.ts
           src/lib/pro-location-task.ts
           src/components/ui-kit.tsx
