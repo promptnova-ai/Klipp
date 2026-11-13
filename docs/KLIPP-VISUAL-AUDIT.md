@@ -19,7 +19,7 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 | Client discovery | Category accents used unrelated purple, cyan, ochre and green hues | Consolidated service accents to Klipp cobalt, coral and mint |
 | Client service cards | Web mobile cards were tall image-first cards while native cards were compact horizontal cards | Added a compact horizontal mobile layout to web to match native information hierarchy |
 | Client account | Account page could overflow short screens; the account icon implied verification even when none existed; sign-out spacing could exceed the viewport | Added scroll-safe content, corrected gutters and removed the misleading verification mark |
-| Authentication | Native login lacked password visibility and the registration path did not clearly expose PRO registration | Added password visibility and a direct professional registration entry point |
+| Authentication | Desktop hero rendered as an empty flat surface and native/web login used different visual hierarchies | Added a photography-led, darkened service hero on web and native, kept the real Klipp mark, and aligned the service-category cues; retained the shared form and OTP hierarchy |
 | Booking checkout | Continue/submit controls lived at the end of the scroll content | Moved wizard actions into a persistent footer, keeping the primary action visible |
 | Live tracking | Map occupied excessive vertical space; mobile professional details and contact action shared a fragile horizontal row; map colors were outside the brand palette | Standardized map height and marker/route colors, and stacked the contact action on compact screens |
 | PRO profile | Sign-out appeared before the actual profile settings and error feedback could be repeated | Moved sign-out to the end and removed duplicate error presentation |
@@ -77,7 +77,9 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 ## Verification status
 
 - Source-level audit and code corrections: in progress / applied in the active development branch.
-- TypeScript, lint and web export: must pass on the final audit commit.
+- TypeScript, lint and web export: passed on commit `0505c704cbb01255976e01ce5d6263a2d58e60a5`; rerunning after the latest auth visual refinements.
 - Browser/device screenshot review: still required for all authenticated screens.
 - Live SMS, payment and production dispatch: outside this visual audit and must not be inferred from a successful export.
 - PR #25 remains draft until visual screenshots and the manual release matrix have been reviewed.
+
+- Latest auth refinement: editorial hero photography is now shared by web and native. New responsive captures are being generated against the latest branch head.
