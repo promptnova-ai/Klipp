@@ -20,6 +20,7 @@ import { useAuth } from '@/components/auth-provider';
 import { ScreenEntrance } from '@/components/ui-primitives';
 import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors } from '@/lib/brand';
+import { normalizePhoneNumber } from '@/lib/phone';
 import type { ExtractRole } from '@/lib/types';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
@@ -141,7 +142,6 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone');
-  const [phonePrefix, setPhonePrefix] = useState('809');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -164,17 +164,17 @@ export function AuthScreen({ mode }: AuthScreenProps) {
         setError('Escribe tu nombre para continuar.');
         return;
       }
-      if (!/^\d{7}$/.test(phoneNumber)) {
-        setError('Introduce los 7 dígitos de tu número dominicano.');
+      const phone = normalizePhoneNumber(phoneNumber);
+      if (!phone) {
+        setError('Introduce un número válido con código de país. Ejemplo: +1 809 555 0123.');
         return;
       }
-      const phone = `+1${phonePrefix}${phoneNumber}`;
       setBusy(true);
       try {
         if (!otpSent) {
           await sendPhoneOtp(phone, fullName.trim(), 'client', isRegister);
           setOtpSent(true);
-          setNotice(`Enviamos un código de 6 dígitos a +1 ${phonePrefix} ${phoneNumber}.`);
+          setNotice(`Enviamos un código de 6 dígitos a ${phone}.`);
           return;
         }
         if (!/^\d{6}$/.test(otp)) {
@@ -207,7 +207,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   }
 
   const submitDisabled = busy || !isSupabaseConfigured || (authMethod === 'phone'
-    ? (otpSent ? otp.length !== 6 : phoneNumber.length !== 7 || (isRegister && !fullName.trim()))
+    ? (otpSent ? otp.length !== 6 : !normalizePhoneNumber(phoneNumber) || (isRegister && !fullName.trim()))
     : !email.trim() || !password);
 
   return (
@@ -314,17 +314,10 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 {authMethod === 'phone' ? (
                   <>
                     <View style={styles.field}>
-                      <Text style={styles.label}>Número dominicano</Text>
-                      <View style={styles.phonePrefixList}>
-                        {['809', '829', '849'].map((prefix) => (
-                          <Pressable key={prefix} accessibilityRole="radio" accessibilityState={{ selected: phonePrefix === prefix }} onPress={() => { setPhonePrefix(prefix); setOtpSent(false); setOtp(''); setNotice(null); }} style={[styles.phonePrefixOption, phonePrefix === prefix && styles.phonePrefixSelected]}>
-                            <Text style={[styles.phonePrefixText, phonePrefix === prefix && styles.phonePrefixTextSelected]}>+1 {prefix}</Text>
-                          </Pressable>
-                        ))}
-                      </View>
-                      <TextInput accessibilityLabel="Siete dígitos del teléfono dominicano" autoComplete="tel-national" keyboardType="phone-pad" maxLength={7} onChangeText={(value) => { setPhoneNumber(value.replace(/\D/g, '').slice(0, 7)); setOtpSent(false); setOtp(''); setNotice(null); }} placeholder="555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phoneNumber} />
+                      <Text style={styles.label}>Número de teléfono</Text>
+                      <TextInput accessibilityLabel="Número de teléfono" autoComplete="tel" keyboardType="phone-pad" onChangeText={(value) => { setPhoneNumber(value); setOtpSent(false); setOtp(''); setNotice(null); }} placeholder="+1 809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phoneNumber} editable={!otpSent} />
                     </View>
-                    {otpSent && (
+                                        {otpSent && (
                       <View style={styles.field}>
                         <Text style={styles.label}>Código de verificación</Text>
                         <TextInput accessibilityLabel="Código SMS de seis dígitos" autoComplete="one-time-code" keyboardType="number-pad" maxLength={6} onChangeText={(value) => setOtp(value.replace(/\D/g, '').slice(0, 6))} placeholder="······" placeholderTextColor={KlippColors.muted} style={styles.otpInput} value={otp} />
