@@ -25,7 +25,6 @@ type AppNotification = {
   user_id: string;
   booking_id: string | null;
   type: string;
-  title: string;
   body: string;
   data: Record<string, unknown>;
   read_at: string | null;
@@ -543,11 +542,6 @@ export function NotificationsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: KlippColors.ivory },
   page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 18, paddingBottom: 56, gap: 20 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 16 },
-  headerCopy: { flex: 1, gap: 5 },
-  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
-  subtitle: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   headerIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   markAllButton: { minHeight: 38, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12 },
   markAllText: { fontSize: 12, fontWeight: '800' },
