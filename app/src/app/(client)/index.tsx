@@ -19,6 +19,7 @@ import {
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
+import { KlippMark } from '@/components/klipp-mark';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
@@ -294,7 +295,7 @@ export default function ClientHomeScreen() {
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.topBar}>
           <View style={styles.brandRow}>
-            <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
+            <View style={styles.logoMark}><KlippMark size={28} /></View>
             <View style={styles.brandCopy}><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>SERVICIOS A DOMICILIO</Text></View>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Cambiar ubicación" onPress={() => coordinate ? router.push('/(client)/addresses') : void requestLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
