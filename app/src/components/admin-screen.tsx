@@ -389,7 +389,7 @@ export function AdminScreen() {
   }
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando administración...</Text></View>;
+    return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando administración...</Text></View>;
   }
 
   return (
@@ -685,13 +685,13 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 8, paddingBottom: 52, gap: 20, backgroundColor: KlippColors.canvas },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 8, paddingBottom: 52, gap: 20, backgroundColor: KlippColors.ivory },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.ivory },
   section: { padding: 20, gap: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  sectionTitle: { color: KlippColors.ink, fontSize: 18, fontWeight: '700' },
   issueSummary: { flexDirection: 'row', gap: 8 },
   issueCount: { flex: 1, padding: 12, borderRadius: 10, backgroundColor: '#F3F6FA', gap: 3 },
-  issueCountValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
+  issueCountValue: { color: KlippColors.ink, fontSize: 22, fontWeight: '800' },
   issueCountLabel: { color: KlippColors.muted, fontSize: 11, fontWeight: '600' },
   issueStatus: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20, backgroundColor: '#FFF4DB' },
   issueStatusReview: { backgroundColor: '#EAF2FF' },
@@ -708,15 +708,15 @@ const styles = StyleSheet.create({
   sectionHeading: { gap: 4, marginTop: 5 },
   templateGrid: { gap: 9 },
   templateCard: { padding: 14, gap: 7, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
-  templateName: { color: KlippColors.navy, fontSize: 16, fontWeight: '800' },
+  templateName: { color: KlippColors.ink, fontSize: 16, fontWeight: '800' },
   templateMeta: { color: KlippColors.cobalt, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
   permissionSummary: { color: KlippColors.slate, fontSize: 12, lineHeight: 18 },
   employeeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   employeeIdentity: { flex: 1, gap: 3 },
   statusPill: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 20, backgroundColor: '#E8F7EE' },
   statusText: { color: '#067647', fontSize: 10, fontWeight: '800' },
-  permissionName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
-  auditAction: { color: KlippColors.navy, fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
+  permissionName: { color: KlippColors.ink, fontSize: 14, fontWeight: '700' },
+  auditAction: { color: KlippColors.ink, fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
   sectionTabs: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 18 },
   sectionTab: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   sectionTabSelected: { backgroundColor: KlippColors.cobalt, borderColor: KlippColors.cobalt },
@@ -724,7 +724,7 @@ const styles = StyleSheet.create({
   sectionTabTextSelected: { color: KlippColors.white },
   card: { padding: 16, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
   tierCard: { paddingTop: 10, gap: 8, borderTopWidth: 1, borderTopColor: KlippColors.border },
-  cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  cardTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   input: { minHeight: 50, paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.white, color: KlippColors.ink, fontSize: 14 },
