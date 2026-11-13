@@ -42,7 +42,6 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
           <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={17} />
         </Pressable>
       )}
-            <Text style={styles.securityNote}>Tus datos de cuenta se gestionan de forma segura en Klipp.</Text>
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
       </Pressable>
@@ -67,7 +66,6 @@ const styles = StyleSheet.create({
   menuCopy: { flex: 1, gap: 3 },
   menuTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   menuSubtitle: { color: KlippColors.muted, fontSize: 11 },
-  securityNote: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingTop: 8, color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.ink, fontSize: 16 },
   signOut: { width: '100%', maxWidth: 676, alignSelf: 'center', minHeight: 52, borderWidth: 1, borderColor: KlippColors.danger, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 24, backgroundColor: KlippColors.surfaceDanger },
