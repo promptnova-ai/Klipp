@@ -1,4 +1,5 @@
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
+import { useWindowDimensions } from 'react-native';
 
 import { RoleGuard } from '@/components/role-guard';
 import { KlippTabBar, type KlippTabItem } from '@/components/klipp-tab-bar';
@@ -11,13 +12,14 @@ const proTabs = [
 ] satisfies KlippTabItem[];
 
 export default function ProLayout() {
+  const { width } = useWindowDimensions();
   return (
     <RoleGuard role="pro">
       <Tabs>
         <TabList style={{ display: 'none' }}>
           {proTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
-        <TabSlot detachInactiveScreens={false} />
+        <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />
         <KlippTabBar items={proTabs} actionHref="/(pro)" actionLabel="Ir a solicitudes de Klipp PRO" role="pro" />
       </Tabs>
     </RoleGuard>
