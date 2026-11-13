@@ -4,7 +4,8 @@ import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors, type KlippRole } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
+import type { KlippRole } from '@/theme/themes';
 
 export function AccountPanel({ roleLabel }: { roleLabel: string }) {
   const router = useRouter();
