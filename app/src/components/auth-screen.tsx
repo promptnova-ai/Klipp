@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,107 +18,40 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { ScreenEntrance } from '@/components/ui-primitives';
-import { KlippColors } from '@/lib/brand';
-import type { ExtractRole } from '@/lib/types';
+import { KlippColors } from '@/theme/tokens';
+import { normalizePhoneNumber } from '@/lib/phone';
+import { isSupabaseConfigured } from '../../lib/supabase';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
+type AuthMethod = 'phone' | 'email';
 
-const serviceHighlights = [
-  {
-    title: 'Profesionales verificados',
-    detail: 'Perfiles revisados antes de trabajar.',
-    icon: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
-  },
-  {
-    title: 'Tarifas claras',
-    detail: 'Conoces el precio antes de pagar.',
-    icon: { ios: 'tag.fill', android: 'sell', web: 'sell' },
-  },
-  {
-    title: 'Seguimiento en vivo',
-    detail: 'Sigue la llegada del profesional.',
-    icon: { ios: 'location.fill', android: 'location_on', web: 'place' },
-  },
-] as const;
+const KLIPP_WORDMARK = require('../../assets/images/klipp-wordmark.png');
 
-function AuthShowcase({ compact }: { compact: boolean }) {
+function BrandLockup() {
   return (
-    <View style={[styles.showcase, compact && styles.showcaseCompact]}>
-      <View style={styles.showcaseCopy}>
-        <View style={styles.showcaseBrandLine}>
-          <View style={styles.showcaseMark}><Text style={styles.showcaseMarkLetter}>K</Text></View>
-          <Text style={styles.showcaseBrand}>KLIPP</Text>
-          <Text style={styles.showcaseRegion}>SANTO DOMINGO · RD</Text>
-        </View>
-        <Text style={styles.showcaseKicker}>SERVICIOS A DOMICILIO</Text>
-        <Text style={styles.showcaseTitle}>Tu día, más fácil. Tu servicio, en buenas manos.</Text>
-        <Text style={styles.showcaseDescription}>
-          Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.
-        </Text>
-        <View style={styles.showcaseHighlights}>
-          {serviceHighlights.map((item) => (
-            <View key={item.title} style={styles.showcaseHighlight}>
-              <View style={styles.showcaseHighlightIcon}>
-                <SymbolView name={item.icon} tintColor={KlippColors.teal} size={18} />
-              </View>
-              <View style={styles.showcaseHighlightCopy}>
-                <Text style={styles.showcaseHighlightTitle}>{item.title}</Text>
-                <Text style={styles.showcaseHighlightDetail}>{item.detail}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      </View>
-      {!compact && (
-        <View style={styles.bookingPreview}>
-          <View style={styles.previewHeader}>
-            <Text style={styles.previewEyebrow}>ASÍ FUNCIONA</Text>
-            <View style={styles.previewLive}><View style={styles.previewLiveDot} /><Text style={styles.previewLiveText}>EN VIVO</Text></View>
-          </View>
-          <View style={styles.previewService}>
-            <View style={styles.previewServiceIcon}>
-              <SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={KlippColors.blue} size={23} />
-            </View>
-            <View style={styles.previewServiceCopy}>
-              <Text style={styles.previewServiceTitle}>Barbería a domicilio</Text>
-              <Text style={styles.previewServiceDetail}>Ejemplo de una reserva</Text>
-            </View>
-          </View>
-          <View style={styles.previewDivider} />
-          <Text style={styles.previewSectionTitle}>Tu servicio, paso a paso</Text>
-          <View style={styles.previewTimeline}>
-            <View style={styles.previewTimelineRail}>
-              <View style={styles.previewTimelineDot} />
-              <View style={styles.previewTimelineLine} />
-              <View style={[styles.previewTimelineDot, styles.previewTimelineDotActive]} />
-            </View>
-            <View style={styles.previewTimelineCopy}>
-              <Text style={styles.previewTimelineTitle}>Profesional asignado</Text>
-              <Text style={styles.previewTimelineDetail}>Precio confirmado antes del pago</Text>
-              <Text style={styles.previewTimelineTitle}>En camino</Text>
-              <Text style={styles.previewTimelineDetail}>Ubicación y ETA actualizadas</Text>
-            </View>
-          </View>
-          <View style={styles.previewFooter}>
-            <SymbolView name={{ ios: 'shield.lefthalf.filled', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.teal} size={15} />
-            <Text style={styles.previewFooterText}>Todo desde la app Klipp</Text>
-          </View>
-        </View>
-      )}
-    </View>
+    <Image
+      source={KLIPP_WORDMARK}
+      resizeMode="contain"
+      accessibilityLabel="Klipp"
+      style={styles.brandWordmark}
+    />
   );
 }
 
 export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const { width } = useWindowDimensions();
-  const wide = width >= 1024;
+  const wide = width >= 980;
   const router = useRouter();
-  const { session, signIn, signUp, authError } = useAuth();
+  const { session, signIn, sendPhoneOtp, verifyPhoneOtp, authError } = useAuth();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('phone');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<ExtractRole>('client');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -126,169 +60,177 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     if (session) router.replace('/');
   }, [router, session]);
 
+  function changeMethod(method: AuthMethod) {
+    setAuthMethod(method);
+    setOtpSent(false);
+    setOtp('');
+    setError(null);
+    setNotice(null);
+  }
+
   async function handleSubmit() {
     setError(null);
     setNotice(null);
-    if (isRegister && !fullName.trim()) {
-      setError('Escribe tu nombre para continuar.');
+    if (authMethod === 'phone') {
+      if (isRegister && !fullName.trim()) {
+        setError('Escribe tu nombre para continuar.');
+        return;
+      }
+      const phone = normalizePhoneNumber(phoneNumber);
+      if (!phone) {
+        setError('Introduce un número válido. Puedes usar +1 809, +1 829 o +1 849.');
+        return;
+      }
+      setBusy(true);
+      try {
+        if (!otpSent) {
+          await sendPhoneOtp(phone, fullName.trim(), 'client', isRegister);
+          setOtpSent(true);
+          setNotice(`Enviamos un código de 6 dígitos a ${phone}.`);
+          return;
+        }
+        if (!/^\\d{6}$/.test(otp)) {
+          setError('Introduce el código de 6 dígitos que recibiste por SMS.');
+          return;
+        }
+        await verifyPhoneOtp(phone, otp);
+        router.replace('/');
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'No pudimos completar la verificación.');
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
+    if (!email.trim() || !password) {
+      setError('Introduce tu correo y contraseña para continuar.');
       return;
     }
     setBusy(true);
     try {
-      if (isRegister) {
-        const hasSession = await signUp(email.trim(), password, fullName.trim(), role);
-        if (hasSession) router.replace('/');
-        else setNotice('Revisa tu correo para confirmar la cuenta y luego inicia sesión.');
-      } else {
-        await signIn(email.trim(), password);
-        router.replace('/');
-      }
+      await signIn(email.trim(), password);
+      router.replace('/');
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'No pudimos completar la solicitud.');
+      setError(cause instanceof Error ? cause.message : 'No pudimos iniciar sesión.');
     } finally {
       setBusy(false);
     }
   }
 
+  const submitDisabled = busy || !isSupabaseConfigured || (authMethod === 'phone'
+    ? (otpSent ? otp.length !== 6 : !normalizePhoneNumber(phoneNumber) || (isRegister && !fullName.trim()))
+    : !email.trim() || !password);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.authShell}>
-            <View style={styles.topBar}>
-              <View style={styles.brandRow}>
-                <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-                <View style={styles.brandCopy}>
-                  <Text style={styles.brand}>KLIPP</Text>
-                  <Text style={styles.location}>SANTO DOMINGO, RD</Text>
-                </View>
-              </View>
-              <View style={styles.trustNote}>
-                <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.tealDark} size={15} />
-                <Text style={styles.trustNoteText}>Acceso seguro</Text>
-              </View>
+          <View style={[styles.page, wide && styles.pageWide]}>
+            <View style={styles.header}>
+              <BrandLockup />
+              
             </View>
+            <View style={styles.content}>
+              <ScreenEntrance delay={35} style={[styles.formColumn, wide && styles.formColumnWide]}>
+                <View style={styles.form}>
+                  <View style={styles.formIntro}>
+                    <Text style={styles.formEyebrow}>{isRegister ? 'TU CUENTA KLIPP' : 'BIENVENIDO DE NUEVO'}</Text>
+                    <Text style={styles.formTitle}>{isRegister ? 'Empieza por aquí.' : 'Qué bueno verte.'}</Text>
+                    <Text style={styles.formSubtitle}>
+                      {isRegister ? 'Crea tu cuenta y encuentra a la persona adecuada para cada servicio.' : 'Accede para gestionar tus reservas y servicios.'}
+                    </Text>
+                  </View>
 
-            <ScreenEntrance delay={30}>
-              <View style={[styles.main, wide && styles.mainWide]}>
-              <AuthShowcase compact={!wide} />
-              <View style={[styles.formCard, wide && styles.formCardWide]}>
-                <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'QUÉ BUENO VERTE'}</Text>
-                <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
-                <Text style={styles.subtitle}>
-                  {isRegister
-                    ? 'Configura tu acceso para reservar servicios de profesionales de confianza.'
-                    : 'Entra en tu cuenta y continúa donde lo dejaste.'}
-                </Text>
-
-                {isRegister && (
-                  <>
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Nombre completo</Text>
-                      <TextInput
-                        autoComplete="name"
-                        autoCapitalize="words"
-                        onChangeText={setFullName}
-                        placeholder="Tu nombre y apellido"
-                        placeholderTextColor="#8A94A6"
-                        style={styles.input}
-                        value={fullName}
-                      />
+                  {!isSupabaseConfigured && (
+                    <View style={styles.previewNotice}>
+                      <Text style={styles.previewNoticeTitle}>Modo de vista previa</Text>
+                      <Text style={styles.previewNoticeText}>El diseño está disponible. La autenticación real requiere conectar el proyecto de Supabase.</Text>
                     </View>
+                  )}
+
+                  {isRegister && (
                     <View style={styles.field}>
-                      <Text style={styles.label}>¿Cómo usarás Klipp?</Text>
-                      <View style={styles.roleOptions}>
-                        <Pressable
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected: role === 'client' }}
-                          onPress={() => setRole('client')}
-                          style={[styles.roleOption, role === 'client' && styles.roleOptionSelected]}>
-                          <View style={[styles.roleIcon, role === 'client' && styles.roleIconSelected]}>
-                            <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={role === 'client' ? KlippColors.blue : KlippColors.muted} size={19} />
+                      <Text style={styles.label}>Nombre y apellido</Text>
+                      <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="Cómo te llamas" placeholderTextColor="#9699A4" style={styles.input} value={fullName} />
+                    </View>
+                  )}
+
+                  {!isRegister && (
+                    <View style={styles.methodSwitch}>
+                      <Pressable accessibilityRole="tab" accessibilityState={{ selected: authMethod === 'phone' }} onPress={() => changeMethod('phone')} style={[styles.methodOption, authMethod === 'phone' && styles.methodOptionActive]}>
+                        <Text style={[styles.methodText, authMethod === 'phone' && styles.methodTextActive]}>Teléfono</Text>
+                      </Pressable>
+                      <Pressable accessibilityRole="tab" accessibilityState={{ selected: authMethod === 'email' }} onPress={() => changeMethod('email')} style={[styles.methodOption, authMethod === 'email' && styles.methodOptionActive]}>
+                        <Text style={[styles.methodText, authMethod === 'email' && styles.methodTextActive]}>Correo</Text>
+                      </Pressable>
+                    </View>
+                  )}
+
+                  {authMethod === 'phone' ? (
+                    <>
+                      <View style={styles.field}>
+                        <Text style={styles.label}>{otpSent ? 'Código de verificación' : 'Número de teléfono'}</Text>
+                        {!otpSent ? (
+                          <View style={styles.phoneInputWrap}>
+                            <View style={styles.countryCode}><Text style={styles.flag}>🇩🇴</Text><Text style={styles.countryCodeText}>+1</Text><SymbolView name={{ ios: 'chevron.down', android: 'arrow_drop_down', web: 'arrow_drop_down' }} tintColor="#747987" size={13} /></View>
+                            <View style={styles.inputDivider} />
+                            <TextInput accessibilityLabel="Número de teléfono" autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhoneNumber} placeholder="809 555 0123" placeholderTextColor="#9699A4" style={styles.phoneInput} value={phoneNumber} />
                           </View>
-                          <View style={styles.roleCopy}>
-                            <Text style={[styles.roleTitle, role === 'client' && styles.roleTitleSelected]}>Quiero contratar</Text>
-                            <Text style={styles.roleDescription}>Buscar y reservar servicios</Text>
+                        ) : (
+                          <View style={styles.otpWrap}>
+                            <TextInput accessibilityLabel="Código SMS de seis dígitos" autoComplete="one-time-code" keyboardType="number-pad" maxLength={6} onChangeText={(value) => setOtp(value.replace(/\\D/g, '').slice(0, 6))} placeholder="• • • • • •" placeholderTextColor="#A5A8B1" style={styles.otpInput} value={otp} />
+                            <Pressable accessibilityRole="button" onPress={() => { setOtpSent(false); setOtp(''); setNotice(null); }} style={styles.changeNumber}><Text style={styles.inlineLink}>Cambiar número</Text></Pressable>
                           </View>
-                          <View style={[styles.radio, role === 'client' && styles.radioSelected]}>
-                            {role === 'client' && <View style={styles.radioDot} />}
-                          </View>
-                        </Pressable>
-                        <Pressable
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected: false }}
-                          onPress={() => router.push('/(auth)/pro-register')}
-                          style={styles.roleOption}>
-                          <View style={styles.roleIcon}>
-                            <SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor={KlippColors.teal} size={19} />
-                          </View>
-                          <View style={styles.roleCopy}>
-                            <Text style={styles.roleTitle}>Soy profesional</Text>
-                            <Text style={styles.roleDescription}>Ofrecer mis servicios</Text>
-                          </View>
-                          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={16} />
-                        </Pressable>
+                        )}
                       </View>
-                    </View>
-                  </>
-                )}
+                      {otpSent && <Text style={styles.helperText}>Introduce el código que enviamos por SMS para confirmar tu número.</Text>}
+                    </>
+                  ) : (
+                    <>
+                      <View style={styles.field}>
+                        <Text style={styles.label}>Correo electrónico</Text>
+                        <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor="#9699A4" style={styles.input} value={email} />
+                      </View>
+                      <View style={styles.field}>
+                        <Text style={styles.label}>Contraseña</Text>
+                        <View style={styles.passwordWrap}>
+                          <TextInput autoComplete="current-password" onChangeText={setPassword} placeholder="Tu contraseña" placeholderTextColor="#9699A4" secureTextEntry={!showPassword} style={styles.passwordInput} value={password} />
+                          <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} hitSlop={10} onPress={() => setShowPassword((visible) => !visible)} style={styles.passwordToggle}>
+                            <SymbolView name={showPassword ? { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } : { ios: 'eye', android: 'visibility', web: 'visibility' }} tintColor="#747987" size={19} />
+                          </Pressable>
+                        </View>
+                      </View>
+                    </>
+                  )}
 
-                <View style={styles.field}>
-                  <Text style={styles.label}>Correo electrónico</Text>
-                  <TextInput
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                    onChangeText={setEmail}
-                    placeholder="nombre@correo.com"
-                    placeholderTextColor="#8A94A6"
-                    style={styles.input}
-                    value={email}
-                  />
+                  {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+                  {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
+                  {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
+
+                  <Pressable accessibilityRole="button" disabled={submitDisabled} onPress={() => void handleSubmit()} style={({ pressed }) => [styles.submit, submitDisabled && styles.submitDisabled, pressed && !busy && styles.submitPressed]}>
+                    {busy ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>{authMethod === 'phone' ? (otpSent ? 'Confirmar y continuar' : 'Continuar con teléfono') : 'Iniciar sesión'}</Text>}
+                    {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} />}
+                  </Pressable>
+
+                  <View style={styles.switchRow}>
+                    <Text style={styles.switchText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Primera vez en Klipp?'}</Text>
+                    <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild>
+                      <Text style={styles.inlineLink}>{isRegister ? 'Inicia sesión' : 'Crea tu cuenta'}</Text>
+                    </Link>
+                  </View>
+                  {isRegister && (
+                    <Pressable accessibilityRole="link" onPress={() => router.push('/(auth)/pro-register')} style={styles.proEntry}>
+                      <View style={styles.proEntryIcon}><SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor="#3D5AFE" size={17} /></View>
+                      <View style={styles.proEntryCopy}><Text style={styles.proEntryTitle}>¿Ofreces servicios?</Text><Text style={styles.proEntrySubtitle}>Crea tu cuenta profesional en Klipp PRO</Text></View>
+                      <SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor="#747987" size={16} />
+                    </Pressable>
+                  )}
+                  <Text style={styles.legal}>Al continuar, aceptas las condiciones de uso y la política de privacidad de Klipp.</Text>
                 </View>
-                <View style={styles.field}>
-                  <Text style={styles.label}>Contraseña</Text>
-                  <TextInput
-                    autoComplete={isRegister ? 'new-password' : 'current-password'}
-                    onChangeText={setPassword}
-                    placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
-                    placeholderTextColor="#8A94A6"
-                    secureTextEntry
-                    style={styles.input}
-                    value={password}
-                  />
-                </View>
-
-                {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-                {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
-                {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
-
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy || !email.trim() || !password}
-                  onPress={() => void handleSubmit()}
-                  style={({ pressed }) => [
-                    styles.submit,
-                    (busy || !email.trim() || !password) && styles.submitDisabled,
-                    pressed && !busy && styles.submitPressed,
-                  ]}>
-                  {busy
-                    ? <ActivityIndicator color="#FFFFFF" />
-                    : <Text style={styles.submitText}>{isRegister ? 'Crear cuenta' : 'Entrar'}</Text>}
-                  {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} />}
-                </Pressable>
-
-                <View style={styles.switchRow}>
-                  <Text style={styles.switchText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</Text>
-                  <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild>
-                    <Text style={styles.link}>{isRegister ? 'Inicia sesión' : 'Regístrate'}</Text>
-                  </Link>
-                </View>
-                <Text style={styles.legalNote}>Al continuar, aceptas las condiciones de uso y la política de privacidad de Klipp.</Text>
-              </View>
-              </View>
-            </ScreenEntrance>
+              </ScreenEntrance>
+            </View>
+            
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -298,88 +240,58 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 24 },
-  authShell: { width: '100%', maxWidth: 1200, alignSelf: 'center', gap: 22 },
-  topBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 42, height: 42, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
-  logoLetter: { color: '#FFFFFF', fontSize: 23, fontWeight: '900' },
-  brandCopy: { gap: 1 },
-  brand: { color: KlippColors.navy, fontSize: 22, fontWeight: '900', letterSpacing: 1.1 },
-  location: { color: KlippColors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  trustNote: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: '#EAF5F1' },
-  trustNoteText: { color: KlippColors.tealDark, fontSize: 11, fontWeight: '700' },
-  main: { gap: 18 },
-  mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
-  showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 26, backgroundColor: '#FFFFFF', shadowColor: '#17243D', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
-  showcaseCompact: { flexDirection: 'column', padding: 22 },
-  showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
-  showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
-  showcaseMarkLetter: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
-  showcaseBrand: { color: KlippColors.navy, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
-  showcaseRegion: { color: KlippColors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 0.7, marginLeft: 'auto' },
-  showcaseKicker: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
-  showcaseTitle: { color: KlippColors.navy, fontSize: 30, lineHeight: 37, fontWeight: '900', maxWidth: 470, letterSpacing: -0.7 },
-  showcaseDescription: { color: '#627086', fontSize: 14, lineHeight: 22, maxWidth: 470 },
-  showcaseHighlights: { gap: 12, marginTop: 8 },
-  showcaseHighlight: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  showcaseHighlightIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#EAF5F1' },
-  showcaseHighlightCopy: { flex: 1, gap: 2 },
-  showcaseHighlightTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
-  showcaseHighlightDetail: { color: KlippColors.muted, fontSize: 11, lineHeight: 15 },
-  bookingPreview: { width: 230, alignSelf: 'center', padding: 17, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 20, backgroundColor: '#F8FAFC' },
-  previewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
-  previewEyebrow: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  previewLive: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 20, backgroundColor: '#EAF5F1' },
-  previewLiveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: KlippColors.teal },
-  previewLiveText: { color: KlippColors.tealDark, fontSize: 7, fontWeight: '900' },
-  previewService: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  previewServiceIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#EAF0FF' },
-  previewServiceCopy: { flex: 1, gap: 3 },
-  previewServiceTitle: { color: KlippColors.navy, fontSize: 10, fontWeight: '900' },
-  previewServiceDetail: { color: KlippColors.muted, fontSize: 8 },
-  previewDivider: { height: 1, backgroundColor: '#E3E8EF', marginVertical: 15 },
-  previewSectionTitle: { color: KlippColors.navy, fontSize: 10, fontWeight: '900', marginBottom: 11 },
-  previewTimeline: { flexDirection: 'row', gap: 10 },
-  previewTimelineRail: { width: 12, alignItems: 'center', paddingTop: 3 },
-  previewTimelineDot: { width: 8, height: 8, borderWidth: 2, borderColor: '#94A3B8', borderRadius: 5, backgroundColor: '#F8FAFC' },
-  previewTimelineDotActive: { borderColor: KlippColors.teal, backgroundColor: KlippColors.teal },
-  previewTimelineLine: { width: 1, height: 28, backgroundColor: '#CBD5E1' },
-  previewTimelineCopy: { flex: 1, gap: 3 },
-  previewTimelineTitle: { color: KlippColors.navy, fontSize: 9, fontWeight: '800' },
-  previewTimelineDetail: { color: KlippColors.muted, fontSize: 8, lineHeight: 12, marginBottom: 7 },
-  previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: '#E3E8EF' },
-  previewFooterText: { color: '#627086', fontSize: 8, fontWeight: '700' },
-  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 13, padding: 25, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 26, backgroundColor: '#FFFFFF', shadowColor: '#17243D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 12 }, shadowRadius: 26, elevation: 3 },
-  formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
-  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
-  subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, marginBottom: 5 },
-  field: { gap: 7 },
-  label: { color: '#344054', fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 52, paddingHorizontal: 15, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 14, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
-  roleOptions: { gap: 9 },
-  roleOption: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: '#E1E7EF', borderRadius: 16, backgroundColor: '#FFFFFF' },
-  roleOptionSelected: { borderColor: '#91A9FF', backgroundColor: '#F7F9FF' },
-  roleIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#F1F5F9' },
-  roleIconSelected: { backgroundColor: '#EAF0FF' },
-  roleCopy: { flex: 1, gap: 3 },
-  roleTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
-  roleTitleSelected: { color: KlippColors.blueDark },
-  roleDescription: { color: KlippColors.muted, fontSize: 11, lineHeight: 15 },
-  radio: { width: 19, height: 19, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 99 },
-  radioSelected: { borderColor: KlippColors.blue },
-  radioDot: { width: 9, height: 9, borderRadius: 99, backgroundColor: KlippColors.blue },
-  error: { padding: 12, borderWidth: 1, borderColor: '#FECACA', borderRadius: 13, backgroundColor: '#FEF2F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  notice: { padding: 12, borderWidth: 1, borderColor: '#B7E4D1', borderRadius: 13, backgroundColor: '#ECFDF5', color: '#067647', fontSize: 13, lineHeight: 19 },
-  submit: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 16, backgroundColor: KlippColors.blue },
-  submitDisabled: { opacity: 0.5 },
-  submitPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
-  switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
-  switchText: { color: KlippColors.muted, fontSize: 12 },
-  link: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '900' },
-  legalNote: { color: '#8A94A6', fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 2 },
+  safeArea: { flex: 1, backgroundColor: '#F7F5F0' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 28, justifyContent: 'center' },
+  page: { width: '100%', maxWidth: 500, alignSelf: 'center', flex: 1, justifyContent: 'center' },
+  pageWide: { minHeight: 680, justifyContent: 'center' },
+  header: { minHeight: 78, alignItems: 'center', justifyContent: 'center', marginBottom: 38 },
+  brandWordmark: { width: 174, height: 50, alignSelf: 'center' },
+  content: { flex: 1, justifyContent: 'center', paddingBottom: 30 },
+  formColumn: { width: '100%' },
+  formColumnWide: { width: '100%' },
+  form: { gap: 22, paddingVertical: 8 },
+  formIntro: { gap: 9, marginBottom: 5 },
+  formEyebrow: { color: '#3D5AFE', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+  formTitle: { color: '#171B2D', fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -1.2 },
+  formSubtitle: { color: '#747987', fontSize: 14, lineHeight: 21, maxWidth: 390 },
+  previewNotice: { padding: 13, borderRadius: 12, backgroundColor: '#E9EDFF', gap: 4 },
+  previewNoticeTitle: { color: '#3048D8', fontSize: 12, fontWeight: '800' },
+  previewNoticeText: { color: '#555D77', fontSize: 11, lineHeight: 16 },
+  field: { gap: 8 },
+  label: { color: '#3D4358', fontSize: 12, fontWeight: '700' },
+  input: { minHeight: 56, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DCD9D2', borderRadius: 13, backgroundColor: '#FFFFFF', color: '#171B2D', fontSize: 15 },
+  phoneInputWrap: { minHeight: 58, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#DCD9D2', borderRadius: 13, backgroundColor: '#FFFFFF', paddingHorizontal: 13 },
+  countryCode: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  flag: { fontSize: 17 },
+  countryCodeText: { color: '#171B2D', fontSize: 14, fontWeight: '700' },
+  inputDivider: { width: 1, height: 25, backgroundColor: '#E7E3DB', marginHorizontal: 13 },
+  phoneInput: { flex: 1, minWidth: 0, height: 54, color: '#171B2D', fontSize: 15 },
+  methodSwitch: { flexDirection: 'row', alignSelf: 'flex-start', gap: 20, borderBottomWidth: 1, borderBottomColor: '#E7E3DB' },
+  methodOption: { minHeight: 38, justifyContent: 'center', borderBottomWidth: 2, borderBottomColor: 'transparent', paddingHorizontal: 2 },
+  methodOptionActive: { borderBottomColor: '#3D5AFE' },
+  methodText: { color: '#858997', fontSize: 13, fontWeight: '600' },
+  methodTextActive: { color: '#171B2D', fontWeight: '800' },
+  otpWrap: { gap: 10 },
+  otpInput: { minHeight: 62, borderWidth: 1, borderColor: '#3D5AFE', borderRadius: 13, backgroundColor: '#FFFFFF', color: '#171B2D', fontSize: 24, fontWeight: '800', letterSpacing: 8, textAlign: 'center' },
+  changeNumber: { alignSelf: 'flex-start', paddingVertical: 3 },
+  helperText: { color: '#747987', fontSize: 12, lineHeight: 18, marginTop: -9 },
+  passwordWrap: { minHeight: 56, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#DCD9D2', borderRadius: 13, backgroundColor: '#FFFFFF', paddingLeft: 16, paddingRight: 8 },
+  passwordInput: { flex: 1, minWidth: 0, height: 54, color: '#171B2D', fontSize: 15 },
+  passwordToggle: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  error: { padding: 12, borderRadius: 12, backgroundColor: '#FFF0EC', color: '#B83E31', fontSize: 12, lineHeight: 18 },
+  notice: { padding: 12, borderRadius: 12, backgroundColor: '#E7F7F0', color: '#247A5A', fontSize: 12, lineHeight: 18 },
+  submit: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16, backgroundColor: '#171B2D', marginTop: 2 },
+  submitDisabled: { opacity: 0.45 },
+  submitPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
+  submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  switchRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 2 },
+  switchText: { color: '#747987', fontSize: 12 },
+  inlineLink: { color: '#3048D8', fontSize: 12, fontWeight: '800' },
+  proEntry: { minHeight: 66, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 13, borderWidth: 1, borderColor: '#E7E3DB', borderRadius: 14, backgroundColor: '#FFFFFF' },
+  proEntryIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#E9EDFF' },
+  proEntryCopy: { flex: 1, gap: 3 },
+  proEntryTitle: { color: '#171B2D', fontSize: 12, fontWeight: '800' },
+  proEntrySubtitle: { color: '#747987', fontSize: 10 },
+  legal: { color: '#9699A4', fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 2 },
+  
 });

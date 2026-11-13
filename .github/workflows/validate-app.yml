@@ -4,25 +4,36 @@ on:
   push:
     branches:
       - main
+      - feat/caribbean-utility-standalone
     paths:
       - "app/**"
       - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
+      - "docs/KLIPP-QUALITY-GATES.md"
+      - "docs/KLIPP-VISUAL-AUDIT.md"
   pull_request:
     branches:
       - main
-      - security/008-profile-permissions
     paths:
       - "app/**"
       - "supabase/functions/**"
       - ".github/workflows/validate-app.yml"
+      - "docs/KLIPP-QUALITY-GATES.md"
+      - "docs/KLIPP-VISUAL-AUDIT.md"
+
+  workflow_dispatch:
+
+concurrency:
+  group: klipp-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   app-checks:
-    name: Lint and TypeScript
+    name: Lint, TypeScript and web export
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -48,7 +59,6 @@ jobs:
 
       - name: Run project-wide Expo lint (baseline visibility)
         run: npm run lint
-        continue-on-error: true
 
       - name: Lint the changed admin screen
         run: npx eslint src/components/admin-screen.tsx
@@ -77,8 +87,38 @@ jobs:
       - name: Lint shared UI primitives and role-aware header
         run: npx eslint src/components/ui-primitives.tsx src/components/brand-screen-header.tsx
 
+      - name: Lint all redesigned role screens and shared account surfaces
+        run: >-
+          npx eslint
+          src/components/pro-requests-screen.tsx
+          src/components/pro-profile-screen.tsx
+          src/components/pro-agenda-screen.tsx
+          src/components/admin-operations-panel.tsx
+          src/components/account-panel.tsx
+          src/components/auth-screen.native.tsx
+          'src/app/(client)/index.native.tsx'
+          src/components/klipp-tab-bar.tsx
+          'src/app/(client)/_layout.tsx'
+          'src/app/(pro)/_layout.tsx'
+          src/components/role-guard.tsx
+          src/components/location-picker.native.tsx
+          src/components/location-picker.web.tsx
+          src/components/coverage-radius-picker.native.tsx
+          src/components/coverage-radius-picker.web.tsx
+          src/components/admin-operations-map.native.tsx
+          src/components/admin-operations-map.web.tsx
+          src/components/tracking-map.native.tsx
+          src/components/tracking-map.web.tsx
+          src/components/animated-icon.tsx
+          src/components/animated-icon.web.tsx
+          src/lib/push-notifications.ts
+          src/lib/pro-location-task.ts
+          src/components/ui-kit.tsx
+          src/theme/tokens.ts
+          src/theme/themes.ts
+
       - name: Run TypeScript
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Export web app
         run: npx expo export --platform web
@@ -86,8 +126,56 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: https://example.supabase.co
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
 
+      - name: Install Chromium for responsive UI captures
+        run: npx --yes playwright install --with-deps chromium
+
+      - name: Capture responsive public entry screenshots
+        run: |
+          python3 - <<'PY' >/tmp/klipp-http.log 2>&1 &
+          import os
+          from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+          class SPAHandler(SimpleHTTPRequestHandler):
+              def __init__(self, *args, **kwargs):
+                  super().__init__(*args, directory="dist", **kwargs)
+
+              def do_GET(self):
+                  if not os.path.exists(self.translate_path(self.path)):
+                      self.path = "/index.html"
+                  super().do_GET()
+
+          ThreadingHTTPServer(("127.0.0.1", 4173), SPAHandler).serve_forever()
+          PY
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:4173/ >/dev/null
+          npx --yes playwright screenshot --browser chromium --viewport-size "360,800" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-mobile-360.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "390,844" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-mobile-390.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "768,1024" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-tablet-768.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "1024,768" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-tablet-1024.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "1440,900" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-desktop-1440.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "390,844" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/register /tmp/klipp-register-mobile-390.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "768,1024" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/register /tmp/klipp-register-tablet-768.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "1440,900" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/register /tmp/klipp-register-desktop-1440.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "390,844" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/pro-register /tmp/klipp-pro-register-mobile-390.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "768,1024" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/pro-register /tmp/klipp-pro-register-tablet-768.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "1440,900" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/pro-register /tmp/klipp-pro-register-desktop-1440.png
+
+      - name: Upload responsive UI captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-visual-audit-screenshots
+          path: /tmp/klipp-*.png
+          if-no-files-found: warn
+
   edge-function-checks:
     name: Edge Function checks
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - name: Check out branch

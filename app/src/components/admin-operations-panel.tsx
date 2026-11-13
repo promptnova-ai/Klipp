@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { AdminOperationsMap } from '@/components/admin-operations-map';
 import { supabase } from '../../lib/supabase';
 
@@ -110,8 +110,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    void loadBookings().finally(() => { if (active) setLoading(false); });
+    void Promise.resolve().then(() => loadBookings()).finally(() => { if (active) setLoading(false); });
     const interval = setInterval(() => { void loadBookings(); }, 15000);
     return () => { active = false; clearInterval(interval); };
   }, [loadBookings]);
@@ -255,7 +254,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
         } },
       ],
     );
-  }, [interventionReason, loadBookings, openTimeline]);
+  }, [interventionReason, loadBookings]);
 
   const attentionCount = useMemo(() => bookings.filter((item) => attentionReason(item)).length, [bookings]);
   const visibleBookings = useMemo(() => bookings.filter((item) => {
@@ -265,7 +264,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   }), [bookings, filter]);
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando órdenes activas...</Text></View>;
+    return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando órdenes activas...</Text></View>;
   }
 
   return (
@@ -430,7 +429,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
               <Text style={styles.caption}>Solo se permite antes de iniciar el desplazamiento. No se cambia una reserva en camino, llegada o servicio.</Text>
             </View>
           )}
-          {timelineLoading ? <ActivityIndicator color={KlippColors.blue} /> : timeline.length === 0 ? <Text style={styles.body}>No hay eventos disponibles.</Text> : timeline.map((event) => (
+          {timelineLoading ? <ActivityIndicator color={KlippColors.cobalt} /> : timeline.length === 0 ? <Text style={styles.body}>No hay eventos disponibles.</Text> : timeline.map((event) => (
             <View key={event.event_id} style={styles.event}>
               <Text style={styles.eventTitle}>{event.from_status ? (statusNames[event.from_status] ?? event.from_status) + ' → ' : ''}{statusNames[event.to_status] ?? event.to_status}</Text>
               <Text style={styles.caption}>{dateLabel(event.occurred_at)} · {event.actor_name || 'Sistema'}</Text>
@@ -471,42 +470,41 @@ const styles = StyleSheet.create({
   centered: { minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 10 },
   grow: { flex: 1, gap: 4 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  title: { color: KlippColors.navy, fontSize: 19, fontWeight: '800' },
-  sectionTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800', marginTop: 5 },
+  title: { color: KlippColors.ink, fontSize: 19, fontWeight: '800' },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   caption: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
-  refresh: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 9, backgroundColor: KlippColors.navy },
+  refresh: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 9, backgroundColor: KlippColors.ink },
   refreshText: { color: KlippColors.white, fontSize: 12, fontWeight: '700' },
   metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  metric: { minWidth: '47%', flexGrow: 1, padding: 12, borderRadius: 11, backgroundColor: '#F1F5F9', gap: 3 },
-  metricValue: { color: KlippColors.navy, fontSize: 23, fontWeight: '800' },
+  metric: { minWidth: '47%', flexGrow: 1, padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, gap: 4 },
+  metricValue: { color: KlippColors.ink, fontSize: 23, fontWeight: '800' },
   metricLabel: { color: KlippColors.muted, fontSize: 11, fontWeight: '600' },
   filters: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
-  filter: { paddingHorizontal: 11, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border },
-  filterSelected: { backgroundColor: KlippColors.navy, borderColor: KlippColors.navy },
+  filter: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  filterSelected: { backgroundColor: KlippColors.ink, borderColor: KlippColors.ink },
   filterText: { color: KlippColors.slate, fontSize: 12, fontWeight: '600' },
   filterTextSelected: { color: KlippColors.white },
-  bookingCard: { padding: 14, gap: 7, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 13, backgroundColor: KlippColors.white },
-  bookingTitle: { flex: 1, color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
-  status: { color: KlippColors.blueDark, fontSize: 11, fontWeight: '800' },
-  detailCard: { padding: 15, gap: 10, borderWidth: 1, borderColor: KlippColors.blue, borderRadius: 14, backgroundColor: '#F8FBFF' },
-  locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: '#EEF4FF' },
-  interventionBox: { padding: 12, gap: 9, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: '#FFFFFF' },
-  reasonInput: { minHeight: 76, padding: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 9, color: KlippColors.navy, textAlignVertical: 'top', fontSize: 13 },
+  bookingCard: { padding: 17, gap: 9, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
+  bookingTitle: { flex: 1, color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
+  status: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '800' },
+  detailCard: { padding: 15, gap: 10, borderWidth: 1, borderColor: KlippColors.cobalt, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue },
+  locationBox: { padding: 12, gap: 5, borderRadius: 10, backgroundColor: KlippColors.surfaceBlue },
+  interventionBox: { padding: 12, gap: 9, borderRadius: 10, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  reasonInput: { minHeight: 84, padding: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, color: KlippColors.ink, backgroundColor: KlippColors.white, textAlignVertical: 'top', fontSize: 13 },
   candidateRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 9, borderTopWidth: 1, borderTopColor: KlippColors.border },
-  dispatchButton: { paddingHorizontal: 10, paddingVertical: 9, borderRadius: 8, backgroundColor: KlippColors.navy },
+  dispatchButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 13, paddingVertical: 9, borderRadius: 13, backgroundColor: KlippColors.cobalt },
   cancelButton: { padding: 10, borderRadius: 8, borderWidth: 1, borderColor: KlippColors.danger, alignItems: 'center' },
   cancelButtonText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800' },
   disabled: { opacity: 0.45 },
-  reassignmentSuccess: { color: '#067647', fontSize: 12, lineHeight: 18, fontWeight: '700' },
-  locationTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
-  etaValue: { color: KlippColors.navy, fontSize: 22, fontWeight: '800' },
-  etaButton: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: KlippColors.navy },
+  reassignmentSuccess: { color: KlippColors.success, fontSize: 12, lineHeight: 18, fontWeight: '700' },
+  locationTitle: { color: KlippColors.ink, fontSize: 13, fontWeight: '800' },
+  etaValue: { color: KlippColors.ink, fontSize: 22, fontWeight: '800' },
+  etaButton: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 9, backgroundColor: KlippColors.ink },
   event: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 3 },
   eventTitle: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
-  link: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '800' },
-  warning: { flex: 1, color: '#946200', fontSize: 11, fontWeight: '700', textAlign: 'right' },
-  ok: { color: '#067647', fontSize: 11, fontWeight: '700' },
+  link: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '800' },
+  warning: { flex: 1, color: KlippColors.warning, fontSize: 11, fontWeight: '700', textAlign: 'right' },
+  ok: { color: KlippColors.success, fontSize: 11, fontWeight: '700' },
   empty: { color: KlippColors.muted, fontSize: 14, paddingVertical: 8 },
   error: { color: KlippColors.danger, fontSize: 13 },
 });

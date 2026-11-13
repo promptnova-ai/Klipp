@@ -1,9 +1,9 @@
 /// <reference types="google.maps" />
 
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 
 export type CoverageCoordinate = { latitude: number; longitude: number };
@@ -32,12 +32,19 @@ export function CoverageRadiusPicker({
   const onChangeRef = useRef(onChange);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const [latitude, setLatitude] = useState(String(center.latitude));
+  const [longitude, setLongitude] = useState(String(center.longitude));
+  const [coordinateError, setCoordinateError] = useState<string | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     centerRef.current = center;
     radiusRef.current = radiusMeters;
     onChangeRef.current = onChange;
+    setLatitude(String(center.latitude));
+    setLongitude(String(center.longitude));
   }, [center, radiusMeters, onChange]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!mapElement.current || !hasApiKey) return;
@@ -59,21 +66,29 @@ export function CoverageRadiusPicker({
           streetViewControl: false,
           fullscreenControl: false,
           clickableIcons: false,
-          gestureHandling: 'greedy',
+          gestureHandling: 'cooperative',
         });
         const centerMarker = new google.maps.Marker({
           map: googleMap,
           position: initialCenter,
           draggable: true,
           title: 'Centro de cobertura',
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: KlippColors.cobalt,
+            fillOpacity: 1,
+            strokeColor: KlippColors.white,
+            strokeWeight: 3,
+            scale: 8,
+          },
         });
         const coverageCircle = new google.maps.Circle({
           map: googleMap,
           center: initialCenter,
           radius: radiusRef.current,
-          fillColor: '#208AEF',
-          fillOpacity: 0.16,
-          strokeColor: '#208AEF',
+          fillColor: KlippColors.cobalt,
+          fillOpacity: 0.14,
+          strokeColor: KlippColors.cobalt,
           strokeOpacity: 0.9,
           strokeWeight: 2,
           clickable: false,
@@ -87,6 +102,9 @@ export function CoverageRadiusPicker({
           const nextCenter = { latitude: event.latLng.lat(), longitude: event.latLng.lng() };
           centerMarker.setPosition(event.latLng);
           coverageCircle.setCenter(event.latLng);
+          setLatitude(nextCenter.latitude.toFixed(5));
+          setLongitude(nextCenter.longitude.toFixed(5));
+          setCoordinateError(null);
           onChangeRef.current(nextCenter);
         });
         markerDragListener = centerMarker.addListener('dragend', () => {
@@ -94,6 +112,9 @@ export function CoverageRadiusPicker({
           if (!position) return;
           const nextCenter = { latitude: position.lat(), longitude: position.lng() };
           coverageCircle.setCenter(position);
+          setLatitude(nextCenter.latitude.toFixed(5));
+          setLongitude(nextCenter.longitude.toFixed(5));
+          setCoordinateError(null);
           onChangeRef.current(nextCenter);
         });
         setMapReady(true);
@@ -117,6 +138,18 @@ export function CoverageRadiusPicker({
       circle.current = null;
     };
   }, []);
+
+  function applyCoordinates() {
+    const parsedLatitude = Number(latitude);
+    const parsedLongitude = Number(longitude);
+    if (Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90
+      && Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180) {
+      setCoordinateError(null);
+      onChange({ latitude: parsedLatitude, longitude: parsedLongitude });
+      return;
+    }
+    setCoordinateError('Introduce una latitud entre -90 y 90 y una longitud entre -180 y 180.');
+  }
 
   useEffect(() => {
     if (!mapReady) return;
@@ -149,25 +182,52 @@ export function CoverageRadiusPicker({
         </View>
       ) : (
         <View style={styles.missingKey}>
-          <Text style={styles.errorTitle}>Falta configurar Google Maps</Text>
-          <Text style={styles.overlayText}>Configura EXPO_PUBLIC_GOOGLE_MAPS_API_KEY en app/.env.local y reinicia Expo.</Text>
+          <Text style={styles.errorTitle}>Mapa no disponible en esta vista</Text>
+          <Text style={styles.overlayText}>Puedes introducir el centro de tu zona de trabajo manualmente.</Text>
         </View>
       )}
       <Text style={styles.coordinates}>{center.latitude.toFixed(5)}, {center.longitude.toFixed(5)}</Text>
-      <Text style={styles.hint}>Círculo azul = radio de {Math.round(radiusMeters / 1000)} km. Mueve el pin para ajustar tu cobertura.</Text>
+      <Text style={styles.hint}>El círculo muestra un radio de {Math.round(radiusMeters / 1000)} km. Mueve el pin para ajustar tu cobertura.</Text>
+      {(!hasApiKey || loadError) && (
+        <>
+          <View style={styles.coordinateFields}>
+            <View style={styles.coordinateField}>
+              <Text style={styles.fieldLabel}>Latitud</Text>
+              <TextInput accessibilityLabel="Latitud del centro de cobertura" keyboardType="numbers-and-punctuation" onChangeText={setLatitude} style={styles.coordinateInput} value={latitude} />
+            </View>
+            <View style={styles.coordinateField}>
+              <Text style={styles.fieldLabel}>Longitud</Text>
+              <TextInput accessibilityLabel="Longitud del centro de cobertura" keyboardType="numbers-and-punctuation" onChangeText={setLongitude} style={styles.coordinateInput} value={longitude} />
+            </View>
+          </View>
+          <Pressable accessibilityRole="button" onPress={applyCoordinates} style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}>
+            <Text style={styles.applyText}>Aplicar centro de cobertura</Text>
+          </Pressable>
+          {coordinateError && <Text accessibilityRole="alert" style={styles.coordinateError}>{coordinateError}</Text>}
+        </>
+      )}
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { gap: 8 },
-  mapFrame: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  mapFrame: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
   overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
   errorOverlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, gap: 8, backgroundColor: '#FFFFFFF2' },
-  missingKey: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, backgroundColor: '#FFF7ED', gap: 8 },
-  errorTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  missingKey: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderRadius: 16, backgroundColor: KlippColors.surfaceWarning, gap: 8 },
+  errorTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '700', textAlign: 'center' },
   overlayText: { color: KlippColors.slate, fontSize: 12, lineHeight: 18, textAlign: 'center' },
-  mapHint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignSelf: 'center', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: '#334155', fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  mapHint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignSelf: 'center', overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: KlippColors.slate, fontSize: 11, fontWeight: '600', textAlign: 'center' },
   coordinates: { color: KlippColors.slate, fontSize: 12, textAlign: 'center' },
+  coordinateFields: { flexDirection: 'row', gap: 8 },
+  coordinateField: { flex: 1, minWidth: 0, gap: 4 },
+  fieldLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' },
+  coordinateInput: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white, color: KlippColors.slate, fontSize: 12 },
+  applyButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 12, backgroundColor: KlippColors.cobalt },
+  applyText: { color: KlippColors.white, fontSize: 12, fontWeight: '800' },
+  coordinateError: { color: KlippColors.danger, fontSize: 11, lineHeight: 16 },
+  pressed: { opacity: 0.88 },
   hint: { color: KlippColors.muted, fontSize: 11, textAlign: 'center' },
 });

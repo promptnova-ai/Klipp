@@ -1,23 +1,23 @@
-/** Shared app theme; role-specific accents live in src/lib/brand.ts. */
+/** Compatibility exports for Expo template components; values come from the canonical Klipp theme. */
 import '@/global.css';
 import { Platform } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout, KlippSpacing } from '@/theme/tokens';
 
 export const Colors = {
   light: {
-    text: KlippColors.navy,
-    background: KlippColors.canvas,
+    text: KlippColors.ink,
+    background: KlippColors.ivory,
     backgroundElement: KlippColors.white,
     backgroundSelected: KlippColors.surfaceBlue,
     textSecondary: KlippColors.muted,
   },
   dark: {
-    text: '#F8FAFC',
-    background: KlippColors.navyDeep,
-    backgroundElement: '#1B2942',
-    backgroundSelected: '#293A5A',
-    textSecondary: '#B5C0D0',
+    text: KlippColors.darkInk,
+    background: KlippColors.darkCanvas,
+    backgroundElement: KlippColors.darkSurface,
+    backgroundSelected: KlippColors.darkSurfaceSelected,
+    textSecondary: KlippColors.darkMuted,
   },
 } as const;
 
@@ -25,13 +25,13 @@ export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const Fonts = Platform.select({
   ios: {
-    sans: 'system-ui',
+    sans: 'Inter',
     serif: 'ui-serif',
     rounded: 'ui-rounded',
     mono: 'ui-monospace',
   },
   default: {
-    sans: 'normal',
+    sans: 'Inter',
     serif: 'serif',
     rounded: 'normal',
     mono: 'monospace',
@@ -46,15 +46,15 @@ export const Fonts = Platform.select({
 
 export const Spacing = {
   half: 2,
-  one: 4,
-  two: 8,
-  three: 12,
-  four: 16,
-  five: 24,
-  six: 32,
-  seven: 48,
-  eight: 64,
+  one: KlippSpacing[1],
+  two: KlippSpacing[2],
+  three: KlippSpacing[3],
+  four: KlippSpacing[4],
+  five: KlippSpacing[6],
+  six: KlippSpacing[8],
+  seven: KlippSpacing[12],
+  eight: KlippSpacing[16],
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 1120;
+export const MaxContentWidth = KlippLayout.contentMaxWidth;

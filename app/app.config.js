@@ -3,6 +3,12 @@ const appConfig = require('./app.json').expo;
 module.exports = {
   ...appConfig,
 
+  // GitHub Pages serves the web preview from /Klipp; normal Vercel builds keep the root path.
+  experiments: {
+    ...appConfig.experiments,
+    ...(process.env.GITHUB_PAGES === 'true' ? { baseUrl: '/Klipp' } : {}),
+  },
+
   extra: {
     ...appConfig.extra,
     eas: {

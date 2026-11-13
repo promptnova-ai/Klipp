@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
+import { KlippColors } from '@/theme/tokens';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function HomeScreen() {
   if (loading || (session && !profileError && !profile)) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color="#16766c" />
+        <ActivityIndicator color={KlippColors.cobalt} />
         <Text style={styles.message}>Cargando tu cuenta...</Text>
       </View>
     );
@@ -43,7 +44,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.centered}>
-      <ActivityIndicator color="#16766c" />
+      <ActivityIndicator color={KlippColors.cobalt} />
       <Text style={styles.message}>Abriendo tu espacio...</Text>
     </View>
   );
@@ -56,9 +57,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     padding: 28,
-    backgroundColor: '#f4f7f5',
+    backgroundColor: KlippColors.ivory,
   },
-  message: { color: '#52615b', fontSize: 15, textAlign: 'center' },
-  title: { color: '#18332d', fontSize: 22, fontWeight: '700', textAlign: 'center' },
-  retry: { color: '#126e64', fontSize: 16, fontWeight: '700', padding: 12 },
+  message: { color: KlippColors.muted, fontSize: 15, textAlign: 'center' },
+  title: { color: KlippColors.ink, fontSize: 22, fontWeight: '700', textAlign: 'center' },
+  retry: { color: KlippColors.cobalt, fontSize: 16, fontWeight: '700', padding: 12 },
 });

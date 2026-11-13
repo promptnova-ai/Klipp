@@ -5,7 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
-import { KlippColors, RoleThemes } from '@/lib/brand';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { RoleThemes } from '@/theme/themes';
 import { supabase } from '../../lib/supabase';
 import {
   isPushDeviceRegisteredAsync,
@@ -197,6 +199,17 @@ export function NotificationsScreen() {
   }, [userId, loadNotifications]);
 
   const unreadCount = items.filter((item) => !item.read_at).length;
+  const [calendarAnchor] = useState(() => new Date());
+  const todayKey = calendarAnchor.toDateString();
+  const yesterdayKey = new Date(calendarAnchor.getFullYear(), calendarAnchor.getMonth(), calendarAnchor.getDate() - 1).toDateString();
+  const notificationGroups = [
+    { title: 'Hoy', items: items.filter((item) => new Date(item.created_at).toDateString() === todayKey) },
+    { title: 'Ayer', items: items.filter((item) => new Date(item.created_at).toDateString() === yesterdayKey) },
+    { title: 'Anteriores', items: items.filter((item) => {
+      const dateKey = new Date(item.created_at).toDateString();
+      return dateKey !== todayKey && dateKey !== yesterdayKey;
+    }) },
+  ].filter((group) => group.items.length > 0);
 
   async function updatePreference(eventType: keyof PreferenceMap, channel: PreferenceChannel, enabled: boolean) {
     if (!userId) return;
@@ -344,18 +357,14 @@ export function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <Text style={[styles.eyebrow, { color: roleTheme.accentStrong }]}>TU ESPACIO · KLIPP</Text>
-            <Text style={styles.title}>Notificaciones</Text>
-            <Text style={styles.subtitle}>
-              {unreadCount > 0 ? unreadCount + (unreadCount === 1 ? ' aviso sin leer' : ' avisos sin leer') : 'Todo está al día'}
-            </Text>
-          </View>
-          <View style={[styles.headerIcon, { backgroundColor: roleTheme.accentSoft }]}>
-            <SymbolView name={{ ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' }} tintColor={roleTheme.accentStrong} size={25} />
-          </View>
-        </View>
+        <BrandScreenHeader
+          inset={false}
+          role={isPro ? 'pro' : 'client'}
+          eyebrow={isPro ? 'KLIPP PRO · AVISOS' : 'TU ESPACIO · AVISOS'}
+          title="Notificaciones"
+          subtitle={unreadCount > 0 ? unreadCount + (unreadCount === 1 ? ' aviso sin leer' : ' avisos sin leer') : 'Todo está al día'}
+          trailing={<View style={[styles.headerIcon, { backgroundColor: roleTheme.accentSoft }]}><SymbolView name={{ ios: 'bell.badge.fill', android: 'notifications_active', web: 'notifications_active' }} tintColor={roleTheme.accentStrong} size={25} /></View>}
+        />
 
         {unreadCount > 0 && (
           <Pressable
@@ -448,7 +457,7 @@ export function NotificationsScreen() {
                   { backgroundColor: roleTheme.accentStrong },
                   (pushBusy || pushStatus === 'checking' || pressed) && styles.pressed,
                 ]}>
-                {pushBusy ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                {pushBusy ? <ActivityIndicator color={KlippColors.white} size="small" /> : null}
                 <Text style={styles.pushButtonText}>
                   {pushBusy ? 'Guardando…' : pushStatus === 'registered' ? 'Actualizar registro' : 'Activar notificaciones'}
                 </Text>
@@ -492,32 +501,37 @@ export function NotificationsScreen() {
           </View>
         ) : (
           <View style={styles.list}>
-            {items.map((item) => (
-              <Pressable
-                key={item.id}
-                accessibilityRole="button"
-                disabled={openingId !== null}
-                onPress={() => void openNotification(item)}
-                style={({ pressed }) => [
-                  styles.notification,
-                  !item.read_at && [styles.unreadNotification, { borderColor: roleTheme.accent, backgroundColor: roleTheme.accentSoft }],
-                  (pressed || openingId === item.id) && styles.pressed,
-                ]}>
-                <View style={[styles.itemIcon, { backgroundColor: roleTheme.accentSoft }]}>
-                  <SymbolView name={notificationIcon(item.type)} tintColor={roleTheme.accentStrong} size={19} />
-                </View>
-                <View style={styles.itemCopy}>
-                  <View style={styles.itemHeading}>
-                    <Text style={styles.itemTitle}>{item.title}</Text>
-                    {!item.read_at && <View style={[styles.unreadDot, { backgroundColor: roleTheme.accent }]} />}
-                  </View>
-                  <Text style={styles.itemBody}>{item.body}</Text>
-                  <Text style={styles.itemDate}>{relativeDate(item.created_at)}</Text>
-                </View>
-                {openingId === item.id
-                  ? <ActivityIndicator color={roleTheme.accentStrong} size="small" />
-                  : <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={15} />}
-              </Pressable>
+            {notificationGroups.map((group) => (
+              <View key={group.title} style={styles.notificationGroup}>
+                <Text style={styles.groupTitle}>{group.title}</Text>
+                {group.items.map((item) => (
+                  <Pressable
+                    key={item.id}
+                    accessibilityRole="button"
+                    disabled={openingId !== null}
+                    onPress={() => void openNotification(item)}
+                    style={({ pressed }) => [
+                      styles.notification,
+                      !item.read_at && styles.unreadNotification,
+                      (pressed || openingId === item.id) && styles.pressed,
+                    ]}>
+                    <View style={[styles.itemIcon, !item.read_at && { backgroundColor: roleTheme.accentSoft }]}>
+                      <SymbolView name={notificationIcon(item.type)} tintColor={roleTheme.accentStrong} size={19} />
+                    </View>
+                    <View style={styles.itemCopy}>
+                      <View style={styles.itemHeading}>
+                        <Text style={styles.itemTitle}>{item.title}</Text>
+                        {!item.read_at && <View style={[styles.unreadDot, { backgroundColor: roleTheme.accent }]} />}
+                      </View>
+                      <Text style={styles.itemBody}>{item.body}</Text>
+                      <Text style={styles.itemDate}>{relativeDate(item.created_at)}</Text>
+                    </View>
+                    {openingId === item.id
+                      ? <ActivityIndicator color={roleTheme.accentStrong} size="small" />
+                      : <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={15} />}
+                  </Pressable>
+                ))}
+              </View>
             ))}
           </View>
         )}
@@ -527,33 +541,28 @@ export function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  page: { width: '100%', maxWidth: 900, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 22, paddingBottom: 42, gap: 18 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 16 },
-  headerCopy: { flex: 1, gap: 5 },
-  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
-  subtitle: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
+  safeArea: { flex: 1, backgroundColor: KlippColors.ivory },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 18, paddingBottom: 56, gap: 20 },
   headerIcon: { width: 54, height: 54, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   markAllButton: { minHeight: 38, alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, paddingVertical: 8, paddingHorizontal: 13, borderRadius: 12 },
   markAllText: { fontSize: 12, fontWeight: '800' },
-  preferencesCard: { padding: 21, borderRadius: 22, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 2 },
+  preferencesCard: { padding: 20, borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 17, shadowColor: KlippColors.ink, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingBottom: 3 },
   sectionCopy: { flex: 1, gap: 5 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, lineHeight: 24, fontWeight: '900', letterSpacing: -0.25 },
+  sectionTitle: { color: KlippColors.ink, fontSize: 18, lineHeight: 24, fontWeight: '900', letterSpacing: -0.25 },
   sectionIcon: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  preferencesTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '900' },
+  preferencesTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '900' },
   preferencesHint: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   preferenceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, paddingTop: 15, borderTopWidth: 1, borderTopColor: KlippColors.border },
   preferenceCopy: { flex: 1, gap: 4 },
-  preferenceLabel: { color: KlippColors.navy, fontSize: 13, fontWeight: '900' },
+  preferenceLabel: { color: KlippColors.ink, fontSize: 13, fontWeight: '900' },
   preferenceDescription: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   preferenceControls: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 16 },
   preferenceChannel: { minWidth: 88, alignItems: 'center' },
   preferenceChannelCopy: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 5 },
   preferenceChannelLabel: { color: KlippColors.slate, fontSize: 11, fontWeight: '700' },
   webPushHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 17, paddingTop: 10 },
-  pushCard: { padding: 20, borderRadius: 22, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 8 }, shadowRadius: 20, elevation: 2 },
+  pushCard: { padding: 19, borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: KlippColors.ink, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   pushHeader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pushIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   pushCopy: { flex: 1, gap: 4 },
@@ -561,27 +570,29 @@ const styles = StyleSheet.create({
   deviceStatusText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.7 },
   pushActions: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 },
   pushButton: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 16, borderRadius: 14 },
-  pushButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
-  removePushButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 13, borderRadius: 13, backgroundColor: '#F8FAFC' },
+  pushButtonText: { color: KlippColors.white, fontSize: 12, fontWeight: '900' },
+  removePushButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 13, borderRadius: 13, backgroundColor: KlippColors.surfaceMuted },
   removePushText: { color: KlippColors.muted, fontSize: 11, fontWeight: '800' },
-  notice: { padding: 12, borderWidth: 1, borderColor: '#B7E4D1', borderRadius: 13, backgroundColor: '#ECFDF5', color: '#067647', fontSize: 12, lineHeight: 18 },
-  error: { padding: 12, borderWidth: 1, borderColor: '#FECACA', borderRadius: 13, backgroundColor: '#FEF2F2', color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
+  notice: { padding: 12, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 13, backgroundColor: KlippColors.surfaceMint, color: KlippColors.success, fontSize: 12, lineHeight: 18 },
+  error: { padding: 12, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 13, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
   listHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, paddingTop: 3 },
   listHeadingCopy: { flex: 1, gap: 4 },
   itemCount: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' },
-  list: { gap: 10 },
-  notification: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 18, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, shadowColor: KlippColors.navy, shadowOpacity: 0.025, shadowOffset: { width: 0, height: 5 }, shadowRadius: 14, elevation: 1 },
-  unreadNotification: { borderWidth: 1.2 },
-  itemIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  list: { gap: 22 },
+  notificationGroup: { gap: 0 },
+  groupTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '900', paddingBottom: 8 },
+  notification: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, marginBottom: 8, borderRadius: 17, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowOpacity: 0, elevation: 0 },
+  unreadNotification: { backgroundColor: KlippColors.surfaceBlue, borderColor: KlippColors.surfaceBlue },
+  itemIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceMuted },
   itemCopy: { flex: 1, gap: 4 },
   itemHeading: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  itemTitle: { flex: 1, color: KlippColors.navy, fontSize: 13, lineHeight: 18, fontWeight: '900' },
+  itemTitle: { flex: 1, color: KlippColors.ink, fontSize: 13, lineHeight: 18, fontWeight: '900' },
   unreadDot: { width: 8, height: 8, borderRadius: 4 },
   itemBody: { color: KlippColors.slate, fontSize: 12, lineHeight: 18 },
   itemDate: { color: KlippColors.muted, fontSize: 10, fontWeight: '700', marginTop: 2 },
-  empty: { minHeight: 210, alignItems: 'center', justifyContent: 'center', paddingVertical: 38, paddingHorizontal: 24, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: '#FFFFFF', gap: 10 },
+  empty: { minHeight: 210, alignItems: 'center', justifyContent: 'center', paddingVertical: 38, paddingHorizontal: 24, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 10 },
   emptyIcon: { width: 60, height: 60, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '900' },
+  emptyTitle: { color: KlippColors.ink, fontSize: 16, fontWeight: '900' },
   emptyText: { maxWidth: 390, color: KlippColors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
   pressed: { opacity: 0.78 },
 });

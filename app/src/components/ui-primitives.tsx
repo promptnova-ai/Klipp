@@ -1,5 +1,7 @@
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { useEffect, useMemo, useSyncExternalStore, type ReactNode } from 'react';
 import {
+  AccessibilityInfo,
+  type AccessibilityState,
   ActivityIndicator,
   Animated,
   Easing,
@@ -12,7 +14,48 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { KlippColors, KlippLayout, KlippMotion } from '@/lib/brand';
+import { KlippColors, KlippLayout, KlippMotion, KlippShadows, KlippSpacing, KlippTypography } from '@/theme/tokens';
+import { RoleThemes, type KlippRole } from '@/theme/themes';
+
+/** One shared OS preference subscription avoids a listener per button or screen. */
+let reducedMotionSnapshot = false;
+let motionPreferenceInitialized = false;
+let motionPreferenceSubscription: { remove: () => void } | null = null;
+const motionPreferenceListeners = new Set<() => void>();
+
+function subscribeToMotionPreference(listener: () => void) {
+  motionPreferenceListeners.add(listener);
+  if (!motionPreferenceInitialized) {
+    motionPreferenceInitialized = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        reducedMotionSnapshot = enabled;
+        motionPreferenceListeners.forEach((notify) => notify());
+      })
+      .catch(() => undefined);
+    motionPreferenceSubscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      reducedMotionSnapshot = enabled;
+      motionPreferenceListeners.forEach((notify) => notify());
+    });
+  }
+  return () => {
+    motionPreferenceListeners.delete(listener);
+    if (motionPreferenceListeners.size === 0) {
+      motionPreferenceSubscription?.remove();
+      motionPreferenceSubscription = null;
+      motionPreferenceInitialized = false;
+    }
+  };
+}
+
+function getReducedMotionSnapshot() {
+  return reducedMotionSnapshot;
+}
+
+/** Respect the operating system's reduced-motion accessibility preference. */
+export function useReducedMotion() {
+  return useSyncExternalStore(subscribeToMotionPreference, getReducedMotionSnapshot, getReducedMotionSnapshot);
+}
 
 type ScreenEntranceProps = {
   children: ReactNode;
@@ -23,8 +66,13 @@ type ScreenEntranceProps = {
 /** Small, consistent entrance motion for routed screens and important panels. */
 export function ScreenEntrance({ children, style, delay = 0 }: ScreenEntranceProps) {
   const progress = useMemo(() => new Animated.Value(0), []);
+  const reducedMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reducedMotion) {
+      progress.setValue(1);
+      return undefined;
+    }
     progress.setValue(0);
     const animation = Animated.timing(progress, {
       toValue: 1,
@@ -35,7 +83,7 @@ export function ScreenEntrance({ children, style, delay = 0 }: ScreenEntrancePro
     });
     animation.start();
     return () => animation.stop();
-  }, [delay, progress]);
+  }, [delay, progress, reducedMotion]);
 
   const translateY = progress.interpolate({
     inputRange: [0, 1],
@@ -58,6 +106,7 @@ type MotionPressableProps = {
   disabled?: boolean;
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'link' | 'tab' | 'radio' | 'checkbox';
+  accessibilityState?: AccessibilityState;
 };
 
 /** Tactile press feedback that behaves the same in the web and native clients. */
@@ -68,10 +117,13 @@ export function MotionPressable({
   disabled = false,
   accessibilityLabel,
   accessibilityRole = 'button',
+  accessibilityState,
 }: MotionPressableProps) {
   const scale = useMemo(() => new Animated.Value(1), []);
+  const reducedMotion = useReducedMotion();
 
   function animateScale(value: number) {
+    if (reducedMotion) return;
     Animated.spring(scale, {
       toValue: value,
       speed: 32,
@@ -84,6 +136,7 @@ export function MotionPressable({
     <AnimatedPressable
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={accessibilityState}
       disabled={disabled}
       onPress={onPress}
       onPressIn={() => animateScale(KlippMotion.pressScale)}
@@ -130,11 +183,11 @@ type StatusPillProps = {
 };
 
 const toneStyles = {
-  info: { backgroundColor: '#EEF2FF', color: KlippColors.blueDark },
-  success: { backgroundColor: '#E8F6F1', color: KlippColors.tealDark },
-  warning: { backgroundColor: '#FFF5D9', color: '#946200' },
-  danger: { backgroundColor: '#FEF0F0', color: KlippColors.danger },
-  neutral: { backgroundColor: '#F1F5F9', color: KlippColors.slate },
+  info: { backgroundColor: KlippColors.surfaceBlue, color: KlippColors.cobaltDark },
+  success: { backgroundColor: KlippColors.surfaceSuccess, color: KlippColors.success },
+  warning: { backgroundColor: KlippColors.surfaceWarning, color: KlippColors.warning },
+  danger: { backgroundColor: KlippColors.surfaceDanger, color: KlippColors.danger },
+  neutral: { backgroundColor: KlippColors.surfaceMuted, color: KlippColors.slate },
 } as const;
 
 export function StatusPill({ label, tone = 'neutral' }: StatusPillProps) {
@@ -152,6 +205,7 @@ type PrimaryButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   variant?: 'primary' | 'secondary' | 'quiet' | 'danger';
+  role?: KlippRole;
 };
 
 export function PrimaryButton({
@@ -160,9 +214,11 @@ export function PrimaryButton({
   disabled = false,
   loading = false,
   variant = 'primary',
+  role = 'client',
 }: PrimaryButtonProps) {
   const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
+  const roleTheme = RoleThemes[role];
   return (
     <MotionPressable
       accessibilityLabel={title}
@@ -170,14 +226,14 @@ export function PrimaryButton({
       disabled={disabled || loading}
       style={[
         styles.button,
-        isPrimary && styles.buttonPrimary,
+        isPrimary && { backgroundColor: roleTheme.accent },
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'quiet' && styles.buttonQuiet,
         isDanger && styles.buttonDanger,
         (disabled || loading) && styles.buttonDisabled,
       ]}>
       {loading ? (
-        <ActivityIndicator color={isPrimary || isDanger ? '#FFFFFF' : KlippColors.navy} />
+        <ActivityIndicator color={isPrimary || isDanger ? KlippColors.white : KlippColors.ink} />
       ) : (
         <Text style={[
           styles.buttonText,
@@ -193,42 +249,37 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   surface: {
-    padding: 20,
+    padding: KlippSpacing[5],
     borderWidth: 1,
     borderColor: KlippColors.border,
     borderRadius: KlippLayout.radiusCard,
     backgroundColor: KlippColors.white,
-    shadowColor: KlippColors.navy,
-    shadowOpacity: 0.035,
-    shadowOffset: { width: 0, height: 7 },
-    shadowRadius: 20,
-    elevation: 2,
+    ...KlippShadows.card,
   },
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    gap: 14,
+    gap: KlippSpacing[4],
   },
-  sectionCopy: { flex: 1, gap: 5 },
-  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 1.1 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 21, lineHeight: 27, fontWeight: '800', letterSpacing: -0.35 },
-  sectionSubtitle: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
-  statusPill: { alignSelf: 'flex-start', paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999 },
-  statusPillText: { fontSize: 10, fontWeight: '800', letterSpacing: 0.25 },
+  sectionCopy: { flex: 1, gap: KlippSpacing[1] },
+  eyebrow: { color: KlippColors.cobaltDark, fontSize: KlippTypography.size.caption, fontWeight: '800', letterSpacing: KlippTypography.tracking.eyebrow },
+  sectionTitle: { color: KlippColors.ink, fontSize: KlippTypography.size.title, lineHeight: KlippTypography.lineHeight.title, fontWeight: '800', letterSpacing: KlippTypography.tracking.tight },
+  sectionSubtitle: { color: KlippColors.muted, fontSize: KlippTypography.size.bodySmall, lineHeight: KlippTypography.lineHeight.bodySmall },
+  statusPill: { alignSelf: 'flex-start', paddingHorizontal: KlippSpacing[3], paddingVertical: KlippSpacing[2], borderRadius: KlippLayout.radiusPill },
+  statusPillText: { fontSize: KlippTypography.size.micro, fontWeight: '800', letterSpacing: KlippTypography.tracking.normal },
   button: {
-    minHeight: 50,
-    paddingHorizontal: 20,
-    borderRadius: 14,
+    minHeight: KlippLayout.controlHeight,
+    paddingHorizontal: KlippSpacing[5],
+    borderRadius: KlippLayout.radiusControl,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonPrimary: { backgroundColor: KlippColors.blue },
   buttonSecondary: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
   buttonQuiet: { backgroundColor: KlippColors.surfaceMuted },
   buttonDanger: { backgroundColor: KlippColors.danger },
   buttonDisabled: { opacity: 0.5 },
-  buttonText: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
-  buttonTextOnColor: { color: '#FFFFFF' },
-  buttonTextQuiet: { color: KlippColors.blueDark },
+  buttonText: { color: KlippColors.ink, fontSize: KlippTypography.size.bodySmall, fontWeight: '800' },
+  buttonTextOnColor: { color: KlippColors.white },
+  buttonTextQuiet: { color: KlippColors.cobaltDark },
 });

@@ -10,10 +10,7 @@ export function NotificationTabIcon({ color }: { color: string }) {
   const [unread, setUnread] = useState(0);
 
   const loadUnread = useCallback(async () => {
-    if (!session?.user.id) {
-      setUnread(0);
-      return;
-    }
+    if (!session?.user.id) return;
     const { count, error } = await supabase
       .from('notifications')
       .select('id', { count: 'exact', head: true })
@@ -21,9 +18,11 @@ export function NotificationTabIcon({ color }: { color: string }) {
       .eq('show_in_app', true)
       .is('read_at', null);
     if (!error) setUnread(count ?? 0);
-  }, [session?.user.id]);
+  }, [session]);
 
   useEffect(() => {
+    // Initial badge hydration is an asynchronous Supabase read.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadUnread();
   }, [loadUnread]);
 
@@ -41,12 +40,14 @@ export function NotificationTabIcon({ color }: { color: string }) {
     return () => { void supabase.removeChannel(channel); };
   }, [session?.user.id, loadUnread]);
 
+  const visibleUnread = session?.user.id ? unread : 0;
+
   return (
     <View style={styles.container}>
       <SymbolView name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} tintColor={color} size={20} />
-      {unread > 0 && (
+      {visibleUnread > 0 && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
+          <Text style={styles.badgeText}>{visibleUnread > 99 ? '99+' : visibleUnread}</Text>
         </View>
       )}
     </View>

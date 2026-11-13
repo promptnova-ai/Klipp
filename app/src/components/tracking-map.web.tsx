@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { MapCoordinate } from '@/components/location-picker';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 
 function decodePolyline(encoded: string): google.maps.LatLngLiteral[] {
@@ -67,19 +67,26 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
           fullscreenControl: false,
           clickableIcons: false,
         });
-        const clientMarker = new google.maps.Marker({ map: googleMap, position: clientPosition, title: 'Tu ubicación' });
+        const clientMarker = new google.maps.Marker({ map: googleMap, position: clientPosition, title: 'Tu destino', icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: KlippColors.cobalt,
+          fillOpacity: 1,
+          strokeColor: KlippColors.white,
+          strokeWeight: 3,
+          scale: 8,
+        } });
         const proMarker = new google.maps.Marker({ map: googleMap, position: proPosition, title: 'Tu profesional', icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: '#F59E0B',
+          fillColor: KlippColors.coral,
           fillOpacity: 1,
-          strokeColor: '#FFFFFF',
+          strokeColor: KlippColors.white,
           strokeWeight: 3,
           scale: 9,
         } });
         const route = new Polyline({
           map: googleMap,
           path: routePolylineValue.current ? decodePolyline(routePolylineValue.current) : [proPosition, clientPosition],
-          strokeColor: '#208AEF',
+          strokeColor: KlippColors.cobalt,
           strokeOpacity: 0.85,
           strokeWeight: 5,
         });
@@ -135,16 +142,24 @@ export function TrackingMap({ clientCoordinate, proCoordinate, routePolyline }: 
       {!mapReady && !error && <View pointerEvents="none" style={styles.loading}>
         <Text style={styles.loadingText}>Cargando mapa de seguimiento…</Text>
       </View>}
-      {mapReady && <Text pointerEvents="none" style={styles.legend}>● Profesional　 ● Tu destino</Text>}
+      {mapReady && (
+        <View pointerEvents="none" style={styles.legend}>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.coral }]} /><Text style={styles.legendText}>Profesional</Text></View>
+          <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.cobalt }]} /><Text style={styles.legendText}>Tu destino</Text></View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: '#E8EEF7' },
+  container: { height: 360, overflow: 'hidden', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
   error: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 18, backgroundColor: '#FFFFFFE8' },
   errorText: { color: KlippColors.slate, fontSize: 13, textAlign: 'center' },
   loading: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFFD9' },
   loadingText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
-  legend: { position: 'absolute', right: 10, bottom: 10, overflow: 'hidden', paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8', color: KlippColors.navy, fontSize: 11, fontWeight: '700' },
+  legend: { position: 'absolute', right: 12, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.94)' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { color: KlippColors.ink, fontSize: 11, fontWeight: '800' },
 });

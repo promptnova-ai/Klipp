@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
+  PanResponder,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -17,8 +19,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
+
+import { useReducedMotion } from '@/components/ui-primitives';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
-import { KlippColors, RoleThemes } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { RoleThemes } from '@/theme/themes';
+import { serviceArt } from '@/lib/service-art';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
@@ -43,22 +49,44 @@ type ProOnboardingDraft = {
 };
 
 const steps = [
-  { eyebrow: 'TU PERFIL', title: 'Cuéntanos sobre ti', subtitle: 'Un buen perfil genera confianza y te ayuda a destacar.' },
-  { eyebrow: 'TU PROFESIÓN', title: 'Elige tu profesión', subtitle: 'Selecciona una profesión principal y configura sus modalidades y tarifas.' },
-  { eyebrow: 'TU COBERTURA', title: 'Define dónde trabajas', subtitle: 'Te conectaremos con clientes dentro de tu radio.' },
-  { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales. Te enviaremos un correo para confirmar.' },
+  { eyebrow: 'PASO 1 DE 8', title: 'Tu perfil profesional', subtitle: 'Empezamos por tus datos de contacto y experiencia.' },
+  { eyebrow: 'PASO 2 DE 8', title: 'Tu profesión', subtitle: 'Elige una única actividad principal para tu cuenta Klipp PRO.' },
+  { eyebrow: 'PASO 3 DE 8', title: 'Tu especialidad', subtitle: 'Cuéntanos qué trabajos realizas dentro de tu profesión.' },
+  { eyebrow: 'PASO 4 DE 8', title: 'Tus tarifas', subtitle: 'Configura el precio y la duración de cada modalidad.' },
+  { eyebrow: 'PASO 5 DE 8', title: 'Tu equipamiento', subtitle: 'Revisa las herramientas necesarias para prestar el servicio.' },
+  { eyebrow: 'PASO 6 DE 8', title: 'Tu zona de trabajo', subtitle: 'Marca en el mapa desde dónde atenderás y hasta dónde te desplazas.' },
+  { eyebrow: 'PASO 7 DE 8', title: 'Tu disponibilidad', subtitle: 'Indica los días y el horario en los que puedes recibir solicitudes.' },
+  { eyebrow: 'PASO 8 DE 8', title: 'Crea tu cuenta', subtitle: 'Comprueba el resumen y crea tus credenciales de acceso.' },
 ];
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
 
+const professionCaptions: Record<string, string> = {
+  barberia: 'Cortes y arreglo de barba',
+  peluqueria: 'Cabello y peinados',
+  estetica: 'Cuidado y belleza',
+  carwash: 'Lavado de vehículos',
+  detailing: 'Detalle y acabado automotriz',
+  limpieza_regular: 'Limpieza del hogar',
+  limpieza_profunda: 'Limpieza a fondo',
+  'limpieza-oficinas': 'Espacios de trabajo',
+  mantenimiento: 'Reparaciones y montaje',
+};
+
+function professionCaption(code: string) {
+  return professionCaptions[code] ?? 'Servicio profesional';
+}
+
+
 export function ProRegistrationScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
   const compact = width < 540;
-  const { signUp } = useAuth();
+  const { signUp, resendSignupConfirmation } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
+  const [showOptionalProfile, setShowOptionalProfile] = useState(false);
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('');
@@ -67,6 +95,8 @@ export function ProRegistrationScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -84,17 +114,18 @@ export function ProRegistrationScreen() {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('17:00');
   const [busy, setBusy] = useState(false);
+  const [resendingConfirmation, setResendingConfirmation] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [transition] = useState(() => new Animated.Value(1));
+  const reducedMotion = useReducedMotion();
   const tierRequestId = useRef(0);
   const [progress] = useState(() => new Animated.Value(0));
   const progressWidth = useMemo(
     () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
     [progress],
   );
-
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
       .from('service_types')
@@ -133,20 +164,26 @@ export function ProRegistrationScreen() {
     return () => { active = false; };
   }, [fetchCatalog]);
 
-  function animateToStep(nextStep: number) {
+  const animateToStep = useCallback((nextStep: number) => {
     setError(null);
     setNotice(null);
+    if (reducedMotion) {
+      setStep(nextStep);
+      transition.setValue(1);
+      progress.setValue(nextStep);
+      return;
+    }
     Animated.timing(transition, { toValue: 0, duration: 100, useNativeDriver: Platform.OS !== 'web' }).start(() => {
       setStep(nextStep);
       transition.setValue(0);
       Animated.parallel([
-        Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(progress, { toValue: nextStep, duration: 350, useNativeDriver: false }),
+        Animated.timing(transition, { toValue: 1, duration: 150, useNativeDriver: Platform.OS !== 'web' }),
+        Animated.timing(progress, { toValue: nextStep, duration: 250, useNativeDriver: false }),
       ]).start();
     });
-  }
+  }, [progress, reducedMotion, transition]);
 
-  function validateStep() {
+  const validateStep = useCallback(() => {
     if (step === 0) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
       if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
@@ -157,50 +194,66 @@ export function ProRegistrationScreen() {
       if (servicesLoading) return 'Espera un momento mientras cargamos las profesiones.';
       if (catalog.length === 0) return 'No hay profesiones disponibles ahora mismo.';
       if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
-      if (tiersLoading || equipmentLoading) return 'Espera mientras cargamos las modalidades y el equipamiento de esta profesión.';
-      if (equipmentRequirements.length === 0) return 'No pudimos cargar el equipamiento de esta profesión. Reintenta o vuelve a seleccionar la profesión.';
+    }
+    if (step === 2) {
+      if (selectedServiceId === null) return 'Primero selecciona tu profesión.';
+      if (tiersLoading || equipmentLoading) return 'Espera mientras terminamos de cargar los datos de tu profesión.';
+      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
+      const selected = catalog.find((item) => item.id === selectedServiceId);
+      const requiredDetail = selected?.code === 'peluqueria' ? 'hair_lengths'
+        : selected?.code === 'estetica' ? 'hygiene'
+        : selected?.code === 'carwash' ? 'utilities'
+        : selected?.code === 'detailing' ? 'vehicle_types'
+        : ['limpieza_regular', 'limpieza-oficinas'].includes(selected?.code ?? '') ? 'frequency'
+        : selected?.code === 'limpieza_profunda' ? 'extras'
+        : selected?.code === 'mantenimiento' ? 'tools' : null;
+      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
+    }
+    if (step === 3) {
+      if (tiersLoading) return 'Espera mientras cargamos las modalidades de esta profesión.';
       if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
       if (pricingTiers.some((tier) => {
         const draft = tierDrafts[tier.id];
         return !draft || !Number.isFinite(parseDopPrice(draft.price)) || parseDopPrice(draft.price) <= 0
           || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
       })) return 'Indica un precio y una duración válidos para cada modalidad.';
-      const selectedProfession = catalog.find((item) => item.id === selectedServiceId);
-      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
-      const requiredDetail = selectedProfession?.code === 'peluqueria' ? 'hair_lengths'
-        : selectedProfession?.code === 'estetica' ? 'hygiene'
-        : selectedProfession?.code === 'carwash' ? 'utilities'
-        : selectedProfession?.code === 'detailing' ? 'vehicle_types'
-        : ['limpieza_regular', 'limpieza-oficinas'].includes(selectedProfession?.code ?? '') ? 'frequency'
-        : selectedProfession?.code === 'limpieza_profunda' ? 'extras'
-        : selectedProfession?.code === 'mantenimiento' ? 'tools' : null;
-      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
-      if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
-
     }
-    if (step === 2) {
-      if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 4) {
+      if (equipmentLoading) return 'Espera mientras cargamos las herramientas y materiales.';
+      if (equipmentRequirements.length === 0) return 'No pudimos cargar la lista de herramientas de esta profesión. Reintenta la selección.';
+      if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
+    }
+    if (step === 5 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 6) {
       if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
       if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
         return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
       }
     }
-    if (step === 3) {
+    if (step === 7) {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     }
     return null;
-  }
+  }, [catalog, center, confirmPassword, email, equipmentConfirmed, equipmentLoading, equipmentRequirements.length, fullName, password, phone, pricingTiers, selectedServiceId, selectedWeekdays, serviceDetails, servicesLoading, startTime, step, endTime, tierDrafts, tiersLoading, transportType, otherTransportType, years]);
 
-  function continueRegistration() {
+  const continueRegistration = useCallback(() => {
     const validationError = validateStep();
     if (validationError) {
       setError(validationError);
       return;
     }
     animateToStep(step + 1);
-  }
+  }, [animateToStep, step, validateStep]);
+
+  const swipeResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) > 24 && Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.25,
+    onPanResponderRelease: (_event, gesture) => {
+      if (gesture.dx < -72 && step < steps.length - 1) continueRegistration();
+      if (gesture.dx > 72 && step > 0) animateToStep(step - 1);
+    },
+  }), [step, animateToStep, continueRegistration]);
 
   function chooseProfession(serviceId: number) {
     const requestId = ++tierRequestId.current;
@@ -272,6 +325,19 @@ export function ProRegistrationScreen() {
     }
   }
 
+  async function resendConfirmationEmail() {
+    setError(null);
+    setResendingConfirmation(true);
+    try {
+      await resendSignupConfirmation(email.trim());
+      setNotice('Hemos enviado otro correo de confirmación. Abre el enlace desde ese mismo correo antes de iniciar sesión.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos reenviar el correo de confirmación.');
+    } finally {
+      setResendingConfirmation(false);
+    }
+  }
+
   async function createProfessionalAccount() {
     const validationError = validateStep();
     if (validationError) {
@@ -321,7 +387,7 @@ export function ProRegistrationScreen() {
       if (hasSession) {
         router.replace('/');
       } else {
-        setNotice('¡Tu solicitud está lista! Confirma tu correo y luego inicia sesión. Tu perfil y configuración quedarán preparados para terminar.');
+        setNotice('Tu cuenta profesional está creada. Confirma el correo para activar el acceso; después tendrás que enviar tu documento de identidad y esperar la revisión del equipo antes de recibir solicitudes.');
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'No pudimos crear tu cuenta profesional.');
@@ -335,29 +401,27 @@ export function ProRegistrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={styles.flex}>
         <View style={styles.header}>
           <Pressable accessibilityRole="button" onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
           <View style={styles.brandRow}>
-            <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
-            <View style={styles.brandCopy}>
-              <Text style={styles.brand}>KLIPP</Text>
-              <Text style={styles.brandRole}>PROFESIONAL</Text>
-            </View>
+            <Image source={require("../../assets/images/klipp-wordmark.png")} contentFit="contain" accessibilityLabel="Klipp" style={styles.proWordmark} />
+            <Text style={styles.brandRole}>PROFESIONAL</Text>
           </View>
           <Text style={styles.stepCount}>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</Text>
         </View>
         <View style={styles.progressTrack}>
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scrollContent, compact && styles.scrollContentCompact]} keyboardShouldPersistTaps="handled">
           <Animated.View
             style={[
               styles.stepContent,
-              { opacity: transition, transform: [{ translateY: transition.interpolate({ inputRange: [0, 1], outputRange: [12, 0] }) }] },
-            ]}>
+              { opacity: transition, transform: [{ translateX: transition.interpolate({ inputRange: [0, 1], outputRange: [18, 0] }) }] },
+            ]}
+            {...swipeResponder.panHandlers}>
             <View style={styles.heading}>
               <Text style={styles.eyebrow}>{currentStep.eyebrow}</Text>
               <Text style={styles.title}>{currentStep.title}</Text>
@@ -365,49 +429,42 @@ export function ProRegistrationScreen() {
             </View>
 
             {step === 0 && (
-              <View style={styles.card}>
-                <Field label="Nombre completo">
-                  <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
-                </Field>
-                <Field label="Teléfono de contacto">
-                  <TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
-                </Field>
-                <View style={[styles.twoColumns, compact && styles.stackedColumns]}>
-                  <Field label="Años de experiencia">
-                    <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
-                  </Field>
-                  <View style={styles.experienceHint}>
-                    <Text style={styles.helper}>Puedes dejar este dato vacío y completarlo más adelante.</Text>
-                  </View>
+              <View style={[styles.identityPanel, compact && styles.identityPanelCompact]}>
+                <View style={styles.identityIntro}>
+                  <Text style={styles.identityStep}>01 <Text style={styles.identityStepMuted}>/ 08</Text></Text>
+                  <Text style={styles.identityHint}>Solo necesitamos lo esencial para empezar.</Text>
                 </View>
-                <Field label="Una breve presentación">
-                  <TextInput multiline onChangeText={setBio} placeholder="Cuéntales a tus futuros clientes qué te hace especial..." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
+                <Field label="Nombre y apellido">
+                  <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="Ej. María Rodríguez" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
                 </Field>
-                <View style={styles.transportSection}>
-                  <Text style={styles.label}>¿Cómo te trasladas al domicilio?</Text>
-                  <Text style={styles.helper}>Ayuda a tus clientes a saber cómo llegarás a su servicio.</Text>
-                  <View style={styles.chips}>
-                    {transportOptions.map((option) => (
-                      <Chip
-                        key={option}
-                        label={option}
-                        selected={transportType === option}
-                        onPress={() => setTransportType(option)}
-                      />
-                    ))}
+                <Field label="Teléfono móvil">
+                  <TextInput autoComplete="tel" keyboardType="phone-pad" returnKeyType="done" onChangeText={setPhone} placeholder="+1 809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
+                  <Text style={styles.fieldHint}>Lo usaremos para coordinar tus servicios y avisarte de nuevas solicitudes.</Text>
+                </Field>
+                <Pressable accessibilityRole="button" accessibilityState={{ expanded: showOptionalProfile }} onPress={() => setShowOptionalProfile((value) => !value)} style={styles.optionalToggle}>
+                  <View style={styles.optionalToggleCopy}>
+                    <Text style={styles.optionalTitle}>Completar mi perfil ahora</Text>
+                    <Text style={styles.optionalSubtitle}>Experiencia, presentación y transporte · opcional</Text>
                   </View>
-                  {transportType === 'Otro' && (
-                    <TextInput
-                      accessibilityLabel="Especifica tu medio de transporte"
-                      maxLength={50}
-                      onChangeText={setOtherTransportType}
-                      placeholder="Especifica tu medio de transporte"
-                      placeholderTextColor={KlippColors.muted}
-                      style={styles.input}
-                      value={otherTransportType}
-                    />
-                  )}
-                </View>
+                  <Text style={styles.optionalChevron}>{showOptionalProfile ? '−' : '+'}</Text>
+                </Pressable>
+                {showOptionalProfile && (
+                  <View style={styles.optionalFields}>
+                    <Field label="Años de experiencia">
+                      <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
+                    </Field>
+                    <Field label="Presentación (opcional)">
+                      <TextInput multiline onChangeText={setBio} placeholder="Describe brevemente tu experiencia." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
+                    </Field>
+                    <View style={styles.transportSection}>
+                      <Text style={styles.label}>¿Cómo llegas a tus clientes?</Text>
+                      <View style={styles.chips}>
+                        {transportOptions.map((option) => <Chip key={option} label={option} selected={transportType === option} onPress={() => setTransportType(option)} />)}
+                      </View>
+                      {transportType === 'Otro' && <TextInput accessibilityLabel="Especifica tu medio de transporte" maxLength={50} onChangeText={setOtherTransportType} placeholder="Especifica tu transporte" placeholderTextColor={KlippColors.muted} style={styles.input} value={otherTransportType} />}
+                    </View>
+                  </View>
+                )}
               </View>
             )}
 
@@ -417,7 +474,7 @@ export function ProRegistrationScreen() {
                   <Text style={styles.cardTitle}>Elige tu profesión principal</Text>
                   <Text style={styles.helper}>Tu cuenta profesional se especializa en una sola actividad. Después podrás completar tu perfil y publicar sus modalidades.</Text>
                   {servicesLoading ? (
-                    <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando profesiones...</Text></View>
+                    <View style={styles.loading}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.helper}>Cargando profesiones...</Text></View>
                   ) : catalogError ? (
                     <View style={styles.catalogErrorCard}>
                       <Text style={styles.catalogErrorTitle}>No pudimos cargar las profesiones</Text>
@@ -428,16 +485,23 @@ export function ProRegistrationScreen() {
                     const selected = selectedServiceId === service.id;
                     return (
                       <Pressable key={service.id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => chooseProfession(service.id)} style={[styles.professionOption, selected && styles.professionOptionSelected]}>
-                        <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>{selected && <View style={styles.radioInner} />}</View>
+                        <Image cachePolicy="memory-disk" source={serviceArt(service.code)} contentFit="cover" style={styles.professionPhoto} />
                         <View style={styles.serviceCopy}>
                           <Text style={styles.serviceName}>{service.name}</Text>
-                          {!!service.description && <Text style={styles.serviceDescription}>{service.description}</Text>}
+                          <Text style={styles.serviceDescription}>{service.description || professionCaption(service.code)}</Text>
+                          <Text style={styles.professionHint}>{professionCaption(service.code)}</Text>
                         </View>
+                        <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>{selected && <View style={styles.radioInner} />}</View>
                       </Pressable>
                     );
                   })}
                 </View>
-                {selectedProfession && (
+              </View>
+            )}
+
+            {step === 2 && (
+              <View style={styles.serviceList}>
+                                {selectedProfession && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Detalles de {selectedProfession.name.toLowerCase()}</Text>
                     <Field label="Especialidad o trabajo principal">
@@ -480,12 +544,17 @@ export function ProRegistrationScreen() {
                     )}
                   </View>
                 )}
-                {selectedProfession && (
+              </View>
+            )}
+
+            {step === 3 && (
+              <View style={styles.serviceList}>
+                                {selectedProfession && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Precios por modalidad</Text>
                     <Text style={styles.helper}>Define cuánto cobras y cuánto tiempo necesitas para cada modalidad. El cliente verá estos importes al reservar.</Text>
                     {tiersLoading ? (
-                      <View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando modalidades...</Text></View>
+                      <View style={styles.loading}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.helper}>Cargando modalidades...</Text></View>
                     ) : pricingTiers.length === 0 ? (
                       <Text style={styles.emptyState}>Esta profesión todavía no tiene modalidades publicadas. No es posible continuar con el registro.</Text>
                     ) : pricingTiers.map((tier) => {
@@ -506,8 +575,13 @@ export function ProRegistrationScreen() {
                     })}
                   </View>
                 )}
-                {equipmentLoading ? (
-                  <View style={styles.card}><View style={styles.loading}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.helper}>Cargando herramientas y materiales...</Text></View></View>
+              </View>
+            )}
+
+            {step === 4 && (
+              <View style={styles.serviceList}>
+                                {equipmentLoading ? (
+                  <View style={styles.card}><View style={styles.loading}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.helper}>Cargando herramientas y materiales...</Text></View></View>
                 ) : equipmentRequirements.length > 0 && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Herramientas y materiales que debes llevar</Text>
@@ -533,7 +607,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 2 && (
+            {step === 5 && (
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -543,7 +617,7 @@ export function ProRegistrationScreen() {
                   </View>
                 </View>
                 <Pressable accessibilityRole="button" disabled={locating} onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.locationButton, pressed && styles.pressed]}>
-                  {locating ? <ActivityIndicator color={KlippColors.blueDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
+                  {locating ? <ActivityIndicator color={KlippColors.cobaltDark} /> : <Text style={styles.locationButtonText}>{center ? 'Actualizar con mi ubicación' : 'Usar mi ubicación actual'}</Text>}
                 </Pressable>
                 {center ? (
                   <CoverageRadiusPicker center={center} onChange={setCenter} radiusMeters={radiusKm * 1000} />
@@ -556,7 +630,12 @@ export function ProRegistrationScreen() {
                     <Chip key={radius} label={`${radius} km`} selected={radiusKm === radius} onPress={() => setRadiusKm(radius)} />
                   ))}
                 </View>
-                <View style={styles.divider} />
+              </View>
+            )}
+
+            {step === 6 && (
+              <View style={styles.card}>
+                                <View style={styles.divider} />
                 <Text style={styles.cardTitle}>¿Qué días estás disponible?</Text>
                 <View style={styles.chips}>
                   {weekdays.map((day, index) => (
@@ -574,7 +653,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 3 && (
+            {step === 7 && (
               <>
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
@@ -588,12 +667,22 @@ export function ProRegistrationScreen() {
                     <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor={KlippColors.muted} style={styles.input} value={email} />
                   </Field>
                   <Field label="Contraseña">
-                    <TextInput autoComplete="new-password" onChangeText={setPassword} placeholder="Al menos 8 caracteres" placeholderTextColor={KlippColors.muted} secureTextEntry style={styles.input} value={password} />
+                    <View style={styles.passwordField}>
+                      <TextInput autoComplete="new-password" onChangeText={setPassword} placeholder="Al menos 8 caracteres" placeholderTextColor={KlippColors.muted} secureTextEntry={!showPassword} style={styles.passwordInput} value={password} />
+                      <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} hitSlop={10} onPress={() => setShowPassword((visible) => !visible)} style={styles.passwordVisibility}>
+                        <Text style={styles.passwordVisibilityText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                      </Pressable>
+                    </View>
                   </Field>
                   <Field label="Confirma tu contraseña">
-                    <TextInput autoComplete="new-password" onChangeText={setConfirmPassword} placeholder="Repite tu contraseña" placeholderTextColor={KlippColors.muted} secureTextEntry style={styles.input} value={confirmPassword} />
+                    <View style={styles.passwordField}>
+                      <TextInput autoComplete="new-password" onChangeText={setConfirmPassword} placeholder="Repite tu contraseña" placeholderTextColor={KlippColors.muted} secureTextEntry={!showConfirmPassword} style={styles.passwordInput} value={confirmPassword} />
+                      <Pressable accessibilityRole="button" accessibilityLabel={showConfirmPassword ? 'Ocultar confirmación' : 'Mostrar confirmación'} hitSlop={10} onPress={() => setShowConfirmPassword((visible) => !visible)} style={styles.passwordVisibility}>
+                        <Text style={styles.passwordVisibilityText}>{showConfirmPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                      </Pressable>
+                    </View>
                   </Field>
-                  <Text style={styles.privacyNote}>🔒 Tus datos se usan para crear y proteger tu cuenta profesional.</Text>
+                  <Text style={styles.privacyNote}>Tus datos se utilizan para gestionar tu cuenta profesional.</Text>
                 </View>
               </>
             )}
@@ -603,8 +692,11 @@ export function ProRegistrationScreen() {
               <View accessibilityRole="status" style={styles.noticeCard}>
                 <Text style={styles.noticeIcon}>✉</Text>
                 <Text style={styles.noticeText}>{notice}</Text>
+                <Pressable accessibilityRole="button" disabled={resendingConfirmation} onPress={() => void resendConfirmationEmail()} style={[styles.loginButton, resendingConfirmation && styles.buttonDisabled]}>
+                  <Text style={styles.loginButtonText}>{resendingConfirmation ? 'Enviando correo…' : 'Reenviar correo de confirmación'}</Text>
+                </Pressable>
                 <Pressable accessibilityRole="button" onPress={() => router.replace('/(auth)/login')} style={styles.loginButton}>
-                  <Text style={styles.loginButtonText}>Ir a iniciar sesión</Text>
+                  <Text style={styles.loginButtonText}>Volver a iniciar sesión</Text>
                 </Pressable>
               </View>
             )}
@@ -643,87 +735,97 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
-  header: { width: '100%', maxWidth: 760, minHeight: 64, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20 },
-  backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13 },
-  backText: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
+  safeArea: { flex: 1, backgroundColor: KlippColors.ivory },
+  header: { width: '100%', maxWidth: 920, minHeight: 84, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16, backgroundColor: KlippColors.ivory, borderBottomWidth: 1, borderBottomColor: KlippColors.border },
+  backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue, paddingLeft: 8 },
+  backText: { color: KlippColors.cobaltDark, fontSize: 34, lineHeight: 38 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: RoleThemes.pro.accentStrong },
-  logoLetter: { color: KlippColors.white, fontSize: 20, fontWeight: '900' },
-  brandCopy: { gap: 1 },
-  brand: { color: KlippColors.navy, fontSize: 20, fontWeight: '900', letterSpacing: 1 },
-  brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
-  stepCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
-  progressTrack: { width: '100%', maxWidth: 720, height: 4, alignSelf: 'center', marginHorizontal: 20, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E5EAF0' },
-  progressFill: { height: 4, borderRadius: 999, backgroundColor: RoleThemes.pro.accent },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 28, paddingBottom: 28 },
-  stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
+  proWordmark: { width: 116, height: 34 },
+  brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  stepCount: { color: KlippColors.ink, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 },
+  progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
+  progressFill: { height: 5, borderRadius: 0, backgroundColor: KlippColors.coral },
+  scrollContent: { flexGrow: 1, paddingHorizontal: KlippLayout.pageGutter, paddingTop: 34, paddingBottom: 36 },
+  scrollContentCompact: { paddingHorizontal: KlippLayout.pageGutterCompact, paddingTop: 22 },
+  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 22 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.navy, fontSize: 31, lineHeight: 38, fontWeight: '900', letterSpacing: -0.65 },
+  title: { color: KlippColors.ink, fontSize: 36, lineHeight: 42, fontWeight: '800', letterSpacing: -1.25 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, maxWidth: 620 },
-  card: { padding: 22, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 24, backgroundColor: KlippColors.white, gap: 17, shadowColor: '#17243D', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
+  card: { padding: 22, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 19, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 7 }, shadowRadius: 20, elevation: 1 },
+  identityPanel: { width: '100%', maxWidth: 680, alignSelf: 'center', padding: 24, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 22, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 24, elevation: 2 },
+  identityPanelCompact: { padding: 17, borderRadius: 21, gap: 18 },
+  identityIntro: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  identityStep: { color: RoleThemes.pro.accentStrong, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  identityStepMuted: { color: KlippColors.muted, fontWeight: '600' },
+  identityHint: { flex: 1, color: KlippColors.muted, fontSize: 11, textAlign: 'right' },
+  fieldHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  optionalToggle: { minHeight: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.surfaceMuted },
+  optionalToggleCopy: { flex: 1, gap: 4 },
+  optionalTitle: { color: KlippColors.ink, fontSize: 13, fontWeight: '800' },
+  optionalSubtitle: { color: KlippColors.muted, fontSize: 11 },
+  optionalChevron: { color: RoleThemes.pro.accentStrong, fontSize: 24, fontWeight: '500', paddingHorizontal: 5 },
+  optionalFields: { gap: 18, paddingTop: 2 },
   field: { flex: 1, gap: 8, minWidth: 0 },
-  label: { color: '#344054', fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 52, paddingHorizontal: 15, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 14, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
+  label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
+  passwordField: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
+  passwordInput: { flex: 1, minWidth: 0, minHeight: 54, color: KlippColors.ink, fontSize: 15 },
+  passwordVisibility: { minWidth: 64, minHeight: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderRadius: 11, backgroundColor: KlippColors.surfaceBlue },
+  passwordVisibilityText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '800' },
+  input: { minHeight: 56, paddingHorizontal: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, backgroundColor: KlippColors.white, color: KlippColors.ink, fontSize: 15 },
   multiline: { minHeight: 112, paddingTop: 13, textAlignVertical: 'top' },
   transportSection: { gap: 10, paddingTop: 3 },
-  twoColumns: { flexDirection: 'row', alignItems: 'flex-end', gap: 14 },
   stackedColumns: { flexDirection: 'column', alignItems: 'stretch' },
-  experienceHint: { flex: 1, minHeight: 52, justifyContent: 'center', paddingHorizontal: 8 },
   serviceList: { gap: 16 },
   loading: { minHeight: 160, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 18, backgroundColor: KlippColors.white, gap: 11 },
-  catalogErrorTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
-  retryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceTeal },
+  catalogErrorCard: { padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, gap: 11 },
+  catalogErrorTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
+  retryButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceMint },
   retryButtonText: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800' },
-  serviceCard: { padding: 17, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 18, backgroundColor: KlippColors.white, gap: 14, shadowColor: '#17243D', shadowOpacity: 0.025, shadowOffset: { width: 0, height: 6 }, shadowRadius: 14, elevation: 2 },
-  serviceCardSelected: { borderColor: '#A7D9CB', backgroundColor: '#F9FCFB' },
-  professionOption: { minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 15, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 17, backgroundColor: KlippColors.white },
-  professionOptionSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: '#F3FAF7' },
-  radioOuter: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 99 },
+  professionOption: { minHeight: 94, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white, shadowOpacity: 0, elevation: 0 },
+  professionPhoto: { width: 76, height: 66, borderRadius: 10, backgroundColor: KlippColors.surfaceMuted },
+  professionHint: { color: KlippColors.slate, fontSize: 10, fontWeight: '700', marginTop: 2 },
+  professionOptionSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: KlippColors.surfaceCoral },
+  radioOuter: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   radioOuterSelected: { borderColor: RoleThemes.pro.accent },
   radioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: RoleThemes.pro.accent },
-  tierCard: { gap: 11, paddingTop: 13, borderTopWidth: 1, borderTopColor: '#E8EDF2' },
-  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 17, borderWidth: 1, borderColor: '#B7DCCF', borderRadius: 18, backgroundColor: '#F3FAF7' },
+  tierCard: { gap: 12, padding: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 17, backgroundColor: KlippColors.surfaceMuted },
+  equipmentConsent: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 17, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 18, backgroundColor: KlippColors.surfaceMint },
   equipmentItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 11, paddingVertical: 8 },
   emptyState: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, paddingVertical: 10 },
   equipmentBullet: { color: RoleThemes.pro.accentStrong, fontSize: 15, fontWeight: '900' },
-  serviceRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#CBD5E1', borderRadius: 7 },
+  checkbox: { width: 22, height: 22, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 7 },
   checkboxSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: RoleThemes.pro.accent },
   checkmark: { color: KlippColors.white, fontSize: 14, fontWeight: '900' },
   serviceCopy: { flex: 1, minWidth: 0, gap: 4 },
-  serviceName: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  serviceName: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   serviceDescription: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   serviceFields: { flexDirection: 'row', gap: 12, paddingLeft: 34 },
   stackedServiceFields: { flexDirection: 'column', paddingLeft: 0 },
   helper: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
-  selectionNote: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800', textAlign: 'center' },
   locationIntro: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-  locationIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.surfaceTeal },
+  locationIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.surfaceMint },
   locationPin: { color: RoleThemes.pro.accent, fontSize: 25, fontWeight: '800' },
   locationCopy: { flex: 1, gap: 3 },
-  cardTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
-  locationButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.surfaceTeal },
+  cardTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
+  locationButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.surfaceMint },
   locationButtonText: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800' },
-  testLocationButtonText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  noLocation: { minHeight: 122, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: '#F8FAFC', gap: 6 },
-  noLocationTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  noLocation: { minHeight: 122, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: KlippColors.surfaceMuted, gap: 6 },
+  noLocationTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { minHeight: 39, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: '#DCE3EB', borderRadius: 999, backgroundColor: KlippColors.white },
-  chipSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: KlippColors.surfaceTeal },
+  chip: { minHeight: 39, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 999, backgroundColor: KlippColors.white },
+  chipSelected: { borderColor: RoleThemes.pro.accent, backgroundColor: KlippColors.surfaceMint },
   chipText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
   chipTextSelected: { color: RoleThemes.pro.accentStrong, fontWeight: '800' },
-  divider: { height: 1, backgroundColor: '#E8EDF2' },
+  divider: { height: 1, backgroundColor: KlippColors.border },
   timeRow: { flexDirection: 'row', gap: 14 },
-  summaryCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 17, borderWidth: 1, borderColor: '#B7DCCF', borderRadius: 18, backgroundColor: '#F3FAF7' },
-  summaryIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#D9F0E7' },
+  summaryCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 17, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 18, backgroundColor: KlippColors.surfaceMint },
+  summaryIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceMint },
   summaryIconText: { color: RoleThemes.pro.accentStrong, fontSize: 17, fontWeight: '900' },
   summaryCopy: { flex: 1, gap: 4 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
-  footer: { width: '100%', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#E5EAF1', backgroundColor: '#FFFFFF' },
-  primaryButton: { width: '100%', maxWidth: 720, minHeight: 56, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16, backgroundColor: RoleThemes.pro.accentStrong },
+  footer: { width: '100%', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: KlippColors.border, backgroundColor: KlippColors.white },
+  primaryButton: { width: '100%', maxWidth: 720, minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 18, backgroundColor: RoleThemes.pro.accentStrong },
   primaryPressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   buttonDisabled: { opacity: 0.55 },
   primaryButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '900' },
@@ -731,10 +833,10 @@ const styles = StyleSheet.create({
   footerText: { marginTop: 12, color: KlippColors.muted, fontSize: 12, textAlign: 'center' },
   footerLink: { color: RoleThemes.pro.accentStrong, fontWeight: '900' },
   pressed: { opacity: 0.88 },
-  error: { padding: 13, borderWidth: 1, borderColor: '#FECACA', borderRadius: 14, backgroundColor: '#FEF2F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  noticeCard: { alignItems: 'center', padding: 20, borderWidth: 1, borderColor: '#B7E4D1', borderRadius: 18, backgroundColor: '#ECFDF5', gap: 10 },
-  noticeIcon: { color: '#047857', fontSize: 22 },
-  noticeText: { color: '#065F46', fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  loginButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 19, borderRadius: 13, backgroundColor: '#D1FAE5' },
-  loginButtonText: { color: '#047857', fontSize: 13, fontWeight: '800' },
+  error: { padding: 13, borderWidth: 1, borderColor: KlippColors.surfaceDanger, borderRadius: 14, backgroundColor: KlippColors.surfaceDanger, color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
+  noticeCard: { alignItems: 'center', padding: 20, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 18, backgroundColor: KlippColors.surfaceSuccess, gap: 10 },
+  noticeIcon: { color: KlippColors.success, fontSize: 22 },
+  noticeText: { color: KlippColors.success, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  loginButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 19, borderRadius: 13, backgroundColor: KlippColors.surfaceMint },
+  loginButtonText: { color: KlippColors.success, fontSize: 13, fontWeight: '800' },
 });

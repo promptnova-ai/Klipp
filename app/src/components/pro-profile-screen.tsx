@@ -7,7 +7,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, PricingTier, ServiceType, VerificationStatus } from '@/lib/types';
 
@@ -183,7 +184,7 @@ export function ProProfileScreen() {
     setSelectedServices(configuredServices.map((service) => service.service_type_id).slice(0, 1));
     setServiceDetails(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, service.details ?? {}])));
     setLoading(false);
-  }, [userId]);
+  }, [userId, session?.user.user_metadata?.pro_onboarding]);
 
   useEffect(() => {
     void Promise.resolve().then(loadProfile);
@@ -584,7 +585,7 @@ export function ProProfileScreen() {
   }
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando perfil...</Text></View>;
+    return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando perfil...</Text></View>;
   }
 
   if (!proProfile) {
@@ -599,7 +600,20 @@ export function ProProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      <BrandScreenHeader inset={false} role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      {selectedServices.length > 0 && (() => {
+        const selectedService = catalog.find((service) => service.id === selectedServices[0]);
+        return selectedService ? (
+          <View style={styles.professionHero}>
+            <View style={styles.professionHeroCopy}>
+              <Text style={styles.professionHeroEyebrow}>TU PROFESIÓN EN KLIPP</Text>
+              <Text style={styles.professionHeroTitle}>{selectedService.name}</Text>
+              <Text style={styles.professionHeroBody}>Tu perfil, tarifas y trabajos publicados se mostrarán a los clientes que busquen este servicio.</Text>
+            </View>
+            <Image cachePolicy="memory-disk" source={serviceArt(selectedService.code)} contentFit="cover" style={styles.professionHeroArt} />
+          </View>
+        ) : null;
+      })()}
       <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
         <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
         {proProfile.verification_status !== 'approved' && (
@@ -607,15 +621,6 @@ export function ProProfileScreen() {
         )}
         {proProfile.verification_note && <Text style={styles.body}>Nota del equipo: {proProfile.verification_note}</Text>}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={signingOut}
-        onPress={() => void handleSignOut()}
-        style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutPressed, signingOut && styles.buttonDisabled]}>
-        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
-      </Pressable>
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-
       <Section title="Herramientas y materiales propios">
         <Text style={styles.body}>
           Klipp exige que acudas con tus propias herramientas, equipos, productos y materiales necesarios para completar cada servicio. No debes depender de herramientas, productos, utensilios ni equipos del cliente. Antes de aceptar cada solicitud, comprueba que llevas todo lo necesario.
@@ -687,7 +692,7 @@ export function ProProfileScreen() {
             const imageUrl = supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl;
             return (
               <View key={photo.id} style={styles.portfolioItem}>
-                <Image source={{ uri: imageUrl }} contentFit="cover" style={styles.portfolioImage} />
+                <Image cachePolicy="memory-disk" source={{ uri: imageUrl }} contentFit="cover" style={styles.portfolioImage} />
                 <Pressable accessibilityRole="button" onPress={() => void deletePortfolioPhoto(photo)} style={styles.portfolioDelete}>
                   <Text style={styles.portfolioDeleteText}>Eliminar</Text>
                 </Pressable>
@@ -795,6 +800,13 @@ export function ProProfileScreen() {
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
       <ActionButton disabled={saving} label={saving ? 'Guardando...' : 'Guardar perfil'} onPress={() => void saveProfile()} />
+      <Pressable
+        accessibilityRole="button"
+        disabled={signingOut}
+        onPress={() => void handleSignOut()}
+        style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutPressed, signingOut && styles.buttonDisabled]}>
+        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -816,38 +828,43 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 48, gap: 18, backgroundColor: KlippColors.canvas },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: '#f4f7f5' },
-  title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
-  section: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 11, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 2 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.ivory },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: KlippColors.ivory },
+  section: { padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 17, shadowColor: KlippColors.ink, shadowOpacity: 0.03, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
+  sectionTitle: { color: KlippColors.ink, fontSize: 18, fontWeight: '700' },
   portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   portfolioItem: { width: '47%', gap: 5 },
-  portfolioImage: { width: '100%', height: 118, borderRadius: 12, backgroundColor: KlippColors.canvas },
-  portfolioDelete: { alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 9, borderRadius: 8, backgroundColor: '#FFF1F2' },
-  portfolioDeleteText: { color: '#BE123C', fontSize: 12, fontWeight: '700' },
-  statusBanner: { padding: 16, borderRadius: 16, backgroundColor: KlippColors.goldLight, gap: 5 },
-  signOutButton: { minHeight: 46, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA', borderRadius: 12, backgroundColor: '#FFF7F7' },
+  portfolioImage: { width: '100%', height: 160, borderRadius: 10, backgroundColor: KlippColors.ivory },
+  portfolioDelete: { alignSelf: 'flex-start', paddingVertical: 5, paddingHorizontal: 9, borderRadius: 8, backgroundColor: KlippColors.surfaceDanger },
+  portfolioDeleteText: { color: KlippColors.coral, fontSize: 12, fontWeight: '700' },
+  professionHero: { minHeight: 150, flexDirection: 'row', alignItems: 'center', gap: 14, padding: 20, borderRadius: 22, overflow: 'hidden', backgroundColor: KlippColors.surfaceBlue, borderWidth: 1, borderColor: KlippColors.surfaceBlue },
+  professionHeroCopy: { flex: 1, gap: 6 },
+  professionHeroEyebrow: { color: KlippColors.cobaltDark, fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  professionHeroTitle: { color: KlippColors.ink, fontSize: 20, fontWeight: '800' },
+  professionHeroBody: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
+  professionHeroArt: { width: 112, height: 104, borderRadius: 16, backgroundColor: KlippColors.white },
+  statusBanner: { padding: 16, borderRadius: 18, backgroundColor: KlippColors.surfaceBlue, borderWidth: 1, borderColor: KlippColors.surfaceBlue, gap: 7 },
+  signOutButton: { minHeight: 50, marginHorizontal: 2, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: KlippColors.danger, borderRadius: 15, backgroundColor: KlippColors.surfaceCoral },
   signOutPressed: { opacity: 0.82, transform: [{ scale: 0.99 }] },
   signOutText: { color: KlippColors.danger, fontSize: 14, fontWeight: '700' },
-  statusApproved: { backgroundColor: '#E6F8F0' },
-  statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  statusApproved: { backgroundColor: KlippColors.surfaceMint },
+  statusTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '700' },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 12, paddingHorizontal: 13, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },
+  input: { minHeight: 54, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 15, paddingHorizontal: 15, color: KlippColors.ink, backgroundColor: KlippColors.white, fontSize: 15 },
   multiline: { minHeight: 92, paddingVertical: 10, textAlignVertical: 'top' },
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceTeal },
-  locationButtonText: { color: KlippColors.tealDark, fontSize: 14, fontWeight: '700' },
+  locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceMint },
+  locationButtonText: { color: KlippColors.cobaltDark, fontSize: 14, fontWeight: '700' },
   weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
-  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
-  choiceSelected: { borderColor: KlippColors.teal, backgroundColor: KlippColors.surfaceTeal },
+  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.white },
+  choiceSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceMint },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
-  choiceTextSelected: { color: KlippColors.tealDark },
+  choiceTextSelected: { color: KlippColors.cobaltDark },
   serviceRequirements: { paddingHorizontal: 10, gap: 6 },
-  requirementsTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
+  requirementsTitle: { color: KlippColors.ink, fontSize: 12, fontWeight: '800' },
   requirementRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 7 },
-  requirementBullet: { color: '#047857', fontSize: 13, fontWeight: '800' },
+  requirementBullet: { color: KlippColors.success, fontSize: 13, fontWeight: '800' },
   requirementCopy: { flex: 1, gap: 1 },
   requirementName: { color: KlippColors.slate, fontSize: 11, fontWeight: '700' },
   requirementDetails: { color: KlippColors.muted, fontSize: 10, lineHeight: 14 },
@@ -857,15 +874,15 @@ const styles = StyleSheet.create({
   durationField: { flex: 1 },
   timeRow: { flexDirection: 'row', gap: 12 },
   timeField: { flex: 1, gap: 6 },
-  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.teal },
-  actionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
+  actionButton: { minHeight: 48, paddingHorizontal: 16, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.cobalt },
+  actionText: { color: KlippColors.white, fontWeight: '700', fontSize: 15 },
   buttonDisabled: { opacity: 0.55 },
-  slotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#e7eeea' },
-  slotText: { color: '#263b34', fontSize: 14 },
+  slotRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: KlippColors.border },
+  slotText: { color: KlippColors.ink, fontSize: 14 },
   removeButton: { padding: 8 },
-  removeText: { color: '#a32f27', fontSize: 13, fontWeight: '600' },
-  empty: { color: '#68756f', fontSize: 14, paddingVertical: 6 },
+  removeText: { color: KlippColors.coral, fontSize: 13, fontWeight: '600' },
+  empty: { color: KlippColors.muted, fontSize: 14, paddingVertical: 6 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
-  success: { color: '#067647', fontSize: 14, lineHeight: 20 },
-  warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
+  success: { color: KlippColors.success, fontSize: 14, lineHeight: 20 },
+  warning: { color: KlippColors.warning, fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 12, backgroundColor: KlippColors.surfaceCoral },
 });

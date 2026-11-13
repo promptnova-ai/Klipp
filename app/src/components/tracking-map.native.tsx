@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef } from 'react';
 import MapView, { Marker, Polyline, type MapMarker, type Region, type LatLng } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { MapCoordinate } from '@/components/location-picker';
+import { KlippColors } from '@/theme/tokens';
 
 function decodePolyline(encoded: string): LatLng[] {
   const points: LatLng[] = [];
@@ -43,36 +44,44 @@ export function TrackingMap({
 }) {
   const map = useRef<MapView>(null);
   const marker = useRef<MapMarker>(null);
-  const region: Region = {
+  const region = useMemo<Region>(() => ({
     latitude: (clientCoordinate.latitude + proCoordinate.latitude) / 2,
     longitude: (clientCoordinate.longitude + proCoordinate.longitude) / 2,
     latitudeDelta: Math.max(Math.abs(clientCoordinate.latitude - proCoordinate.latitude) * 1.8, 0.012),
     longitudeDelta: Math.max(Math.abs(clientCoordinate.longitude - proCoordinate.longitude) * 1.8, 0.012),
-  };
+  }), [clientCoordinate.latitude, clientCoordinate.longitude, proCoordinate.latitude, proCoordinate.longitude]);
   const routeCoordinates = useMemo(() => {
     if (routePolyline) {
       const decoded = decodePolyline(routePolyline);
       if (decoded.length > 1) return decoded;
     }
     return [proCoordinate, clientCoordinate];
-  }, [clientCoordinate.latitude, clientCoordinate.longitude, proCoordinate.latitude, proCoordinate.longitude, routePolyline]);
+  }, [clientCoordinate, proCoordinate, routePolyline]);
 
   useEffect(() => {
     marker.current?.animateMarkerToCoordinate(proCoordinate, 1100);
     map.current?.animateToRegion(region, 800);
-  }, [proCoordinate.latitude, proCoordinate.longitude]);
+  }, [proCoordinate, region]);
 
   return (
     <View style={styles.container}>
       <MapView ref={map} initialRegion={region} style={StyleSheet.absoluteFill}>
-        <Polyline coordinates={routeCoordinates} strokeColor="#208AEF" strokeWidth={4} />
-        <Marker coordinate={clientCoordinate} title="Tu destino" description="Dirección del servicio" pinColor="#208AEF" />
-        <Marker ref={marker} coordinate={proCoordinate} title="Tu profesional" description="Ubicación actual" pinColor="#F59E0B" />
+        <Polyline coordinates={routeCoordinates} strokeColor={KlippColors.cobalt} strokeWidth={4} />
+        <Marker coordinate={clientCoordinate} title="Tu destino" description="Dirección del servicio" pinColor={KlippColors.cobalt} />
+        <Marker ref={marker} coordinate={proCoordinate} title="Tu profesional" description="Ubicación actual" pinColor={KlippColors.coral} />
       </MapView>
+      <View pointerEvents="none" style={styles.legend}>
+        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.coral }]} /><Text style={styles.legendText}>Profesional</Text></View>
+        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.cobalt }]} /><Text style={styles.legendText}>Tu destino</Text></View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: '#E8EEF7' },
+  container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: KlippColors.surfaceBlue },
+  legend: { position: 'absolute', right: 12, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.94)' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { color: KlippColors.ink, fontSize: 11, fontWeight: '800' },
 });

@@ -1,11 +1,12 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { TrackingMap } from '@/components/tracking-map';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
 import { formatBusinessDate } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
@@ -67,6 +68,8 @@ function statusMessage(status: BookingStatus, assignmentMode: 'manual' | 'auto')
 
 export function ClientTrackingScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const compact = width < 560;
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -282,7 +285,7 @@ export function ClientTrackingScreen() {
       : `Ubicación actualizada hace ${locationAgeSeconds} s.`;
 
   if (loading) {
-    return <SafeAreaView style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando seguimiento...</Text></SafeAreaView>;
+    return <SafeAreaView style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando seguimiento...</Text></SafeAreaView>;
   }
 
   return (
@@ -291,16 +294,18 @@ export function ClientTrackingScreen() {
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
           <Text style={styles.backText}>‹  Volver a mis reservas</Text>
         </Pressable>
+        <BrandScreenHeader
+          inset={false}
+          role="client"
+          eyebrow="SEGUIMIENTO DE TU SERVICIO"
+          title={!booking ? 'Seguimiento' : booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'}
+          subtitle={booking ? `${booking.service_types?.name ?? 'Servicio Klipp'} · ${formatBusinessDate(booking.scheduled_start)}` : 'Consulta el estado de tu reserva.'}
+        />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {!booking ? (
           <View style={styles.statusCard}><Text style={styles.title}>No disponible</Text><Text style={styles.body}>No pudimos cargar esta reserva.</Text></View>
         ) : (
           <>
-            <View style={styles.heading}>
-              <Text style={styles.eyebrow}>SEGUIMIENTO DE TU SERVICIO</Text>
-              <Text style={styles.title}>{booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'}</Text>
-              <Text style={styles.body}>{booking.service_types?.name ?? 'Servicio Klipp'} · {formatBusinessDate(booking.scheduled_start)}</Text>
-            </View>
 
             {booking.status === 'en_route' ? (
               <>
@@ -313,18 +318,20 @@ export function ClientTrackingScreen() {
                   <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} routePolyline={routePolyline} />
                 ) : (
                   <View style={styles.mapPlaceholder}>
-                    <ActivityIndicator color={KlippColors.blue} />
+                    <ActivityIndicator color={KlippColors.cobalt} />
                     <Text style={styles.body}>Preparando el mapa de seguimiento…</Text>
                   </View>
                 )}
-                <View style={styles.professionalCard}>
-                  <View style={styles.avatar}><Text style={styles.avatarText}>{professional?.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.professionalDetails}>
-                    <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
-                    <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
+                <View style={[styles.professionalCard, compact && styles.professionalCardCompact]}>
+                  <View style={styles.professionalIdentity}>
+                    <View style={styles.avatar}><Text style={styles.avatarText}>{professional?.full_name?.[0] ?? 'K'}</Text></View>
+                    <View style={styles.professionalDetails}>
+                      <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
+                      <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
+                      <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
+                    </View>
                   </View>
-                  <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/bookings', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
+                  <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/bookings', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.callButton, compact && styles.callButtonCompact, pressed && styles.pressed]}>
                     <Text style={styles.callButtonText}>Contactar por el chat de Klipp</Text>
                   </Pressable>
                 </View>
@@ -364,43 +371,43 @@ export function ClientTrackingScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#F8FAFC' },
-  page: { width: '100%', maxWidth: 720, alignSelf: 'center', padding: 20, paddingBottom: 36, gap: 18 },
-  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#F8FAFC' },
+  safeArea: { flex: 1, backgroundColor: KlippColors.ivory },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 12, paddingBottom: 52, gap: 17 },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: KlippColors.ivory },
   backButton: { alignSelf: 'flex-start', paddingVertical: 8 },
-  backText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
-  heading: { gap: 6 },
-  eyebrow: { color: KlippColors.blue, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  title: { color: KlippColors.navy, fontSize: 26, lineHeight: 32, fontWeight: '800' },
+  backText: { color: KlippColors.cobaltDark, fontSize: 14, fontWeight: '700' },
+  title: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.8 },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
-  etaCard: { padding: 18, borderRadius: 18, backgroundColor: KlippColors.navy, gap: 3 },
-  etaLabel: { color: '#B9C9E6', fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  etaValue: { color: KlippColors.white, fontSize: 32, fontWeight: '800' },
-  etaHint: { color: '#D5DFF0', fontSize: 12, lineHeight: 18 },
-  mapPlaceholder: { height: 280, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#E8EEF7', gap: 10 },
-  professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
-  avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: '#EEF4FF' },
-  avatarText: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '800' },
+  etaCard: { padding: 21, borderRadius: 22, backgroundColor: KlippColors.ink, gap: 6, shadowOpacity: 0, elevation: 0 },
+  etaLabel: { color: KlippColors.surfaceBlue, fontSize: 11, fontWeight: '900', letterSpacing: 1 },
+  etaValue: { color: KlippColors.white, fontSize: 38, lineHeight: 42, fontWeight: '900', letterSpacing: -1 },
+  etaHint: { color: KlippColors.surfaceBlue, fontSize: 12, lineHeight: 18 },
+  mapPlaceholder: { height: 360, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue, gap: 10 },
+  professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
+  professionalCardCompact: { flexDirection: 'column', alignItems: 'stretch' },
+  professionalIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 14 },
+  avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: KlippColors.surfaceBlue },
+  avatarText: { color: KlippColors.cobaltDark, fontSize: 20, fontWeight: '800' },
   professionalDetails: { flex: 1, gap: 3 },
-  professionalName: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
-  acceptanceRate: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
-  callButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.blue },
+  professionalName: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
+  acceptanceRate: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '700' },
+  callButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.cobalt },
+  callButtonCompact: { width: '100%' },
   callButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
-  destinationCard: { padding: 15, borderRadius: 16, backgroundColor: KlippColors.white, gap: 5 },
+  destinationCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 19, backgroundColor: KlippColors.white, gap: 6 },
   destinationLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  destinationText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
-  statusCard: { alignItems: 'center', padding: 22, borderRadius: 18, backgroundColor: KlippColors.white, gap: 10 },
-  statusIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#EEF4FF' },
-  statusIconText: { color: KlippColors.blue, fontSize: 20, fontWeight: '800' },
-  statusMessage: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  stepsCard: { padding: 17, borderRadius: 18, backgroundColor: KlippColors.white, gap: 13 },
-  stepsTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800', marginBottom: 2 },
+  destinationText: { color: KlippColors.ink, fontSize: 14, fontWeight: '700' },
+  statusCard: { alignItems: 'flex-start', paddingVertical: 24, paddingHorizontal: 0, backgroundColor: 'transparent', gap: 10 },
+  statusIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: KlippColors.surfaceBlue },
+  statusIconText: { color: KlippColors.cobalt, fontSize: 20, fontWeight: '800' },
+  statusMessage: { color: KlippColors.ink, fontSize: 18, lineHeight: 25, fontWeight: '800', textAlign: 'left' },
+  stepsCard: { padding: 19, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 21, backgroundColor: KlippColors.white, gap: 15 },
+  stepsTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '800', marginBottom: 2 },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#DCFCE7', color: '#047857', fontSize: 13, fontWeight: '800' },
-  stepPending: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#F1F5F9', color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
+  stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: KlippColors.surfaceMint, color: KlippColors.success, fontSize: 13, fontWeight: '800' },
   stepText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
   eventDetails: { flex: 1, gap: 2 },
   eventTime: { color: KlippColors.muted, fontSize: 11 },
-  error: { padding: 12, borderRadius: 12, backgroundColor: '#FEF3F2', color: KlippColors.danger, fontSize: 13 },
+  error: { padding: 12, borderRadius: 12, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 13 },
   pressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
 });

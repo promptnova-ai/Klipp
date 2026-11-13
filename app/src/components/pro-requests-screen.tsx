@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
+import { Image } from 'expo-image';
+import { ActivityIndicator, Animated, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 
@@ -40,15 +42,12 @@ export function ProRequestsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
-  const [materialsConfirmed, setMaterialsConfirmed] = useState(false);
-  const [materialsError, setMaterialsError] = useState(false);
+  const [materialsConfirmedFor, setMaterialsConfirmedFor] = useState<string | null>(null);
+  const [materialsErrorFor, setMaterialsErrorFor] = useState<string | null>(null);
   const [materialsShake] = useState(() => new Animated.Value(0));
   const activeRequest = requests[0] ?? null;
-  useEffect(() => {
-    setMaterialsConfirmed(false);
-    setMaterialsError(false);
-    materialsShake.setValue(0);
-  }, [activeRequest?.id, materialsShake]);
+  const materialsConfirmed = Boolean(activeRequest && materialsConfirmedFor === activeRequest.id);
+  const materialsError = Boolean(activeRequest && materialsErrorFor === activeRequest.id);
 
   const secondsLeft = activeRequest ? Math.max(0, Math.ceil((new Date(activeRequest.expires_at).getTime() - nowMs) / 1000)) : 0;
 
@@ -82,15 +81,19 @@ export function ProRequestsScreen() {
     if (!activeRequest || secondsLeft > 0 || expiryHandledRef.current.has(activeRequest.id)) return;
     expiryHandledRef.current.add(activeRequest.id);
     let cancelled = false;
-    void Promise.resolve(supabase.rpc('pro_expire_booking_request', { p_request_id: activeRequest.id }))
-      .then(async () => {
-        if (!cancelled) await loadRequests();
-      })
-      .catch(() => {
-        if (!cancelled) void loadRequests();
+    void (async () => {
+      const { error: expiryError } = await supabase.rpc('pro_expire_booking_request', {
+        p_request_id: activeRequest.id,
       });
+      if (cancelled) return;
+      if (expiryError) {
+        setError(expiryError.message);
+        return;
+      }
+      await loadRequests();
+    })();
     return () => { cancelled = true; };
-  }, [activeRequest?.id, secondsLeft, loadRequests]);
+  }, [activeRequest, secondsLeft, loadRequests]);
 
   useEffect(() => {
     const proId = session?.user.id;
@@ -128,14 +131,18 @@ export function ProRequestsScreen() {
   }, [loadRequests, session?.user.id]);
 
   async function refresh() {
+    if (activeRequest && secondsLeft <= 0) expiryHandledRef.current.delete(activeRequest.id);
     setRefreshing(true);
-    await loadRequests();
-    setRefreshing(false);
+    try {
+      await loadRequests();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function respond(requestId: string, accept: boolean) {
     if (accept && !materialsConfirmed) {
-      setMaterialsError(true);
+      setMaterialsErrorFor(requestId);
       Vibration.vibrate(90);
       Animated.sequence([
         Animated.timing(materialsShake, { toValue: 1, duration: 55, useNativeDriver: true }),
@@ -147,29 +154,39 @@ export function ProRequestsScreen() {
     }
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('respond_to_request', {
-      p_request_id: requestId,
-      p_accept: accept,
-      p_materials_confirmed: accept ? materialsConfirmed : false,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('respond_to_request', {
+        p_request_id: requestId,
+        p_accept: accept,
+        p_materials_confirmed: accept ? materialsConfirmed : false,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos enviar tu respuesta. Inténtalo de nuevo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function respondReassignment(requestId: string, accept: boolean) {
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
-      p_request_id: requestId,
-      p_accept: accept,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
+        p_request_id: requestId,
+        p_accept: accept,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos responder a la sustitución. Inténtalo de nuevo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
 
   return (
     <>
@@ -249,7 +266,7 @@ export function ProRequestsScreen() {
                       coordinate={{ latitude: activeRequest.client_lat, longitude: activeRequest.client_lng }}
                       title="Lugar del servicio"
                       description={activeRequest.address_text || 'Punto indicado por el cliente'}
-                      pinColor="#15966f"
+                      pinColor={KlippColors.cobalt}
                     />
                   </MapView>
                 ) : (
@@ -274,8 +291,9 @@ export function ProRequestsScreen() {
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: materialsConfirmed }}
                   onPress={() => {
-                    setMaterialsConfirmed((current) => !current);
-                    setMaterialsError(false);
+                    setMaterialsConfirmedFor((current) => current === activeRequest.id ? null : activeRequest.id);
+                    setMaterialsErrorFor(null);
+                    materialsShake.setValue(0);
                     Vibration.vibrate(18);
                   }}
                   style={[styles.materialsCard, materialsError && styles.materialsCardError, materialsConfirmed && styles.materialsCardConfirmed]}>
@@ -308,8 +326,26 @@ export function ProRequestsScreen() {
       </Modal>
     <ScrollView
       contentContainerStyle={styles.page}
-      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
+      refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />}>
+      <BrandScreenHeader inset={false} role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
+      <View style={styles.proHero}>
+        <View style={styles.proHeroTop}>
+          <Text style={styles.proHeroEyebrow}>KLIPP PRO · TU ESPACIO DE TRABAJO</Text>
+          <View style={styles.proHeroLive}><View style={styles.proHeroLiveDot} /><Text style={styles.proHeroLiveText}>ACTIVIDAD</Text></View>
+        </View>
+        <View style={styles.proHeroMain}>
+          <View style={styles.proHeroCopy}>
+            <Text style={styles.proHeroTitle}>Tu próximo servicio empieza aquí.</Text>
+            <Text style={styles.proHeroDescription}>Revisa cada oportunidad, conoce los detalles y decide qué trabajos aceptar.</Text>
+          </View>
+          <View style={styles.proHeroCount}><Text style={styles.proHeroCountValue}>{requests.length + reassignments.length}</Text><Text style={styles.proHeroCountLabel}>PENDIENTES</Text></View>
+        </View>
+        <View style={styles.proHeroStats}>
+          <View style={styles.proHeroStat}><Text style={styles.proHeroStatValue}>{requests.length}</Text><Text style={styles.proHeroStatLabel}>Nuevas solicitudes</Text></View>
+          <View style={styles.proHeroStatDivider} />
+          <View style={styles.proHeroStat}><Text style={styles.proHeroStatValue}>{reassignments.length}</Text><Text style={styles.proHeroStatLabel}>Sustituciones</Text></View>
+        </View>
+      </View>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && requests.length === 0 && reassignments.length === 0 && (
         <View style={styles.empty}>
@@ -318,16 +354,22 @@ export function ProRequestsScreen() {
         </View>
       )}
       {reassignments.map((request) => (
-        <View key={request.request_id} style={styles.card}>
-          <Text style={styles.cardTitle}>Solicitud de sustitución</Text>
+        <View key={request.request_id} style={styles.requestCard}>
+          <View style={styles.requestCardTop}>
+            <View style={styles.requestArt}><Image source={serviceArt(request.service_name ?? '')} contentFit="cover" style={styles.requestArtImage} /></View>
+            <View style={styles.requestCardHeading}><Text style={styles.requestEyebrow}>OPORTUNIDAD DE SUSTITUCIÓN</Text><Text style={styles.cardTitle}>{request.service_name ?? 'Servicio Klipp'}</Text></View>
+            <View style={styles.requestTag}><Text style={styles.requestTagText}>NUEVA</Text></View>
+          </View>
           <Text style={styles.body}>Klipp te propone asumir una reserva confirmada que actualmente tiene otro profesional.</Text>
-          <Text style={styles.body}>Servicio: {request.service_name ?? 'Servicio Klipp'} · {request.pricing_tier_label ?? `${request.est_minutes} min`}</Text>
-          <Text style={styles.body}>Fecha: {formatBusinessDate(request.scheduled_start)}</Text>
-          <Text style={styles.body}>Ubicación: {request.address_text ?? 'No disponible'}</Text>
+          <View style={styles.requestFacts}>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>FECHA Y HORA</Text><Text style={styles.requestFactValue}>{formatBusinessDate(request.scheduled_start)}</Text></View>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>DURACIÓN</Text><Text style={styles.requestFactValue}>{request.est_minutes} min</Text></View>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>UBICACIÓN</Text><Text numberOfLines={2} style={styles.requestFactValue}>{request.address_text ?? 'No disponible'}</Text></View>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>PROFESIONAL ACTUAL</Text><Text style={styles.requestFactValue}>{request.original_professional_name ?? 'No disponible'}</Text></View>
+          </View>
           {!!request.landmark_notes && <Text style={styles.body}>Referencia: {request.landmark_notes}</Text>}
-          <Text style={styles.body}>Profesional actual: {request.original_professional_name ?? 'No disponible'}</Text>
-          <Text style={styles.payout}>Recibirías {formatDop(request.pro_payout_dop)}</Text>
-          <Text style={styles.expiration}>Debes responder antes de: {formatBusinessDate(request.expires_at)}</Text>
+          <View style={styles.requestEarnings}><View><Text style={styles.requestEarningsLabel}>RECIBIRÍAS</Text><Text style={styles.requestEarningsHint}>Importe después de la comisión</Text></View><Text style={styles.payout}>{formatDop(request.pro_payout_dop)}</Text></View>
+          <Text style={styles.expiration}>Responde antes de: {formatBusinessDate(request.expires_at)}</Text>
           <View style={styles.actions}>
             <ResponseButton disabled={busyId === request.request_id} label={busyId === request.request_id ? 'Enviando...' : 'Aceptar sustitución'} onPress={() => void respondReassignment(request.request_id, true)} />
             <ResponseButton secondary disabled={busyId === request.request_id} label="Rechazar" onPress={() => void respondReassignment(request.request_id, false)} />
@@ -336,15 +378,21 @@ export function ProRequestsScreen() {
       ))}
       {requests.length > 0 && reassignments.length > 0 && <Text style={styles.sectionTitle}>Otras solicitudes</Text>}
       {requests.map((request) => (
-        <View key={request.id} style={styles.card}>
-          <Text style={styles.cardTitle}>{request.service_name}</Text>
-          {!!request.pricing_tier_label && <Text style={styles.body}>{request.pricing_tier_label}</Text>}
-          <Text style={styles.body}>Cliente: {request.client_name}</Text>
-          <Text style={styles.body}>Ubicación: {request.address_text ?? 'No disponible'}</Text>
+        <View key={request.id} style={styles.requestCard}>
+          <View style={styles.requestCardTop}>
+            <View style={styles.requestArt}><Image source={serviceArt(request.service_name)} contentFit="cover" style={styles.requestArtImage} /></View>
+            <View style={styles.requestCardHeading}><Text style={styles.requestEyebrow}>NUEVA OPORTUNIDAD</Text><Text style={styles.cardTitle}>{request.service_name}</Text>{!!request.pricing_tier_label && <Text style={styles.requestTier}>{request.pricing_tier_label}</Text>}</View>
+            <View style={styles.requestTag}><Text style={styles.requestTagText}>NUEVA</Text></View>
+          </View>
+          <View style={styles.requestFacts}>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>CLIENTE</Text><Text style={styles.requestFactValue}>{request.client_name || 'Cliente Klipp'}</Text></View>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>FECHA Y HORA</Text><Text style={styles.requestFactValue}>{formatBusinessDate(request.scheduled_start)}</Text></View>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>DURACIÓN</Text><Text style={styles.requestFactValue}>{request.est_minutes} min</Text></View>
+            <View style={styles.requestFact}><Text style={styles.requestFactLabel}>UBICACIÓN</Text><Text numberOfLines={2} style={styles.requestFactValue}>{request.address_text ?? 'No disponible'}</Text></View>
+          </View>
           {!!request.landmark_notes && <Text style={styles.body}>Referencia: {request.landmark_notes}</Text>}
-          <Text style={styles.body}>Fecha: {formatBusinessDate(request.scheduled_start)} · {request.est_minutes} min</Text>
-          <Text style={styles.payout}>Recibirías {formatDop(request.pro_payout_dop)}</Text>
-          <Text style={styles.expiration}>Expira: {formatBusinessDate(request.expires_at)}</Text>
+          <View style={styles.requestEarnings}><View><Text style={styles.requestEarningsLabel}>TU INGRESO ESTIMADO</Text><Text style={styles.requestEarningsHint}>Después de la comisión de Klipp</Text></View><Text style={styles.payout}>{formatDop(request.pro_payout_dop)}</Text></View>
+          <Text style={styles.expiration}>La solicitud expira: {formatBusinessDate(request.expires_at)}</Text>
           <View style={styles.actions}>
             <ResponseButton disabled={busyId === request.id || new Date(request.expires_at).getTime() <= nowMs} label={busyId === request.id ? 'Enviando...' : 'Aceptar'} onPress={() => void respond(request.id, true)} />
             <ResponseButton secondary disabled={busyId === request.id || new Date(request.expires_at).getTime() <= nowMs} label="Rechazar" onPress={() => void respond(request.id, false)} />
@@ -396,19 +444,12 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
       ]).start();
     },
   }), [disabled, fillProgress, translateX]);
-  useEffect(() => {
-    if (disabled) {
-      translateX.setValue(0);
-      fillProgress.setValue(0);
-      setReady(false);
-    }
-  }, [disabled, fillProgress, translateX]);
   const fillWidth = fillProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <View style={[styles.slideTrack, disabled && styles.slideDisabled]} onLayout={(event) => { trackWidth.current = event.nativeEvent.layout.width; }}>
       <Animated.View pointerEvents="none" style={[styles.slideFill, { width: fillWidth }]} />
-      <Text style={styles.slideLabel}>{ready ? 'ACEPTAR TRABAJO' : label}</Text>
-      <Animated.View {...responder.panHandlers} accessibilityRole="button" accessibilityLabel={ready ? 'Aceptar trabajo' : label} pointerEvents={disabled ? 'none' : 'auto'} style={[styles.slideThumb, { transform: [{ translateX }] }]}>
+      <Text style={styles.slideLabel}>{ready && !disabled ? 'ACEPTAR TRABAJO' : label}</Text>
+      <Animated.View {...responder.panHandlers} accessibilityRole="button" accessibilityLabel={ready && !disabled ? 'Aceptar trabajo' : label} pointerEvents={disabled ? 'none' : 'auto'} style={[styles.slideThumb, { transform: [{ translateX }] }]}>
         <Text style={styles.slideArrow}>››</Text>
       </Animated.View>
     </View>
@@ -463,82 +504,110 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 }
 
 const styles = StyleSheet.create({
-  offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
-  offerBrand: { color: '#B9C9FF', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
-  offerEyebrow: { color: '#FFFFFF', fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
-  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.teal },
-  countdownText: { color: '#ffffff', fontWeight: '900', fontSize: 18, textAlign: 'center' },
-  offerContent: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48, gap: 16, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  offerTitle: { color: KlippColors.navy, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'left' },
+  proHero: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, marginTop: 4, padding: 22, borderRadius: 24, backgroundColor: KlippColors.ink, gap: 18, overflow: 'hidden', shadowOpacity: 0, elevation: 0 },
+  proHeroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  proHeroEyebrow: { color: 'rgba(255,255,255,0.82)', fontSize: 9, fontWeight: '900', letterSpacing: 1.25 },
+  proHeroLive: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)' },
+  proHeroLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: KlippColors.coral },
+  proHeroLiveText: { color: KlippColors.white, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  proHeroMain: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  proHeroCopy: { flex: 1, gap: 8 },
+  proHeroTitle: { color: KlippColors.white, fontSize: 29, lineHeight: 35, fontWeight: '900', letterSpacing: -0.9 },
+  proHeroDescription: { color: KlippColors.surfaceCoral, fontSize: 13, lineHeight: 20, maxWidth: 440 },
+  proHeroCount: { width: 78, height: 78, borderRadius: 16, backgroundColor: KlippColors.coral, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0, elevation: 0 },
+  proHeroCountValue: { color: KlippColors.white, fontSize: 31, lineHeight: 34, fontWeight: '900' },
+  proHeroCountLabel: { color: KlippColors.white, fontSize: 7, fontWeight: '900', letterSpacing: 0.8 },
+  proHeroStats: { flexDirection: 'row', alignItems: 'center', gap: 18, paddingTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.28)' },
+  proHeroStat: { flex: 1, gap: 2 },
+  proHeroStatValue: { color: KlippColors.white, fontSize: 21, fontWeight: '900' },
+  proHeroStatLabel: { color: KlippColors.surfaceCoral, fontSize: 10, fontWeight: '700' },
+  proHeroStatDivider: { width: 1, height: 32, backgroundColor: 'rgba(255,255,255,0.34)' },
+  requestCard: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, padding: 19, borderRadius: 22, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 16, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 7 }, shadowRadius: 18, elevation: 1 },
+  requestArt: { width: 76, height: 62, overflow: 'hidden', borderRadius: 15, backgroundColor: KlippColors.surfaceMuted },
+  requestArtImage: { width: '100%', height: '100%' },
+  requestCardTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  requestCardHeading: { flex: 1, gap: 3 },
+  requestEyebrow: { color: KlippColors.coralDark, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  requestTier: { color: KlippColors.muted, fontSize: 11, fontWeight: '600' },
+  requestTag: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 999, backgroundColor: KlippColors.surfaceCoral },
+  requestTagText: { color: KlippColors.coralDark, fontSize: 8, fontWeight: '900', letterSpacing: 0.6 },
+  requestFacts: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  requestFact: { flexGrow: 1, flexBasis: '46%', minHeight: 62, padding: 11, borderRadius: 14, backgroundColor: KlippColors.surfaceMuted, gap: 5 },
+  requestFactLabel: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 0.8 },
+  requestFactValue: { color: KlippColors.ink, fontSize: 12, lineHeight: 17, fontWeight: '700' },
+  requestEarnings: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 15, borderRadius: 15, backgroundColor: KlippColors.surfaceCoral, borderWidth: 1, borderColor: KlippColors.surfaceCoral },
+  requestEarningsLabel: { color: KlippColors.coralDark, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
+  requestEarningsHint: { color: KlippColors.muted, fontSize: 10, marginTop: 3 },
+  offerScreen: { flex: 1, backgroundColor: KlippColors.ivory },
+  offerHeader: { width: '100%', paddingTop: 26, paddingHorizontal: 24, paddingBottom: 20, backgroundColor: KlippColors.ink, alignItems: 'flex-start', gap: 9, borderBottomWidth: 4, borderBottomColor: KlippColors.coral },
+  offerBrand: { color: KlippColors.white, fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
+  offerEyebrow: { color: KlippColors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
+  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)' },
+  countdownText: { color: KlippColors.white, fontWeight: '900', fontSize: 18, textAlign: 'center' },
+  offerContent: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 24, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.ivory, flexGrow: 1 },
+  offerTitle: { color: KlippColors.ink, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'left' },
   offerSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, textAlign: 'left', marginBottom: 4 },
-  customerCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 18, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: '#ffffff' },
-  avatarCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: KlippColors.surfaceTeal, alignItems: 'center', justifyContent: 'center' },
-  avatarInitial: { color: KlippColors.tealDark, fontSize: 24, fontWeight: '900' },
+  customerCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
+  avatarCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
+  avatarInitial: { color: KlippColors.coral, fontSize: 24, fontWeight: '900' },
   customerInfo: { flex: 1, gap: 3 },
-  customerName: { color: KlippColors.navy, fontSize: 18, fontWeight: '800' },
+  customerName: { color: KlippColors.ink, fontSize: 18, fontWeight: '800' },
   detailLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '900', letterSpacing: 1.05 },
   detailMuted: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
-  offerDetailsCard: { padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: '#ffffff', gap: 8 },
-  serviceName: { color: KlippColors.navy, fontSize: 22, fontWeight: '900' },
+  offerDetailsCard: { padding: 19, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 11 },
+  serviceName: { color: KlippColors.ink, fontSize: 22, fontWeight: '900' },
   detailValue: { color: KlippColors.slate, fontSize: 15, lineHeight: 22, fontWeight: '600' },
   detailDivider: { height: 1, backgroundColor: KlippColors.border, marginVertical: 8 },
-  mapCard: { padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: '#ffffff', gap: 11 },
+  mapCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 12 },
   mapHeading: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   mapHeadingCopy: { flex: 1, gap: 4 },
-  mapAddress: { color: KlippColors.navy, fontSize: 14, fontWeight: '800', lineHeight: 20 },
-  mapPinBadge: { width: 38, height: 38, borderRadius: 19, backgroundColor: KlippColors.surfaceTeal, alignItems: 'center', justifyContent: 'center' },
-  mapPinGlyph: { color: KlippColors.tealDark, fontSize: 25, fontWeight: '900' },
+  mapAddress: { color: KlippColors.ink, fontSize: 14, fontWeight: '800', lineHeight: 20 },
+  mapPinBadge: { width: 38, height: 38, borderRadius: 19, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
+  mapPinGlyph: { color: KlippColors.coral, fontSize: 25, fontWeight: '900' },
   offerMap: { height: 190, borderRadius: 14, overflow: 'hidden' },
   mapUnavailable: { minHeight: 110, borderRadius: 14, backgroundColor: KlippColors.surfaceMuted, alignItems: 'center', justifyContent: 'center', padding: 16, gap: 6 },
-  mapUnavailableTitle: { color: '#344950', fontSize: 13, fontWeight: '900', textAlign: 'center' },
-  mapUnavailableText: { color: '#64747a', fontSize: 11, lineHeight: 17, textAlign: 'center' },
-  mapCoordinates: { color: '#16836f', fontSize: 11, fontWeight: '800', textAlign: 'center' },
-  earningCard: { padding: 20, borderRadius: 20, backgroundColor: KlippColors.surfaceTeal, alignItems: 'center', gap: 6 },
-  earningLabel: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  earningAmount: { color: KlippColors.tealDark, fontSize: 32, fontWeight: '900' },
+  mapUnavailableTitle: { color: KlippColors.ink, fontSize: 13, fontWeight: '900', textAlign: 'center' },
+  mapUnavailableText: { color: KlippColors.slate, fontSize: 11, lineHeight: 17, textAlign: 'center' },
+  mapCoordinates: { color: KlippColors.coral, fontSize: 11, fontWeight: '800', textAlign: 'center' },
+  earningCard: { paddingVertical: 16, paddingHorizontal: 18, borderRadius: 12, backgroundColor: KlippColors.surfaceCoral, alignItems: 'flex-start', gap: 7, borderWidth: 0, borderColor: 'transparent' },
+  earningLabel: { color: KlippColors.coralDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  earningAmount: { color: KlippColors.coralDark, fontSize: 34, fontWeight: '900' },
   earningNote: { color: KlippColors.slate, fontSize: 11, textAlign: 'center' },
-  materialsCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 18, borderRadius: 20, borderWidth: 1.5, borderColor: KlippColors.border, backgroundColor: '#ffffff' },
-  materialsCardError: { borderColor: '#d94841', backgroundColor: '#fff4f2' },
-  materialsCardConfirmed: { borderColor: KlippColors.teal, backgroundColor: KlippColors.surfaceTeal },
-  materialsCheck: { width: 27, height: 27, borderRadius: 8, borderWidth: 2, borderColor: '#93a5a2', backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' },
-  materialsCheckSelected: { borderColor: KlippColors.teal, backgroundColor: KlippColors.teal },
-  materialsCheckError: { borderColor: '#d94841' },
-  materialsCheckmark: { color: '#ffffff', fontSize: 19, fontWeight: '900', lineHeight: 22 },
+  materialsCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 13, padding: 18, borderRadius: 20, borderWidth: 1.5, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  materialsCardError: { borderColor: KlippColors.danger, backgroundColor: KlippColors.surfaceCoral },
+  materialsCardConfirmed: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
+  materialsCheck: { width: 27, height: 27, borderRadius: 8, borderWidth: 2, borderColor: KlippColors.border, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center' },
+  materialsCheckSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.cobalt },
+  materialsCheckError: { borderColor: KlippColors.danger },
+  materialsCheckmark: { color: KlippColors.white, fontSize: 19, fontWeight: '900', lineHeight: 22 },
   materialsCopy: { flex: 1, gap: 5 },
-  materialsTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '900', lineHeight: 21 },
+  materialsTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '900', lineHeight: 21 },
   materialsDescription: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
-  materialsErrorText: { color: '#b42318', fontSize: 12, fontWeight: '800', lineHeight: 17 },
-  materialsSuccess: { color: KlippColors.tealDark, fontSize: 12, fontWeight: '800' },
-  declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: '#F2C4C4', borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
-  declineText: { color: KlippColors.danger, fontSize: 14, fontWeight: '900' },
-  slideTrack: { height: 66, borderRadius: 18, backgroundColor: KlippColors.navyDeep, justifyContent: 'center', padding: 4, overflow: 'hidden' },
-  slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: KlippColors.teal },
+  materialsErrorText: { color: KlippColors.danger, fontSize: 12, fontWeight: '800', lineHeight: 17 },
+  materialsSuccess: { color: KlippColors.coral, fontSize: 12, fontWeight: '800' },
+  slideTrack: { height: 66, borderRadius: 18, backgroundColor: KlippColors.ink, justifyContent: 'center', padding: 4, overflow: 'hidden' },
+  slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: KlippColors.cobalt },
   slideDisabled: { opacity: 0.5 },
-  slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: '#ffffff', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
-  slideThumb: { width: 56, height: 56, borderRadius: 15, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', elevation: 3 },
-  slideArrow: { color: '#111820', fontSize: 27, fontWeight: '900', letterSpacing: -4, marginRight: 4 },
-  holdReject: { minHeight: 58, borderWidth: 1.5, borderColor: '#b42318', borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#b42318', gap: 3, paddingHorizontal: 12 },
-  holdRejectTitle: { color: '#ffffff', fontSize: 12, fontWeight: '900', letterSpacing: 0.45, textAlign: 'center' },
-  holdRejectSubtitle: { color: '#ffe3df', fontSize: 11, fontWeight: '700' },
-  offerFootnote: { color: '#718187', fontSize: 11, lineHeight: 16, textAlign: 'center' },
-  page: { width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
-  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '800' },
-  subtitle: { color: '#52615b', fontSize: 15, marginTop: -8 },
+  slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: KlippColors.white, fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
+  slideThumb: { width: 56, height: 56, borderRadius: 15, backgroundColor: KlippColors.white, alignItems: 'center', justifyContent: 'center', elevation: 3 },
+  slideArrow: { color: KlippColors.ink, fontSize: 27, fontWeight: '900', letterSpacing: -4, marginRight: 4 },
+  holdReject: { minHeight: 58, borderWidth: 1.5, borderColor: KlippColors.danger, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.danger, gap: 3, paddingHorizontal: 12 },
+  holdRejectTitle: { color: KlippColors.white, fontSize: 12, fontWeight: '900', letterSpacing: 0.45, textAlign: 'center' },
+  holdRejectSubtitle: { color: KlippColors.surfaceCoral, fontSize: 11, fontWeight: '700' },
+  offerFootnote: { color: KlippColors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 8, paddingBottom: 44, gap: 18, backgroundColor: KlippColors.ivory, flexGrow: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.ivory },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
-  empty: { width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: 12, padding: 22, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 8 },
-  emptyTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
-  sectionTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '800', marginTop: 6 },
-  card: { width: '100%', maxWidth: 760, alignSelf: 'center', padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 12 },
-  cardTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700' },
-  payout: { color: KlippColors.tealDark, fontSize: 15, fontWeight: '700' },
+  empty: { width: '100%', maxWidth: 760, alignSelf: 'center', marginTop: 12, paddingVertical: 22, paddingHorizontal: 2, borderTopWidth: 1, borderColor: KlippColors.border, borderRadius: 0, backgroundColor: 'transparent', gap: 8 },
+  emptyTitle: { color: KlippColors.ink, fontSize: 16, fontWeight: '700' },
+  sectionTitle: { color: KlippColors.ink, fontSize: 16, fontWeight: '800', marginTop: 6 },
+  cardTitle: { color: KlippColors.ink, fontSize: 17, fontWeight: '700' },
+  payout: { color: KlippColors.coralDark, fontSize: 19, fontWeight: '900' },
   expiration: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
-  warning: { color: '#8A5B00', fontSize: 13, lineHeight: 19, padding: 11, borderRadius: 6, backgroundColor: KlippColors.goldLight },
   actions: { flexDirection: 'row', gap: 10, marginTop: 8 },
-  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.teal },
-  secondaryButton: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: '#CBD5E1' },
-  buttonText: { color: '#fff', fontWeight: '700' },
+  button: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.cobalt },
+  secondaryButton: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
+  buttonText: { color: KlippColors.white, fontWeight: '700' },
   secondaryText: { color: KlippColors.muted },
   disabled: { opacity: 0.45 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },

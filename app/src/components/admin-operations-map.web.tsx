@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 import type { OperationsMapPoint } from './admin-operations-map.types';
 
@@ -60,9 +60,9 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
         title: `${point.professionalName || 'Profesional'} · ${point.serviceName || 'Servicio Klipp'}`,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: stale ? '#DC2626' : point.selected ? '#F59E0B' : '#208AEF',
+          fillColor: stale ? KlippColors.danger : point.selected ? KlippColors.coral : KlippColors.cobalt,
           fillOpacity: 1,
-          strokeColor: '#FFFFFF',
+          strokeColor: KlippColors.white,
           strokeWeight: 2,
           scale: point.selected ? 9 : 7,
         },
@@ -93,7 +93,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
         {error && <View style={styles.overlay}><Text style={styles.error}>{error}</Text></View>}
         {!ready && !error && <View pointerEvents="none" style={styles.overlay}><Text style={styles.caption}>Cargando mapa…</Text></View>}
       </View>
-      <Text style={styles.legend}>Azul: activo · Naranja: orden seleccionada · Rojo: GPS con más de 2 min</Text>
+      <Text style={styles.legend}>Cobalto: activo · Coral: orden seleccionada · Rojo: GPS con más de 2 min</Text>
     </View>
   );
 }
@@ -101,9 +101,9 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
 const styles = StyleSheet.create({
   container: { gap: 8 },
   heading: { gap: 3 },
-  title: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  title: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
   caption: { color: KlippColors.muted, fontSize: 11 },
-  map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: '#E8EEF7' },
+  map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue },
   overlay: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 20, backgroundColor: '#FFFFFFD9' },
   error: { color: KlippColors.danger, fontSize: 12, textAlign: 'center' },
   legend: { color: KlippColors.muted, fontSize: 10 },

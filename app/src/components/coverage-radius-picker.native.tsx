@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import MapView, { Circle, Marker, type MapPressEvent, type Region } from 'react-native-maps';
 import { StyleSheet, Text, View } from 'react-native';
+import { KlippColors } from '@/theme/tokens';
 
 export type CoverageCoordinate = { latitude: number; longitude: number };
 
@@ -34,8 +35,8 @@ export function CoverageRadiusPicker({
         <Circle
           center={center}
           radius={radiusMeters}
-          fillColor="rgba(32,138,239,0.16)"
-          strokeColor="#208AEF"
+          fillColor="rgba(61,90,254,0.14)"
+          strokeColor={KlippColors.cobalt}
           strokeWidth={2}
         />
         <Marker
@@ -53,7 +54,7 @@ export function CoverageRadiusPicker({
 }
 
 const styles = StyleSheet.create({
-  container: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  container: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
   hint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignItems: 'center', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8' },
-  hintText: { color: '#334155', fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  hintText: { color: KlippColors.slate, fontSize: 11, fontWeight: '600', textAlign: 'center' },
 });

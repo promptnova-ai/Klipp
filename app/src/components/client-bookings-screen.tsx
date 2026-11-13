@@ -1,15 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard, Review } from '@/lib/types';
 
+type BookingFilter = 'all' | 'active' | 'scheduled' | 'completed' | 'cancelled';
 type ClientBooking = Booking & {
   service_types: { name: string } | null;
   pricing_tiers: { label: string } | null;
@@ -57,6 +60,7 @@ export function ClientBookingsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [bookingFilter, setBookingFilter] = useState<BookingFilter>('all');
 
   const loadBookings = useCallback(async () => {
     if (!userId) return;
@@ -297,15 +301,45 @@ export function ClientBookingsScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
+  const visibleBookings = bookings.filter((booking) => {
+    if (bookingFilter === 'all') return true;
+    if (bookingFilter === 'active') return ['requested', 'awaiting_payment', 'en_route', 'arrived', 'in_progress', 'disputed'].includes(booking.status);
+    if (bookingFilter === 'scheduled') return booking.status === 'scheduled';
+    if (bookingFilter === 'completed') return ['completed', 'confirmed'].includes(booking.status);
+    return ['cancelled', 'expired'].includes(booking.status);
+  });
+  const filterOptions: { id: BookingFilter; label: string }[] = [
+    { id: 'all', label: 'Todas' }, { id: 'active', label: 'Activas' },
+    { id: 'scheduled', label: 'Programadas' }, { id: 'completed', label: 'Finalizadas' },
+    { id: 'cancelled', label: 'Canceladas' },
+  ];
+  const filterCount = (filter: BookingFilter) => bookings.filter((booking) => {
+    if (filter === 'all') return true;
+    if (filter === 'active') return ['requested', 'awaiting_payment', 'en_route', 'arrived', 'in_progress', 'disputed'].includes(booking.status);
+    if (filter === 'scheduled') return booking.status === 'scheduled';
+    if (filter === 'completed') return ['completed', 'confirmed'].includes(booking.status);
+    return ['cancelled', 'expired'].includes(booking.status);
+  }).length;
+
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
   return (
-    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
-      <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
+    <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />}>
+      <BrandScreenHeader inset={false} eyebrow="SERVICIOS" title="Mis reservas" subtitle="Todo lo que has reservado, en un solo lugar." />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        {filterOptions.map((option) => {
+          const selected = bookingFilter === option.id;
+          return <Pressable key={option.id} accessibilityRole="button" accessibilityState={{ selected }} onPress={() => setBookingFilter(option.id)} style={[styles.filterChip, selected && styles.filterChipSelected]}>
+            <Text style={[styles.filterLabel, selected && styles.filterLabelSelected]}>{option.label}</Text>
+            <Text style={[styles.filterCount, selected && styles.filterLabelSelected]}>{filterCount(option.id)}</Text>
+          </Pressable>;
+        })}
+      </ScrollView>
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-      {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.cardTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
-      {bookings.map((booking) => {
+      {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.emptyTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
+      {!error && bookings.length > 0 && visibleBookings.length === 0 && <View style={styles.empty}><Text style={styles.emptyTitle}>No hay reservas en esta sección</Text><Text style={styles.body}>Prueba otra categoría para consultar el resto de tus servicios.</Text></View>}
+      {visibleBookings.map((booking) => {
         const pro = booking.pro_id ? pros[booking.pro_id] : undefined;
         const review = reviews[booking.id];
         const searching = booking.assignment_mode === 'auto' && booking.status === 'requested';
@@ -339,9 +373,7 @@ export function ClientBookingsScreen() {
           <View key={booking.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.serviceHeading}>
-                <View style={styles.serviceIcon}>
-                  <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={19} />
-                </View>
+                <Image source={serviceArt(booking.service_types?.name ?? '')} contentFit="cover" style={styles.servicePhoto} />
                 <View style={styles.serviceHeadingCopy}>
                   <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
                   <Text style={styles.tier}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
@@ -449,7 +481,7 @@ export function ClientBookingsScreen() {
                 <View style={styles.ratingRow}>
                   {[1, 2, 3, 4, 5].map((rating) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: (ratings[booking.id] ?? 5) === rating }} key={rating} onPress={() => setRatings((current) => ({ ...current, [booking.id]: rating }))} style={styles.star}><Text style={styles.starText}>{(ratings[booking.id] ?? 5) >= rating ? '★' : '☆'}</Text></Pressable>)}
                 </View>
-                <TextInput multiline onChangeText={(value) => setComments((current) => ({ ...current, [booking.id]: value }))} placeholder="Comentario (opcional)" placeholderTextColor="#85918b" style={styles.commentInput} value={comments[booking.id] ?? ''} />
+                <TextInput multiline onChangeText={(value) => setComments((current) => ({ ...current, [booking.id]: value }))} placeholder="Comentario (opcional)" placeholderTextColor={KlippColors.muted} style={styles.commentInput} value={comments[booking.id] ?? ''} />
                 <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void submitReview(booking)} style={styles.reviewButton}><Text style={styles.buttonText}>Enviar reseña</Text></Pressable>
               </View>
             )}
@@ -471,72 +503,78 @@ function distanceInKm(from: LocationPoint, to: LocationPoint) {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
-  title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  empty: { marginTop: 4, marginHorizontal: 20, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  card: { marginHorizontal: 20, padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 16, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.ivory, flexGrow: 1 },
+  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2, paddingRight: 22 },
+  filterChip: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 15, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  filterChipSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.cobalt },
+  filterLabel: { color: KlippColors.slate, fontSize: 12, fontWeight: '700' },
+  filterCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '700' },
+  filterLabelSelected: { color: KlippColors.white },
+  emptyTitle: { color: KlippColors.ink, fontSize: 18, fontWeight: '800' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.ivory },
+  empty: { marginTop: 8, paddingVertical: 24, paddingHorizontal: 2, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 8 },
+  card: { marginHorizontal: 0, padding: 18, width: '100%', maxWidth: 900, alignSelf: 'center', borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15 },
   cardHeader: { gap: 12 },
   serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
+  servicePhoto: { width: 72, height: 66, borderRadius: 10, backgroundColor: KlippColors.surfaceMuted },
   serviceHeadingCopy: { flex: 1, gap: 3 },
-  cardTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  cardTitle: { color: KlippColors.ink, fontSize: 16, fontWeight: '700' },
   tier: { color: KlippColors.muted, fontSize: 13 },
   statusPill: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
-  statusPillActive: { backgroundColor: '#EEF4FF' },
-  statusPillSuccess: { backgroundColor: '#ECFDF5' },
-  statusPillNeutral: { backgroundColor: '#F1F5F9' },
-  statusTextActive: { color: KlippColors.blueDark },
-  statusTextSuccess: { color: '#047857' },
+  statusPillActive: { backgroundColor: KlippColors.surfaceBlue },
+  statusPillSuccess: { backgroundColor: KlippColors.surfaceMint },
+  statusPillNeutral: { backgroundColor: KlippColors.surfaceMuted },
+  statusTextActive: { color: KlippColors.cobaltDark },
+  statusTextSuccess: { color: KlippColors.success },
   statusTextNeutral: { color: KlippColors.muted },
-  statusDotActive: { backgroundColor: KlippColors.blueDark },
-  statusDotSuccess: { backgroundColor: '#047857' },
+  statusDotActive: { backgroundColor: KlippColors.cobaltDark },
+  statusDotSuccess: { backgroundColor: KlippColors.success },
   statusDotNeutral: { backgroundColor: KlippColors.muted },
   status: { fontSize: 11, fontWeight: '700' },
   cardDivider: { height: 1, backgroundColor: KlippColors.border },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   reference: { color: KlippColors.muted, fontSize: 12, lineHeight: 18, marginLeft: 26 },
-  queueBanner: { padding: 14, borderRadius: 14, backgroundColor: '#F4F7FF', gap: 5 },
-  queueTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700', lineHeight: 20 },
+  queueBanner: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue, gap: 5 },
+  queueTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '700', lineHeight: 20 },
   trackingPanel: { gap: 12 },
-  followButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
+  followButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.cobalt },
   followButtonText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
-  etaBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: '#ECFDF5', color: '#047857', fontSize: 14, fontWeight: '800' },
+  etaBadge: { alignSelf: 'flex-start', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 999, backgroundColor: KlippColors.surfaceMint, color: KlippColors.success, fontSize: 14, fontWeight: '800' },
   trackingPro: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14 },
   contactActions: { flexDirection: 'row', gap: 9 },
-  contactButton: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
-  messageButton: { backgroundColor: KlippColors.navy },
+  contactButton: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.cobalt },
+  messageButton: { backgroundColor: KlippColors.ink },
   buttonPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   contactButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
-  chatPanel: { padding: 12, borderRadius: 14, backgroundColor: '#F8FAFC', gap: 8 },
+  chatPanel: { padding: 12, borderRadius: 14, backgroundColor: KlippColors.surfaceMuted, gap: 8 },
   chatMessage: { alignSelf: 'flex-start', maxWidth: '85%', padding: 9, borderRadius: 12, backgroundColor: KlippColors.white },
-  chatMessageOwn: { alignSelf: 'flex-end', backgroundColor: '#EAF2FF' },
+  chatMessageOwn: { alignSelf: 'flex-end', backgroundColor: KlippColors.surfaceBlue },
   chatMessageText: { color: KlippColors.slate, fontSize: 13, lineHeight: 18 },
-  messageInput: { minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10, backgroundColor: KlippColors.white, color: KlippColors.navy, fontSize: 13 },
-  sendMessageButton: { minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.blue },
+  messageInput: { minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 10, backgroundColor: KlippColors.white, color: KlippColors.ink, fontSize: 13 },
+  sendMessageButton: { minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.cobalt },
   sendMessageText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
   proChip: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  proAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
-  proAvatarText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
+  proAvatar: { width: 26, height: 26, borderRadius: 13, backgroundColor: KlippColors.surfaceBlue, alignItems: 'center', justifyContent: 'center' },
+  proAvatarText: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '700' },
   proText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
-  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 13, backgroundColor: '#F4F7FF' },
+  priceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, paddingHorizontal: 0, borderTopWidth: 1, borderColor: KlippColors.border, backgroundColor: 'transparent' },
   priceLabel: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
-  price: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '800' },
-  payment: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.goldLight, gap: 4 },
-  paymentTitle: { color: '#8A5B00', fontSize: 14, fontWeight: '700' },
-  button: { minHeight: 48, marginTop: 2, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  price: { color: KlippColors.cobaltDark, fontSize: 15, fontWeight: '800' },
+  payment: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.surfaceCoral, gap: 4 },
+  paymentTitle: { color: KlippColors.warning, fontSize: 14, fontWeight: '700' },
+  button: { minHeight: 48, marginTop: 2, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.cobalt },
+  buttonText: { color: KlippColors.white, fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.55 },
   reviewForm: { marginTop: 3, paddingTop: 15, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 10 },
-  reviewTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  reviewTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '700' },
   ratingRow: { flexDirection: 'row', gap: 8 },
   star: { paddingVertical: 2, paddingHorizontal: 3 },
-  starText: { color: '#A46D00', fontSize: 28 },
-  commentInput: { minHeight: 74, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, padding: 12, color: KlippColors.navy, textAlignVertical: 'top' },
-  reviewButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.blue },
+  starText: { color: KlippColors.warning, fontSize: 28 },
+  commentInput: { minHeight: 74, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, padding: 12, color: KlippColors.ink, textAlignVertical: 'top' },
+  reviewButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.cobalt },
   reviewDone: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, marginTop: 4 },
-  notice: { color: '#067647', fontSize: 14 },
+  notice: { color: KlippColors.success, fontSize: 14 },
   error: { color: KlippColors.danger, fontSize: 14, lineHeight: 20 },
 });

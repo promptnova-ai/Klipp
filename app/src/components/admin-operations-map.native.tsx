@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import MapView, { Marker, type Region } from 'react-native-maps';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 
 import type { OperationsMapPoint } from './admin-operations-map.types';
 
@@ -32,7 +32,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
 
   useEffect(() => {
     if (validPoints.length) map.current?.animateToRegion(region, 500);
-  }, [region.latitude, region.longitude, region.latitudeDelta, region.longitudeDelta, validPoints.length]);
+  }, [region, validPoints.length]);
 
   return (
     <View style={styles.container}>
@@ -50,7 +50,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
                 coordinate={{ latitude: point.latitude, longitude: point.longitude }}
                 title={point.professionalName || 'Profesional'}
                 description={`${point.serviceName || 'Servicio Klipp'} · ${stale ? 'GPS desactualizado' : point.status}`}
-                pinColor={stale ? '#DC2626' : point.selected ? '#F59E0B' : '#208AEF'}
+                pinColor={stale ? KlippColors.danger : point.selected ? KlippColors.coral : KlippColors.cobalt}
                 onPress={point.onSelect}
               />
             );
@@ -58,7 +58,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
         </MapView>
         {!validPoints.length && <View pointerEvents="none" style={styles.empty}><Text style={styles.emptyText}>No hay profesionales con GPS registrado en órdenes activas.</Text></View>}
       </View>
-      <Text style={styles.legend}>Azul: activo · Naranja: orden seleccionada · Rojo: GPS con más de 2 min</Text>
+      <Text style={styles.legend}>Cobalto: activo · Coral: orden seleccionada · Rojo: GPS con más de 2 min</Text>
     </View>
   );
 }
@@ -66,9 +66,9 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
 const styles = StyleSheet.create({
   container: { gap: 8 },
   heading: { gap: 3 },
-  title: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
+  title: { color: KlippColors.ink, fontSize: 15, fontWeight: '800' },
   caption: { color: KlippColors.muted, fontSize: 11 },
-  map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: '#E8EEF7' },
+  map: { height: 310, overflow: 'hidden', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue },
   empty: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: '#FFFFFFB8' },
   emptyText: { color: KlippColors.slate, textAlign: 'center', fontSize: 13 },
   legend: { color: KlippColors.muted, fontSize: 10 },
