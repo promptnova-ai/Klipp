@@ -115,5 +115,5 @@ const styles = StyleSheet.create({
     elevation: 9,
   },
   markPlate: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  pressed: { transform: [{ scale: 0.94 }], opacity: 0.86 },
+  pressed: { transform: [{ scale: 0.985 }], opacity: 0.9 },
 });
