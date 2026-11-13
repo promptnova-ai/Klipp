@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     padding: 28,
-    backgroundColor: KlippColors.canvas,
+    backgroundColor: KlippColors.ivory,
   },
   message: { color: KlippColors.muted, fontSize: 15, textAlign: 'center' },
   title: { color: KlippColors.ink, fontSize: 22, fontWeight: '700', textAlign: 'center' },
