@@ -103,6 +103,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const disabled = busy || !isSupabaseConfigured || (method === 'phone'
     ? otpSent ? otp.length !== 6 : !normalizePhoneNumber(phone) || (isRegister && !fullName.trim())
     : !email.trim() || !password);
+  const inactive = disabled && !busy;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -168,9 +169,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             {!!(error || authError) && <View style={styles.error}><Text style={styles.errorText}>{error || authError}</Text></View>}
             {!isSupabaseConfigured && <Text style={styles.configText}>Vista de diseño: conecta Supabase para activar el acceso real.</Text>}
 
-            <Pressable accessibilityRole="button" disabled={disabled} onPress={() => void submit()} style={({ pressed }) => [styles.submit, disabled && styles.submitDisabled, pressed && styles.pressed]}>
-              {busy ? <ActivityIndicator color={C.white} /> : <Text style={styles.submitText}>{method === 'phone' ? otpSent ? 'Verificar y entrar' : 'Enviar código SMS' : 'Continuar'}</Text>}
-              {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={C.white} size={18} />}
+            <Pressable accessibilityRole="button" disabled={disabled} onPress={() => void submit()} style={({ pressed }) => [styles.submit, inactive && styles.submitDisabled, pressed && styles.pressed]}>
+              {busy ? <ActivityIndicator color={C.white} /> : <Text style={[styles.submitText, inactive && styles.submitTextDisabled]}>{method === 'phone' ? otpSent ? 'Verificar y entrar' : 'Enviar código SMS' : 'Continuar'}</Text>}
+              {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={inactive ? C.muted : C.white} size={18} />}
             </Pressable>
             <Text style={styles.legal}>Al continuar aceptas los términos de servicio y la política de privacidad de Klipp.</Text>
           </View>
