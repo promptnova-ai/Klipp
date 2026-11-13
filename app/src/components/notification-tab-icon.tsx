@@ -18,9 +18,11 @@ export function NotificationTabIcon({ color }: { color: string }) {
       .eq('show_in_app', true)
       .is('read_at', null);
     if (!error) setUnread(count ?? 0);
-  }, [session?.user.id]);
+  }, [session]);
 
   useEffect(() => {
+    // Initial badge hydration is an asynchronous Supabase read.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadUnread();
   }, [loadUnread]);
 
