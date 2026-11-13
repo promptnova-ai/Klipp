@@ -24,7 +24,7 @@ export async function configureNotificationChannelsAsync() {
         description: 'Alertas urgentes para aceptar o rechazar nuevos servicios.',
         importance: AndroidImportance.MAX,
         vibrationPattern: [0, 400, 180, 400, 180, 700],
-        lightColor: '#E45D42',
+        lightColor: KlippColors.coral,
         sound: 'default',
         lockscreenVisibility: AndroidNotificationVisibility.PRIVATE,
       }),
