@@ -114,3 +114,21 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - The PRO registration steps use card-based profession choices and modality pricing, with larger inputs and a consistent persistent action area.
 - No booking, dispatch, payment, profile persistence, notification or permission logic was intentionally changed in this visual pass.
 - Validation still requires the current branch's lint, TypeScript and web export jobs plus a rendered preview review at 360px, 390px, tablet and desktop widths.
+
+
+### Full product visual audit — 13 November 2026
+
+- The shared header now supports explicit inset behavior. Screens whose page container already owns the gutter opt out of a second header gutter, keeping title and body edges aligned.
+- The client home has been simplified around the real Klipp symbol, current service location, notification access, search and image-led category discovery. The non-functional filter affordance and oversized marketing hero were removed.
+- Native and web client home now use the same image-led category selection model. Web service cards switch to a compact horizontal composition at mobile widths to match the native information hierarchy.
+- The service category palette is restricted to the shared cobalt, coral and mint language rather than introducing unrelated purple, cyan and ochre accents.
+- Account surfaces are scroll-safe, the account avatar no longer displays a false verification seal, and sign-out is kept after profile settings.
+- Native authentication includes password visibility and a direct entry to Klipp PRO registration.
+- Booking navigation and final submission actions now live in a persistent footer, keeping the primary action visible while the booking content scrolls.
+- Tracking map colors now use cobalt for destination/route and coral for the professional. The map and loading state share a consistent height; professional contact stacks on compact screens.
+- PRO profile sign-out has moved to the end of profile settings; admin section navigation uses one horizontally scrollable tab row.
+- The tab bar now uses tab accessibility semantics and restrained press feedback aligned with the motion tokens.
+- App UI is pinned to the supported light appearance. The GitHub Pages base path is applied only to Pages builds, so root-based Vercel builds are not forced under /Klipp.
+- The audit findings and viewport checklist are recorded in docs/KLIPP-VISUAL-AUDIT.md.
+- CI now captures actual web-entry screenshots at 390×844 and 1440×900 and publishes them as a review artifact. Authenticated routes still require manual review with test sessions.
+- These changes are source-level corrections. The final branch still requires lint, TypeScript, web export, screenshot artifact review and device/browser inspection before visual sign-off.
