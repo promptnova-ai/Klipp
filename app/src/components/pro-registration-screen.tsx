@@ -87,6 +87,8 @@ export function ProRegistrationScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [catalog, setCatalog] = useState<ServiceType[]>([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -631,10 +633,20 @@ export function ProRegistrationScreen() {
                     <TextInput autoCapitalize="none" autoComplete="email" autoCorrect={false} keyboardType="email-address" onChangeText={setEmail} placeholder="nombre@correo.com" placeholderTextColor={KlippColors.muted} style={styles.input} value={email} />
                   </Field>
                   <Field label="Contraseña">
-                    <TextInput autoComplete="new-password" onChangeText={setPassword} placeholder="Al menos 8 caracteres" placeholderTextColor={KlippColors.muted} secureTextEntry style={styles.input} value={password} />
+                    <View style={styles.passwordField}>
+                      <TextInput autoComplete="new-password" onChangeText={setPassword} placeholder="Al menos 8 caracteres" placeholderTextColor={KlippColors.muted} secureTextEntry={!showPassword} style={styles.passwordInput} value={password} />
+                      <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} hitSlop={10} onPress={() => setShowPassword((visible) => !visible)} style={styles.passwordVisibility}>
+                        <Text style={styles.passwordVisibilityText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                      </Pressable>
+                    </View>
                   </Field>
                   <Field label="Confirma tu contraseña">
-                    <TextInput autoComplete="new-password" onChangeText={setConfirmPassword} placeholder="Repite tu contraseña" placeholderTextColor={KlippColors.muted} secureTextEntry style={styles.input} value={confirmPassword} />
+                    <View style={styles.passwordField}>
+                      <TextInput autoComplete="new-password" onChangeText={setConfirmPassword} placeholder="Repite tu contraseña" placeholderTextColor={KlippColors.muted} secureTextEntry={!showConfirmPassword} style={styles.passwordInput} value={confirmPassword} />
+                      <Pressable accessibilityRole="button" accessibilityLabel={showConfirmPassword ? 'Ocultar confirmación' : 'Mostrar confirmación'} hitSlop={10} onPress={() => setShowConfirmPassword((visible) => !visible)} style={styles.passwordVisibility}>
+                        <Text style={styles.passwordVisibilityText}>{showConfirmPassword ? 'Ocultar' : 'Mostrar'}</Text>
+                      </Pressable>
+                    </View>
                   </Field>
                   <Text style={styles.privacyNote}>🔒 Tus datos se usan para crear y proteger tu cuenta profesional.</Text>
                 </View>
@@ -715,6 +727,10 @@ const styles = StyleSheet.create({
   card: { paddingVertical: 19, paddingHorizontal: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', gap: 18, shadowOpacity: 0, elevation: 0 },
   field: { flex: 1, gap: 8, minWidth: 0 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
+  passwordField: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD' },
+  passwordInput: { flex: 1, minWidth: 0, minHeight: 54, color: KlippColors.ink, fontSize: 15 },
+  passwordVisibility: { minWidth: 64, minHeight: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderRadius: 11, backgroundColor: KlippColors.surfaceBlue },
+  passwordVisibilityText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '800' },
   input: { minHeight: 54, paddingHorizontal: 14, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 10, backgroundColor: '#FFFFFF', color: KlippColors.ink, fontSize: 15 },
   multiline: { minHeight: 112, paddingTop: 13, textAlignVertical: 'top' },
   transportSection: { gap: 10, paddingTop: 3 },
