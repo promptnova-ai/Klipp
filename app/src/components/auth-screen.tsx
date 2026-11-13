@@ -20,29 +20,10 @@ import { ScreenEntrance } from '@/components/ui-primitives';
 import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors } from '@/theme/tokens';
 import { normalizePhoneNumber } from '@/lib/phone';
-import { heroArt } from '@/lib/service-art';
 import type { ExtractRole } from '@/lib/types';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
-
-const serviceHighlights = [
-  {
-    title: 'Profesionales verificados',
-    detail: 'Perfiles revisados antes de trabajar.',
-    icon: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
-  },
-  {
-    title: 'Tarifas claras',
-    detail: 'Conoces el precio antes de pagar.',
-    icon: { ios: 'tag.fill', android: 'sell', web: 'sell' },
-  },
-  {
-    title: 'Seguimiento en vivo',
-    detail: 'Sigue la llegada del profesional.',
-    icon: { ios: 'location.fill', android: 'location_on', web: 'place' },
-  },
-] as const;
 
 function AuthShowcase({ compact }: { compact: boolean; isRegister: boolean }) {
   return (
@@ -169,7 +150,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
             <ScreenEntrance delay={30}>
               <View style={[styles.main, wide && !isRegister && styles.mainWide]}>
-              {!isRegister && <AuthShowcase compact={!wide} isRegister={false} />}
+              {!isRegister && wide && <AuthShowcase compact={false} isRegister={false} />}
               <View style={[styles.formCard, wide && styles.formCardWide, !wide && !isRegister && styles.formCardLogin]}>
                 <Text style={styles.eyebrow}>{isRegister ? 'CREAR CUENTA · CLIENTE' : 'QUÉ BUENO VERTE'}</Text>
                 <Text style={styles.title}>{isRegister ? 'Empieza con lo esencial.' : 'Inicia sesión'}</Text>
