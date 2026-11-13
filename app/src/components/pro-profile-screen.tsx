@@ -621,15 +621,6 @@ export function ProProfileScreen() {
         )}
         {proProfile.verification_note && <Text style={styles.body}>Nota del equipo: {proProfile.verification_note}</Text>}
       </View>
-      <Pressable
-        accessibilityRole="button"
-        disabled={signingOut}
-        onPress={() => void handleSignOut()}
-        style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutPressed, signingOut && styles.buttonDisabled]}>
-        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
-      </Pressable>
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-
       <Section title="Herramientas y materiales propios">
         <Text style={styles.body}>
           Klipp exige que acudas con tus propias herramientas, equipos, productos y materiales necesarios para completar cada servicio. No debes depender de herramientas, productos, utensilios ni equipos del cliente. Antes de aceptar cada solicitud, comprueba que llevas todo lo necesario.
@@ -809,6 +800,13 @@ export function ProProfileScreen() {
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
       <ActionButton disabled={saving} label={saving ? 'Guardando...' : 'Guardar perfil'} onPress={() => void saveProfile()} />
+      <Pressable
+        accessibilityRole="button"
+        disabled={signingOut}
+        onPress={() => void handleSignOut()}
+        style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutPressed, signingOut && styles.buttonDisabled]}>
+        <Text style={styles.signOutText}>{signingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</Text>
+      </Pressable>
     </ScrollView>
   );
 }
