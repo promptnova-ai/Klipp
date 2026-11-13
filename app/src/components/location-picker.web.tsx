@@ -152,8 +152,14 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
       {(!hasApiKey || loadError) && (
         <>
           <View style={styles.coordinateFields}>
-            <TextInput accessibilityLabel="Latitud del servicio" keyboardType="numbers-and-punctuation" onChangeText={setLatitude} style={styles.coordinateInput} value={latitude} />
-            <TextInput accessibilityLabel="Longitud del servicio" keyboardType="numbers-and-punctuation" onChangeText={setLongitude} style={styles.coordinateInput} value={longitude} />
+            <View style={styles.coordinateField}>
+              <Text style={styles.fieldLabel}>Latitud</Text>
+              <TextInput accessibilityLabel="Latitud del servicio" keyboardType="numbers-and-punctuation" onChangeText={setLatitude} style={styles.coordinateInput} value={latitude} />
+            </View>
+            <View style={styles.coordinateField}>
+              <Text style={styles.fieldLabel}>Longitud</Text>
+              <TextInput accessibilityLabel="Longitud del servicio" keyboardType="numbers-and-punctuation" onChangeText={setLongitude} style={styles.coordinateInput} value={longitude} />
+            </View>
           </View>
           <Pressable accessibilityRole="button" onPress={applyCoordinates} style={({ pressed }) => [styles.applyButton, pressed && styles.pressed]}>
             <Text style={styles.applyText}>Aplicar ubicación</Text>
@@ -178,6 +184,8 @@ const styles = StyleSheet.create({
   title: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   coordinates: { color: KlippColors.slate, fontSize: 12 },
   coordinateFields: { flexDirection: 'row', gap: 8 },
+  coordinateField: { flex: 1, minWidth: 0, gap: 4 },
+  fieldLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' },
   coordinateInput: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white, color: KlippColors.slate, fontSize: 12 },
   applyButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 12, backgroundColor: KlippColors.cobalt },
   applyText: { color: KlippColors.white, fontSize: 12, fontWeight: '800' },
