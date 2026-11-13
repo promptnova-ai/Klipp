@@ -6,7 +6,7 @@ import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors, RoleThemes } from '@/lib/brand';
+import { KlippColors, KlippLayout, RoleThemes } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import {
   isPushDeviceRegisteredAsync,
@@ -540,7 +540,7 @@ export function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  page: { width: '100%', maxWidth: 1040, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 18, paddingBottom: 56, gap: 20 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 18, paddingBottom: 56, gap: 20 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, gap: 16 },
   headerCopy: { flex: 1, gap: 5 },
   eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
