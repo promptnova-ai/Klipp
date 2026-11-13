@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, T
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { AdminOperationsPanel } from '@/components/admin-operations-panel';
 import { useAuth } from '@/components/auth-provider';
-import {  KlippColors, KlippLayout  } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
