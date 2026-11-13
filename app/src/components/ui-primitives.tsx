@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 
 import { KlippColors, KlippLayout, KlippMotion, KlippShadows, KlippSpacing, KlippTypography } from '@/theme/tokens';
+import { RoleThemes, type KlippRole } from '@/theme/themes';
 
 /** One shared OS preference subscription avoids a listener per button or screen. */
 let reducedMotionSnapshot = false;
@@ -204,6 +205,7 @@ type PrimaryButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   variant?: 'primary' | 'secondary' | 'quiet' | 'danger';
+  role?: KlippRole;
 };
 
 export function PrimaryButton({
@@ -212,9 +214,11 @@ export function PrimaryButton({
   disabled = false,
   loading = false,
   variant = 'primary',
+  role = 'client',
 }: PrimaryButtonProps) {
   const isPrimary = variant === 'primary';
   const isDanger = variant === 'danger';
+  const roleTheme = RoleThemes[role];
   return (
     <MotionPressable
       accessibilityLabel={title}
@@ -222,14 +226,14 @@ export function PrimaryButton({
       disabled={disabled || loading}
       style={[
         styles.button,
-        isPrimary && styles.buttonPrimary,
+        isPrimary && { backgroundColor: roleTheme.accent },
         variant === 'secondary' && styles.buttonSecondary,
         variant === 'quiet' && styles.buttonQuiet,
         isDanger && styles.buttonDanger,
         (disabled || loading) && styles.buttonDisabled,
       ]}>
       {loading ? (
-        <ActivityIndicator color={isPrimary || isDanger ? '#FFFFFF' : KlippColors.navy} />
+        <ActivityIndicator color={isPrimary || isDanger ? KlippColors.white : KlippColors.ink} />
       ) : (
         <Text style={[
           styles.buttonText,
