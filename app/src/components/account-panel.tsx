@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
@@ -6,6 +7,7 @@ import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors, type KlippRole } from '@/lib/brand';
 
 export function AccountPanel({ roleLabel }: { roleLabel: string }) {
+  const router = useRouter();
   const { profile, signOut } = useAuth();
   const role: KlippRole = profile?.role === 'pro' ? 'pro' : profile?.role === 'admin' ? 'admin' : 'client';
   const displayName = profile?.full_name?.trim() || 'Tu cuenta';
@@ -27,7 +29,20 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
         <View style={styles.detailDivider} />
         <View style={styles.detailRow}><Text style={styles.label}>Tipo de cuenta</Text><Text style={styles.value}>{roleLabel}</Text></View>
       </View>
-      <Text style={styles.securityNote}>Tus datos de cuenta se gestionan de forma segura en Klipp.</Text>
+      {role === 'client' && (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.navigate('/(client)/addresses')}
+          style={({ pressed }) => [styles.menuRow, pressed && styles.pressed]}>
+          <View style={styles.menuIcon}><SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'place' }} tintColor="#3D5AFE" size={20} /></View>
+          <View style={styles.menuCopy}>
+            <Text style={styles.menuTitle}>Direcciones guardadas</Text>
+            <Text style={styles.menuSubtitle}>Gestiona tus lugares de servicio</Text>
+          </View>
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#85899A" size={17} />
+        </Pressable>
+      )}
+            <Text style={styles.securityNote}>Tus datos de cuenta se gestionan de forma segura en Klipp.</Text>
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
       </Pressable>
@@ -47,6 +62,11 @@ const styles = StyleSheet.create({
   details: { width: '100%', maxWidth: 720, alignSelf: 'center', marginTop: 4, paddingHorizontal: 22, paddingVertical: 8, backgroundColor: 'transparent', borderTopWidth: 1, borderBottomWidth: 1, borderColor: KlippColors.border, gap: 0 },
   detailRow: { paddingVertical: 14, gap: 5 },
   detailDivider: { height: 1, backgroundColor: KlippColors.border },
+  menuRow: { width: '100%', maxWidth: 676, minHeight: 70, alignSelf: 'center', marginTop: 16, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: KlippColors.border },
+  menuIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#E9EDFF', alignItems: 'center', justifyContent: 'center' },
+  menuCopy: { flex: 1, gap: 3 },
+  menuTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
+  menuSubtitle: { color: KlippColors.muted, fontSize: 11 },
   securityNote: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 16, color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.navy, fontSize: 16 },
