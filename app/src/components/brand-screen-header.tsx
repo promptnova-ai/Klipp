@@ -2,7 +2,8 @@ import type { ReactNode } from 'react';
 import { KlippMark } from '@/components/klipp-mark';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
-import { KlippColors, KlippLayout, RoleThemes, type KlippRole } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { RoleThemes, type KlippRole } from '@/theme/themes';
 
 type BrandScreenHeaderProps = {
   eyebrow: string;
