@@ -69,9 +69,10 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 | Viewport | Primary checks |
 | --- | --- |
 | 360 × 800 | Minimum tap targets, no clipped fields, two-column categories, compact cards, sticky booking action |
+| 360 × 800 | Tightest phone layout, no clipped controls or horizontal overflow |
 | 390 × 844 | Default mobile hierarchy, category labels, map and contact card |
-| 768 × 1024 | Tablet gutters, service grid, menu wrapping and modal width |
-| 1024 × 768 | Tablet landscape, booking sections and admin tab navigation |
+| 768 × 1024 | Tablet portrait gutters, service grid, menu wrapping and modal width |
+| 1024 × 768 | Tablet landscape, desktop navigation transition, booking sections and admin tab navigation |
 | 1440 × 900 | Content max-width, consistent header/content alignment, desktop service grid |
 
 ## Verification status
