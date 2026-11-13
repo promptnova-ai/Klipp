@@ -29,6 +29,8 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 | Maps and system accents | Several maps, notification indicators and loading states retained legacy teal/bright-blue colors | Migrated them to canonical Klipp tokens |
 | Splash and animated mark | Expo starter artwork and high-energy glow/rotation motion were inconsistent with Klipp | Replaced it with the real Klipp mark and a short, restrained animation that respects reduced motion |
 | Tablet home | Native discovery remained a two-column list at all widths | Added the same 2/3/4-column category grid and shared content max-width for phone, tablet and desktop |
+| Location selection / web | Browser version showed manual coordinates instead of a map; coverage setup could become unusable without a maps key | Added interactive Google Maps selection with draggable cobalt pin and map-click placement; kept a validated manual-coordinate fallback when Maps is unavailable |
+| PRO coverage map | Web map used a default red pin and different map gestures from the rest of Klipp | Matched cobalt pin/circle styling, cooperative map gestures and manual center fallback |
 
 ## Product-wide review checklist
 
