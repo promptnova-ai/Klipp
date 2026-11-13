@@ -71,7 +71,7 @@ export const KlippShadows = {
 export const KlippLayout = {
   pageGutter: 24, pageGutterCompact: 16, contentMaxWidth: 1120, contentNarrowWidth: 760,
   radiusCard: KlippRadii.card, radiusCardLarge: KlippRadii.cardLarge, radiusControl: KlippRadii.control, radiusPill: KlippRadii.pill,
-  controlHeight: 54, sectionGap: 28, cardGap: 16,
+  controlHeight: 54, minTapTarget: 44, sectionGap: 28, cardGap: 16,
 } as const;
 
 export const KlippMotion = {
