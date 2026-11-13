@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: KlippColors.ink, fontSize: 36, lineHeight: 42, fontWeight: '800', letterSpacing: -1.25 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, maxWidth: 620 },
-  card: { paddingVertical: 19, paddingHorizontal: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', gap: 18, shadowOpacity: 0, elevation: 0 },
+  card: { padding: 22, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 19, shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 7 }, shadowRadius: 20, elevation: 1 },
   identityPanel: { width: '100%', maxWidth: 680, alignSelf: 'center', padding: 24, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 22, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 24, elevation: 2 },
   identityIntro: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   identityStep: { color: RoleThemes.pro.accentStrong, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
