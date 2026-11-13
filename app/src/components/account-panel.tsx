@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   securityNote: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingTop: 8, color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.ink, fontSize: 16 },
-  signOut: { width: '100%', maxWidth: 676, alignSelf: 'center', minHeight: 52, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 24, backgroundColor: KlippColors.surfaceCoral },
+  signOut: { width: '100%', maxWidth: 676, alignSelf: 'center', minHeight: 52, borderWidth: 1, borderColor: KlippColors.danger, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 24, backgroundColor: KlippColors.surfaceDanger },
   signOutText: { color: KlippColors.danger, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.75 },
 });
