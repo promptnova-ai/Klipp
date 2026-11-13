@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { KlippMark } from '@/components/klipp-mark';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
-import { KlippColors, KlippLayout } from '@/theme/tokens';
+import { KlippColors, KlippLayout, KlippSpacing, KlippTypography } from '@/theme/tokens';
 import { RoleThemes, type KlippRole } from '@/theme/themes';
 
 type BrandScreenHeaderProps = {
@@ -61,18 +61,18 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 18,
   },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[2], minHeight: 42 },
   logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  brandCopy: { gap: 2 },
-  brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brand: { color: KlippColors.navy, fontSize: 21, fontWeight: '900', letterSpacing: -0.5 },
-  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
-  badgeText: { fontSize: 9, fontWeight: '900', letterSpacing: 0.5 },
-  location: { color: KlippColors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 0.8 },
+  brandCopy: { gap: KlippSpacing[1] },
+  brandLine: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[2] },
+  brand: { color: KlippColors.ink, fontSize: KlippTypography.size.title, fontWeight: '800', letterSpacing: KlippTypography.tracking.tight },
+  badge: { paddingHorizontal: KlippSpacing[2], paddingVertical: KlippSpacing[1], borderRadius: KlippLayout.radiusPill },
+  badgeText: { fontSize: KlippTypography.size.micro, fontWeight: '800', letterSpacing: KlippTypography.tracking.label },
+  location: { color: KlippColors.muted, fontSize: KlippTypography.size.micro, fontWeight: '700', letterSpacing: KlippTypography.tracking.label },
   trailing: { marginLeft: 'auto' },
-  heading: { gap: 6, marginTop: 2 },
-  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.15 },
-  title: { color: KlippColors.navy, fontSize: 32, lineHeight: 38, fontWeight: '900', letterSpacing: -1 },
-  titleCompact: { fontSize: 27, lineHeight: 33, letterSpacing: -0.7 },
-  subtitle: { maxWidth: 720, color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
+  heading: { gap: KlippSpacing[2], marginTop: KlippSpacing[1] },
+  eyebrow: { fontSize: KlippTypography.size.caption, fontWeight: '800', letterSpacing: KlippTypography.tracking.eyebrow },
+  title: { color: KlippColors.ink, fontSize: KlippTypography.size.titleLarge, lineHeight: KlippTypography.lineHeight.titleLarge, fontWeight: '800', letterSpacing: KlippTypography.tracking.tight },
+  titleCompact: { fontSize: KlippTypography.size.compactTitle, lineHeight: KlippTypography.lineHeight.compactTitle, letterSpacing: KlippTypography.tracking.tight },
+  subtitle: { maxWidth: 720, color: KlippColors.muted, fontSize: KlippTypography.size.bodySmall, lineHeight: KlippTypography.lineHeight.bodyLarge },
 });
