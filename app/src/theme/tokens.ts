@@ -22,6 +22,11 @@ export const KlippColors = {
   success: '#247A5A',
   warning: '#A85A25',
   slate: '#3D4358',
+  darkCanvas: '#111525',
+  darkSurface: '#22283D',
+  darkSurfaceSelected: '#303B68',
+  darkInk: '#F7F5F0',
+  darkMuted: '#B7BDCE',
 
   /** @deprecated Compatibility aliases. Use cobalt/ink/coral and semantic surfaces. */
   navy: '#171B2D',
@@ -55,7 +60,7 @@ export const KlippTypography = {
 } as const;
 
 export const KlippRadii = {
-  control: 16, card: 22, cardLarge: 28, pill: 999, modal: 28,
+  small: 8, medium: 12, control: 16, card: 22, cardLarge: 28, pill: 999, modal: 28,
 } as const;
 
 export const KlippShadows = {
