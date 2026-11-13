@@ -26,7 +26,7 @@ Automated compilation is necessary but does not prove that the app is usable. Be
 
 | Area | Scenarios to verify | Pass criteria |
 | --- | --- | --- |
-| Authentication | Client and PRO login; OTP request and confirmation; invalid/expired OTP; resend; logout | Clear errors, no stuck loading, correct role routing, no session leakage |
+| Authentication | Client and PRO login; RD phone formats (+1-809/+1-829/+1-849); OTP request, six-digit validation, resend, invalid/expired OTP, email confirmation/resend and logout on web/native | Valid codes are accepted; malformed codes are rejected; phone formatting is normalized; resend is rate-limit safe; correct role routing and no session leakage |
 | Client onboarding | Required fields, Dominican phone formats (+1-809/+1-829/+1-849), back/continue, refresh/reopen | Data persists as designed; validation is field-specific; no overlapping controls |
 | PRO onboarding and verification | Select exactly one profession; email confirmation and resend; upload ID document (PDF/JPG/PNG, max 10 MB); replace document; admin approval/rejection with reason | Email must be confirmed; private document is stored under the user's own path; approval requires the document and confirmed email; rejected profiles remain undiscoverable until re-reviewed |
 | Client booking | Category/search, service selection, address, date/time, price, payment failure/success | Price and service remain consistent; no duplicate booking on repeated taps; clear confirmation |
