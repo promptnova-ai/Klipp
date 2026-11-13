@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
   payment: { padding: 14, borderRadius: 14, backgroundColor: KlippColors.surfaceCoral, gap: 4 },
   paymentTitle: { color: KlippColors.warning, fontSize: 14, fontWeight: '700' },
   button: { minHeight: 48, marginTop: 2, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.cobalt },
-  buttonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  buttonText: { color: KlippColors.white, fontWeight: '700', fontSize: 14 },
   disabled: { opacity: 0.55 },
   reviewForm: { marginTop: 3, paddingTop: 15, borderTopWidth: 1, borderTopColor: KlippColors.border, gap: 10 },
   reviewTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '700' },
