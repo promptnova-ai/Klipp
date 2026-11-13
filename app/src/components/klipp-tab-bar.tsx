@@ -60,7 +60,7 @@ export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }:
         </Pressable>
         {items.slice(2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
-            <TabButton label={item.label} icon={item.icon} accent={accent} />
+            <TabButton label={item.label} icon={item.icon} accent={accent} accentSoft={theme.accentSoft} />
           </TabTrigger>
         ))}
       </View>
