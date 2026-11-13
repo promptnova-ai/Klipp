@@ -471,7 +471,6 @@ const styles = StyleSheet.create({
   grow: { flex: 1, gap: 4 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   title: { color: KlippColors.ink, fontSize: 19, fontWeight: '800' },
-  sectionTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '800', marginTop: 5 },
   body: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
   caption: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
   refresh: { paddingHorizontal: 12, paddingVertical: 10, borderRadius: 9, backgroundColor: KlippColors.ink },
