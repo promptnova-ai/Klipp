@@ -504,7 +504,7 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 }
 
 const styles = StyleSheet.create({
-  proHero: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 22, marginTop: 8, paddingVertical: 22, paddingHorizontal: 20, borderRadius: 16, backgroundColor: '#171B2D', gap: 17, overflow: 'hidden', shadowOpacity: 0, elevation: 0 },
+  proHero: { width: '100%', maxWidth: 1080, alignSelf: 'center', marginHorizontal: 0, marginTop: 4, padding: 22, borderRadius: 24, backgroundColor: KlippColors.ink, gap: 18, overflow: 'hidden', shadowOpacity: 0, elevation: 0 },
   proHeroTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   proHeroEyebrow: { color: 'rgba(255,255,255,0.82)', fontSize: 9, fontWeight: '900', letterSpacing: 1.25 },
   proHeroLive: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.12)' },
@@ -541,12 +541,12 @@ const styles = StyleSheet.create({
   requestEarningsLabel: { color: '#E65C45', fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   requestEarningsHint: { color: '#8D6D69', fontSize: 10, marginTop: 3 },
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 26, paddingHorizontal: 24, paddingBottom: 18, backgroundColor: '#171B2D', alignItems: 'flex-start', gap: 9, borderBottomWidth: 4, borderBottomColor: '#FF7058' },
+  offerHeader: { width: '100%', paddingTop: 26, paddingHorizontal: 24, paddingBottom: 20, backgroundColor: KlippColors.ink, alignItems: 'flex-start', gap: 9, borderBottomWidth: 4, borderBottomColor: KlippColors.coral },
   offerBrand: { color: '#FFFFFF', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: KlippColors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
   countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.22)' },
   countdownText: { color: '#FFFFFF', fontWeight: '900', fontSize: 18, textAlign: 'center' },
-  offerContent: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 28, paddingBottom: 56, gap: 20, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  offerContent: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 24, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   offerTitle: { color: KlippColors.navy, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'left' },
   offerSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, textAlign: 'left', marginBottom: 4 },
   customerCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
