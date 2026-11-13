@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { ScreenEntrance } from '@/components/ui-primitives';
+import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors } from '@/lib/brand';
 import type { ExtractRole } from '@/lib/types';
 import { isSupabaseConfigured } from '../../lib/supabase';
@@ -54,7 +55,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
       {(fullBleedRegister || compactLogin || !compact) && <View pointerEvents="none" style={[styles.showcasePhotoWash, compactLogin && styles.showcaseLoginPhotoWash]} />}
       <View style={styles.showcaseCopy}>
         <View style={styles.showcaseBrandLine}>
-          <View style={[styles.showcaseMark, compactLogin && styles.showcaseMarkLogin]}><Text style={styles.showcaseMarkLetter}>K</Text></View>
+          <View style={[styles.showcaseMark, compactLogin && styles.showcaseMarkLogin]}><KlippMark size={26} /></View>
           <Text style={[styles.showcaseBrand, compactLogin && styles.showcaseBrandLogin]}>KLIPP</Text>
           <Text style={[styles.showcaseRegion, compactLogin && styles.showcaseRegionLogin]}>SANTO DOMINGO · RD</Text>
         </View>
@@ -145,6 +146,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<ExtractRole>('client');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -185,7 +187,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           <View style={styles.authShell}>
             <View style={styles.topBar}>
               <View style={styles.brandRow}>
-                <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
+                <View style={styles.logoMark}><KlippMark size={36} /></View>
                 <View style={styles.brandCopy}>
                   <Text style={styles.brand}>KLIPP</Text>
                   <Text style={styles.location}>SANTO DOMINGO, RD</Text>
@@ -284,15 +286,31 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </View>
                 <View style={styles.field}>
                   <Text style={styles.label}>Contraseña</Text>
-                  <TextInput
-                    autoComplete={isRegister ? 'new-password' : 'current-password'}
-                    onChangeText={setPassword}
-                    placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
-                    placeholderTextColor={KlippColors.muted}
-                    secureTextEntry
-                    style={styles.input}
-                    value={password}
-                  />
+                  <View style={styles.passwordInputWrap}>
+                    <TextInput
+                      autoComplete={isRegister ? 'new-password' : 'current-password'}
+                      onChangeText={setPassword}
+                      placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
+                      placeholderTextColor={KlippColors.muted}
+                      secureTextEntry={!showPassword}
+                      style={styles.passwordInput}
+                      value={password}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      hitSlop={10}
+                      onPress={() => setShowPassword((visible) => !visible)}
+                      style={styles.passwordToggle}>
+                      <SymbolView
+                        name={showPassword
+                          ? { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' }
+                          : { ios: 'eye', android: 'visibility', web: 'visibility' }}
+                        tintColor={KlippColors.muted}
+                        size={19}
+                      />
+                    </Pressable>
+                  </View>
                 </View>
 
                 {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
@@ -338,7 +356,10 @@ const styles = StyleSheet.create({
   authShell: { width: '100%', maxWidth: 1200, alignSelf: 'center', gap: 22 },
   topBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 42, height: 42, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
+  logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  passwordInputWrap: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD' },
+  passwordInput: { flex: 1, minWidth: 0, minHeight: 54, color: KlippColors.ink, fontSize: 15 },
+  passwordToggle: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   logoLetter: { color: KlippColors.white, fontSize: 23, fontWeight: '900' },
   brandCopy: { gap: 1 },
   brand: { color: KlippColors.navy, fontSize: 22, fontWeight: '900', letterSpacing: 1.1 },
@@ -354,7 +375,7 @@ const styles = StyleSheet.create({
   showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
   showcaseCompactLogin: { minHeight: 330, justifyContent: 'flex-end', padding: 26, borderRadius: 26, borderColor: 'transparent', backgroundColor: '#18233A', shadowOpacity: 0, elevation: 0 },
   showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.58)' },
-  showcaseMarkLogin: { backgroundColor: KlippColors.coral },
+  showcaseMarkLogin: { backgroundColor: 'transparent' },
   showcaseBrandLogin: { color: '#FFFFFF' },
   showcaseRegionLogin: { color: 'rgba(255,255,255,0.78)' },
   
@@ -372,7 +393,7 @@ const styles = StyleSheet.create({
   loginServiceCaption: { color: KlippColors.muted, fontSize: 9, marginTop: 1 },
   showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
   showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
+  showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: 'transparent' },
   showcaseMarkLetter: { color: KlippColors.white, fontSize: 17, fontWeight: '900' },
   showcaseBrand: { color: KlippColors.navy, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
   showcaseRegion: { color: KlippColors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 0.7, marginLeft: 'auto' },
