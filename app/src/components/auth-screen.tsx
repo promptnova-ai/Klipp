@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
   previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: KlippColors.border },
   previewFooterText: { color: KlippColors.slate, fontSize: 8, fontWeight: '700' },
   formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 16, padding: 30, borderWidth: 1, borderColor: KlippColors.surfaceMuted, borderRadius: 30, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.075, shadowOffset: { width: 0, height: 16 }, shadowRadius: 30, elevation: 4 },
-  formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
+  formCardWide: { width: 430, alignSelf: 'center', padding: 28 },
   formCardLogin: { padding: 22, gap: 12, borderRadius: 24 },
   eyebrow: { color: KlippColors.cobaltDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
