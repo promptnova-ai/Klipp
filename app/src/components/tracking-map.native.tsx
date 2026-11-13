@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import MapView, { Marker, Polyline, type MapMarker, type Region, type LatLng } from 'react-native-maps';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import type { MapCoordinate } from '@/components/location-picker';
 import { KlippColors } from '@/theme/tokens';
@@ -70,10 +70,18 @@ export function TrackingMap({
         <Marker coordinate={clientCoordinate} title="Tu destino" description="Dirección del servicio" pinColor={KlippColors.cobalt} />
         <Marker ref={marker} coordinate={proCoordinate} title="Tu profesional" description="Ubicación actual" pinColor={KlippColors.coral} />
       </MapView>
+      <View pointerEvents="none" style={styles.legend}>
+        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.coral }]} /><Text style={styles.legendText}>Profesional</Text></View>
+        <View style={styles.legendItem}><View style={[styles.legendDot, { backgroundColor: KlippColors.cobalt }]} /><Text style={styles.legendText}>Tu destino</Text></View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { height: 360, overflow: 'hidden', borderRadius: 20, backgroundColor: KlippColors.surfaceBlue },
+  legend: { position: 'absolute', right: 12, bottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.94)' },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendText: { color: KlippColors.ink, fontSize: 11, fontWeight: '800' },
 });
