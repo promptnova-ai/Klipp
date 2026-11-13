@@ -17,7 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippMark } from '@/components/klipp-mark';
-import { KlippColors as C } from '@/lib/brand';
+import { KlippColors as C } from '@/theme/tokens';
 import { serviceArt } from '@/lib/service-art';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../../lib/supabase';
