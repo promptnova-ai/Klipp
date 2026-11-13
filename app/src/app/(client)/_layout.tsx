@@ -1,4 +1,5 @@
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
+import { useWindowDimensions } from 'react-native';
 
 import { RoleGuard } from '@/components/role-guard';
 import { KlippTabBar, type KlippTabItem } from '@/components/klipp-tab-bar';
@@ -17,6 +18,7 @@ const workflowTabs = [
 ] as const;
 
 export default function ClientLayout() {
+  const { width } = useWindowDimensions();
   return (
     <RoleGuard role="client">
       <Tabs>
@@ -24,7 +26,7 @@ export default function ClientLayout() {
           {primaryTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
           {workflowTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
-        <TabSlot detachInactiveScreens={false} />
+        <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />
         <KlippTabBar items={primaryTabs} actionHref="/(client)/new-booking" actionLabel="Reservar un servicio" role="client" />
       </Tabs>
     </RoleGuard>
