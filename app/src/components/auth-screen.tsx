@@ -3,7 +3,6 @@ import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -48,11 +47,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
   const compactLogin = compact && !isRegister;
   const fullBleedRegister = compact && isRegister;
   return (
-    <ImageBackground
-      source={{ uri: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1800&q=88' }}
-      resizeMode="cover"
-      imageStyle={styles.showcaseImage}
-      style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
+    <View style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
       {(fullBleedRegister || compactLogin || !compact) && <View pointerEvents="none" style={[styles.showcasePhotoWash, compactLogin && styles.showcaseLoginPhotoWash]} />}
       <View style={styles.showcaseCopy}>
         <Text style={[styles.showcaseKicker, compactLogin && styles.showcaseKickerLogin]}>{compactLogin ? 'SERVICIOS A DOMICILIO, SIN COMPLICACIONES' : 'SERVICIOS A DOMICILIO'}</Text>
@@ -129,7 +124,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
           </View>
         </View>
       )}
-    </ImageBackground>
+    </View>
   );
 }
 
@@ -402,12 +397,11 @@ const styles = StyleSheet.create({
   trustNoteText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '700' },
   main: { gap: 18 },
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
-  showcase: { width: '100%', flex: 1, minWidth: 0, minHeight: 620, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 32, borderWidth: 0, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: '#D9E2DF', overflow: 'hidden', shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
+  showcase: { width: '100%', flex: 1, minWidth: 0, minHeight: 620, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 32, borderWidth: 0, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: '#E5E9F7', overflow: 'hidden', shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
-  showcaseImage: { borderRadius: 26 },
   showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: '#D9E2DF' },
   showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
-  showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: '#18233A', shadowOpacity: 0, elevation: 0 },
+  showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: '#17213A', shadowOpacity: 0, elevation: 0 },
   showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.58)' },
   showcaseMarkLogin: { backgroundColor: 'transparent' },
   showcaseBrandLogin: { color: '#FFFFFF' },
