@@ -98,6 +98,8 @@ jobs:
           src/components/auth-screen.native.tsx
           'src/app/(client)/index.native.tsx'
           src/components/klipp-tab-bar.tsx
+          'src/app/(client)/_layout.tsx'
+          'src/app/(pro)/_layout.tsx'
           src/components/role-guard.tsx
           src/components/location-picker.native.tsx
           src/components/location-picker.web.tsx
