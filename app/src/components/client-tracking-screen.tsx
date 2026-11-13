@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   etaLabel: { color: '#E9EDFF', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   etaValue: { color: KlippColors.white, fontSize: 38, lineHeight: 42, fontWeight: '900', letterSpacing: -1 },
   etaHint: { color: '#E9EDFF', fontSize: 12, lineHeight: 18 },
-  mapPlaceholder: { height: 300, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.whiteBlue, gap: 10 },
+  mapPlaceholder: { height: 360, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.whiteBlue, gap: 10 },
   professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
   professionalCardCompact: { flexDirection: 'column', alignItems: 'stretch' },
   professionalIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 14 },
