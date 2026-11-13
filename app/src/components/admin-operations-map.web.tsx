@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 import { loadGoogleMapsLibrary } from '@/lib/google-maps';
 import type { OperationsMapPoint } from './admin-operations-map.types';
 
@@ -60,7 +60,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
         title: `${point.professionalName || 'Profesional'} · ${point.serviceName || 'Servicio Klipp'}`,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
-          fillColor: stale ? '#DC2626' : point.selected ? '#F59E0B' : '#208AEF',
+          fillColor: stale ? KlippColors.danger : point.selected ? KlippColors.coral : KlippColors.cobalt,
           fillOpacity: 1,
           strokeColor: '#FFFFFF',
           strokeWeight: 2,
