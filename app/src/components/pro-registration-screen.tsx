@@ -409,7 +409,7 @@ export function ProRegistrationScreen() {
           <View style={styles.brandRow}>
             <View style={styles.logoMark}><KlippMark size={34} /></View>
             <View style={styles.brandCopy}>
-              <Text style={styles.brand}>KLIPP</Text>
+              <Text style={styles.brand}>klipp</Text>
               <Text style={styles.brandRole}>PROFESIONAL</Text>
             </View>
           </View>
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   brandCopy: { gap: 1 },
-  brand: { color: KlippColors.ink, fontSize: 21, fontWeight: '900', letterSpacing: -0.5 },
+  brand: { color: KlippColors.ink, fontSize: 26, lineHeight: 29, fontWeight: '800', letterSpacing: -1.7 },
   brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
   stepCount: { color: KlippColors.ink, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 },
   progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
