@@ -183,8 +183,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.authShell}>
+        <ScrollView contentContainerStyle={[styles.scrollContent, !wide && !isRegister && styles.loginScrollContent]} keyboardShouldPersistTaps="handled">
+          <View style={[styles.authShell, !wide && !isRegister && styles.loginAuthShell]}>
             <View style={styles.topBar}>
               <View style={styles.brandRow}>
                 <View style={styles.logoMark}><KlippMark size={36} /></View>
@@ -202,7 +202,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             <ScreenEntrance delay={30}>
               <View style={[styles.main, wide && styles.mainWide]}>
               <AuthShowcase compact={!wide} isRegister={isRegister} />
-              <View style={[styles.formCard, wide && styles.formCardWide]}>
+              <View style={[styles.formCard, wide && styles.formCardWide, !wide && !isRegister && styles.formCardLogin]}>
                 <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'QUÉ BUENO VERTE'}</Text>
                 <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
                 <Text style={styles.subtitle}>
@@ -353,6 +353,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
   scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 24 },
+  loginScrollContent: { paddingHorizontal: 16, paddingVertical: 12 },
+  loginAuthShell: { gap: 12 },
   authShell: { width: '100%', maxWidth: 1200, alignSelf: 'center', gap: 22 },
   topBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
   showcaseImage: { borderRadius: 26 },
   showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: '#D9E2DF' },
   showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
-  showcaseCompactLogin: { minHeight: 330, justifyContent: 'flex-end', padding: 26, borderRadius: 26, borderColor: 'transparent', backgroundColor: '#18233A', shadowOpacity: 0, elevation: 0 },
+  showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: '#18233A', shadowOpacity: 0, elevation: 0 },
   showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.58)' },
   showcaseMarkLogin: { backgroundColor: 'transparent' },
   showcaseBrandLogin: { color: '#FFFFFF' },
@@ -381,10 +383,10 @@ const styles = StyleSheet.create({
   
   
   showcaseKickerLogin: { color: '#FFD0A8', fontSize: 9, lineHeight: 14 },
-  showcaseTitleLogin: { color: '#FFFFFF', fontSize: 32, lineHeight: 38, maxWidth: 390 },
+  showcaseTitleLogin: { color: '#FFFFFF', fontSize: 28, lineHeight: 33, maxWidth: 390 },
   showcaseDescriptionLogin: { color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 21, maxWidth: 390 },
-  loginServiceShowcase: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  loginServiceCard: { flex: 1, minWidth: 0, minHeight: 76, padding: 9, borderRadius: 13, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', backgroundColor: 'rgba(255,255,255,0.94)' },
+  loginServiceShowcase: { flexDirection: 'row', gap: 8, marginTop: 6 },
+  loginServiceCard: { flex: 1, minWidth: 0, minHeight: 64, padding: 8, borderRadius: 13, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', backgroundColor: 'rgba(255,255,255,0.94)' },
   loginServiceCardBlue: { backgroundColor: 'rgba(255,255,255,0.94)' },
   loginServiceCardCoral: { backgroundColor: 'rgba(255,247,244,0.96)' },
   loginServiceCardMint: { backgroundColor: 'rgba(243,251,247,0.96)' },
@@ -431,6 +433,7 @@ const styles = StyleSheet.create({
   previewFooterText: { color: KlippColors.slate, fontSize: 8, fontWeight: '700' },
   formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 16, padding: 30, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 30, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.075, shadowOffset: { width: 0, height: 16 }, shadowRadius: 30, elevation: 4 },
   formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
+  formCardLogin: { padding: 22, gap: 12, borderRadius: 24 },
   eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, marginBottom: 5 },
