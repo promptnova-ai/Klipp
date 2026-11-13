@@ -39,7 +39,7 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
             <Text style={styles.menuTitle}>Direcciones guardadas</Text>
             <Text style={styles.menuSubtitle}>Gestiona tus lugares de servicio</Text>
           </View>
-          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#85899A" size={17} />
+          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={17} />
         </Pressable>
       )}
             <Text style={styles.securityNote}>Tus datos de cuenta se gestionan de forma segura en Klipp.</Text>
