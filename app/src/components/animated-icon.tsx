@@ -1,6 +1,7 @@
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -28,6 +29,13 @@ const backgroundKeyframe = new Keyframe({
 export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
   const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reducedMotion) {
+      void SplashScreen.hideAsync();
+      setVisible(false);
+    }
+  }, [reducedMotion]);
 
   if (!visible) return null;
 
