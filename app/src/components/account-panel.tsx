@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
@@ -15,15 +15,14 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
   const initials = displayName.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
 
   return (
-    <View style={styles.screen}>
-      <BrandScreenHeader role={role} eyebrow="TU CUENTA" title="Mi cuenta" />
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <BrandScreenHeader role={role} inset={false} eyebrow="TU CUENTA" title="Mi cuenta" />
       <View style={styles.identity}>
         <View style={styles.avatar}><Text style={styles.avatarText}>{initials || 'K'}</Text></View>
         <View style={styles.identityCopy}>
           <Text style={styles.identityName}>{displayName}</Text>
           <Text style={styles.identityRole}>{roleLabel}</Text>
         </View>
-        <View style={styles.accountMark}><SymbolView name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }} tintColor="#3D5AFE" size={20} /></View>
       </View>
       <View style={styles.details}>
         <View style={styles.detailRow}><Text style={styles.label}>Nombre completo</Text><Text style={styles.value}>{profile?.full_name || 'Pendiente de completar'}</Text></View>
@@ -47,19 +46,19 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: KlippColors.canvas, paddingBottom: 36 },
+  screen: { flex: 1, backgroundColor: KlippColors.canvas },
+  content: { flexGrow: 1, alignItems: 'stretch', paddingHorizontal: 16, paddingBottom: 36, gap: 12 },
   identity: { width: '100%', maxWidth: 676, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 8, padding: 19, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 21, backgroundColor: KlippColors.white },
   avatar: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.ink },
   avatarText: { color: KlippColors.white, fontSize: 19, fontWeight: '900' },
   identityCopy: { flex: 1, gap: 4 },
   identityName: { color: KlippColors.ink, fontSize: 19, fontWeight: '900' },
   identityRole: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
-  accountMark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   details: { width: '100%', maxWidth: 676, alignSelf: 'center', marginTop: 4, paddingHorizontal: 20, paddingVertical: 9, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 21, gap: 0 },
   detailRow: { paddingVertical: 14, gap: 5 },
   detailDivider: { height: 1, backgroundColor: KlippColors.border },
@@ -68,10 +67,10 @@ const styles = StyleSheet.create({
   menuCopy: { flex: 1, gap: 3 },
   menuTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   menuSubtitle: { color: KlippColors.muted, fontSize: 11 },
-  securityNote: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 16, color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
+  securityNote: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingTop: 8, color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.navy, fontSize: 16 },
-  signOut: { width: '100%', maxWidth: 676, alignSelf: 'center', marginHorizontal: 22, minHeight: 52, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 24, backgroundColor: KlippColors.whiteCoral },
+  signOut: { width: '100%', maxWidth: 676, alignSelf: 'center', minHeight: 52, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 24, backgroundColor: KlippColors.whiteCoral },
   signOutText: { color: KlippColors.danger, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.75 },
 });
