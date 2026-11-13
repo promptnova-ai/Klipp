@@ -11,6 +11,7 @@ type BrandScreenHeaderProps = {
   subtitle?: string;
   role?: KlippRole;
   trailing?: ReactNode;
+  inset?: boolean;
 };
 
 export function BrandScreenHeader({
@@ -19,6 +20,7 @@ export function BrandScreenHeader({
   subtitle,
   role = 'client',
   trailing,
+  inset = true,
 }: BrandScreenHeaderProps) {
   const theme = RoleThemes[role];
   const { width } = useWindowDimensions();
@@ -27,7 +29,7 @@ export function BrandScreenHeader({
   const roleLabel = role === 'pro' ? 'PRO' : role === 'admin' ? 'ADMIN' : 'RD';
 
   return (
-    <View style={[styles.header, { paddingHorizontal: gutter, paddingTop: compact ? 18 : 28, gap: compact ? 14 : 18 }]}>
+    <View style={[styles.header, { paddingHorizontal: inset ? gutter : 0, paddingTop: compact ? 18 : 28, gap: compact ? 14 : 18 }]}>
       <View style={styles.brandRow}>
         <View style={styles.logoMark}><KlippMark size={34} /></View>
         <View style={styles.brandCopy}>
