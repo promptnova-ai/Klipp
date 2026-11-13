@@ -110,8 +110,14 @@ export function AuthScreen({ mode }: AuthScreenProps) {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined}>
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           <View style={styles.brandRow}>
-            <KlippMark size={42} />
-            <View><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>REPÚBLICA DOMINICANA</Text></View>
+            <View style={styles.brandLockup}>
+              <KlippMark size={42} />
+              <View><Text style={styles.brand}>klipp</Text><Text style={styles.brandCaption}>REPÚBLICA DOMINICANA</Text></View>
+            </View>
+            <View style={styles.secureBadge}>
+              <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={C.cobaltDark} size={14} />
+              <Text style={styles.secureBadgeText}>Acceso seguro</Text>
+            </View>
           </View>
 
           <View style={styles.intro}>
@@ -209,7 +215,10 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: C.ivory },
   flex: { flex: 1 },
   scroll: { flexGrow: 1, width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 24, paddingBottom: 30 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  brandRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  secureBadge: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, borderRadius: 999, backgroundColor: C.surfaceMint },
+  secureBadgeText: { color: C.cobaltDark, fontSize: 10, fontWeight: '800' },
   brand: { color: C.ink, fontSize: 25, fontWeight: '900', letterSpacing: -1.1 },
   brandCaption: { color: C.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
   intro: { minHeight: 280, justifyContent: 'flex-end', overflow: 'hidden', marginTop: 28, marginBottom: 24, padding: 22, borderRadius: 24, backgroundColor: C.darkCanvas },
