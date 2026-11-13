@@ -241,10 +241,6 @@ export default function ClientHomeScreen() {
     return () => { active = false; };
   }, [coordinate, serviceIds]);
 
-  const categories = useMemo(
-    () => ['Todos', ...categoriesData.map((category) => category.name)],
-    [categoriesData],
-  );
   const normalizedSearch = search.trim().toLocaleLowerCase();
   const visibleServices = services.filter((service) => {
     const matchesCategory = selectedCategory === 'Todos' || getCategory(service) === selectedCategory;
