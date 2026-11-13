@@ -4,7 +4,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, T
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { AdminOperationsPanel } from '@/components/admin-operations-panel';
 import { useAuth } from '@/components/auth-provider';
-import { KlippColors } from '@/lib/brand';
+import {  KlippColors, KlippLayout  } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
@@ -685,7 +685,7 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 8, paddingBottom: 52, gap: 20, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 8, paddingBottom: 52, gap: 20, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   section: { padding: 17, gap: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
