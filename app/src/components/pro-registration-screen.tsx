@@ -63,18 +63,18 @@ const radiusOptions = [5, 10, 15, 20, 30, 50];
 const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicleta', 'A pie', 'Otro'];
 
 const professionVisuals: Record<string, { icon: string; tint: string; accent: string; caption: string }> = {
-  barberia: { icon: '✂️', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Cortes y arreglo de barba' },
-  peluqueria: { icon: '💇', tint: '#FFF0EC', accent: '#FF7058', caption: 'Cabello y peinados' },
-  estetica: { icon: '✨', tint: '#E7F7F0', accent: '#247A5A', caption: 'Cuidado y belleza' },
-  carwash: { icon: '🚘', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Lavado de vehículos' },
-  detailing: { icon: '🧽', tint: '#E7F7F0', accent: '#247A5A', caption: 'Detalle y acabado automotriz' },
-  limpieza_regular: { icon: '🧹', tint: '#FFF0EC', accent: '#FF7058', caption: 'Limpieza del hogar' },
-  limpieza_profunda: { icon: '🧼', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Limpieza a fondo' },
-  'limpieza-oficinas': { icon: '🏢', tint: '#E7F7F0', accent: '#247A5A', caption: 'Espacios de trabajo' },
-  mantenimiento: { icon: '🛠️', tint: '#FFF0EC', accent: '#FF7058', caption: 'Reparaciones y montaje' },
+  barberia: { icon: '✂️', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Cortes y arreglo de barba' },
+  peluqueria: { icon: '💇', tint: KlippColors.surfaceCoral, accent: KlippColors.coral, caption: 'Cabello y peinados' },
+  estetica: { icon: '✨', tint: KlippColors.surfaceMint, accent: KlippColors.success, caption: 'Cuidado y belleza' },
+  carwash: { icon: '🚘', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Lavado de vehículos' },
+  detailing: { icon: '🧽', tint: KlippColors.surfaceMint, accent: KlippColors.success, caption: 'Detalle y acabado automotriz' },
+  limpieza_regular: { icon: '🧹', tint: KlippColors.surfaceCoral, accent: KlippColors.coral, caption: 'Limpieza del hogar' },
+  limpieza_profunda: { icon: '🧼', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Limpieza a fondo' },
+  'limpieza-oficinas': { icon: '🏢', tint: KlippColors.surfaceMint, accent: KlippColors.success, caption: 'Espacios de trabajo' },
+  mantenimiento: { icon: '🛠️', tint: KlippColors.surfaceCoral, accent: KlippColors.coral, caption: 'Reparaciones y montaje' },
 };
 function getProfessionVisual(code: string) {
-  return professionVisuals[code] ?? { icon: '✦', tint: '#E9EDFF', accent: '#3D5AFE', caption: 'Servicio profesional' };
+  return professionVisuals[code] ?? { icon: '✦', tint: KlippColors.surfaceBlue, accent: KlippColors.cobalt, caption: 'Servicio profesional' };
 }
 
 
@@ -755,9 +755,9 @@ const styles = StyleSheet.create({
   proHeroImage: { borderRadius: 16 },
   proHeroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15,22,39,0.43)' },
   proHeroCopy: { padding: 24, gap: 8, maxWidth: 620 },
-  proHeroEyebrow: { color: '#FFB7A8', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  proHeroTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
-  proHeroSubtitle: { color: '#F5F5F5', fontSize: 13, lineHeight: 19, maxWidth: 460 },
+  proHeroEyebrow: { color: KlippColors.coral, fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+  proHeroTitle: { color: KlippColors.white, fontSize: 29, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
+  proHeroSubtitle: { color: KlippColors.surfaceMuted, fontSize: 13, lineHeight: 19, maxWidth: 460 },
   stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 22 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
   optionalFields: { gap: 18, paddingTop: 2 },
   field: { flex: 1, gap: 8, minWidth: 0 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
-  passwordField: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD' },
+  passwordField: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   passwordInput: { flex: 1, minWidth: 0, minHeight: 54, color: KlippColors.ink, fontSize: 15 },
   passwordVisibility: { minWidth: 64, minHeight: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, borderRadius: 11, backgroundColor: KlippColors.surfaceBlue },
   passwordVisibilityText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '800' },
@@ -830,7 +830,7 @@ const styles = StyleSheet.create({
   locationButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: KlippColors.surfaceMint },
   locationButtonText: { color: RoleThemes.pro.accentStrong, fontSize: 13, fontWeight: '800' },
   testLocationButtonText: { color: KlippColors.slate, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  noLocation: { minHeight: 122, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: '#F8FAFC', gap: 6 },
+  noLocation: { minHeight: 122, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, backgroundColor: KlippColors.surfaceMuted, gap: 6 },
   noLocationTitle: { color: KlippColors.ink, fontSize: 14, fontWeight: '800' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { minHeight: 39, justifyContent: 'center', paddingHorizontal: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 999, backgroundColor: KlippColors.white },
@@ -840,7 +840,7 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: KlippColors.border },
   timeRow: { flexDirection: 'row', gap: 14 },
   summaryCard: { flexDirection: 'row', alignItems: 'center', gap: 13, padding: 17, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 18, backgroundColor: KlippColors.surfaceMint },
-  summaryIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#D9F0E7' },
+  summaryIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceMint },
   summaryIconText: { color: RoleThemes.pro.accentStrong, fontSize: 17, fontWeight: '900' },
   summaryCopy: { flex: 1, gap: 4 },
   privacyNote: { color: KlippColors.muted, fontSize: 11, lineHeight: 17 },
@@ -853,10 +853,10 @@ const styles = StyleSheet.create({
   footerText: { marginTop: 12, color: KlippColors.muted, fontSize: 12, textAlign: 'center' },
   footerLink: { color: RoleThemes.pro.accentStrong, fontWeight: '900' },
   pressed: { opacity: 0.88 },
-  error: { padding: 13, borderWidth: 1, borderColor: '#FECACA', borderRadius: 14, backgroundColor: '#FEF2F2', color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  noticeCard: { alignItems: 'center', padding: 20, borderWidth: 1, borderColor: '#B7E4D1', borderRadius: 18, backgroundColor: '#ECFDF5', gap: 10 },
-  noticeIcon: { color: '#047857', fontSize: 22 },
-  noticeText: { color: '#065F46', fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  loginButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 19, borderRadius: 13, backgroundColor: '#D1FAE5' },
-  loginButtonText: { color: '#047857', fontSize: 13, fontWeight: '800' },
+  error: { padding: 13, borderWidth: 1, borderColor: KlippColors.surfaceDanger, borderRadius: 14, backgroundColor: KlippColors.surfaceDanger, color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
+  noticeCard: { alignItems: 'center', padding: 20, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 18, backgroundColor: KlippColors.surfaceSuccess, gap: 10 },
+  noticeIcon: { color: KlippColors.success, fontSize: 22 },
+  noticeText: { color: KlippColors.success, fontSize: 13, lineHeight: 20, textAlign: 'center' },
+  loginButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 19, borderRadius: 13, backgroundColor: KlippColors.surfaceMint },
+  loginButtonText: { color: KlippColors.success, fontSize: 13, fontWeight: '800' },
 });
