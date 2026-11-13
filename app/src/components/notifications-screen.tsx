@@ -457,7 +457,7 @@ export function NotificationsScreen() {
                   { backgroundColor: roleTheme.accentStrong },
                   (pushBusy || pushStatus === 'checking' || pressed) && styles.pressed,
                 ]}>
-                {pushBusy ? <ActivityIndicator color="#FFFFFF" size="small" /> : null}
+                {pushBusy ? <ActivityIndicator color={KlippColors.white} size="small" /> : null}
                 <Text style={styles.pushButtonText}>
                   {pushBusy ? 'Guardando…' : pushStatus === 'registered' ? 'Actualizar registro' : 'Activar notificaciones'}
                 </Text>
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   notificationGroup: { gap: 0 },
   groupTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '900', paddingBottom: 8 },
   notification: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 15, marginBottom: 8, borderRadius: 17, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowOpacity: 0, elevation: 0 },
-  unreadNotification: { backgroundColor: KlippColors.surfaceBlue, borderColor: '#DCE3FF' },
+  unreadNotification: { backgroundColor: KlippColors.surfaceBlue, borderColor: KlippColors.surfaceBlue },
   itemIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceMuted },
   itemCopy: { flex: 1, gap: 4 },
   itemHeading: { flexDirection: 'row', alignItems: 'center', gap: 7 },
