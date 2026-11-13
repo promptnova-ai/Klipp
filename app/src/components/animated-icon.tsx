@@ -1,5 +1,5 @@
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -29,13 +29,6 @@ export function AnimatedSplashOverlay() {
   const [visible, setVisible] = useState(true);
   const reducedMotion = useReducedMotion();
 
-  useEffect(() => {
-    if (reducedMotion) {
-      void SplashScreen.hideAsync();
-      setVisible(false);
-    }
-  }, [reducedMotion]);
-
   if (!visible) return null;
 
   const entering = reducedMotion
@@ -48,7 +41,10 @@ export function AnimatedSplashOverlay() {
   return (
     <Animated.View
       entering={entering}
-      onLayout={() => { void SplashScreen.hideAsync(); }}
+      onLayout={() => {
+        void SplashScreen.hideAsync();
+        if (reducedMotion) setVisible(false);
+      }}
       style={styles.splashOverlay}>
       <View style={styles.splashBrand}>
         <KlippMark size={92} />
