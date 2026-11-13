@@ -395,13 +395,13 @@ export function AdminScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader inset={false} role="admin" eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
-      <View style={styles.sectionTabs}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sectionTabs}>
         {visibleSections.map((item) => (
           <Pressable key={item.key} accessibilityRole="tab" accessibilityState={{ selected: activeSection === item.key }} onPress={() => setSection(item.key)} style={[styles.sectionTab, activeSection === item.key && styles.sectionTabSelected]}>
             <Text style={[styles.sectionTabText, activeSection === item.key && styles.sectionTabTextSelected]}>{item.title}</Text>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {visibleSections.length === 0 && <Text style={styles.empty}>Tu cuenta no tiene permisos para acceder a las secciones de administración.</Text>}
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
   statusText: { color: '#067647', fontSize: 10, fontWeight: '800' },
   permissionName: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   auditAction: { color: KlippColors.navy, fontSize: 13, fontWeight: '800', textTransform: 'capitalize' },
-  sectionTabs: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  sectionTabs: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingRight: 18 },
   sectionTab: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   sectionTabSelected: { backgroundColor: KlippColors.cobalt, borderColor: KlippColors.cobalt },
   sectionTabText: { color: KlippColors.slate, fontWeight: '600', fontSize: 13 },
