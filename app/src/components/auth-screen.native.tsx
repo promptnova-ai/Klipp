@@ -25,53 +25,16 @@ import { isSupabaseConfigured } from '../../lib/supabase';
 type AuthScreenProps = { mode: 'login' | 'register' };
 type AuthMethod = 'phone' | 'email';
 
-const KLIPP_SYMBOL = require('../../assets/images/klipp-symbol.png');
+const KLIPP_WORDMARK = require('../../assets/images/klipp-wordmark.png');
 
-function BrandLockup({ inverted = false }: { inverted?: boolean }) {
+function BrandLockup() {
   return (
-    <View style={styles.brandLockup}>
-      <Image source={KLIPP_SYMBOL} resizeMode="contain" style={styles.brandSymbol} accessibilityLabel="Símbolo de Klipp" />
-      <Text style={[styles.brandWord, inverted && styles.brandWordInverted]}>klipp</Text>
-    </View>
-  );
-}
-
-function EditorialPanel({ compact }: { compact: boolean }) {
-  return (
-    <View style={[styles.editorial, compact && styles.editorialCompact]}>
-      <View style={styles.editorialTopline}>
-        <View style={styles.editorialDot} />
-        <Text style={styles.editorialKicker}>SERVICIOS A DOMICILIO · REPÚBLICA DOMINICANA</Text>
-      </View>
-      <Text style={[styles.editorialTitle, compact && styles.editorialTitleCompact]}>
-        Tu tiempo.{ '\n' }Tus servicios.{ '\n' }A tu manera.
-      </Text>
-      <Text style={styles.editorialBody}>
-        Profesionales de confianza para lo que necesitas en casa. Reserva en minutos y sigue cada paso desde Klipp.
-      </Text>
-      {!compact && (
-        <View style={styles.journey}>
-          <View style={styles.journeyLine} />
-          <View style={styles.journeyStep}>
-            <Text style={styles.journeyNumber}>01</Text>
-            <View><Text style={styles.journeyTitle}>Elige lo que necesitas</Text><Text style={styles.journeyCaption}>Servicios claros, precios por adelantado</Text></View>
-          </View>
-          <View style={styles.journeyStep}>
-            <Text style={styles.journeyNumber}>02</Text>
-            <View><Text style={styles.journeyTitle}>Conecta con un profesional</Text><Text style={styles.journeyCaption}>Perfiles y valoraciones reales</Text></View>
-          </View>
-          <View style={styles.journeyStep}>
-            <Text style={styles.journeyNumber}>03</Text>
-            <View><Text style={styles.journeyTitle}>Sigue el servicio en directo</Text><Text style={styles.journeyCaption}>Desde la confirmación hasta el final</Text></View>
-          </View>
-        </View>
-      )}
-      <View style={styles.editorialFooter}>
-        <Text style={styles.editorialFooterText}>SANTO DOMINGO</Text>
-        <View style={styles.footerDivider} />
-        <Text style={styles.editorialFooterText}>HECHO PARA RD</Text>
-      </View>
-    </View>
+    <Image
+      source={KLIPP_WORDMARK}
+      resizeMode="contain"
+      accessibilityLabel="Klipp"
+      style={styles.brandWordmark}
+    />
   );
 }
 
@@ -79,7 +42,6 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const { width } = useWindowDimensions();
   const wide = width >= 980;
-  const compact = width < 620;
   const router = useRouter();
   const { session, signIn, sendPhoneOtp, verifyPhoneOtp, authError } = useAuth();
   const [fullName, setFullName] = useState('');
@@ -167,12 +129,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           <View style={[styles.page, wide && styles.pageWide]}>
             <View style={styles.header}>
               <BrandLockup />
-              <Text style={styles.headerLocation}>REPÚBLICA DOMINICANA</Text>
+              
             </View>
-            <View style={[styles.content, wide && styles.contentWide]}>
-              <View style={[styles.visualColumn, wide && styles.visualColumnWide]}>
-                <EditorialPanel compact={!wide} />
-              </View>
+            <View style={styles.content}>
               <ScreenEntrance delay={35} style={[styles.formColumn, wide && styles.formColumnWide]}>
                 <View style={styles.form}>
                   <View style={styles.formIntro}>
@@ -271,7 +230,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </View>
               </ScreenEntrance>
             </View>
-            <View style={styles.pageFooter}><Text style={styles.pageFooterText}>KLIPP</Text><Text style={styles.pageFooterText}>SERVICIOS QUE SE MUEVEN CONTIGO</Text></View>
+            
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -282,42 +241,18 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: '#F7F5F0' },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 22, paddingVertical: 16 },
-  page: { width: '100%', maxWidth: 1160, alignSelf: 'center', flex: 1 },
-  pageWide: { minHeight: 720, justifyContent: 'center' },
-  header: { minHeight: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#E7E3DB' },
-  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brandSymbol: { width: 34, height: 40 },
-  brandWord: { color: '#171B2D', fontSize: 31, lineHeight: 36, fontWeight: '800', letterSpacing: -2.1, fontFamily: Platform.select({ ios: 'System', android: 'sans-serif', web: 'Arial, sans-serif', default: 'sans-serif' }) },
-  brandWordInverted: { color: '#F7F5F0' },
-  headerLocation: { color: '#747987', fontSize: 9, fontWeight: '800', letterSpacing: 1.6 },
-  content: { flex: 1, gap: 28, paddingTop: 26, paddingBottom: 24 },
-  contentWide: { flexDirection: 'row', alignItems: 'stretch', gap: 72, paddingTop: 46, paddingBottom: 44 },
-  visualColumn: { width: '100%' },
-  visualColumnWide: { flex: 1, justifyContent: 'center', minWidth: 0 },
-  editorial: { minHeight: 270, padding: 28, borderRadius: 26, backgroundColor: '#171B2D', justifyContent: 'center', overflow: 'hidden' },
-  editorialCompact: { minHeight: 0, paddingHorizontal: 0, paddingVertical: 16, borderRadius: 0, backgroundColor: 'transparent', justifyContent: 'flex-start', gap: 13 },
-  editorialTopline: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  editorialDot: { width: 7, height: 7, borderRadius: 9, backgroundColor: '#FF7058' },
-  editorialKicker: { color: '#B7BDCE', fontSize: 9, fontWeight: '800', letterSpacing: 1.3 },
-  editorialTitle: { color: '#F7F5F0', fontSize: 46, lineHeight: 51, fontWeight: '700', letterSpacing: -1.8, marginTop: 25 },
-  editorialTitleCompact: { color: '#171B2D', fontSize: 31, lineHeight: 34, marginTop: 4, letterSpacing: -1.1 },
-  editorialBody: { color: '#B7BDCE', fontSize: 14, lineHeight: 22, maxWidth: 420, marginTop: 17 },
-  journey: { gap: 19, marginTop: 40, paddingTop: 25, borderTopWidth: 1, borderTopColor: '#34394C' },
-  journeyLine: { display: 'none' },
-  journeyStep: { flexDirection: 'row', alignItems: 'flex-start', gap: 18 },
-  journeyNumber: { color: '#FF7058', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, paddingTop: 2 },
-  journeyTitle: { color: '#F7F5F0', fontSize: 13, fontWeight: '700' },
-  journeyCaption: { color: '#9DA5B8', fontSize: 11, marginTop: 4 },
-  editorialFooter: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 35 },
-  editorialFooterText: { color: '#8E96AA', fontSize: 8, fontWeight: '800', letterSpacing: 1.5 },
-  footerDivider: { width: 22, height: 1, backgroundColor: '#596075' },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 28, justifyContent: 'center' },
+  page: { width: '100%', maxWidth: 500, alignSelf: 'center', flex: 1, justifyContent: 'center' },
+  pageWide: { minHeight: 680, justifyContent: 'center' },
+  header: { minHeight: 78, alignItems: 'center', justifyContent: 'center', marginBottom: 38 },
+  brandWordmark: { width: 174, height: 50, alignSelf: 'center' },
+  content: { flex: 1, justifyContent: 'center', paddingBottom: 30 },
   formColumn: { width: '100%' },
-  formColumnWide: { width: 420, justifyContent: 'center', flexShrink: 0 },
-  form: { gap: 19, paddingVertical: 8 },
+  formColumnWide: { width: '100%' },
+  form: { gap: 22, paddingVertical: 8 },
   formIntro: { gap: 9, marginBottom: 5 },
   formEyebrow: { color: '#3D5AFE', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  formTitle: { color: '#171B2D', fontSize: 35, lineHeight: 41, fontWeight: '700', letterSpacing: -1.3 },
+  formTitle: { color: '#171B2D', fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -1.2 },
   formSubtitle: { color: '#747987', fontSize: 14, lineHeight: 21, maxWidth: 390 },
   previewNotice: { padding: 13, borderRadius: 12, backgroundColor: '#E9EDFF', gap: 4 },
   previewNoticeTitle: { color: '#3048D8', fontSize: 12, fontWeight: '800' },
@@ -345,7 +280,7 @@ const styles = StyleSheet.create({
   passwordToggle: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   error: { padding: 12, borderRadius: 12, backgroundColor: '#FFF0EC', color: '#B83E31', fontSize: 12, lineHeight: 18 },
   notice: { padding: 12, borderRadius: 12, backgroundColor: '#E7F7F0', color: '#247A5A', fontSize: 12, lineHeight: 18 },
-  submit: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 13, backgroundColor: '#3D5AFE', marginTop: 2 },
+  submit: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, borderRadius: 16, backgroundColor: '#171B2D', marginTop: 2 },
   submitDisabled: { opacity: 0.45 },
   submitPressed: { opacity: 0.88, transform: [{ scale: 0.99 }] },
   submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
@@ -358,6 +293,5 @@ const styles = StyleSheet.create({
   proEntryTitle: { color: '#171B2D', fontSize: 12, fontWeight: '800' },
   proEntrySubtitle: { color: '#747987', fontSize: 10 },
   legal: { color: '#9699A4', fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 2 },
-  pageFooter: { minHeight: 36, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: '#E7E3DB' },
-  pageFooterText: { color: '#9699A4', fontSize: 8, fontWeight: '800', letterSpacing: 1.2 },
+  
 });
