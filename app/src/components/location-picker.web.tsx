@@ -22,7 +22,9 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
   const [longitude, setLongitude] = useState(String(coordinate.longitude));
   const [coordinateError, setCoordinateError] = useState<string | null>(null);
 
-  onChangeRef.current = onChange;
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
 
   // Keep editable fallback fields synchronized when the parent changes the selected point.
   /* eslint-disable react-hooks/set-state-in-effect */
