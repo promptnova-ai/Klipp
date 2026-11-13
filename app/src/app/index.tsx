@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors } from '@/theme/tokens';
 
 export default function HomeScreen() {
   const router = useRouter();
