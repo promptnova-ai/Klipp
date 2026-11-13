@@ -105,9 +105,6 @@ export function CoverageRadiusPicker({
           setLatitude(nextCenter.latitude.toFixed(5));
           setLongitude(nextCenter.longitude.toFixed(5));
           setCoordinateError(null);
-          setLatitude(nextCenter.latitude.toFixed(5));
-          setLongitude(nextCenter.longitude.toFixed(5));
-          setCoordinateError(null);
           onChangeRef.current(nextCenter);
         });
         markerDragListener = centerMarker.addListener('dragend', () => {
@@ -115,6 +112,9 @@ export function CoverageRadiusPicker({
           if (!position) return;
           const nextCenter = { latitude: position.lat(), longitude: position.lng() };
           coverageCircle.setCenter(position);
+          setLatitude(nextCenter.latitude.toFixed(5));
+          setLongitude(nextCenter.longitude.toFixed(5));
+          setCoordinateError(null);
           onChangeRef.current(nextCenter);
         });
         setMapReady(true);
