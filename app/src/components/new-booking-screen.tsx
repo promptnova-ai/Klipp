@@ -8,7 +8,7 @@ import { SymbolView } from 'expo-symbols';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
-import { KlippColors } from '@/lib/brand';
+import {  KlippColors, KlippLayout  } from '@/lib/brand';
 import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
@@ -1046,7 +1046,7 @@ const styles = StyleSheet.create({
   serviceTileRadio: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
   serviceTileRadioSelected: { borderColor: KlippColors.cobalt },
   serviceTileRadioInner: { width: 10, height: 10, borderRadius: 99, backgroundColor: KlippColors.cobalt },
-  page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 16, paddingBottom: 72, gap: 18, backgroundColor: '#F7F5F0', flexGrow: 1 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 16, paddingBottom: 72, gap: 18, backgroundColor: '#F7F5F0', flexGrow: 1 },
   wizardHeader: { width: '100%', maxWidth: 1080, alignSelf: 'center', gap: 11 },
   wizardHeading: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 },
   wizardEyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.1 },
