@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   benefitText: { color: KlippColors.slate, fontSize: 13, fontWeight: '500' },
   tierHeading: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
   tierCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
-  tierCardSelected: { borderColor: '#B8CBFF', backgroundColor: KlippColors.surfaceBlue },
+  tierCardSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
   tierCopy: { gap: 4 },
   tierTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   tierMeta: { color: KlippColors.muted, fontSize: 12 },
