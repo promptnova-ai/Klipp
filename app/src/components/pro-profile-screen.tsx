@@ -600,7 +600,7 @@ export function ProProfileScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
+      <BrandScreenHeader inset={false} role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
       {selectedServices.length > 0 && (() => {
         const selectedService = catalog.find((service) => service.id === selectedServices[0]);
         return selectedService ? (
