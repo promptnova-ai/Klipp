@@ -7,7 +7,13 @@ export function normalizePhoneNumber(input: string): string | null {
   if (digits.length < 8 || digits.length > 15) return null;
 
   // Dominican Republic and the US share the +1 numbering plan.
-  const international = hasPlus ? digits : digits.length === 10 ? \`1\${digits}\` : digits.length === 11 && digits.startsWith('1') ? digits : null;
+  const international = hasPlus
+    ? digits
+    : digits.length === 10
+      ? '1' + digits
+      : digits.length === 11 && digits.startsWith('1')
+        ? digits
+        : null;
   if (!international || international.length < 8 || international.length > 15) return null;
-  return \`+\${international}\`;
+  return '+' + international;
 }
