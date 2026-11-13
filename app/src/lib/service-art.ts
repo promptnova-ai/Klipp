@@ -20,9 +20,6 @@ const art = {
   fallback: photo('photo-1600607687939-ce8a6c25118c'),
 } as const;
 
-// Wide, calm interior photograph: the home screen's editorial hero image.
-export const heroArt = photo('photo-1600607687939-ce8a6c25118c', 1800);
-
 export function serviceArt(code: string) {
   const c = code.toLowerCase();
   if (c.includes('barber')) return art.barberia;
