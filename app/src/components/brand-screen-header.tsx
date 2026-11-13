@@ -34,12 +34,12 @@ export function BrandScreenHeader({
         <View style={styles.logoMark}><KlippMark size={40} /></View>
         <View style={styles.brandCopy}>
           <View style={styles.brandLine}>
-            <Text style={styles.brand}>KLIPP</Text>
+            <Text style={styles.brand}>klipp</Text>
             <View style={[styles.badge, { backgroundColor: theme.accentSoft }]}>
               <Text style={[styles.badgeText, { color: theme.accentStrong }]}>{roleLabel}</Text>
             </View>
           </View>
-          <Text style={styles.location}>SANTO DOMINGO, RD</Text>
+          <Text style={styles.location}>SERVICIOS A DOMICILIO</Text>
         </View>
         {trailing ? <View style={styles.trailing}>{trailing}</View> : null}
       </View>
@@ -67,10 +67,10 @@ const styles = StyleSheet.create({
   logoMark: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   brandCopy: { gap: 3 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[2] },
-  brand: { color: '#FFFFFF', fontSize: 22, fontWeight: '800', letterSpacing: 2.4 },
+  brand: { color: '#FFFFFF', fontSize: 27, lineHeight: 31, fontWeight: '800', letterSpacing: -1.8 },
   badge: { paddingHorizontal: KlippSpacing[2], paddingVertical: KlippSpacing[1], borderRadius: KlippLayout.radiusPill },
   badgeText: { fontSize: KlippTypography.size.micro, fontWeight: '800', letterSpacing: KlippTypography.tracking.label },
-  location: { color: '#AAB3C2', fontSize: 10, fontWeight: '600', letterSpacing: 1.6 },
+  location: { color: '#AAB3C2', fontSize: 8, fontWeight: '700', letterSpacing: 1.3 },
   trailing: { marginLeft: 'auto' },
   heading: { gap: KlippSpacing[2], marginTop: KlippSpacing[1] },
   eyebrow: { fontSize: KlippTypography.size.caption, fontWeight: '800', letterSpacing: KlippTypography.tracking.eyebrow },
