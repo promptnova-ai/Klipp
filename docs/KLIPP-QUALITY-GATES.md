@@ -28,14 +28,14 @@ Automated compilation is necessary but does not prove that the app is usable. Be
 | --- | --- | --- |
 | Authentication | Client and PRO login; OTP request and confirmation; invalid/expired OTP; resend; logout | Clear errors, no stuck loading, correct role routing, no session leakage |
 | Client onboarding | Required fields, Dominican phone formats (+1-809/+1-829/+1-849), back/continue, refresh/reopen | Data persists as designed; validation is field-specific; no overlapping controls |
-| PRO onboarding | Select exactly one profession; profession-specific required fields; missing documents; back/continue | Only one service can be selected; correct fields and validation for that profession |
+| PRO onboarding and verification | Select exactly one profession; email confirmation and resend; upload ID document (PDF/JPG/PNG, max 10 MB); replace document; admin approval/rejection with reason | Email must be confirmed; private document is stored under the user's own path; approval requires the document and confirmed email; rejected profiles remain undiscoverable until re-reviewed |
 | Client booking | Category/search, service selection, address, date/time, price, payment failure/success | Price and service remain consistent; no duplicate booking on repeated taps; clear confirmation |
 | Nearby dispatch | No professionals nearby; one or multiple candidates; accept; reject; timeout | Correct candidate eligibility, countdown and state transitions; no stale offer or double assignment |
 | PRO requests | Receive request; accept by slide; reject by hold; timeout; loss of connectivity | No accidental accept/reject; state returns to the correct availability status |
 | Tracking | Assigned, en route, arrived, started, completed, cancelled; location unavailable | ETA and status are truthful; map failure has a useful fallback; updates do not regress |
 | Agenda and profile | Edit profile, availability, service details, schedule and empty states | Saved values reload correctly; role-only data is not exposed to clients |
 | Notifications | Read/unread, preferences, push permission denied/granted, deep links | Correct destination, no duplicate notifications, graceful permission fallback |
-| Admin | Search bookings, inspect booking, reassign, cancel with reason, permissions and audit history | Every sensitive action is authorized, confirmed, recorded and reflected in the booking |
+| Admin and identity review | Open private ID document through expiring signed URL; approve or reject with a reason; verify role permissions and audit history | Only authorized reviewers can access documents; approval is impossible without an uploaded document and confirmed email; every decision is audited |
 | Responsive layout | 360px, 390px, tablet and desktop; long names/addresses; large text | No clipping, overlap, horizontal overflow or inaccessible controls |
 | Accessibility | Keyboard navigation, screen reader labels, focus states, reduced motion | All actions reachable and announced; motion respects reduced-motion preference |
 
