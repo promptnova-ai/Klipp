@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { KlippColors, KlippLayout, RoleThemes, type KlippRole } from '@/lib/brand';
+import { KlippMark } from '@/components/klipp-mark';
 
 type BrandScreenHeaderProps = {
   eyebrow: string;
@@ -24,9 +25,7 @@ export function BrandScreenHeader({
   return (
     <View style={styles.header}>
       <View style={styles.brandRow}>
-        <View style={[styles.logoMark, { backgroundColor: theme.accent }]}>
-          <Text style={styles.logoLetter}>K</Text>
-        </View>
+        <View style={styles.logoMark}><KlippMark size={30} /></View>
         <View style={styles.brandCopy}>
           <View style={styles.brandLine}>
             <Text style={styles.brand}>klipp</Text>
@@ -59,8 +58,7 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 42 },
-  logoMark: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center', shadowColor: KlippColors.ink, shadowOpacity: 0.12, shadowOffset: { width: 0, height: 5 }, shadowRadius: 10, elevation: 3 },
-  logoLetter: { color: KlippColors.white, fontSize: 22, fontWeight: '900' },
+  logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   brandCopy: { gap: 2 },
   brandLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brand: { color: KlippColors.navy, fontSize: 21, fontWeight: '900', letterSpacing: -0.5 },
