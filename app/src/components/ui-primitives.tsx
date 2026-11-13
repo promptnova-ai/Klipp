@@ -184,9 +184,9 @@ type StatusPillProps = {
 
 const toneStyles = {
   info: { backgroundColor: KlippColors.surfaceBlue, color: KlippColors.cobaltDark },
-  success: { backgroundColor: KlippColors.surfaceMint, color: KlippColors.success },
-  warning: { backgroundColor: KlippColors.surfaceCoral, color: KlippColors.warning },
-  danger: { backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger },
+  success: { backgroundColor: KlippColors.surfaceSuccess, color: KlippColors.success },
+  warning: { backgroundColor: KlippColors.surfaceWarning, color: KlippColors.warning },
+  danger: { backgroundColor: KlippColors.surfaceDanger, color: KlippColors.danger },
   neutral: { backgroundColor: KlippColors.surfaceMuted, color: KlippColors.slate },
 } as const;
 
@@ -275,7 +275,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonPrimary: { backgroundColor: KlippColors.blue },
   buttonSecondary: { backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border },
   buttonQuiet: { backgroundColor: KlippColors.surfaceMuted },
   buttonDanger: { backgroundColor: KlippColors.danger },
