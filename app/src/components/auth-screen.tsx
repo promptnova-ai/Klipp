@@ -54,11 +54,6 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
       style={[styles.showcase, compact && styles.showcaseCompact, compactLogin && styles.showcaseCompactLogin, fullBleedRegister && styles.showcaseRegisterHero]}>
       {(fullBleedRegister || compactLogin || !compact) && <View pointerEvents="none" style={[styles.showcasePhotoWash, compactLogin && styles.showcaseLoginPhotoWash]} />}
       <View style={styles.showcaseCopy}>
-        <View style={styles.showcaseBrandLine}>
-          <View style={[styles.showcaseMark, compactLogin && styles.showcaseMarkLogin]}><KlippMark size={26} /></View>
-          <Text style={[styles.showcaseBrand, compactLogin && styles.showcaseBrandLogin]}>KLIPP</Text>
-          <Text style={[styles.showcaseRegion, compactLogin && styles.showcaseRegionLogin]}>SANTO DOMINGO · RD</Text>
-        </View>
         <Text style={[styles.showcaseKicker, compactLogin && styles.showcaseKickerLogin]}>{compactLogin ? 'SERVICIOS A DOMICILIO, SIN COMPLICACIONES' : 'SERVICIOS A DOMICILIO'}</Text>
         <Text style={[styles.showcaseTitle, compactLogin && styles.showcaseTitleLogin]}>{compactLogin ? 'Qué bueno tenerte de vuelta.' : 'Tu día, más fácil. Tu servicio, en buenas manos.'}</Text>
         <Text style={[styles.showcaseDescription, compactLogin && styles.showcaseDescriptionLogin]}>
