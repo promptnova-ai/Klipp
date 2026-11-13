@@ -610,7 +610,7 @@ export function ProProfileScreen() {
               <Text style={styles.professionHeroTitle}>{selectedService.name}</Text>
               <Text style={styles.professionHeroBody}>Tu perfil, tarifas y trabajos publicados se mostrarán a los clientes que busquen este servicio.</Text>
             </View>
-            <Image source={serviceArt(selectedService.code)} contentFit="cover" style={styles.professionHeroArt} />
+            <Image cachePolicy="memory-disk" source={serviceArt(selectedService.code)} contentFit="cover" style={styles.professionHeroArt} />
           </View>
         ) : null;
       })()}
@@ -692,7 +692,7 @@ export function ProProfileScreen() {
             const imageUrl = supabase.storage.from('pro-portfolio').getPublicUrl(photo.object_path).data.publicUrl;
             return (
               <View key={photo.id} style={styles.portfolioItem}>
-                <Image source={{ uri: imageUrl }} contentFit="cover" style={styles.portfolioImage} />
+                <Image cachePolicy="memory-disk" source={{ uri: imageUrl }} contentFit="cover" style={styles.portfolioImage} />
                 <Pressable accessibilityRole="button" onPress={() => void deletePortfolioPhoto(photo)} style={styles.portfolioDelete}>
                   <Text style={styles.portfolioDeleteText}>Eliminar</Text>
                 </Pressable>
