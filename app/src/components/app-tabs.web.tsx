@@ -6,11 +6,10 @@ import {
   TabTriggerSlotProps,
   TabListProps,
 } from 'expo-router/ui';
-import { SymbolView } from 'expo-symbols';
 import { Pressable, View, StyleSheet, Text } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
-import { KlippColors, KlippLayout, KlippShadows, KlippTypography } from '@/theme/tokens';
+import { KlippColors, KlippLayout, KlippShadows, KlippSpacing, KlippTypography } from '@/theme/tokens';
 import { KlippMark } from '@/components/klipp-mark';
 import { ThemedView } from './themed-view';
 
@@ -68,11 +67,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  innerContainer: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: KlippLayout.radiusCard, flexDirection: 'row', alignItems: 'center', flexGrow: 1, gap: 10, maxWidth: KlippLayout.contentMaxWidth, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, ...KlippShadows.floating },
-  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 7, marginRight: 'auto', paddingRight: 8 },
+  innerContainer: { paddingVertical: KlippSpacing[3], paddingHorizontal: KlippSpacing[4], borderRadius: KlippLayout.radiusCard, flexDirection: 'row', alignItems: 'center', flexGrow: 1, gap: KlippSpacing[2], maxWidth: KlippLayout.contentMaxWidth, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, ...KlippShadows.floating },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: KlippSpacing[2], marginRight: 'auto', paddingRight: 8 },
   brandName: { color: KlippColors.ink, fontSize: KlippTypography.size.bodyLarge, fontWeight: '900', letterSpacing: -0.6 },
   pressed: { opacity: 0.7 },
   tabText: { color: KlippColors.muted, fontSize: KlippTypography.size.small, fontWeight: '700' },
   tabTextSelected: { color: KlippColors.cobaltDark, fontWeight: '900' },
-  tabButtonView: { paddingVertical: 9, paddingHorizontal: 15, borderRadius: 11, backgroundColor: 'transparent' },
+  tabButtonView: { paddingVertical: KlippSpacing[2], paddingHorizontal: KlippSpacing[4], borderRadius: KlippLayout.radiusControl, backgroundColor: 'transparent' },
 });
