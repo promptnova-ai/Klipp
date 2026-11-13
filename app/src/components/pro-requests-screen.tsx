@@ -6,7 +6,7 @@ import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors } from '@/lib/brand';
+import { KlippColors, KlippLayout } from '@/lib/brand';
 import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
   holdRejectTitle: { color: KlippColors.white, fontSize: 12, fontWeight: '900', letterSpacing: 0.45, textAlign: 'center' },
   holdRejectSubtitle: { color: KlippColors.surfaceCoral, fontSize: 11, fontWeight: '700' },
   offerFootnote: { color: KlippColors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
-  page: { width: '100%', maxWidth: 1080, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 44, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 8, paddingBottom: 44, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '800' },
   subtitle: { color: KlippColors.slate, fontSize: 15, marginTop: -8 },
