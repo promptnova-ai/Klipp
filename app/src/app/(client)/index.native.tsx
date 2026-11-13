@@ -171,7 +171,7 @@ export default function ClientHomeNative() {
             </View>
           </Pressable>
         )}
-        ListEmptyComponent={!loading && !error ? <View style={styles.empty}><Text style={styles.emptyTitle}>Aún no hay servicios aquí</Text><Text style={styles.emptyText}>Prueba otra categoría o cambia tu búsqueda.</Text><Pressable onPress={() => { setSelectedCategory('Todos'); setSearch(''); }}><Text style={styles.resetText}>Ver todos los servicios</Text></Pressable></View> : null}
+        ListEmptyComponent={!loading && !error ? <View style={styles.empty}><Text style={styles.emptyTitle}>Aún no hay servicios aquí</Text><Text style={styles.emptyText}>Prueba otra categoría o cambia tu búsqueda.</Text><Pressable onPress={() => { setSelectedCategory('Todos'); setSearch(''); }}><Text style={styles.resetText}>Ver todos los servicios</Text></Pressable></View> : undefined}
       />
     </SafeAreaView>
   );
