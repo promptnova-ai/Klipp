@@ -54,6 +54,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const { width } = useWindowDimensions();
   const wide = width >= 1024;
+  const compact = width < 600;
   const router = useRouter();
   const { session, signIn, sendPhoneOtp, verifyPhoneOtp, authError } = useAuth();
   const [fullName, setFullName] = useState('');
@@ -134,7 +135,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={[styles.scrollContent, !wide && !isRegister && styles.loginScrollContent]} keyboardShouldPersistTaps="handled">
           <View style={[styles.authShell, !wide && !isRegister && styles.loginAuthShell]}>
-            <View style={styles.topBar}>
+            <View style={[styles.topBar, compact && styles.topBarCompact]}>
               <View style={styles.brandRow}>
                 <View style={styles.logoMark}><KlippMark size={42} /></View>
                 <View style={styles.brandCopy}>
@@ -142,11 +143,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   <Text style={styles.location}>SANTO DOMINGO, RD</Text>
                 </View>
               </View>
-              <View style={styles.trustNote}>
-                <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.cobaltDark} size={15} />
-                <Text style={styles.trustNoteText}>Conexión protegida</Text>
-              </View>
-            </View>
+             </View>
 
             <ScreenEntrance delay={30}>
               <View style={[styles.main, wide && !isRegister && styles.mainWide]}>
@@ -307,9 +304,10 @@ const styles = StyleSheet.create({
   loginScrollContent: { paddingHorizontal: 24, paddingVertical: 28 },
   loginAuthShell: { gap: 28 },
   authShell: { width: '100%', maxWidth: 1160, alignSelf: 'center', gap: 30 },
-  topBar: { minHeight: 82, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16, borderRadius: 20, backgroundColor: '#111827' },
+  topBar: { minHeight: 82, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', paddingHorizontal: 26, paddingVertical: 14, borderRadius: 18, backgroundColor: '#111827' },
+  topBarCompact: { minHeight: 74, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 54, height: 54, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  logoMark: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
   passwordInputWrap: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   passwordInput: { flex: 1, minWidth: 0, minHeight: 54, color: KlippColors.ink, fontSize: 15 },
   passwordToggle: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
