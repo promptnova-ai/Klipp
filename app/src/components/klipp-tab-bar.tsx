@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KlippMark } from '@/components/klipp-mark';
+import { KlippColors, RoleThemes, type KlippRole } from '@/lib/brand';
 
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 export type KlippTabItem = { name: string; href: string; label: string; icon: SymbolName };
@@ -20,7 +21,7 @@ type TabButtonProps = TabTriggerSlotProps & {
   icon: SymbolName;
 };
 
-function TabButton({ label, icon, isFocused, onPress }: TabButtonProps) {
+function TabButton({ label, icon, isFocused, onPress, accent }: TabButtonProps & { accent: string }) {
   return (
     <Pressable
       onPress={onPress}
@@ -28,8 +29,8 @@ function TabButton({ label, icon, isFocused, onPress }: TabButtonProps) {
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
       style={({ pressed }) => [styles.tabButton, isFocused && styles.tabButtonActive, pressed && styles.pressed]}>
-      <SymbolView name={icon} tintColor={isFocused ? '#3D5AFE' : '#8A8D98'} size={21} />
-      <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
+      <SymbolView name={icon} tintColor={isFocused ? accent : KlippColors.muted} size={21} />
+      <Text style={[styles.tabLabel, isFocused && { color: accent }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -37,13 +38,15 @@ function TabButton({ label, icon, isFocused, onPress }: TabButtonProps) {
 export function KlippTabBar({ items, actionHref, actionLabel }: KlippTabBarProps) {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { role = 'client' } = arguments[0] as KlippTabBarProps;
+  const accent = RoleThemes[role].accent;
 
   return (
     <View style={[styles.navigation, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <View style={styles.bar}>
         {items.slice(0, 2).map((item) => (
           <TabTrigger key={item.name} name={item.name} asChild>
-            <TabButton label={item.label} icon={item.icon} />
+            <TabButton label={item.label} icon={item.icon} accent={accent} />
           </TabTrigger>
         ))}
         <Pressable
@@ -91,7 +94,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 14,
   },
-  tabButtonActive: { backgroundColor: '#F4F6FF' },
+  tabButtonActive: { backgroundColor: KlippColors.surfaceBlue },
   tabLabel: { color: '#8A8D98', fontSize: 10, fontWeight: '700', letterSpacing: 0.1 },
   tabLabelActive: { color: '#3D5AFE' },
   centerButton: {
@@ -101,9 +104,9 @@ const styles = StyleSheet.create({
     borderRadius: 33,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F7F5F0',
+    backgroundColor: KlippColors.canvas,
     borderWidth: 4,
-    borderColor: '#FFFFFF',
+    borderColor: KlippColors.white,
     shadowColor: '#171B2D',
     shadowOpacity: 0.16,
     shadowRadius: 14,
