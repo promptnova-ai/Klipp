@@ -24,7 +24,7 @@ Klipp keeps its own visual identity: ivory canvas, ink typography, cobalt client
 | Live tracking | Map occupied excessive vertical space; mobile professional details and contact action shared a fragile horizontal row; map colors were outside the brand palette | Standardized map height and marker/route colors, and stacked the contact action on compact screens |
 | PRO profile | Sign-out appeared before the actual profile settings and error feedback could be repeated | Moved sign-out to the end and removed duplicate error presentation |
 | Admin navigation | Many section tabs wrapped into multiple rows on narrow screens | Changed section navigation to a single horizontally scrollable tab row |
-| Bottom navigation | Press feedback was stronger than the system motion scale | Reduced press scaling and exposed correct tab semantics |
+| Navigation | Mobile bottom tabs were being reused as the desktop navigation | Kept the native bottom bar on compact screens and added a centered floating top navigation on tablet/desktop, with reserved content space and role-specific accent |
 | App configuration | The /Klipp base path was set globally despite the app config intending it only for GitHub Pages | Removed the global base path; app.config.js now applies /Klipp only when GITHUB_PAGES=true; pinned the UI to the supported light theme |
 | Maps and system accents | Several maps, notification indicators and loading states retained legacy teal/bright-blue colors | Migrated them to canonical Klipp tokens |
 | Splash and animated mark | Expo starter artwork and high-energy glow/rotation motion were inconsistent with Klipp | Replaced it with the real Klipp mark and a short, restrained animation that respects reduced motion |
