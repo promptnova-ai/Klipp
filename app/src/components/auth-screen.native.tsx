@@ -146,7 +146,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   );
 }
 
-function Field(props: {
+function Field({ label, ...inputProps }: {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
@@ -155,7 +155,7 @@ function Field(props: {
   autoCapitalize?: 'none' | 'words';
   secureTextEntry?: boolean;
 }) {
-  return <View style={styles.field}><Text style={styles.fieldLabel}>{props.label}</Text><TextInput {...props} style={styles.input} placeholderTextColor={C.muted} /></View>;
+  return <View style={styles.field}><Text style={styles.fieldLabel}>{label}</Text><TextInput {...inputProps} style={styles.input} placeholderTextColor={C.muted} /></View>;
 }
 
 const styles = StyleSheet.create({
