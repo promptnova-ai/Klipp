@@ -43,24 +43,24 @@ export function TrackingMap({
 }) {
   const map = useRef<MapView>(null);
   const marker = useRef<MapMarker>(null);
-  const region: Region = {
+  const region = useMemo<Region>(() => ({
     latitude: (clientCoordinate.latitude + proCoordinate.latitude) / 2,
     longitude: (clientCoordinate.longitude + proCoordinate.longitude) / 2,
     latitudeDelta: Math.max(Math.abs(clientCoordinate.latitude - proCoordinate.latitude) * 1.8, 0.012),
     longitudeDelta: Math.max(Math.abs(clientCoordinate.longitude - proCoordinate.longitude) * 1.8, 0.012),
-  };
+  }), [clientCoordinate.latitude, clientCoordinate.longitude, proCoordinate.latitude, proCoordinate.longitude]);
   const routeCoordinates = useMemo(() => {
     if (routePolyline) {
       const decoded = decodePolyline(routePolyline);
       if (decoded.length > 1) return decoded;
     }
     return [proCoordinate, clientCoordinate];
-  }, [clientCoordinate.latitude, clientCoordinate.longitude, proCoordinate.latitude, proCoordinate.longitude, routePolyline]);
+  }, [clientCoordinate, proCoordinate, routePolyline]);
 
   useEffect(() => {
     marker.current?.animateMarkerToCoordinate(proCoordinate, 1100);
     map.current?.animateToRegion(region, 800);
-  }, [proCoordinate.latitude, proCoordinate.longitude]);
+  }, [proCoordinate, region]);
 
   return (
     <View style={styles.container}>
