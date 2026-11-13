@@ -2,7 +2,7 @@ import { TabTrigger, type TabTriggerSlotProps } from 'expo-router/ui';
 import { useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import type { ComponentProps, Ref } from 'react';
+import type { ComponentProps } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KlippMark } from '@/components/klipp-mark';
 
@@ -19,15 +19,13 @@ type TabButtonProps = TabTriggerSlotProps & {
   label: string;
   icon?: SymbolName;
   center?: boolean;
-  ref: Ref<View>;
 };
 
-function TabButton({ label, icon, center = false, isFocused, ref, ...props }: TabButtonProps) {
+function TabButton({ label, icon, center = false, isFocused, ...props }: TabButtonProps) {
   if (center) {
     return (
       <Pressable
         {...props}
-        ref={ref}
         accessibilityRole="button"
         accessibilityLabel={label}
         style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}>
@@ -41,7 +39,6 @@ function TabButton({ label, icon, center = false, isFocused, ref, ...props }: Ta
   return (
     <Pressable
       {...props}
-      ref={ref}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
