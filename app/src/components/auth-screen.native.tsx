@@ -1,5 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
+import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,6 +19,7 @@ import { useAuth } from '@/components/auth-provider';
 import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors as C } from '@/theme/tokens';
 import { normalizePhoneNumber } from '@/lib/phone';
+import { heroArt } from '@/lib/service-art';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
@@ -112,10 +114,21 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           </View>
 
           <View style={styles.intro}>
-            <View style={styles.introRule} />
-            <Text style={styles.kicker}>{isRegister ? 'CREAR CUENTA · CLIENTE' : 'TU CUENTA KLIPP'}</Text>
-            <Text style={styles.title}>{isRegister ? 'Empieza con lo esencial.' : 'Qué bueno verte de nuevo.'}</Text>
-            <Text style={styles.subtitle}>{isRegister ? 'Un número de teléfono y estarás listo para reservar servicios en casa.' : 'Accede a tus reservas, direcciones y servicios.'}</Text>
+            <Image source={heroArt} cachePolicy="memory-disk" contentFit="cover" transition={350} style={styles.introImage} />
+            <View pointerEvents="none" style={styles.introOverlay} />
+            <View style={styles.introCopy}>
+              <View style={styles.introRule} />
+              <Text style={styles.kicker}>{isRegister ? 'CREAR CUENTA · CLIENTE' : 'TU CUENTA KLIPP'}</Text>
+              <Text style={styles.title}>{isRegister ? 'Empieza con lo esencial.' : 'Qué bueno verte de nuevo.'}</Text>
+              <Text style={styles.subtitle}>{isRegister ? 'Un número de teléfono y estarás listo para reservar servicios en casa.' : 'Accede a tus reservas, direcciones y servicios.'}</Text>
+              {!isRegister && (
+                <View style={styles.serviceChips}>
+                  <View style={styles.serviceChip}><SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={C.cobalt} size={17} /><Text style={styles.serviceChipText}>Barbería</Text></View>
+                  <View style={styles.serviceChip}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={C.coral} size={17} /><Text style={styles.serviceChipText}>Belleza</Text></View>
+                  <View style={styles.serviceChip}><SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={C.success} size={17} /><Text style={styles.serviceChipText}>Hogar</Text></View>
+                </View>
+              )}
+            </View>
           </View>
 
           <View style={styles.form}>
@@ -198,11 +211,17 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   brand: { color: C.ink, fontSize: 25, fontWeight: '900', letterSpacing: -1.1 },
   brandCaption: { color: C.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
-  intro: { marginTop: 42, marginBottom: 26, gap: 9 },
+  intro: { minHeight: 280, justifyContent: 'flex-end', overflow: 'hidden', marginTop: 28, marginBottom: 24, padding: 22, borderRadius: 24, backgroundColor: C.darkCanvas },
+  introImage: { ...StyleSheet.absoluteFill, width: '100%', height: '100%' },
+  introOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10,18,34,0.66)' },
+  introCopy: { gap: 9 },
+  serviceChips: { flexDirection: 'row', gap: 8, marginTop: 7 },
+  serviceChip: { flex: 1, minWidth: 0, minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 6, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.94)' },
+  serviceChipText: { color: C.ink, fontSize: 10, fontWeight: '900' },
   introRule: { width: 42, height: 4, borderRadius: 2, backgroundColor: C.coral, marginBottom: 9 },
-  kicker: { color: C.cobalt, fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  title: { color: C.ink, fontSize: 36, lineHeight: 41, fontWeight: '800', letterSpacing: -1.4, maxWidth: 360 },
-  subtitle: { color: C.muted, fontSize: 15, lineHeight: 22, maxWidth: 330 },
+  kicker: { color: C.mint, fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
+  title: { color: C.white, fontSize: 36, lineHeight: 41, fontWeight: '800', letterSpacing: -1.4, maxWidth: 360 },
+  subtitle: { color: 'rgba(255,255,255,0.88)', fontSize: 15, lineHeight: 22, maxWidth: 330 },
   form: { gap: 17, padding: 20, borderWidth: 1, borderColor: C.border, borderRadius: 24, backgroundColor: C.white },
   methodSwitch: { flexDirection: 'row', padding: 4, borderRadius: 15, backgroundColor: C.surfaceMuted, gap: 4 },
   methodOption: { flex: 1, minHeight: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
