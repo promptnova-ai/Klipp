@@ -139,7 +139,10 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:4173/ >/dev/null
+          npx --yes playwright screenshot --browser chromium --viewport-size "360,800" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-mobile-360.png
           npx --yes playwright screenshot --browser chromium --viewport-size "390,844" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-mobile-390.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "768,1024" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-tablet-768.png
+          npx --yes playwright screenshot --browser chromium --viewport-size "1024,768" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-tablet-1024.png
           npx --yes playwright screenshot --browser chromium --viewport-size "1440,900" --full-page --wait-for-timeout 3500 http://127.0.0.1:4173/ /tmp/klipp-desktop-1440.png
 
       - name: Upload responsive UI captures
