@@ -20,6 +20,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
+import { KlippMark } from '@/components/klipp-mark';
 import { useReducedMotion } from '@/components/ui-primitives';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors, RoleThemes } from '@/lib/brand';
@@ -390,7 +391,7 @@ export function ProRegistrationScreen() {
             <Text style={styles.backText}>‹</Text>
           </Pressable>
           <View style={styles.brandRow}>
-            <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
+            <View style={styles.logoMark}><KlippMark size={34} /></View>
             <View style={styles.brandCopy}>
               <Text style={styles.brand}>KLIPP</Text>
               <Text style={styles.brandRole}>PROFESIONAL</Text>
@@ -744,8 +745,7 @@ const styles = StyleSheet.create({
   backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13, backgroundColor: 'rgba(255,255,255,0.1)', paddingLeft: 8 },
   backText: { color: '#FFFFFF', fontSize: 34, lineHeight: 38 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: KlippColors.coral },
-  logoLetter: { color: KlippColors.white, fontSize: 20, fontWeight: '900' },
+  logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   brandCopy: { gap: 1 },
   brand: { color: '#FFFFFF', fontSize: 21, fontWeight: '900', letterSpacing: 1 },
   brandRole: { color: '#FFB7A8', fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
