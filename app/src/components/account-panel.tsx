@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
@@ -7,16 +8,26 @@ import { KlippColors, type KlippRole } from '@/lib/brand';
 export function AccountPanel({ roleLabel }: { roleLabel: string }) {
   const { profile, signOut } = useAuth();
   const role: KlippRole = profile?.role === 'pro' ? 'pro' : profile?.role === 'admin' ? 'admin' : 'client';
+  const displayName = profile?.full_name?.trim() || 'Tu cuenta';
+  const initials = displayName.split(/\\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
 
   return (
     <View style={styles.screen}>
       <BrandScreenHeader role={role} eyebrow="TU CUENTA" title="Mi cuenta" />
-      <View style={styles.details}>
-        <Text style={styles.label}>Nombre</Text>
-        <Text style={styles.value}>{profile?.full_name || 'Sin nombre'}</Text>
-        <Text style={styles.label}>Tipo de cuenta</Text>
-        <Text style={styles.value}>{roleLabel}</Text>
+      <View style={styles.identity}>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{initials || 'K'}</Text></View>
+        <View style={styles.identityCopy}>
+          <Text style={styles.identityName}>{displayName}</Text>
+          <Text style={styles.identityRole}>{roleLabel}</Text>
+        </View>
+        <View style={styles.accountMark}><SymbolView name={{ ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' }} tintColor="#3D5AFE" size={20} /></View>
       </View>
+      <View style={styles.details}>
+        <View style={styles.detailRow}><Text style={styles.label}>Nombre completo</Text><Text style={styles.value}>{profile?.full_name || 'Pendiente de completar'}</Text></View>
+        <View style={styles.detailDivider} />
+        <View style={styles.detailRow}><Text style={styles.label}>Tipo de cuenta</Text><Text style={styles.value}>{roleLabel}</Text></View>
+      </View>
+      <Text style={styles.securityNote}>Tus datos de cuenta se gestionan de forma segura en Klipp.</Text>
       <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
         <Text style={styles.signOutText}>Cerrar sesión</Text>
       </Pressable>
@@ -25,11 +36,21 @@ export function AccountPanel({ roleLabel }: { roleLabel: string }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: KlippColors.canvas },
-  details: { width: '100%', maxWidth: 720, alignSelf: 'center', marginTop: 12, paddingHorizontal: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, padding: 22, gap: 8 },
+  screen: { flex: 1, backgroundColor: KlippColors.canvas, paddingBottom: 36 },
+  identity: { width: '100%', maxWidth: 720, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 22, paddingTop: 18, paddingBottom: 20 },
+  avatar: { width: 58, height: 58, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.ink },
+  avatarText: { color: KlippColors.white, fontSize: 19, fontWeight: '900' },
+  identityCopy: { flex: 1, gap: 4 },
+  identityName: { color: KlippColors.ink, fontSize: 19, fontWeight: '900' },
+  identityRole: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
+  accountMark: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  details: { width: '100%', maxWidth: 720, alignSelf: 'center', marginTop: 4, paddingHorizontal: 22, paddingVertical: 8, backgroundColor: 'transparent', borderTopWidth: 1, borderBottomWidth: 1, borderColor: KlippColors.border, gap: 0 },
+  detailRow: { paddingVertical: 14, gap: 5 },
+  detailDivider: { height: 1, backgroundColor: KlippColors.border },
+  securityNote: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 16, color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   label: { color: KlippColors.muted, fontSize: 12, fontWeight: '700', marginTop: 6 },
   value: { color: KlippColors.navy, fontSize: 16 },
-  signOut: { width: '100%', maxWidth: 720, alignSelf: 'center', marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginTop: 20, backgroundColor: '#FFFFFF' },
+  signOut: { width: '100%', maxWidth: 676, alignSelf: 'center', marginHorizontal: 22, minHeight: 50, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginTop: 24, backgroundColor: 'transparent' },
   signOutText: { color: KlippColors.danger, fontWeight: '700', fontSize: 15 },
   pressed: { opacity: 0.75 },
 });

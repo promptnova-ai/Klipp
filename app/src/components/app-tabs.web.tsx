@@ -7,13 +7,10 @@ import {
   TabListProps,
 } from 'expo-router/ui';
 import { SymbolView } from 'expo-symbols';
-import { Pressable, useColorScheme, View, StyleSheet } from 'react-native';
+import { Pressable, useColorScheme, View, StyleSheet, Text } from 'react-native';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
 
-import { ExternalLink } from './external-link';
-import { ThemedText } from './themed-text';
-import { ThemedView } from './themed-view';
 
 export default function AppTabs() {
   return (
@@ -39,9 +36,7 @@ export function TabButton({ children, isFocused, ref: _ref, ...props }: TabTrigg
       <ThemedView
         type={isFocused ? 'backgroundSelected' : 'backgroundElement'}
         style={styles.tabButtonView}>
-        <ThemedText type="small" themeColor={isFocused ? 'text' : 'textSecondary'}>
-          {children}
-        </ThemedText>
+        <Text style={[styles.tabText, isFocused && styles.tabTextSelected]}>{children}</Text>
       </ThemedView>
     </Pressable>
   );
@@ -53,24 +48,13 @@ export function CustomTabList(props: TabListProps) {
 
   return (
     <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
-        <ThemedText type="smallBold" style={styles.brandText}>
-          Expo Starter
-        </ThemedText>
-
+      <View style={styles.innerContainer}>
+        <View style={styles.brandLockup}>
+          <View style={styles.brandMark}><SymbolView name={{ ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' }} tintColor="#FFFFFF" size={14} /></View>
+          <Text style={styles.brandName}>klipp</Text>
+        </View>
         {props.children}
-
-        <ExternalLink href="https://docs.expo.dev" asChild>
-          <Pressable style={styles.externalPressable}>
-            <ThemedText type="link">Docs</ThemedText>
-            <SymbolView
-              tintColor={colors.text}
-              name={{ ios: 'arrow.up.right.square', web: 'link' }}
-              size={12}
-            />
-          </Pressable>
-        </ExternalLink>
-      </ThemedView>
+      </View>
     </View>
   );
 }
@@ -84,32 +68,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  innerContainer: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.five,
-    borderRadius: Spacing.five,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexGrow: 1,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-  },
-  brandText: {
-    marginRight: 'auto',
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  tabButtonView: {
-    paddingVertical: Spacing.one,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Spacing.three,
-  },
-  externalPressable: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.one,
-    marginLeft: Spacing.three,
-  },
+  innerContainer: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, flexDirection: 'row', alignItems: 'center', flexGrow: 1, gap: 10, maxWidth: MaxContentWidth, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E5DE', shadowColor: '#171B2D', shadowOpacity: 0.09, shadowOffset: { width: 0, height: 8 }, shadowRadius: 22, elevation: 5 },
+  brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 7, marginRight: 'auto', paddingRight: 8 },
+  brandMark: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#3D5AFE' },
+  brandName: { color: '#171B2D', fontSize: 16, fontWeight: '900', letterSpacing: -0.6 },
+  pressed: { opacity: 0.7 },
+  tabText: { color: '#72778A', fontSize: 12, fontWeight: '700' },
+  tabTextSelected: { color: '#3048D8', fontWeight: '900' },
+  tabButtonView: { paddingVertical: 9, paddingHorizontal: 15, borderRadius: 11, backgroundColor: 'transparent' },
 });
