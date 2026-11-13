@@ -7,6 +7,8 @@ const photo = (id: string, width = 1200) => ({
   uri: `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${width}&q=85`,
 });
 
+export const heroArt = photo('photo-1600607687939-ce8a6c25118c', 1800);
+
 const art = {
   barberia: photo('photo-1503951914875-452162b0f3f1'),
   peluqueria: photo('photo-1560066984-138dadb4c035'),
