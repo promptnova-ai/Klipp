@@ -97,9 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     if (!session) {
-      setProfile(null);
-      setProfileError(null);
-      setLoading(false);
       return () => {
         mounted = false;
       };
