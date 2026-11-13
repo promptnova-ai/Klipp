@@ -830,7 +830,6 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 const styles = StyleSheet.create({
   page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: KlippColors.canvas },
-  title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
   section: { padding: 20, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 22, backgroundColor: KlippColors.white, gap: 17, shadowColor: KlippColors.ink, shadowOpacity: 0.03, shadowOffset: { width: 0, height: 6 }, shadowRadius: 18, elevation: 1 },
   sectionTitle: { color: KlippColors.navy, fontSize: 18, fontWeight: '700' },
   portfolioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
