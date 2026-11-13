@@ -99,7 +99,7 @@ jobs:
           src/theme/themes.ts
 
       - name: Run TypeScript
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Export web app
         run: npx expo export --platform web
