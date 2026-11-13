@@ -99,6 +99,8 @@ jobs:
           'src/app/(client)/index.native.tsx'
           src/components/klipp-tab-bar.tsx
           src/components/role-guard.tsx
+          src/components/location-picker.native.tsx
+          src/components/location-picker.web.tsx
           src/components/coverage-radius-picker.native.tsx
           src/components/coverage-radius-picker.web.tsx
           src/components/admin-operations-map.native.tsx
