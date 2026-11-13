@@ -255,7 +255,57 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
                 {isRegister && (
                   <>
-                    {!isRegister && (
+                    <View style={styles.field}>
+                      <Text style={styles.label}>Nombre completo</Text>
+                      <TextInput
+                        autoComplete="name"
+                        autoCapitalize="words"
+                        onChangeText={setFullName}
+                        placeholder="Tu nombre y apellido"
+                        placeholderTextColor="#8A94A6"
+                        style={styles.input}
+                        value={fullName}
+                      />
+                    </View>
+                    <View style={styles.field}>
+                      <Text style={styles.label}>¿Cómo usarás Klipp?</Text>
+                      <View style={styles.roleOptions}>
+                        <Pressable
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: role === 'client' }}
+                          onPress={() => setRole('client')}
+                          style={[styles.roleOption, role === 'client' && styles.roleOptionSelected]}>
+                          <View style={[styles.roleIcon, role === 'client' && styles.roleIconSelected]}>
+                            <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={role === 'client' ? KlippColors.blue : KlippColors.muted} size={19} />
+                          </View>
+                          <View style={styles.roleCopy}>
+                            <Text style={[styles.roleTitle, role === 'client' && styles.roleTitleSelected]}>Quiero contratar</Text>
+                            <Text style={styles.roleDescription}>Buscar y reservar servicios</Text>
+                          </View>
+                          <View style={[styles.radio, role === 'client' && styles.radioSelected]}>
+                            {role === 'client' && <View style={styles.radioDot} />}
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected: false }}
+                          onPress={() => router.push('/(auth)/pro-register')}
+                          style={styles.roleOption}>
+                          <View style={styles.roleIcon}>
+                            <SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor={KlippColors.teal} size={19} />
+                          </View>
+                          <View style={styles.roleCopy}>
+                            <Text style={styles.roleTitle}>Soy profesional</Text>
+                            <Text style={styles.roleDescription}>Ofrecer mis servicios</Text>
+                          </View>
+                          <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor={KlippColors.muted} size={16} />
+                        </Pressable>
+                      </View>
+                    </View>
+                  </>
+                )}
+
+                {!isRegister && (
                   <View style={styles.authMethodTabs}>
                     <Pressable accessibilityRole="tab" accessibilityState={{ selected: authMethod === 'phone' }} onPress={() => { setAuthMethod('phone'); setOtpSent(false); setOtp(''); setError(null); setNotice(null); }} style={[styles.authMethodTab, authMethod === 'phone' && styles.authMethodTabActive]}>
                       <Text style={[styles.authMethodText, authMethod === 'phone' && styles.authMethodTextActive]}>Teléfono</Text>
