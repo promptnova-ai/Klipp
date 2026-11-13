@@ -4,7 +4,6 @@ import { Image } from 'expo-image';
 import * as Location from 'expo-location';
 import {
   ActivityIndicator,
-  ImageBackground,
   PanResponder,
   Animated,
   KeyboardAvoidingView,
@@ -404,18 +403,14 @@ export function ProRegistrationScreen() {
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {step === 0 && (
-            <ImageBackground
-              source={{ uri: 'https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&w=1400&q=85' }}
-              resizeMode="cover"
-              imageStyle={styles.proHeroImage}
-              style={styles.proHero}>
+            <View style={styles.proHero}>
               <View style={styles.proHeroShade} />
               <View style={styles.proHeroCopy}>
                 <Text style={styles.proHeroEyebrow}>KLIPP PRO · SANTO DOMINGO</Text>
                 <Text style={styles.proHeroTitle}>Tu trabajo, más cerca de nuevos clientes.</Text>
                 <Text style={styles.proHeroSubtitle}>Crea tu perfil profesional y recibe solicitudes en tu zona.</Text>
               </View>
-            </ImageBackground>
+            </View>
           )}
           <Animated.View
             style={[
