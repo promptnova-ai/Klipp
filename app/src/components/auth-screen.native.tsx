@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth-provider';
 import { KlippMark } from '@/components/klipp-mark';
 import { KlippColors as C } from '@/lib/brand';
+import { normalizePhoneNumber } from '@/lib/phone';
 import { isSupabaseConfigured } from '../../lib/supabase';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
@@ -28,7 +29,6 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [method, setMethod] = useState<'phone' | 'email'>('phone');
-  const [prefix, setPrefix] = useState('809');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
@@ -46,14 +46,14 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     setNotice(null);
     if (method === 'phone') {
       if (isRegister && !fullName.trim()) return setError('Escribe tu nombre para continuar.');
-      if (!/^\\d{7}$/.test(phone)) return setError('Introduce los 7 dígitos de tu número dominicano.');
-      const fullPhone = `+1${prefix}${phone}`;
+      const fullPhone = normalizePhoneNumber(phone);
+      if (!fullPhone) return setError('Introduce un número válido con código de país. Ejemplo: +1 809 555 0123.');
       setBusy(true);
       try {
         if (!otpSent) {
           await sendPhoneOtp(fullPhone, fullName.trim(), 'client', isRegister);
           setOtpSent(true);
-          setNotice(`Enviamos un código de 6 dígitos a +1 ${prefix} ${phone}.`);
+          setNotice(`Enviamos un código de 6 dígitos a ${fullPhone}.`);
         } else {
           if (!/^\\d{6}$/.test(otp)) throw new Error('Introduce el código de 6 dígitos que recibiste por SMS.');
           await verifyPhoneOtp(fullPhone, otp);
@@ -107,13 +107,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             {method === 'phone' ? (
               <>
                 {isRegister && <Field label="Nombre y apellido" value={fullName} onChangeText={setFullName} placeholder="Cómo te llamas" autoCapitalize="words" />}
-                <Text style={styles.fieldLabel}>Número de teléfono</Text>
-                <View style={styles.phoneRow}>
-                  <View style={styles.prefixGroup}>
-                    {(['809', '829', '849'] as const).map((item) => <Pressable key={item} onPress={() => setPrefix(item)} style={[styles.prefix, prefix === item && styles.prefixActive]}><Text style={[styles.prefixText, prefix === item && styles.prefixTextActive]}>{item}</Text></Pressable>)}
-                  </View>
-                  <TextInput value={phone} onChangeText={(value) => setPhone(value.replace(/\\D/g, '').slice(0, 7))} keyboardType="number-pad" placeholder="000 0000" placeholderTextColor={C.muted} style={styles.phoneInput} editable={!otpSent} accessibilityLabel="Número dominicano" />
-                </View>
+                <Field label="Número de teléfono" value={phone} onChangeText={setPhone} placeholder="+1 809 555 0123" keyboardType="phone-pad" autoCapitalize="none" editable={!otpSent} />
                 {otpSent && <Field label="Código SMS" value={otp} onChangeText={(value) => setOtp(value.replace(/\\D/g, '').slice(0, 6))} placeholder="000000" keyboardType="number-pad" />}
                 {otpSent && <Pressable onPress={() => { setOtpSent(false); setOtp(''); setNotice(null); }}><Text style={styles.changeNumber}>Cambiar número</Text></Pressable>}
               </>
@@ -179,13 +173,6 @@ const styles = StyleSheet.create({
   field: { gap: 7 },
   fieldLabel: { color: C.ink, fontSize: 12, fontWeight: '800' },
   input: { minHeight: 56, borderRadius: 15, paddingHorizontal: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, color: C.ink, fontSize: 16 },
-  phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  prefixGroup: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 14, backgroundColor: '#ECEAE4' },
-  prefix: { minHeight: 42, minWidth: 43, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  prefixActive: { backgroundColor: C.white },
-  prefixText: { color: C.muted, fontSize: 11, fontWeight: '800' },
-  prefixTextActive: { color: C.ink },
-  phoneInput: { flex: 1, minHeight: 56, borderRadius: 15, paddingHorizontal: 14, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, color: C.ink, fontSize: 16 },
   changeNumber: { color: C.cobalt, fontSize: 12, fontWeight: '800', textAlign: 'right' },
   notice: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 13, backgroundColor: C.surfaceMint, borderRadius: 13 },
   noticeText: { color: C.ink, flex: 1, fontSize: 12, lineHeight: 18 },
