@@ -710,7 +710,7 @@ export function NewBookingScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
-      <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Unos pasos y queda organizado." />
+      <BrandScreenHeader inset={false} eyebrow="RESERVAS" title="Nueva reserva" subtitle="Unos pasos y queda organizado." />
       <View style={styles.wizardHeader}>
         <View style={styles.wizardHeading}><Text style={styles.wizardEyebrow}>PASO {visibleStepIndex + 1} DE {visibleWizardSteps.length}</Text><Text style={styles.wizardCurrent}>{visibleWizardSteps[visibleStepIndex]}</Text></View>
         <View style={styles.wizardTrack}><View style={[styles.wizardFill, { width: `${((visibleStepIndex + 1) / visibleWizardSteps.length) * 100}%` }]} /></View>
