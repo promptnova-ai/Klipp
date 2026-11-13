@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
   coordinates: { color: KlippColors.slate, fontSize: 12, textAlign: 'center' },
   coordinateFields: { flexDirection: 'row', gap: 8 },
   coordinateField: { flex: 1, minWidth: 0, gap: 4 },
-  fieldLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' }
+  fieldLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800' },
   coordinateInput: { flex: 1, minWidth: 0, minHeight: 44, paddingHorizontal: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, backgroundColor: KlippColors.white, color: KlippColors.slate, fontSize: 12 },
   applyButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 12, backgroundColor: KlippColors.cobalt },
   applyText: { color: KlippColors.white, fontSize: 12, fontWeight: '800' },
