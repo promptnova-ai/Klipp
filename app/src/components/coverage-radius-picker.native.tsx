@@ -54,7 +54,7 @@ export function CoverageRadiusPicker({
 }
 
 const styles = StyleSheet.create({
-  container: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EEF7' },
+  container: { height: 245, overflow: 'hidden', borderRadius: 16, backgroundColor: KlippColors.surfaceBlue },
   hint: { position: 'absolute', right: 8, bottom: 8, left: 8, alignItems: 'center', paddingHorizontal: 9, paddingVertical: 7, borderRadius: 10, backgroundColor: '#FFFFFFE8' },
-  hintText: { color: '#334155', fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  hintText: { color: KlippColors.slate, fontSize: 11, fontWeight: '600', textAlign: 'center' },
 });
