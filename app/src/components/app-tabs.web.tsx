@@ -9,7 +9,9 @@ import {
 import { SymbolView } from 'expo-symbols';
 import { Pressable, View, StyleSheet, Text } from 'react-native';
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { KlippColors, KlippLayout, KlippShadows, KlippTypography } from '@/theme/tokens';
+import { KlippMark } from '@/components/klipp-mark';
 import { ThemedView } from './themed-view';
 
 
@@ -48,7 +50,7 @@ export function CustomTabList(props: TabListProps) {
     <View {...props} style={styles.tabListContainer}>
       <View style={styles.innerContainer}>
         <View style={styles.brandLockup}>
-          <View style={styles.brandMark}><SymbolView name={{ ios: 'sparkle', android: 'auto_awesome', web: 'auto_awesome' }} tintColor="#FFFFFF" size={14} /></View>
+          <KlippMark size={26} />
           <Text style={styles.brandName}>klipp</Text>
         </View>
         {props.children}
@@ -66,12 +68,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
   },
-  innerContainer: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 18, flexDirection: 'row', alignItems: 'center', flexGrow: 1, gap: 10, maxWidth: MaxContentWidth, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E8E5DE', shadowColor: '#171B2D', shadowOpacity: 0.09, shadowOffset: { width: 0, height: 8 }, shadowRadius: 22, elevation: 5 },
+  innerContainer: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: KlippLayout.radiusCard, flexDirection: 'row', alignItems: 'center', flexGrow: 1, gap: 10, maxWidth: KlippLayout.contentMaxWidth, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, ...KlippShadows.floating },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 7, marginRight: 'auto', paddingRight: 8 },
-  brandMark: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: '#3D5AFE' },
-  brandName: { color: '#171B2D', fontSize: 16, fontWeight: '900', letterSpacing: -0.6 },
+  brandName: { color: KlippColors.ink, fontSize: KlippTypography.size.bodyLarge, fontWeight: '900', letterSpacing: -0.6 },
   pressed: { opacity: 0.7 },
-  tabText: { color: '#72778A', fontSize: 12, fontWeight: '700' },
-  tabTextSelected: { color: '#3048D8', fontWeight: '900' },
+  tabText: { color: KlippColors.muted, fontSize: KlippTypography.size.small, fontWeight: '700' },
+  tabTextSelected: { color: KlippColors.cobaltDark, fontWeight: '900' },
   tabButtonView: { paddingVertical: 9, paddingHorizontal: 15, borderRadius: 11, backgroundColor: 'transparent' },
 });
