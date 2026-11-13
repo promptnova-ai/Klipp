@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { TrackingMap } from '@/components/tracking-map';
-import { KlippColors } from '@/lib/brand';
+import {  KlippColors, KlippLayout  } from '@/lib/brand';
 import { formatBusinessDate } from '@/lib/format';
 import type { Booking, BookingStatus, ProCard } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
@@ -367,7 +367,7 @@ export function ClientTrackingScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 18, paddingTop: 12, paddingBottom: 52, gap: 17 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 12, paddingBottom: 52, gap: 17 },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: KlippColors.canvas },
   backButton: { alignSelf: 'flex-start', paddingVertical: 8 },
   backText: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '700' },
