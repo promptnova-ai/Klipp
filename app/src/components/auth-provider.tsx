@@ -18,6 +18,7 @@ type AuthContextValue = {
   sendPhoneOtp: (phone: string, fullName: string, role: UserRole, shouldCreateUser: boolean) => Promise<void>;
   verifyPhoneOtp: (phone: string, token: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole, metadata?: Record<string, unknown>) => Promise<boolean>;
+  resendSignupConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
@@ -168,6 +169,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return Boolean(data.session);
   }
 
+  async function resendSignupConfirmation(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail) throw new Error('No encontramos el correo de tu cuenta.');
+
+    const emailRedirectTo =
+      Platform.OS === 'web' && typeof window !== 'undefined'
+        ? window.location.origin
+        : Linking.createURL('/');
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: normalizedEmail,
+      options: { emailRedirectTo },
+    });
+    if (error) throw error;
+  }
+
   async function signOut() {
     if (session?.user.id) {
       try {
@@ -214,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sendPhoneOtp,
         verifyPhoneOtp,
         signUp,
+        resendSignupConfirmation,
         signOut,
         refreshProfile,
       }}>
