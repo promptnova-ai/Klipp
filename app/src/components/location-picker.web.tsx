@@ -69,7 +69,7 @@ export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordi
       map.current = instance;
       marker.current = pin;
 
-      const publishPosition = (next: google.maps.LatLng | google.maps.LatLngLiteral | null) => {
+      const publishPosition = (next: google.maps.LatLng | google.maps.LatLngLiteral | null | undefined) => {
         if (!next) return;
         const lat = typeof (next as google.maps.LatLng).lat === 'function'
           ? (next as google.maps.LatLng).lat()
