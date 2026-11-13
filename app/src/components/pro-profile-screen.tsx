@@ -7,7 +7,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
-import { KlippColors } from '@/lib/brand';
+import {  KlippColors, KlippLayout  } from '@/lib/brand';
 import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import type { ProAvailability, ProProfile, PricingTier, ServiceType, VerificationStatus } from '@/lib/types';
@@ -830,7 +830,7 @@ function ActionButton({ label, onPress, disabled = false }: { label: string; onP
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 27, fontWeight: '700' },
   section: { paddingVertical: 19, paddingHorizontal: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', gap: 16, shadowOpacity: 0, elevation: 0 },
