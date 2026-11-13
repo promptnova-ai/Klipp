@@ -13,8 +13,7 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#F7F5F0",
-        "foregroundImage": "./assets/images/klipp-symbol.png",
-        "monochromeImage": "./assets/images/klipp-symbol.png"
+        "foregroundImage": "./assets/images/klipp-symbol.png"
       },
       "predictiveBackGestureEnabled": false
     },
