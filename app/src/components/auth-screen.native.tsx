@@ -41,6 +41,25 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     if (session) router.replace('/');
   }, [router, session]);
 
+  async function resendCode() {
+    setError(null);
+    setNotice(null);
+    const fullPhone = normalizePhoneNumber(phone);
+    if (!fullPhone) {
+      setError('Introduce un número válido con código de país.');
+      return;
+    }
+    setBusy(true);
+    try {
+      await sendPhoneOtp(fullPhone, fullName.trim(), 'client', isRegister);
+      setNotice(`Enviamos otro código de 6 dígitos a ${fullPhone}.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos reenviar el código SMS.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function submit() {
     setError(null);
     setNotice(null);
@@ -79,7 +98,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   }
 
   const disabled = busy || !isSupabaseConfigured || (method === 'phone'
-    ? otpSent ? otp.length !== 6 : phone.length !== 7 || (isRegister && !fullName.trim())
+    ? otpSent ? otp.length !== 6 : !normalizePhoneNumber(phone) || (isRegister && !fullName.trim())
     : !email.trim() || !password);
 
   return (
@@ -109,7 +128,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 {isRegister && <Field label="Nombre y apellido" value={fullName} onChangeText={setFullName} placeholder="Cómo te llamas" autoCapitalize="words" />}
                 <Field label="Número de teléfono" value={phone} onChangeText={setPhone} placeholder="+1 809 555 0123" keyboardType="phone-pad" autoCapitalize="none" editable={!otpSent} />
                 {otpSent && <Field label="Código SMS" value={otp} onChangeText={(value) => setOtp(value.replace(/\\D/g, '').slice(0, 6))} placeholder="000000" keyboardType="number-pad" />}
-                {otpSent && <Pressable onPress={() => { setOtpSent(false); setOtp(''); setNotice(null); }}><Text style={styles.changeNumber}>Cambiar número</Text></Pressable>}
+                {otpSent && (
+                  <View style={styles.otpActions}>
+                    <Pressable disabled={busy} onPress={() => void resendCode()}><Text style={styles.changeNumber}>{busy ? 'Enviando…' : 'Reenviar código'}</Text></Pressable>
+                    <Pressable onPress={() => { setOtpSent(false); setOtp(''); setNotice(null); }}><Text style={styles.changeNumber}>Cambiar número</Text></Pressable>
+                  </View>
+                )}
               </>
             ) : (
               <>
@@ -174,6 +198,7 @@ const styles = StyleSheet.create({
   field: { gap: 7 },
   fieldLabel: { color: C.ink, fontSize: 12, fontWeight: '800' },
   input: { minHeight: 56, borderRadius: 15, paddingHorizontal: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, color: C.ink, fontSize: 16 },
+  otpActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   changeNumber: { color: C.cobalt, fontSize: 12, fontWeight: '800', textAlign: 'right' },
   notice: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 13, backgroundColor: C.surfaceMint, borderRadius: 13 },
   noticeText: { color: C.ink, flex: 1, fontSize: 12, lineHeight: 18 },
