@@ -33,6 +33,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [otp, setOtp] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -138,7 +139,15 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             ) : (
               <>
                 <Field label="Correo electrónico" value={email} onChangeText={setEmail} placeholder="nombre@correo.com" keyboardType="email-address" autoCapitalize="none" />
-                <Field label="Contraseña" value={password} onChangeText={setPassword} placeholder="Tu contraseña" secureTextEntry />
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Contraseña</Text>
+                  <View style={styles.passwordField}>
+                    <TextInput accessibilityLabel="Contraseña" autoComplete="current-password" value={password} onChangeText={setPassword} placeholder="Tu contraseña" placeholderTextColor={C.muted} secureTextEntry={!showPassword} style={styles.passwordInput} />
+                    <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'} hitSlop={10} onPress={() => setShowPassword((value) => !value)} style={styles.passwordToggle}>
+                      <SymbolView name={showPassword ? { ios: 'eye.slash', android: 'visibility_off', web: 'visibility_off' } : { ios: 'eye', android: 'visibility', web: 'visibility' }} tintColor={C.muted} size={19} />
+                    </Pressable>
+                  </View>
+                </View>
               </>
             )}
 
@@ -157,6 +166,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             <Text style={styles.bottomText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Todavía no tienes cuenta?'}</Text>
             <Link href={isRegister ? '/login' : '/register'} style={styles.bottomLink}>{isRegister ? 'Inicia sesión' : 'Crear cuenta'}</Link>
           </View>
+          {isRegister && (
+            <Pressable accessibilityRole="button" onPress={() => router.push('/(auth)/pro-register')} style={styles.proSignupLink}>
+              <Text style={styles.proSignupText}>¿Quieres ofrecer servicios? <Text style={styles.bottomLink}>Regístrate como profesional</Text></Text>
+            </Pressable>
+          )}
           <View style={styles.secure}><SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={C.success} size={16} /><Text style={styles.secureText}>Tus datos y reservas, protegidos en Klipp</Text></View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -198,6 +212,9 @@ const styles = StyleSheet.create({
   field: { gap: 7 },
   fieldLabel: { color: C.ink, fontSize: 12, fontWeight: '800' },
   input: { minHeight: 56, borderRadius: 15, paddingHorizontal: 16, backgroundColor: C.white, borderWidth: 1, borderColor: C.border, color: C.ink, fontSize: 16 },
+  passwordField: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderRadius: 15, backgroundColor: C.white, borderWidth: 1, borderColor: C.border },
+  passwordInput: { flex: 1, minHeight: 54, color: C.ink, fontSize: 16 },
+  passwordToggle: { minWidth: 40, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: C.surfaceMuted },
   otpActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   changeNumber: { color: C.cobalt, fontSize: 12, fontWeight: '800', textAlign: 'right' },
   notice: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 13, backgroundColor: C.surfaceMint, borderRadius: 13 },
@@ -213,6 +230,8 @@ const styles = StyleSheet.create({
   bottomLine: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, marginTop: 26 },
   bottomText: { color: C.muted, fontSize: 12 },
   bottomLink: { color: C.cobalt, fontSize: 12, fontWeight: '900' },
+  proSignupLink: { alignSelf: 'center', marginTop: 12, paddingVertical: 8, paddingHorizontal: 10 },
+  proSignupText: { color: C.muted, fontSize: 12, textAlign: 'center' },
   secure: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginTop: 30 },
   secureText: { color: C.muted, fontSize: 10, fontWeight: '700' },
 });
