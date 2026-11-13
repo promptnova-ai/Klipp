@@ -18,7 +18,7 @@ export default function ProLayout() {
           {proTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
         <TabSlot detachInactiveScreens={false} />
-        <KlippTabBar items={proTabs} actionHref="/(pro)" actionLabel="Ir a solicitudes de Klipp PRO" />
+        <KlippTabBar items={proTabs} actionHref="/(pro)" actionLabel="Ir a solicitudes de Klipp PRO" role="pro" />
       </Tabs>
     </RoleGuard>
   );
