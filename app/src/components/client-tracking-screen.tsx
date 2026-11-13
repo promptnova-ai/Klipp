@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { TrackingMap } from '@/components/tracking-map';
 import { KlippColors } from '@/lib/brand';
 import { formatBusinessDate } from '@/lib/format';
@@ -291,16 +292,17 @@ export function ClientTrackingScreen() {
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
           <Text style={styles.backText}>‹  Volver a mis reservas</Text>
         </Pressable>
+        <BrandScreenHeader
+          role="client"
+          eyebrow="SEGUIMIENTO DE TU SERVICIO"
+          title={!booking ? 'Seguimiento' : booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'}
+          subtitle={booking ? `${booking.service_types?.name ?? 'Servicio Klipp'} · ${formatBusinessDate(booking.scheduled_start)}` : 'Consulta el estado de tu reserva.'}
+        />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {!booking ? (
           <View style={styles.statusCard}><Text style={styles.title}>No disponible</Text><Text style={styles.body}>No pudimos cargar esta reserva.</Text></View>
         ) : (
           <>
-            <View style={styles.heading}>
-              <Text style={styles.eyebrow}>SEGUIMIENTO DE TU SERVICIO</Text>
-              <Text style={styles.title}>{booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'}</Text>
-              <Text style={styles.body}>{booking.service_types?.name ?? 'Servicio Klipp'} · {formatBusinessDate(booking.scheduled_start)}</Text>
-            </View>
 
             {booking.status === 'en_route' ? (
               <>
