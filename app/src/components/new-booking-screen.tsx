@@ -894,7 +894,7 @@ export function NewBookingScreen() {
         {selectedOffer && <Text style={styles.body}>Has seleccionado a {selectedOffer.pro_name ?? 'un profesional'} para este servicio.</Text>}
         {!coordinate && <Text style={styles.body}>Comparte tu ubicación para validar la cobertura.</Text>}
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && (!scheduledTime || !selectedDuration) && <Text style={styles.body}>Elige fecha y horario para descubrir profesionales cercanos, revisar sus perfiles y seleccionar a quién contratar.</Text>}
-        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color="#16766c" />}
+        {!selectedOffer && mode === 'manual' && coordinate && loadingPros && <ActivityIndicator color={KlippColors.cobalt} />}
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && coordinate && scheduledTime && !loadingPros && pros.length === 0 && <Text style={styles.body}>No hay profesionales verificados disponibles en esta zona y horario.</Text>}
         {!selectedOffer && timing === 'scheduled' && mode === 'manual' && pros.map((pro) => (
           <View key={pro.pro_id} style={[styles.proCard, selectedProId === pro.pro_id && styles.proCardSelected]}>
@@ -910,7 +910,7 @@ export function NewBookingScreen() {
             </Pressable>
             {expandedProId === pro.pro_id && (
               <View style={styles.profileDetails}>
-                {loadingProDetails ? <ActivityIndicator color="#16766c" /> : <>
+                {loadingProDetails ? <ActivityIndicator color={KlippColors.cobalt} /> : <>
                   <Text style={styles.body}>{pro.bio || 'Este profesional aún no ha añadido una biografía.'}</Text>
                   <View style={styles.proStats}>
                     <View style={styles.proStat}><Text style={styles.proStatValue}>{pro.jobs_completed}</Text><Text style={styles.proStatLabel}>Trabajos</Text></View>
@@ -954,7 +954,7 @@ export function NewBookingScreen() {
               <Text style={styles.summaryTitle}>{services.find((service) => service.id === selectedServiceId)?.name ?? 'Servicio'}</Text>
             </View>
             <View style={styles.summaryIcon}>
-              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor="#047857" size={18} />
+              <SymbolView name={{ ios: 'checkmark', android: 'check', web: 'check' }} tintColor={KlippColors.success} size={18} />
             </View>
           </View>
           {selectedTier && <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Modalidad</Text><Text style={styles.summaryValue}>{selectedTier.label}</Text></View>}
