@@ -27,7 +27,8 @@ function TabButton({ label, icon, isFocused, onPress, accent, accentSoft }: TabB
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      hitSlop={6}
+      accessibilityRole="tab"
       accessibilityLabel={label}
       accessibilityState={{ selected: isFocused }}
       style={({ pressed }) => [styles.tabButton, isFocused && { backgroundColor: accentSoft }, pressed && styles.pressed]}>
@@ -96,7 +97,7 @@ const styles = StyleSheet.create({
     gap: 4,
     borderRadius: 14,
   },
-  tabLabel: { color: '#8A8D98', fontSize: 10, fontWeight: '700', letterSpacing: 0.1 },
+  tabLabel: { color: KlippColors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.1 },
   centerButton: {
     width: 66,
     height: 66,
