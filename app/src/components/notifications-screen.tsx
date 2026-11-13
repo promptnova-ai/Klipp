@@ -25,6 +25,7 @@ type AppNotification = {
   user_id: string;
   booking_id: string | null;
   type: string;
+  title: string;
   body: string;
   data: Record<string, unknown>;
   read_at: string | null;
