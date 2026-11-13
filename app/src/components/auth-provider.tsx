@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       phone,
       options: {
         shouldCreateUser,
-        data: { role, full_name: fullName, phone },
+        data: shouldCreateUser ? { role, full_name: fullName, phone } : undefined,
       },
     });
     if (error) throw error;
