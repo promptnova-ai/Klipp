@@ -25,7 +25,7 @@ export default function ClientLayout() {
           {workflowTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
         <TabSlot detachInactiveScreens={false} />
-        <KlippTabBar items={primaryTabs} actionHref="/(client)/new-booking" actionLabel="Reservar un servicio" />
+        <KlippTabBar items={primaryTabs} actionHref="/(client)/new-booking" actionLabel="Reservar un servicio" role="client" />
       </Tabs>
     </RoleGuard>
   );
