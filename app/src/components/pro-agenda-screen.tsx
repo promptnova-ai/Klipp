@@ -6,7 +6,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippColors } from '@/lib/brand';
+import {  KlippColors, KlippLayout  } from '@/lib/brand';
 import { serviceArt } from '@/lib/service-art';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -477,7 +477,7 @@ export function ProAgendaScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1120, alignSelf: 'center', paddingHorizontal: 22, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
+  page: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, alignSelf: 'center', paddingHorizontal: KlippLayout.pageGutter, paddingTop: 14, paddingBottom: 56, gap: 18, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   modalBackdrop: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 22, backgroundColor: 'rgba(15, 23, 42, 0.55)' },
   equipmentModal: { width: '100%', maxWidth: 440, padding: 22, borderRadius: 18, backgroundColor: KlippColors.white, gap: 14 },
   modalTitle: { color: KlippColors.navy, fontSize: 20, fontWeight: '800' },
