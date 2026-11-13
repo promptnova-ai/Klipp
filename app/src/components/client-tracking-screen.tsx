@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState, useRef } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
@@ -68,6 +68,8 @@ function statusMessage(status: BookingStatus, assignmentMode: 'manual' | 'auto')
 
 export function ClientTrackingScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const compact = width < 560;
   const { bookingId } = useLocalSearchParams<{ bookingId?: string }>();
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -320,14 +322,16 @@ export function ClientTrackingScreen() {
                     <Text style={styles.body}>Preparando el mapa de seguimiento…</Text>
                   </View>
                 )}
-                <View style={styles.professionalCard}>
-                  <View style={styles.avatar}><Text style={styles.avatarText}>{professional?.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.professionalDetails}>
-                    <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
-                    <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
+                <View style={[styles.professionalCard, compact && styles.professionalCardCompact]}>
+                  <View style={styles.professionalIdentity}>
+                    <View style={styles.avatar}><Text style={styles.avatarText}>{professional?.full_name?.[0] ?? 'K'}</Text></View>
+                    <View style={styles.professionalDetails}>
+                      <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
+                      <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
+                      <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
+                    </View>
                   </View>
-                  <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/bookings', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
+                  <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/bookings', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.callButton, compact && styles.callButtonCompact, pressed && styles.pressed]}>
                     <Text style={styles.callButtonText}>Contactar por el chat de Klipp</Text>
                   </Pressable>
                 </View>
@@ -380,14 +384,17 @@ const styles = StyleSheet.create({
   etaLabel: { color: '#E9EDFF', fontSize: 11, fontWeight: '900', letterSpacing: 1 },
   etaValue: { color: KlippColors.white, fontSize: 38, lineHeight: 42, fontWeight: '900', letterSpacing: -1 },
   etaHint: { color: '#E9EDFF', fontSize: 12, lineHeight: 18 },
-  mapPlaceholder: { height: 430, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.whiteBlue, gap: 10 },
+  mapPlaceholder: { height: 300, alignItems: 'center', justifyContent: 'center', borderRadius: 16, backgroundColor: KlippColors.whiteBlue, gap: 10 },
   professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white },
+  professionalCardCompact: { flexDirection: 'column', alignItems: 'stretch' },
+  professionalIdentity: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: KlippColors.whiteBlue },
   avatarText: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '800' },
   professionalDetails: { flex: 1, gap: 3 },
   professionalName: { color: KlippColors.navy, fontSize: 15, fontWeight: '800' },
   acceptanceRate: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
-  callButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.blue },
+  callButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.cobalt },
+  callButtonCompact: { width: '100%' },
   callButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
   destinationCard: { padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 19, backgroundColor: KlippColors.white, gap: 6 },
   destinationLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
