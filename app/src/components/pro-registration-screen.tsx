@@ -85,6 +85,7 @@ export function ProRegistrationScreen() {
   const { signUp } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
+  const [showOptionalProfile, setShowOptionalProfile] = useState(false);
   const [phone, setPhone] = useState('');
   const [bio, setBio] = useState('');
   const [years, setYears] = useState('');
@@ -403,16 +404,6 @@ export function ProRegistrationScreen() {
           <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
         <ScrollView contentContainerStyle={[styles.scrollContent, compact && styles.scrollContentCompact]} keyboardShouldPersistTaps="handled">
-          {step === 0 && (
-            <View style={styles.proHero}>
-              <View style={styles.proHeroShade} />
-              <View style={styles.proHeroCopy}>
-                <Text style={styles.proHeroEyebrow}>KLIPP PRO · SANTO DOMINGO</Text>
-                <Text style={styles.proHeroTitle}>Tu trabajo, más cerca de nuevos clientes.</Text>
-                <Text style={styles.proHeroSubtitle}>Crea tu perfil profesional y recibe solicitudes en tu zona.</Text>
-              </View>
-            </View>
-          )}
           <Animated.View
             style={[
               styles.stepContent,
@@ -426,49 +417,42 @@ export function ProRegistrationScreen() {
             </View>
 
             {step === 0 && (
-              <View style={styles.card}>
-                <Field label="Nombre completo">
-                  <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
-                </Field>
-                <Field label="Teléfono de contacto">
-                  <TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
-                </Field>
-                <View style={[styles.twoColumns, compact && styles.stackedColumns]}>
-                  <Field label="Años de experiencia">
-                    <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
-                  </Field>
-                  <View style={styles.experienceHint}>
-                    <Text style={styles.helper}>Puedes dejar este dato vacío y completarlo más adelante.</Text>
-                  </View>
+              <View style={styles.identityPanel}>
+                <View style={styles.identityIntro}>
+                  <Text style={styles.identityStep}>01 <Text style={styles.identityStepMuted}>/ 08</Text></Text>
+                  <Text style={styles.identityHint}>Solo necesitamos lo esencial para empezar.</Text>
                 </View>
-                <Field label="Una breve presentación">
-                  <TextInput multiline onChangeText={setBio} placeholder="Cuéntales a tus futuros clientes qué te hace especial..." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
+                <Field label="Nombre y apellido">
+                  <TextInput autoComplete="name" autoCapitalize="words" returnKeyType="next" onChangeText={setFullName} placeholder="Ej. María Rodríguez" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
                 </Field>
-                <View style={styles.transportSection}>
-                  <Text style={styles.label}>¿Cómo te trasladas al domicilio?</Text>
-                  <Text style={styles.helper}>Ayuda a tus clientes a saber cómo llegarás a su servicio.</Text>
-                  <View style={styles.chips}>
-                    {transportOptions.map((option) => (
-                      <Chip
-                        key={option}
-                        label={option}
-                        selected={transportType === option}
-                        onPress={() => setTransportType(option)}
-                      />
-                    ))}
+                <Field label="Teléfono móvil">
+                  <TextInput autoComplete="tel" keyboardType="phone-pad" returnKeyType="done" onChangeText={setPhone} placeholder="+1 809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
+                  <Text style={styles.fieldHint}>Lo usaremos para coordinar tus servicios y avisarte de nuevas solicitudes.</Text>
+                </Field>
+                <Pressable accessibilityRole="button" accessibilityState={{ expanded: showOptionalProfile }} onPress={() => setShowOptionalProfile((value) => !value)} style={styles.optionalToggle}>
+                  <View style={styles.optionalToggleCopy}>
+                    <Text style={styles.optionalTitle}>Completar mi perfil ahora</Text>
+                    <Text style={styles.optionalSubtitle}>Experiencia, presentación y transporte · opcional</Text>
                   </View>
-                  {transportType === 'Otro' && (
-                    <TextInput
-                      accessibilityLabel="Especifica tu medio de transporte"
-                      maxLength={50}
-                      onChangeText={setOtherTransportType}
-                      placeholder="Especifica tu medio de transporte"
-                      placeholderTextColor={KlippColors.muted}
-                      style={styles.input}
-                      value={otherTransportType}
-                    />
-                  )}
-                </View>
+                  <Text style={styles.optionalChevron}>{showOptionalProfile ? '−' : '+'}</Text>
+                </Pressable>
+                {showOptionalProfile && (
+                  <View style={styles.optionalFields}>
+                    <Field label="Años de experiencia">
+                      <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
+                    </Field>
+                    <Field label="Presentación (opcional)">
+                      <TextInput multiline onChangeText={setBio} placeholder="Describe brevemente tu experiencia." placeholderTextColor={KlippColors.muted} style={[styles.input, styles.multiline]} value={bio} />
+                    </Field>
+                    <View style={styles.transportSection}>
+                      <Text style={styles.label}>¿Cómo llegas a tus clientes?</Text>
+                      <View style={styles.chips}>
+                        {transportOptions.map((option) => <Chip key={option} label={option} selected={transportType === option} onPress={() => setTransportType(option)} />)}
+                      </View>
+                      {transportType === 'Otro' && <TextInput accessibilityLabel="Especifica tu medio de transporte" maxLength={50} onChangeText={setOtherTransportType} placeholder="Especifica tu transporte" placeholderTextColor={KlippColors.muted} style={styles.input} value={otherTransportType} />}
+                    </View>
+                  </View>
+                )}
               </View>
             )}
 
@@ -748,8 +732,8 @@ const styles = StyleSheet.create({
   stepCount: { color: KlippColors.ink, fontSize: 12, fontWeight: '900', letterSpacing: 0.7 },
   progressTrack: { width: '100%', maxWidth: 920, height: 5, alignSelf: 'center', marginHorizontal: 0, overflow: 'hidden', borderRadius: 0, backgroundColor: '#D8D9E1' },
   progressFill: { height: 5, borderRadius: 0, backgroundColor: KlippColors.coral },
-  scrollContent: { flexGrow: 1, paddingHorizontal: KlippLayout.pageGutter, paddingTop: 22, paddingBottom: 36 },
-  scrollContentCompact: { paddingHorizontal: KlippLayout.pageGutterCompact, paddingTop: 16 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: KlippLayout.pageGutter, paddingTop: 34, paddingBottom: 36 },
+  scrollContentCompact: { paddingHorizontal: KlippLayout.pageGutterCompact, paddingTop: 22 },
   proHero: { width: '100%', maxWidth: KlippLayout.contentMaxWidth, minHeight: 245, alignSelf: 'center', justifyContent: 'flex-end', overflow: 'hidden', borderRadius: KlippLayout.radiusCardLarge, backgroundColor: KlippColors.ink, marginBottom: 22 },
   proHeroImage: { borderRadius: 16 },
   proHeroShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(15,22,39,0.43)' },
@@ -757,12 +741,24 @@ const styles = StyleSheet.create({
   proHeroEyebrow: { color: '#FFB7A8', fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
   proHeroTitle: { color: '#FFFFFF', fontSize: 29, lineHeight: 34, fontWeight: '900', letterSpacing: -0.6 },
   proHeroSubtitle: { color: '#F5F5F5', fontSize: 13, lineHeight: 19, maxWidth: 460 },
-  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 26 },
+  stepContent: { width: '100%', maxWidth: 820, alignSelf: 'center', gap: 22 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.ink, fontSize: 34, lineHeight: 40, fontWeight: '900', letterSpacing: -1.1 },
+  title: { color: KlippColors.ink, fontSize: 36, lineHeight: 42, fontWeight: '800', letterSpacing: -1.25 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, maxWidth: 620 },
   card: { paddingVertical: 19, paddingHorizontal: 0, borderWidth: 0, borderBottomWidth: 1, borderColor: '#EAE7E0', borderRadius: 0, backgroundColor: 'transparent', gap: 18, shadowOpacity: 0, elevation: 0 },
+  identityPanel: { width: '100%', maxWidth: 680, alignSelf: 'center', padding: 24, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 24, backgroundColor: KlippColors.white, gap: 22, shadowColor: KlippColors.ink, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 8 }, shadowRadius: 24, elevation: 2 },
+  identityIntro: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  identityStep: { color: RoleThemes.pro.accentStrong, fontSize: 12, fontWeight: '900', letterSpacing: 1 },
+  identityStepMuted: { color: KlippColors.muted, fontWeight: '600' },
+  identityHint: { flex: 1, color: KlippColors.muted, fontSize: 11, textAlign: 'right' },
+  fieldHint: { color: KlippColors.muted, fontSize: 11, lineHeight: 16 },
+  optionalToggle: { minHeight: 68, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 15, paddingVertical: 12, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.surfaceMuted },
+  optionalToggleCopy: { flex: 1, gap: 4 },
+  optionalTitle: { color: KlippColors.ink, fontSize: 13, fontWeight: '800' },
+  optionalSubtitle: { color: KlippColors.muted, fontSize: 11 },
+  optionalChevron: { color: RoleThemes.pro.accentStrong, fontSize: 24, fontWeight: '500', paddingHorizontal: 5 },
+  optionalFields: { gap: 18, paddingTop: 2 },
   field: { flex: 1, gap: 8, minWidth: 0 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
   passwordField: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD' },
