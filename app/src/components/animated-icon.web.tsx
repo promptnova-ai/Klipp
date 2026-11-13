@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -44,7 +44,10 @@ export function AnimatedSplashOverlay() {
   return (
     <Animated.View
       entering={entering}
-            style={styles.splashOverlay}>
+      onLayout={() => {
+        if (reducedMotion) setVisible(false);
+      }}
+      style={styles.splashOverlay}>
       <View style={styles.splashBrand}>
         <KlippMark size={92} />
         <Text style={styles.brandName}>klipp</Text>
