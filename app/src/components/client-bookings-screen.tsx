@@ -321,7 +321,7 @@ export function ClientBookingsScreen() {
     return ['cancelled', 'expired'].includes(booking.status);
   }).length;
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando reservas...</Text></View>;
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />}>
@@ -481,7 +481,7 @@ export function ClientBookingsScreen() {
                 <View style={styles.ratingRow}>
                   {[1, 2, 3, 4, 5].map((rating) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: (ratings[booking.id] ?? 5) === rating }} key={rating} onPress={() => setRatings((current) => ({ ...current, [booking.id]: rating }))} style={styles.star}><Text style={styles.starText}>{(ratings[booking.id] ?? 5) >= rating ? '★' : '☆'}</Text></Pressable>)}
                 </View>
-                <TextInput multiline onChangeText={(value) => setComments((current) => ({ ...current, [booking.id]: value }))} placeholder="Comentario (opcional)" placeholderTextColor="#85918b" style={styles.commentInput} value={comments[booking.id] ?? ''} />
+                <TextInput multiline onChangeText={(value) => setComments((current) => ({ ...current, [booking.id]: value }))} placeholder="Comentario (opcional)" placeholderTextColor={KlippColors.muted} style={styles.commentInput} value={comments[booking.id] ?? ''} />
                 <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void submitReview(booking)} style={styles.reviewButton}><Text style={styles.buttonText}>Enviar reseña</Text></Pressable>
               </View>
             )}
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   reviewTitle: { color: KlippColors.ink, fontSize: 15, fontWeight: '700' },
   ratingRow: { flexDirection: 'row', gap: 8 },
   star: { paddingVertical: 2, paddingHorizontal: 3 },
-  starText: { color: '#A46D00', fontSize: 28 },
+  starText: { color: KlippColors.warning, fontSize: 28 },
   commentInput: { minHeight: 74, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 12, padding: 12, color: KlippColors.ink, textAlignVertical: 'top' },
   reviewButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.cobalt },
   reviewDone: { color: KlippColors.muted, fontSize: 13, lineHeight: 20, marginTop: 4 },
