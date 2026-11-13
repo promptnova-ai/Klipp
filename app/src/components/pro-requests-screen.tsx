@@ -81,13 +81,17 @@ export function ProRequestsScreen() {
     if (!activeRequest || secondsLeft > 0 || expiryHandledRef.current.has(activeRequest.id)) return;
     expiryHandledRef.current.add(activeRequest.id);
     let cancelled = false;
-    void Promise.resolve(supabase.rpc('pro_expire_booking_request', { p_request_id: activeRequest.id }))
-      .then(async () => {
-        if (!cancelled) await loadRequests();
-      })
-      .catch(() => {
-        if (!cancelled) void loadRequests();
+    void (async () => {
+      const { error: expiryError } = await supabase.rpc('pro_expire_booking_request', {
+        p_request_id: activeRequest.id,
       });
+      if (cancelled) return;
+      if (expiryError) {
+        setError(expiryError.message);
+        return;
+      }
+      await loadRequests();
+    })();
     return () => { cancelled = true; };
   }, [activeRequest, secondsLeft, loadRequests]);
 
@@ -127,9 +131,13 @@ export function ProRequestsScreen() {
   }, [loadRequests, session?.user.id]);
 
   async function refresh() {
+    if (activeRequest && secondsLeft <= 0) expiryHandledRef.current.delete(activeRequest.id);
     setRefreshing(true);
-    await loadRequests();
-    setRefreshing(false);
+    try {
+      await loadRequests();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function respond(requestId: string, accept: boolean) {
@@ -146,26 +154,36 @@ export function ProRequestsScreen() {
     }
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('respond_to_request', {
-      p_request_id: requestId,
-      p_accept: accept,
-      p_materials_confirmed: accept ? materialsConfirmed : false,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('respond_to_request', {
+        p_request_id: requestId,
+        p_accept: accept,
+        p_materials_confirmed: accept ? materialsConfirmed : false,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos enviar tu respuesta. Inténtalo de nuevo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function respondReassignment(requestId: string, accept: boolean) {
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
-      p_request_id: requestId,
-      p_accept: accept,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
+        p_request_id: requestId,
+        p_accept: accept,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos responder a la sustitución. Inténtalo de nuevo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
   if (loading) return <View style={styles.centered}><ActivityIndicator color={KlippColors.cobalt} /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
