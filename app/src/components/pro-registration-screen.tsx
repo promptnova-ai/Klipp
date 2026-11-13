@@ -233,7 +233,7 @@ export function ProRegistrationScreen() {
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     }
     return null;
-  }, [catalog, center, confirmPassword, email, equipmentConfirmed, equipmentLoading, equipmentRequirements.length, fullName, password, phone, pricingTiers, progress, selectedServiceId, selectedWeekdays, serviceDetails, servicesLoading, startTime, step, endTime, tierDrafts, tiersLoading, transportType, otherTransportType, years]);
+  }, [catalog, center, confirmPassword, email, equipmentConfirmed, equipmentLoading, equipmentRequirements.length, fullName, password, phone, pricingTiers, selectedServiceId, selectedWeekdays, serviceDetails, servicesLoading, startTime, step, endTime, tierDrafts, tiersLoading, transportType, otherTransportType, years]);
 
   const continueRegistration = useCallback(() => {
     const validationError = validateStep();
