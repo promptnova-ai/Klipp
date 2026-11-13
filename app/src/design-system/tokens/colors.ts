@@ -1,8 +1,15 @@
+import { KlippColors } from '@/theme/tokens';
+import { RoleThemes, type KlippRole } from '@/theme/themes';
+
+/** Compatibility names backed by the canonical Klipp palette. */
 export const colors = {
-  cobalt: '#3D5AFE', cobaltDark: '#3048D8', coral: '#FF7058', mint: '#BCEBD8',
-  ivory: '#F7F5F0', ink: '#171B2D', white: '#FFFFFF', muted: '#72778A', border: '#E8E5DE',
-  surface: '#FFFFFF', surfaceMuted: '#F1EFE9', surfaceBlue: '#E9EDFF', surfaceCoral: '#FFF0EC',
-  success: '#247A5A', warning: '#A85A25', danger: '#C43F35',
+  cobalt: KlippColors.cobalt, cobaltDark: KlippColors.cobaltDark,
+  coral: KlippColors.coral, mint: KlippColors.mint, ivory: KlippColors.ivory,
+  ink: KlippColors.ink, white: KlippColors.white, muted: KlippColors.muted,
+  border: KlippColors.border, surface: KlippColors.surface,
+  surfaceMuted: KlippColors.surfaceMuted, surfaceBlue: KlippColors.surfaceBlue,
+  surfaceCoral: KlippColors.surfaceCoral, success: KlippColors.success,
+  warning: KlippColors.warning, danger: KlippColors.danger,
 } as const;
-export type DesignRole = 'client' | 'pro';
-export const roleColor = (role: DesignRole) => role === 'pro' ? colors.coral : colors.cobalt;
+export type DesignRole = KlippRole;
+export const roleColor = (role: DesignRole) => RoleThemes[role].accent;
