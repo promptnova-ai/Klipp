@@ -141,7 +141,7 @@ export default function ClientHomeNative() {
                 const categoryService = services.find((service) => service.category_name === category.name);
                 return (
                   <Pressable key={category.id} accessibilityRole="button" accessibilityState={{ selected: active }} onPress={() => setSelectedCategory(active ? 'Todos' : category.name)} style={({ pressed }) => [styles.categoryTile, { width: categoryTileWidth }, active && styles.categoryTileSelected, pressed && styles.servicePressed]}>
-                    <Image source={serviceArt(categoryService?.code ?? category.name)} contentFit="cover" transition={220} style={styles.categoryTileImage} />
+                    <Image cachePolicy="memory-disk" source={serviceArt(categoryService?.code ?? category.name)} contentFit="cover" transition={220} style={styles.categoryTileImage} />
                     <View style={styles.categoryTileShade} />
                     <View style={styles.categoryTileFooter}>
                       <Text numberOfLines={2} style={styles.categoryTileTitle}>{category.name}</Text>
@@ -161,7 +161,7 @@ export default function ClientHomeNative() {
         }
         renderItem={({ item, index }) => (
           <Pressable accessibilityRole="button" accessibilityLabel={`Reservar ${item.name}`} onPress={() => startBooking(item)} style={({ pressed }) => [styles.serviceCard, pressed && styles.servicePressed]}>
-            <Image source={serviceArt(item.code)} contentFit="cover" transition={180} style={styles.serviceImage} />
+            <Image cachePolicy="memory-disk" source={serviceArt(item.code)} contentFit="cover" transition={180} style={styles.serviceImage} />
             <View style={styles.serviceInfo}>
               <View style={styles.serviceTop}><Text style={styles.serviceCategory}>{item.category_name ?? 'KLIPP'}</Text><SymbolView name={{ ios: 'arrow.up.right', android: 'north_east', web: 'north_east' }} tintColor={C.cobalt} size={17} /></View>
               <Text style={styles.serviceName}>{item.name}</Text>
