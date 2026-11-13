@@ -78,7 +78,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
           {serviceHighlights.map((item) => (
             <View key={item.title} style={styles.showcaseHighlight}>
               <View style={styles.showcaseHighlightIcon}>
-                <SymbolView name={item.icon} tintColor={KlippColors.teal} size={18} />
+                <SymbolView name={item.icon} tintColor={KlippColors.cobalt} size={18} />
               </View>
               <View style={styles.showcaseHighlightCopy}>
                 <Text style={styles.showcaseHighlightTitle}>{item.title}</Text>
@@ -96,7 +96,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
           </View>
           <View style={styles.previewService}>
             <View style={styles.previewServiceIcon}>
-              <SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={KlippColors.blue} size={23} />
+              <SymbolView name={{ ios: 'scissors', android: 'content_cut', web: 'content_cut' }} tintColor={KlippColors.cobalt} size={23} />
             </View>
             <View style={styles.previewServiceCopy}>
               <Text style={styles.previewServiceTitle}>Barbería a domicilio</Text>
@@ -119,7 +119,7 @@ function AuthShowcase({ compact, isRegister }: { compact: boolean; isRegister: b
             </View>
           </View>
           <View style={styles.previewFooter}>
-            <SymbolView name={{ ios: 'shield.lefthalf.filled', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.teal} size={15} />
+            <SymbolView name={{ ios: 'shield.lefthalf.filled', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.cobalt} size={15} />
             <Text style={styles.previewFooterText}>Todo desde la app Klipp</Text>
           </View>
         </View>
@@ -219,7 +219,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 </View>
               </View>
               <View style={styles.trustNote}>
-                <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.tealDark} size={15} />
+                <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.cobaltDark} size={15} />
                 <Text style={styles.trustNoteText}>Acceso seguro</Text>
               </View>
             </View>
@@ -266,7 +266,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                           onPress={() => setRole('client')}
                           style={[styles.roleOption, role === 'client' && styles.roleOptionSelected]}>
                           <View style={[styles.roleIcon, role === 'client' && styles.roleIconSelected]}>
-                            <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={role === 'client' ? KlippColors.blue : KlippColors.muted} size={19} />
+                            <SymbolView name={{ ios: 'house.fill', android: 'home', web: 'home' }} tintColor={role === 'client' ? KlippColors.cobalt : KlippColors.muted} size={19} />
                           </View>
                           <View style={styles.roleCopy}>
                             <Text style={[styles.roleTitle, role === 'client' && styles.roleTitleSelected]}>Quiero contratar</Text>
@@ -282,7 +282,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                           onPress={() => router.push('/(auth)/pro-register')}
                           style={styles.roleOption}>
                           <View style={styles.roleIcon}>
-                            <SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor={KlippColors.teal} size={19} />
+                            <SymbolView name={{ ios: 'briefcase.fill', android: 'work', web: 'work' }} tintColor={KlippColors.cobalt} size={19} />
                           </View>
                           <View style={styles.roleCopy}>
                             <Text style={styles.roleTitle}>Soy profesional</Text>
@@ -378,7 +378,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
+  safeArea: { flex: 1, backgroundColor: KlippColors.ivory },
   scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 28 },
   loginScrollContent: { paddingHorizontal: 16, paddingVertical: 12 },
   loginAuthShell: { gap: 12 },
@@ -391,9 +391,9 @@ const styles = StyleSheet.create({
   passwordToggle: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   logoLetter: { color: KlippColors.white, fontSize: 23, fontWeight: '900' },
   brandCopy: { gap: 1 },
-  brand: { color: KlippColors.navy, fontSize: 22, fontWeight: '900', letterSpacing: 1.1 },
+  brand: { color: KlippColors.ink, fontSize: 22, fontWeight: '900', letterSpacing: 1.1 },
   location: { color: KlippColors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  trustNote: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: KlippColors.whiteMint },
+  trustNote: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: KlippColors.surfaceMint },
   trustNoteText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '700' },
   main: { gap: 18 },
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
@@ -423,48 +423,48 @@ const styles = StyleSheet.create({
   showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: 'transparent' },
   showcaseMarkLetter: { color: KlippColors.white, fontSize: 17, fontWeight: '900' },
-  showcaseBrand: { color: KlippColors.navy, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
+  showcaseBrand: { color: KlippColors.ink, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
   showcaseRegion: { color: KlippColors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 0.7, marginLeft: 'auto' },
   showcaseKicker: { color: KlippColors.coral, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
-  showcaseTitle: { color: KlippColors.navy, fontSize: 30, lineHeight: 37, fontWeight: '900', maxWidth: 470, letterSpacing: -0.7 },
+  showcaseTitle: { color: KlippColors.ink, fontSize: 30, lineHeight: 37, fontWeight: '900', maxWidth: 470, letterSpacing: -0.7 },
   showcaseDescription: { color: KlippColors.slate, fontSize: 14, lineHeight: 22, maxWidth: 470 },
   showcaseHighlights: { gap: 12, marginTop: 8 },
   showcaseHighlight: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  showcaseHighlightIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.whiteMint },
+  showcaseHighlightIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.surfaceMint },
   showcaseHighlightCopy: { flex: 1, gap: 2 },
-  showcaseHighlightTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
+  showcaseHighlightTitle: { color: KlippColors.ink, fontSize: 12, fontWeight: '800' },
   showcaseHighlightDetail: { color: KlippColors.muted, fontSize: 11, lineHeight: 15 },
-  bookingPreview: { width: 230, alignSelf: 'center', padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.whiteMuted },
+  bookingPreview: { width: 230, alignSelf: 'center', padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.surfaceMuted },
   previewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
   previewEyebrow: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
-  previewLive: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 20, backgroundColor: KlippColors.whiteMint },
-  previewLiveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: KlippColors.teal },
+  previewLive: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 20, backgroundColor: KlippColors.surfaceMint },
+  previewLiveDot: { width: 5, height: 5, borderRadius: 3, backgroundColor: KlippColors.cobalt },
   previewLiveText: { color: KlippColors.cobaltDark, fontSize: 7, fontWeight: '900' },
   previewService: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   previewServiceIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceBlue },
   previewServiceCopy: { flex: 1, gap: 3 },
-  previewServiceTitle: { color: KlippColors.navy, fontSize: 10, fontWeight: '900' },
+  previewServiceTitle: { color: KlippColors.ink, fontSize: 10, fontWeight: '900' },
   previewServiceDetail: { color: KlippColors.muted, fontSize: 8 },
   previewDivider: { height: 1, backgroundColor: KlippColors.border, marginVertical: 15 },
-  previewSectionTitle: { color: KlippColors.navy, fontSize: 10, fontWeight: '900', marginBottom: 11 },
+  previewSectionTitle: { color: KlippColors.ink, fontSize: 10, fontWeight: '900', marginBottom: 11 },
   previewTimeline: { flexDirection: 'row', gap: 10 },
   previewTimelineRail: { width: 12, alignItems: 'center', paddingTop: 3 },
-  previewTimelineDot: { width: 8, height: 8, borderWidth: 2, borderColor: KlippColors.muted, borderRadius: 5, backgroundColor: KlippColors.whiteMuted },
-  previewTimelineDotActive: { borderColor: KlippColors.teal, backgroundColor: KlippColors.teal },
+  previewTimelineDot: { width: 8, height: 8, borderWidth: 2, borderColor: KlippColors.muted, borderRadius: 5, backgroundColor: KlippColors.surfaceMuted },
+  previewTimelineDotActive: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.cobalt },
   previewTimelineLine: { width: 1, height: 28, backgroundColor: KlippColors.border },
   previewTimelineCopy: { flex: 1, gap: 3 },
-  previewTimelineTitle: { color: KlippColors.navy, fontSize: 9, fontWeight: '800' },
+  previewTimelineTitle: { color: KlippColors.ink, fontSize: 9, fontWeight: '800' },
   previewTimelineDetail: { color: KlippColors.muted, fontSize: 8, lineHeight: 12, marginBottom: 7 },
   previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: KlippColors.border },
   previewFooterText: { color: KlippColors.slate, fontSize: 8, fontWeight: '700' },
   formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 16, padding: 30, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 30, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.075, shadowOffset: { width: 0, height: 16 }, shadowRadius: 30, elevation: 4 },
   formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
   formCardLogin: { padding: 22, gap: 12, borderRadius: 24 },
-  eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
+  eyebrow: { color: KlippColors.cobaltDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: KlippColors.ink, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, marginBottom: 5 },
   configNotice: { gap: 5, padding: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: KlippColors.surfaceBlue },
-  configNoticeTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '900' },
+  configNoticeTitle: { color: KlippColors.ink, fontSize: 12, fontWeight: '900' },
   configNoticeText: { color: KlippColors.slate, fontSize: 11, lineHeight: 16 },
   authMethodTabs: { flexDirection: 'row', gap: 4, padding: 4, borderRadius: 14, backgroundColor: KlippColors.surfaceMuted },
   authMethodTab: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
@@ -479,23 +479,23 @@ const styles = StyleSheet.create({
   roleOptions: { gap: 9 },
   roleOption: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   roleOptionSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
-  roleIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.whiteMuted },
+  roleIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceMuted },
   roleIconSelected: { backgroundColor: KlippColors.surfaceBlue },
   roleCopy: { flex: 1, gap: 3 },
-  roleTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
-  roleTitleSelected: { color: KlippColors.blueDark },
+  roleTitle: { color: KlippColors.ink, fontSize: 13, fontWeight: '800' },
+  roleTitleSelected: { color: KlippColors.cobaltDark },
   roleDescription: { color: KlippColors.muted, fontSize: 11, lineHeight: 15 },
   radio: { width: 19, height: 19, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: KlippColors.border, borderRadius: 99 },
-  radioSelected: { borderColor: KlippColors.blue },
-  radioDot: { width: 9, height: 9, borderRadius: 99, backgroundColor: KlippColors.blue },
-  error: { padding: 12, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 13, backgroundColor: KlippColors.whiteCoral, color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
-  notice: { padding: 12, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 13, backgroundColor: KlippColors.whiteMint, color: KlippColors.cobaltDark, fontSize: 13, lineHeight: 19 },
-  submit: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 16, backgroundColor: KlippColors.blue },
+  radioSelected: { borderColor: KlippColors.cobalt },
+  radioDot: { width: 9, height: 9, borderRadius: 99, backgroundColor: KlippColors.cobalt },
+  error: { padding: 12, borderWidth: 1, borderColor: KlippColors.coral, borderRadius: 13, backgroundColor: KlippColors.surfaceCoral, color: KlippColors.danger, fontSize: 13, lineHeight: 19 },
+  notice: { padding: 12, borderWidth: 1, borderColor: KlippColors.mint, borderRadius: 13, backgroundColor: KlippColors.surfaceMint, color: KlippColors.cobaltDark, fontSize: 13, lineHeight: 19 },
+  submit: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 16, backgroundColor: KlippColors.cobalt },
   submitDisabled: { opacity: 0.5 },
   submitPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   submitText: { color: KlippColors.white, fontSize: 14, fontWeight: '900' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   switchText: { color: KlippColors.muted, fontSize: 12 },
-  link: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '900' },
+  link: { color: KlippColors.cobaltDark, fontSize: 12, fontWeight: '900' },
   legalNote: { color: KlippColors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 2 },
 });
