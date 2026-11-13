@@ -58,7 +58,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
         </MapView>
         {!validPoints.length && <View pointerEvents="none" style={styles.empty}><Text style={styles.emptyText}>No hay profesionales con GPS registrado en órdenes activas.</Text></View>}
       </View>
-      <Text style={styles.legend}>Azul: activo · Naranja: orden seleccionada · Rojo: GPS con más de 2 min</Text>
+      <Text style={styles.legend}>Cobalto: activo · Coral: orden seleccionada · Rojo: GPS con más de 2 min</Text>
     </View>
   );
 }
