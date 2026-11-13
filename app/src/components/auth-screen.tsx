@@ -354,9 +354,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                     pressed && !busy && styles.submitPressed,
                   ]}>
                   {busy
-                    ? <ActivityIndicator color="#FFFFFF" />
+                    ? <ActivityIndicator color={KlippColors.white} />
                     : <Text style={styles.submitText}>{authMethod === 'phone' ? (otpSent ? 'Verificar y continuar' : 'Enviar código') : 'Entrar'}</Text>}
-                  {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} />}
+                  {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor={KlippColors.white} size={17} />}
                 </Pressable>
 
                 <View style={styles.switchRow}>
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   topBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  passwordInputWrap: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD' },
+  passwordInputWrap: { minHeight: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: 16, paddingRight: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   passwordInput: { flex: 1, minWidth: 0, minHeight: 54, color: KlippColors.ink, fontSize: 15 },
   passwordToggle: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
   logoLetter: { color: KlippColors.white, fontSize: 23, fontWeight: '900' },
@@ -397,26 +397,26 @@ const styles = StyleSheet.create({
   trustNoteText: { color: KlippColors.cobaltDark, fontSize: 11, fontWeight: '700' },
   main: { gap: 18 },
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
-  showcase: { width: '100%', flex: 1, minWidth: 0, minHeight: 620, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 32, borderWidth: 0, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: '#E5E9F7', overflow: 'hidden', shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
+  showcase: { width: '100%', flex: 1, minWidth: 0, minHeight: 620, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 32, borderWidth: 0, borderColor: KlippColors.border, borderRadius: 26, backgroundColor: KlippColors.surfaceBlue, overflow: 'hidden', shadowColor: KlippColors.ink, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
-  showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: '#D9E2DF' },
+  showcaseRegisterHero: { minHeight: 300, justifyContent: 'flex-end', overflow: 'hidden', borderRadius: 26, borderWidth: 0, padding: 22, backgroundColor: KlippColors.border },
   showcasePhotoWash: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(247,245,240,0.74)', borderRadius: 26 },
-  showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: '#17213A', shadowOpacity: 0, elevation: 0 },
+  showcaseCompactLogin: { minHeight: 270, justifyContent: 'flex-end', padding: 20, borderRadius: 24, borderColor: 'transparent', backgroundColor: KlippColors.darkCanvas, shadowOpacity: 0, elevation: 0 },
   showcaseLoginPhotoWash: { backgroundColor: 'rgba(10,18,34,0.58)' },
   showcaseMarkLogin: { backgroundColor: 'transparent' },
-  showcaseBrandLogin: { color: '#FFFFFF' },
+  showcaseBrandLogin: { color: KlippColors.white },
   showcaseRegionLogin: { color: 'rgba(255,255,255,0.78)' },
   
   
-  showcaseKickerLogin: { color: '#FFD0A8', fontSize: 9, lineHeight: 14 },
-  showcaseTitleLogin: { color: '#FFFFFF', fontSize: 28, lineHeight: 33, maxWidth: 390 },
+  showcaseKickerLogin: { color: KlippColors.coral, fontSize: 9, lineHeight: 14 },
+  showcaseTitleLogin: { color: KlippColors.white, fontSize: 28, lineHeight: 33, maxWidth: 390 },
   showcaseDescriptionLogin: { color: 'rgba(255,255,255,0.88)', fontSize: 14, lineHeight: 21, maxWidth: 390 },
   loginServiceShowcase: { flexDirection: 'row', gap: 8, marginTop: 6 },
   loginServiceCard: { flex: 1, minWidth: 0, minHeight: 64, padding: 8, borderRadius: 13, justifyContent: 'space-between', borderWidth: 1, borderColor: 'rgba(255,255,255,0.24)', backgroundColor: 'rgba(255,255,255,0.94)' },
   loginServiceCardBlue: { backgroundColor: 'rgba(255,255,255,0.94)' },
   loginServiceCardCoral: { backgroundColor: 'rgba(255,247,244,0.96)' },
   loginServiceCardMint: { backgroundColor: 'rgba(243,251,247,0.96)' },
-  loginServiceGlyph: { width: 32, height: 32, borderRadius: 11, backgroundColor: '#F7F5F0', alignItems: 'center', justifyContent: 'center' },
+  loginServiceGlyph: { width: 32, height: 32, borderRadius: 11, backgroundColor: KlippColors.ivory, alignItems: 'center', justifyContent: 'center' },
   loginServiceName: { color: KlippColors.ink, fontSize: 11, fontWeight: '900', marginTop: 7 },
   loginServiceCaption: { color: KlippColors.muted, fontSize: 9, marginTop: 1 },
   showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
@@ -457,7 +457,7 @@ const styles = StyleSheet.create({
   previewTimelineDetail: { color: KlippColors.muted, fontSize: 8, lineHeight: 12, marginBottom: 7 },
   previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: KlippColors.border },
   previewFooterText: { color: KlippColors.slate, fontSize: 8, fontWeight: '700' },
-  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 16, padding: 30, borderWidth: 1, borderColor: '#EAE7E0', borderRadius: 30, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.075, shadowOffset: { width: 0, height: 16 }, shadowRadius: 30, elevation: 4 },
+  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 16, padding: 30, borderWidth: 1, borderColor: KlippColors.surfaceMuted, borderRadius: 30, backgroundColor: KlippColors.white, shadowColor: KlippColors.ink, shadowOpacity: 0.075, shadowOffset: { width: 0, height: 16 }, shadowRadius: 30, elevation: 4 },
   formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
   formCardLogin: { padding: 22, gap: 12, borderRadius: 24 },
   eyebrow: { color: KlippColors.cobaltDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   resendLink: { alignSelf: 'flex-start', paddingVertical: 5 },
   field: { gap: 7 },
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
-  input: { minHeight: 56, paddingHorizontal: 16, borderWidth: 1, borderColor: '#DFE1E8', borderRadius: 16, backgroundColor: '#FCFCFD', color: KlippColors.ink, fontSize: 15 },
+  input: { minHeight: 56, paddingHorizontal: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white, color: KlippColors.ink, fontSize: 15 },
   roleOptions: { gap: 9 },
   roleOption: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: KlippColors.white },
   roleOptionSelected: { borderColor: KlippColors.cobalt, backgroundColor: KlippColors.surfaceBlue },
