@@ -79,3 +79,14 @@ A route is not considered aligned until it uses shared tokens/components, passes
 - `app/src/global.css` is reserved for browser font-family variables. Brand colors, dimensions and component styling belong to the TypeScript theme and shared React Native primitives.
 - New components must import from `@/theme/tokens` and `@/theme/themes`. New screen-specific values are allowed only when they express unique content composition, not a repeated design decision.
 - The legacy `app/src/lib/brand.ts` is a temporary compatibility barrel. Existing imports can be migrated incrementally, but new imports must not use it.
+
+
+### Centralization pass — implementation progress
+
+- Created the canonical theme modules at `app/src/theme/tokens.ts` and `app/src/theme/themes.ts`.
+- Migrated login (web/native), PRO onboarding, account, admin, client booking/tracking/address/notification routes, PRO agenda/profile/requests, shared headers, map surfaces and app entry screens to direct canonical theme imports.
+- Converted the legacy `design-system/tokens/*` and `constants/theme.ts` APIs into compatibility mappings backed by the canonical tokens. They no longer define their own brand palette, spacing, typography, radii, shadows or motion.
+- Removed duplicated brand color and radius declarations from `global.css`; it now contains only browser font-family variables.
+- Shared buttons, fields, chips, empty states, cards, status pills and screen headers now consume centralized type, spacing, radius, shadow and role tokens.
+- The legacy web tab component now uses the real Klipp mark and canonical surface, spacing and typography tokens.
+- Validation is pending: GitHub Actions run `43413919964` is queued for lint/TypeScript and Edge Function checks. Vercel preview remains rate-limited, so this pass has not yet received a new rendered visual review.
