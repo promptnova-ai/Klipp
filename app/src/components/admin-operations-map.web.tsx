@@ -93,7 +93,7 @@ export function AdminOperationsMap({ points }: { points: OperationsMapPoint[] })
         {error && <View style={styles.overlay}><Text style={styles.error}>{error}</Text></View>}
         {!ready && !error && <View pointerEvents="none" style={styles.overlay}><Text style={styles.caption}>Cargando mapa…</Text></View>}
       </View>
-      <Text style={styles.legend}>Azul: activo · Naranja: orden seleccionada · Rojo: GPS con más de 2 min</Text>
+      <Text style={styles.legend}>Cobalto: activo · Coral: orden seleccionada · Rojo: GPS con más de 2 min</Text>
     </View>
   );
 }
