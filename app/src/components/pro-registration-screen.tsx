@@ -746,7 +746,6 @@ const styles = StyleSheet.create({
   backText: { color: '#FFFFFF', fontSize: 34, lineHeight: 38 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: 'transparent' },
-  logoLetter: { color: KlippColors.white, fontSize: 20, fontWeight: '900' },
   brandCopy: { gap: 1 },
   brand: { color: '#FFFFFF', fontSize: 21, fontWeight: '900', letterSpacing: 1 },
   brandRole: { color: '#FFB7A8', fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
