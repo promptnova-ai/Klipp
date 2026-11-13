@@ -121,7 +121,7 @@ export function ClientAddressesScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor={KlippColors.cobalt} />} keyboardShouldPersistTaps="handled">
-      <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda ubicaciones con GPS para tus próximos servicios." />
+      <BrandScreenHeader inset={false} eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda ubicaciones con GPS para tus próximos servicios." />
       <View style={styles.addressHeading}><Text style={styles.sectionTitle}>Tus lugares</Text><Text style={styles.addressCount}>{addresses.length} {addresses.length === 1 ? 'ubicación guardada' : 'ubicaciones guardadas'}</Text></View>
       {addresses.length === 0 && <View style={styles.emptyAddress}><Text style={styles.emptyTitle}>Tu mapa empieza aquí</Text><Text style={styles.body}>Guarda casa, trabajo u otros lugares habituales para reservar más rápido.</Text></View>}
       {addresses.map((address) => (
