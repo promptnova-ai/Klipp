@@ -44,7 +44,15 @@ No constituir todavía ni abrir una cuenta Stripe con datos prestados o una enti
 
 Por tanto, la arquitectura deja el payout desacoplado de Stripe Payments. Antes del lanzamiento hay que seleccionar un proveedor de transferencias a bancos dominicanos y obtener confirmación de elegibilidad, tarifas, límites, tiempos, KYC/AML, reversos y responsabilidades regulatorias. No pagar profesionales desde un saldo de Stripe manualmente ni asumir que Klipp puede custodiar fondos sin revisar la regulación de servicios de pago.
 
-## 3. Flujo de pago propuesto
+## 3. Impacto de comisiones sobre el 7% de Klipp
+
+La tarifa pública de Stripe España indica para tarjetas internacionales un 3,15% + 0,25 € por operación, más un 2% si se requiere conversión de divisas. Una tarjeta emitida en República Dominicana sería internacional para una cuenta española. Si los cobros DOP se liquidan en EUR y Stripe aplica conversión, la hipótesis de coste de trabajo es aproximadamente **5,15% + 0,25 €** por cobro; Stripe debe confirmar la tarifa exacta aplicable a la cuenta y al flujo DOP.
+
+Esto es un riesgo serio para el margen de Klipp: con una comisión de plataforma del 7% sobre el importe bruto, quedarían sólo 1,85 puntos porcentuales antes de descontar el fijo de 0,25 €, las transferencias a profesionales, impuestos, reembolsos, contracargos y costes operativos. En servicios de bajo importe, el fijo puede consumir casi toda la comisión de Klipp.
+
+Antes de cerrar precios hay que simular la tarifa real por importe medio, importe mínimo y porcentaje de pagos con tarjeta dominicana. Si el modelo no soporta ese coste, habrá que negociar precios personalizados con Stripe, revisar la comisión de Klipp o usar un adquirente local para el cobro en RD. No ocultar ni trasladar recargos al cliente sin revisar las reglas de Stripe y la normativa aplicable.
+
+## 4. Flujo de pago propuesto
 
 1. El cliente confirma una reserva y el precio final queda bloqueado en backend.
 2. La reserva entra en `payment_pending`; todavía no se inicia la asignación ni se muestra como pagada.
@@ -56,7 +64,7 @@ Por tanto, la arquitectura deja el payout desacoplado de Stripe Payments. Antes 
 8. Sólo una confirmación válida cambia la reserva a `requested` y permite iniciar dispatch.
 9. La comisión del 7% y el neto profesional se calculan en backend; el payout sólo se registra cuando se complete el servicio y se cumplan las reglas de liberación.
 
-## 4. Preparación técnica incluida
+## 5. Preparación técnica incluida
 
 - Migración `20261117173605_stripe_payment_foundation`:
   - Tabla privada `stripe_webhook_events` para deduplicar eventos.
@@ -75,7 +83,7 @@ Por tanto, la arquitectura deja el payout desacoplado de Stripe Payments. Antes 
   - `stripe-webhook`: valida la firma Stripe-Signature con HMAC SHA-256 y procesa eventos idempotentemente.
 - Configuración local de Edge Functions: JWT obligatorio para crear pagos; JWT desactivado sólo para el endpoint webhook, que valida la firma Stripe.
 
-## 5. Bloqueos antes de integrar con la app
+## 6. Bloqueos antes de integrar con la app
 
 - La app actual crea reservas con estado `requested`; el flujo Stripe requiere una reserva `payment_pending`. No se ha cambiado el comportamiento de reservas existente.
 - Las RPC de reserva prepago siguen bloqueadas para clientes mientras se adapta el flujo completo. No reactivar las antiguas RPC de AZUL.
@@ -86,7 +94,7 @@ Por tanto, la arquitectura deja el payout desacoplado de Stripe Payments. Antes 
 - Faltan claves de prueba Stripe y secreto de webhook. Nunca se guardan en Git ni en el cliente; se configurarán como secretos de Supabase cuando exista una cuenta real.
 - No se ha desplegado ninguna Edge Function Stripe ni se ha procesado ningún pago real.
 
-## 6. Variables de entorno previstas
+## 7. Variables de entorno previstas
 
 - `STRIPE_SECRET_KEY`: clave secreta de Stripe (sólo backend).
 - `STRIPE_WEBHOOK_SECRET`: secreto de firma del endpoint (sólo backend).
@@ -94,7 +102,7 @@ Por tanto, la arquitectura deja el payout desacoplado de Stripe Payments. Antes 
 
 Nunca usar `sk_live_...` en QA. Para pruebas futuras usar exclusivamente claves `sk_test_...` y un endpoint webhook de test.
 
-## 7. Criterios de aceptación QA
+## 8. Criterios de aceptación QA
 
 - Usuario no autenticado no puede crear intento.
 - Cliente no puede pagar reserva de otro usuario.
@@ -114,6 +122,8 @@ Nunca usar `sk_live_...` en QA. Para pruebas futuras usar exclusivamente claves 
 - Stripe supported currencies: https://docs.stripe.com/currencies
 - Stripe Connect cross-border payouts: https://support.stripe.com/questions/pay-out-to-connected-accounts-in-other-countries
 - Stripe Global Payouts availability: https://stripe.com/es/payouts
+- Stripe pricing Spain: https://stripe.com/es/pricing
+- Stripe money-management availability by destination country: https://stripe.com/money-management/availability
 - DGII — Personas Jurídicas: https://dgii.gov.do/contribuyentesRegistrados/personasJuridicas/Paginas/default.aspx
 - Formalízate RD: https://formalizate.gob.do/procesodetalladodeformalizacion/
 - BOE — Ley del Impuesto sobre Sociedades: https://www.boe.es/buscar/act.php?id=BOE-A-2014-12328
