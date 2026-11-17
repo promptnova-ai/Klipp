@@ -86,6 +86,7 @@ Antes de cerrar precios hay que simular la tarifa real por importe medio, import
 ## 6. Bloqueos antes de integrar con la app
 
 - La app actual crea reservas con estado `requested`; el flujo Stripe requiere una reserva `payment_pending`. No se ha cambiado el comportamiento de reservas existente.
+- En reservas automáticas, el webhook no debe depender de que el móvil siga abierto para llamar a `auto-assign-booking`. Falta iniciar el dispatch desde backend tras la confirmación y probar el timeout/reintento; las reservas programadas también dependen del worker/cron. QA no tiene los jobs `pg_cron`/`pg_net` de producción.
 - Las RPC de reserva prepago siguen bloqueadas para clientes mientras se adapta el flujo completo. No reactivar las antiguas RPC de AZUL.
 - Falta adaptar creación de reserva y cotización para soportar asignación manual y automática con pago previo sin romper el modelo actual.
 - Falta integrar Stripe PaymentSheet en Expo (requiere configurar el plugin y compilar un development build; Expo Go no basta para el módulo nativo).
