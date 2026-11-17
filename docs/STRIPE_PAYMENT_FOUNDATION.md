@@ -66,6 +66,10 @@ Por tanto, la arquitectura deja el payout desacoplado de Stripe Payments. Antes 
   - RPC de servicio `process_stripe_webhook_event`.
 - Migración `20261117173647_stripe_webhook_event_identity_guard`:
   - Un event ID de Stripe queda vinculado a su tipo y PaymentIntent originales.
+- Migraciones `20261117173823_stripe_expired_attempt_retry`, `20261117173844_stripe_payment_intent_retry_after_failed_attempt` y `20261117173945_stripe_retry_same_payment_intent`:
+  - Los reintentos reutilizan el mismo PaymentIntent mientras la reserva siga siendo pagable; se amplía la ventana en backend sin crear un segundo intento activo.
+  - Un fallo de un método de tarjeta no se interpreta como fallo definitivo si Stripe aún permite reintentar el mismo PaymentIntent.
+  - Una confirmación tardía tras cerrar el intento no activa dispatch y se marca para conciliación/reembolso.
 - Edge Functions en el repositorio:
   - `stripe-create-payment-intent`: valida usuario y reserva, lee el importe en backend, crea el PaymentIntent y lo asocia a la fila de pago.
   - `stripe-webhook`: valida la firma Stripe-Signature con HMAC SHA-256 y procesa eventos idempotentemente.
@@ -96,6 +100,7 @@ Nunca usar `sk_live_...` en QA. Para pruebas futuras usar exclusivamente claves 
 - Cliente no puede pagar reserva de otro usuario.
 - Importe enviado por cliente se ignora; sólo se usa el precio bloqueado en base de datos.
 - Repetir la petición con la misma clave no duplica el PaymentIntent.
+- Reintentar tras un fallo reutiliza el PaymentIntent activo y no crea una segunda operación cobrable.
 - Firma webhook incorrecta se rechaza.
 - Evento repetido no duplica transición ni dispatch.
 - Importe/moneda incorrectos o aprobación tardía no activan la reserva y generan estado de reembolso requerido.
