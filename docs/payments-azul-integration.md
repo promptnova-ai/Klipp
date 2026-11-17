@@ -1,3 +1,5 @@
+> **Nota de estado (17-11-2026):** este documento recoge el diseño anterior con AZUL y queda como referencia histórica. La decisión técnica actual para Klipp es preparar Stripe Payments en QA. No reactivar las RPC de prepago AZUL ni usar este flujo hasta que se apruebe expresamente una vuelta a AZUL. Véase [STRIPE_PAYMENT_FOUNDATION.md](STRIPE_PAYMENT_FOUNDATION.md).
+
 # Integración de pagos de Klipp con AZUL
 
 ## Decisión técnica
