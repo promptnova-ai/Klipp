@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
 
     const amountDop = Number(attempt.amount_dop);
     const amountMinor = Math.round(amountDop * 100);
-    if (!Number.isFinite(amountDop) || amountMinor < 50 || !Number.isSafeInteger(amountMinor)) {
+    if (!Number.isFinite(amountDop) || amountMinor < 1 || !Number.isSafeInteger(amountMinor)) {
       return jsonResponse({ error: "Booking amount is outside Stripe's supported limits" }, 422);
     }
 
