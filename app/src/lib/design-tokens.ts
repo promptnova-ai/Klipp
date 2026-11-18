@@ -49,7 +49,7 @@ export const KlippPalette = {
   },
 } as const;
 
-export type KlippTheme = typeof KlippPalette.light;
+export type KlippTheme = { [Key in keyof typeof KlippPalette.light]: string };
 
 export function useKlippTheme(): KlippTheme {
   return useColorScheme() === 'dark' ? KlippPalette.dark : KlippPalette.light;
