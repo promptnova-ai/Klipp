@@ -82,14 +82,23 @@ Antes de cerrar precios hay que simular la tarifa real por importe medio, import
   - `stripe-create-payment-intent`: valida usuario y reserva, lee el importe en backend, crea el PaymentIntent y lo asocia a la fila de pago.
   - `stripe-webhook`: valida la firma Stripe-Signature con HMAC SHA-256 y procesa eventos idempotentemente.
 - Configuración local de Edge Functions: JWT obligatorio para crear pagos; JWT desactivado sólo para el endpoint webhook, que valida la firma Stripe.
+- Migración `20261118121500_stripe_prepaid_booking_creation`:
+  - Nueva RPC `create_stripe_prepaid_booking_at_location`, que crea reservas en `payment_pending`, valida tarifa y duración contra el catálogo profesional, bloquea el precio y fija `payment_due_at`.
+  - No crea `booking_requests` antes de que el pago esté confirmado.
+  - Admite selección manual y selección automática de una cotización exacta de profesional; el cliente no puede alterar el importe.
+  - Pruebas transaccionales en QA para reserva manual y automática completadas con rollback; no quedaron reservas ni pagos de prueba.
+- Migración `20261118120000_stripe_paid_auto_dispatch`:
+  - Añade un trigger interno para iniciar el dispatch automático cuando una reserva `payment_pending` pasa a `requested` después de una confirmación de pago.
+  - El trigger no es ejecutable por `anon` ni `authenticated` y no requiere que el móvil permanezca abierto.
 
 ## 6. Bloqueos antes de integrar con la app
 
-- La app actual crea reservas con estado `requested`; el flujo Stripe requiere una reserva `payment_pending`. No se ha cambiado el comportamiento de reservas existente.
-- En reservas automáticas, el webhook no debe depender de que el móvil siga abierto para llamar a `auto-assign-booking`. Falta iniciar el dispatch desde backend tras la confirmación y probar el timeout/reintento; las reservas programadas también dependen del worker/cron. QA no tiene los jobs `pg_cron`/`pg_net` de producción.
-- Las RPC de reserva prepago siguen bloqueadas para clientes mientras se adapta el flujo completo. No reactivar las antiguas RPC de AZUL.
-- Falta adaptar creación de reserva y cotización para soportar asignación manual y automática con pago previo sin romper el modelo actual.
-- Falta integrar Stripe PaymentSheet en Expo (requiere configurar el plugin y compilar un development build; Expo Go no basta para el módulo nativo).
+- La app sigue llamando a las RPC antiguas de reserva normal; todavía no utiliza `create_stripe_prepaid_booking_at_location` ni inicia el checkout Stripe.
+- La pantalla debe obtener una cotización exacta (profesional, precio y duración) antes de crear una reserva prepago. Para asignación automática se debe usar `get_auto_service_quote`; no se debe cobrar un rango estimado.
+- El webhook actual activa solicitudes al profesional seleccionado tras el pago confirmado. El trigger nuevo cubre además reservas automáticas sin profesional preasignado.
+- Las reservas programadas siguen dependiendo de `process_scheduled_booking_dispatch`; QA no tiene los jobs `pg_cron`/`pg_net` de producción y falta validar ese worker con el nuevo ciclo de pago.
+- Las RPC prepago antiguas de AZUL siguen bloqueadas para clientes. No reactivarlas.
+- Falta integrar `@stripe/stripe-react-native` y PaymentSheet en Expo. Expo SDK 58 recomienda instalar la versión compatible mediante `npx expo install @stripe/stripe-react-native`; después hay que configurar el plugin nativo y compilar un development build.
 - Falta definir política de cancelación, autorización/captura, reembolsos, disputas, reservas tardías y conciliación.
 - Falta decidir proveedor y reglas de payout dominicano.
 - Faltan claves de prueba Stripe y secreto de webhook. Nunca se guardan en Git ni en el cliente; se configurarán como secretos de Supabase cuando exista una cuenta real.
