@@ -13,6 +13,7 @@ on:
       - main
       - security/008-profile-permissions
       - fix/supabase-qa-hardening-20261117
+      - feat/stripe-payments-qa-foundation
     paths:
       - "app/**"
       - "supabase/functions/**"
@@ -64,6 +65,8 @@ jobs:
         run: npx eslint src/components/client-tracking-screen.tsx
       - name: Lint shared UI primitives and role-aware header
         run: npx eslint src/components/ui-primitives.tsx src/components/brand-screen-header.tsx
+      - name: Lint the Klipp design system
+        run: npx eslint src/design-system/components.tsx src/design-system/tokens.ts
       - name: Run TypeScript
         run: npx tsc --noEmit
       - name: Export web app
