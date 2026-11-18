@@ -36,6 +36,7 @@ BEGIN
   END IF;
 
   IF p_pro_service_id IS NULL
+     OR p_mode IS NULL
      OR p_mode NOT IN ('manual'::public.assignment_mode, 'auto'::public.assignment_mode)
      OR p_lat IS NULL OR p_lat NOT BETWEEN -90 AND 90
      OR p_lng IS NULL OR p_lng NOT BETWEEN -180 AND 180
