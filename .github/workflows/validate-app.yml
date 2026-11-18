@@ -13,6 +13,7 @@ on:
       - main
       - security/008-profile-permissions
       - fix/supabase-qa-hardening-20261117
+      - feat/klipp-ux-system-20261118
     paths:
       - "app/**"
       - "supabase/functions/**"
