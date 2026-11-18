@@ -12,6 +12,7 @@ on:
     branches:
       - main
       - security/008-profile-permissions
+      - fix/supabase-qa-hardening-20261117
     paths:
       - "app/**"
       - "supabase/functions/**"
