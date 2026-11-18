@@ -303,7 +303,7 @@ export default function ClientHomeScreen() {
           accessibilityLabel="Buscar servicios o profesionales"
           autoCapitalize="none"
           onChangeText={setSearch}
-          placeholder="Buscar servicios, modalidades o profesionales..."
+          placeholder="¿Qué servicio necesitas?"
           placeholderTextColor={KlippColors.muted}
           returnKeyType="search"
           style={styles.searchInput}
@@ -321,10 +321,10 @@ export default function ClientHomeScreen() {
           <View style={styles.heroAccent} />
           <View style={styles.heroBadge}>
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
-            <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
+            <Text style={styles.heroBadgeText}>SERVICIOS EN TU ZONA</Text>
           </View>
           <Text style={styles.heroTitle}>Tu día, más fácil.{'\n'}Tus servicios, en buenas manos.</Text>
-          <Text style={styles.heroText}>Limpieza, cuidado personal, vehículos y mantenimiento con profesionales verificados.</Text>
+          <Text style={styles.heroText}>Encuentra profesionales para el hogar y otros servicios, con precios claros antes de reservar.</Text>
           {featuredService && (
             <MotionPressable
               accessibilityLabel="Explorar servicios"
@@ -339,8 +339,8 @@ export default function ClientHomeScreen() {
 
       <View style={styles.catalogHeader}>
         <View>
-          <Text style={styles.sectionEyebrow}>CATÁLOGO KLIPP</Text>
-          <Text style={styles.sectionTitle}>¿Qué necesitas hoy?</Text>
+          <Text style={styles.sectionEyebrow}>SERVICIOS DISPONIBLES</Text>
+          <Text style={styles.sectionTitle}>¿Qué necesitas resolver?</Text>
         </View>
         <View style={styles.serviceIcon}>
           <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={21} />
@@ -443,8 +443,8 @@ export default function ClientHomeScreen() {
           <SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor="#047857" size={19} />
         </View>
         <View style={styles.trustCopy}>
-          <Text style={styles.trustTitle}>Tu tranquilidad es primero</Text>
-          <Text style={styles.trustText}>Profesionales verificados cerca de ti.</Text>
+          <Text style={styles.trustTitle}>Contrata con confianza</Text>
+          <Text style={styles.trustText}>Consulta perfiles, valoraciones y precios antes de reservar.</Text>
         </View>
       </View>
 
