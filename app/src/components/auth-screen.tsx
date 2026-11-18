@@ -250,6 +250,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   value={password}
                   mode="light"
                 />
+                {!isRegister && (
+                  <View style={styles.forgotRow}>
+                    <Link href="/(auth)/reset-password" asChild>
+                      <Text style={styles.link}>¿Olvidaste tu contraseña?</Text>
+                    </Link>
+                  </View>
+                )}
 
                 {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
                 {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
@@ -362,6 +369,7 @@ const styles = StyleSheet.create({
   submitDisabled: { opacity: 0.5 },
   submitPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  forgotRow: { alignSelf: 'flex-end', marginTop: -4, minHeight: 32, justifyContent: 'center' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   switchText: { color: KlippColors.muted, fontSize: 12 },
   link: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '900' },
