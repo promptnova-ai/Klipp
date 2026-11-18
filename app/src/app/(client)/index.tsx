@@ -323,7 +323,7 @@ export default function ClientHomeScreen() {
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
             <Text style={styles.heroBadgeText}>SERVICIOS EN TU ZONA</Text>
           </View>
-          <Text style={styles.heroTitle}>Tu día, más fácil.{'\n'}Tus servicios, en buenas manos.</Text>
+          <Text style={styles.heroTitle}>Resuelve lo de casa.{'\n'}Con profesionales de confianza.</Text>
           <Text style={styles.heroText}>Encuentra profesionales para el hogar y otros servicios, con precios claros antes de reservar.</Text>
           {featuredService && (
             <MotionPressable
