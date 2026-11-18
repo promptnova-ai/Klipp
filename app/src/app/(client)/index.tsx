@@ -18,6 +18,7 @@ import {
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { KlippTokens } from '@/design-system/tokens';
+import { KlippScreenState } from '@/design-system/components';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
@@ -366,28 +367,23 @@ export default function ClientHomeScreen() {
       {loading ? (
         <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}><ServiceSkeleton /><ServiceSkeleton /></View>
       ) : loadError ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text>
-          <Text style={styles.emptyText}>{loadError}</Text>
-          <Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Intentar de nuevo</Text>
-          </Pressable>
-        </View>
+        <KlippScreenState
+          kind="error"
+          title="No pudimos cargar el catálogo"
+          description="Comprueba tu conexión e inténtalo de nuevo."
+          actionLabel="Intentar de nuevo"
+          onAction={() => void loadCatalog()}
+        />
       ) : visibleServices.length === 0 && visiblePros.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.blueDark} size={25} />
-          </View>
-          <Text style={styles.emptyTitle}>No encontramos resultados</Text>
-          <Text style={styles.emptyText}>
-            {selectedCategory !== 'Todos'
-              ? 'No encontramos servicios en esta categoría. Prueba otra búsqueda o limpia los filtros.'
-              : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}
-          </Text>
-          <Pressable accessibilityRole="button" onPress={clearFilters} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Limpiar filtros</Text>
-          </Pressable>
-        </View>
+        <KlippScreenState
+          kind="empty"
+          title="No encontramos resultados"
+          description={selectedCategory !== 'Todos'
+            ? 'No encontramos servicios en esta categoría. Prueba otra o limpia los filtros.'
+            : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}
+          actionLabel="Limpiar filtros"
+          onAction={clearFilters}
+        />
       ) : (
         <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}>
           {visibleServices.map((service) => {
