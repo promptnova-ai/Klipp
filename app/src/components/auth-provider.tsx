@@ -14,7 +14,10 @@ type AuthContextValue = {
   loading: boolean;
   profileError: string | null;
   authError: string | null;
+  passwordRecovery: boolean;
   signIn: (email: string, password: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, role: UserRole, metadata?: Record<string, unknown>) => Promise<boolean>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -28,13 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!mounted) return;
       setSession(nextSession);
       if (nextSession) setAuthError(null);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      if (event === 'SIGNED_OUT') setPasswordRecovery(false);
       setProfileError(null);
       setLoading(Boolean(nextSession));
       if (!nextSession) setProfile(null);
@@ -127,6 +133,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   }
 
+  async function resetPassword(email: string) {
+    setAuthError(null);
+    const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
+      ? `${window.location.origin}/reset-password`
+      : Linking.createURL('/reset-password');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  }
+
+  async function updatePassword(password: string) {
+    setAuthError(null);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    setPasswordRecovery(false);
+  }
+
   async function signUp(
     email: string,
     password: string,
@@ -190,7 +212,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         profileError,
         authError,
+        passwordRecovery,
         signIn,
+        resetPassword,
+        updatePassword,
         signUp,
         signOut,
         refreshProfile,
