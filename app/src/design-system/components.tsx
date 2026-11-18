@@ -19,7 +19,7 @@ type ButtonProps = {
 export function KlippButton({ label, onPress, variant = 'primary', size = 'large', disabled = false, loading = false, fullWidth = true, mode = 'light', accessibilityHint }: ButtonProps) {
   const p = getKlippPalette(mode);
   const backgroundColor = variant === 'primary' ? p.primary : variant === 'secondary' ? p.secondary : variant === 'danger' ? p.danger : 'transparent';
-  const foregroundColor = variant === 'primary' || variant === 'secondary' || variant === 'danger' ? (mode === 'dark' && variant !== 'danger' ? '#0C1724' : '#FFFFFF') : variant === 'outline' ? p.primary : p.text;
+  const foregroundColor = variant === 'primary' ? (mode === 'dark' ? '#0C1724' : '#FFFFFF') : variant === 'secondary' ? '#082B34' : variant === 'danger' ? (mode === 'dark' ? '#2A0B08' : '#FFFFFF') : variant === 'outline' ? p.primary : p.text;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={accessibilityHint} accessibilityState={{ disabled: disabled || loading, busy: loading }} disabled={disabled || loading} onPress={onPress} style={({ pressed }) => [styles.button, size === 'medium' && styles.buttonMedium, fullWidth && styles.fullWidth, { backgroundColor, borderColor: variant === 'outline' ? p.border : backgroundColor, borderWidth: variant === 'outline' ? 1 : 0, opacity: disabled ? 0.48 : pressed ? 0.88 : 1, transform: [{ scale: pressed ? KlippTokens.motion.pressScale : 1 }] }]}>
       {loading ? <ActivityIndicator color={foregroundColor} /> : <Text style={[styles.buttonText, { color: foregroundColor }]}>{label}</Text>}
