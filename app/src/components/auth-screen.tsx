@@ -2,14 +2,12 @@ import { Link, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -18,6 +16,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/components/auth-provider';
 import { ScreenEntrance } from '@/components/ui-primitives';
 import { KlippColors } from '@/lib/brand';
+import { KlippButton, KlippField } from '@/design-system';
+import { KlippTokens } from '@/design-system/tokens';
 import type { ExtractRole } from '@/lib/types';
 
 type AuthScreenProps = { mode: 'login' | 'register' };
@@ -47,10 +47,10 @@ function AuthShowcase({ compact }: { compact: boolean }) {
         <View style={styles.showcaseBrandLine}>
           <View style={styles.showcaseMark}><Text style={styles.showcaseMarkLetter}>K</Text></View>
           <Text style={styles.showcaseBrand}>KLIPP</Text>
-          <Text style={styles.showcaseRegion}>SANTO DOMINGO · RD</Text>
+          <Text style={styles.showcaseRegion}>REPÚBLICA DOMINICANA</Text>
         </View>
         <Text style={styles.showcaseKicker}>SERVICIOS A DOMICILIO</Text>
-        <Text style={styles.showcaseTitle}>Tu día, más fácil. Tu servicio, en buenas manos.</Text>
+        <Text style={styles.showcaseTitle}>Servicios confiables, donde los necesitas.</Text>
         <Text style={styles.showcaseDescription}>
           Encuentra profesionales para limpieza, barbería, peluquería, estética, vehículos y mantenimiento.
         </Text>
@@ -160,7 +160,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 <View style={styles.logoMark}><Text style={styles.logoLetter}>K</Text></View>
                 <View style={styles.brandCopy}>
                   <Text style={styles.brand}>KLIPP</Text>
-                  <Text style={styles.location}>SANTO DOMINGO, RD</Text>
+                  <Text style={styles.location}>REPÚBLICA DOMINICANA</Text>
                 </View>
               </View>
               <View style={styles.trustNote}>
@@ -177,24 +177,21 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
                 <Text style={styles.subtitle}>
                   {isRegister
-                    ? 'Configura tu acceso para reservar servicios de profesionales de confianza.'
-                    : 'Entra en tu cuenta y continúa donde lo dejaste.'}
+                    ? 'Crea tu cuenta para descubrir y reservar servicios.'
+                    : 'Accede para gestionar tus reservas y servicios.'}
                 </Text>
 
                 {isRegister && (
                   <>
-                    <View style={styles.field}>
-                      <Text style={styles.label}>Nombre completo</Text>
-                      <TextInput
-                        autoComplete="name"
-                        autoCapitalize="words"
-                        onChangeText={setFullName}
-                        placeholder="Tu nombre y apellido"
-                        placeholderTextColor="#8A94A6"
-                        style={styles.input}
-                        value={fullName}
-                      />
-                    </View>
+                    <KlippField
+                      label="Nombre completo"
+                      autoComplete="name"
+                      autoCapitalize="words"
+                      onChangeText={setFullName}
+                      placeholder="Tu nombre y apellido"
+                      value={fullName}
+                      mode="light"
+                    />
                     <View style={styles.field}>
                       <Text style={styles.label}>¿Cómo usarás Klipp?</Text>
                       <View style={styles.roleOptions}>
@@ -233,51 +230,38 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   </>
                 )}
 
-                <View style={styles.field}>
-                  <Text style={styles.label}>Correo electrónico</Text>
-                  <TextInput
-                    autoCapitalize="none"
-                    autoComplete="email"
-                    autoCorrect={false}
-                    keyboardType="email-address"
-                    onChangeText={setEmail}
-                    placeholder="nombre@correo.com"
-                    placeholderTextColor="#8A94A6"
-                    style={styles.input}
-                    value={email}
-                  />
-                </View>
-                <View style={styles.field}>
-                  <Text style={styles.label}>Contraseña</Text>
-                  <TextInput
-                    autoComplete={isRegister ? 'new-password' : 'current-password'}
-                    onChangeText={setPassword}
-                    placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
-                    placeholderTextColor="#8A94A6"
-                    secureTextEntry
-                    style={styles.input}
-                    value={password}
-                  />
-                </View>
+                <KlippField
+                  label="Correo electrónico"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  onChangeText={setEmail}
+                  placeholder="nombre@correo.com"
+                  value={email}
+                  mode="light"
+                />
+                <KlippField
+                  label="Contraseña"
+                  autoComplete={isRegister ? 'new-password' : 'current-password'}
+                  onChangeText={setPassword}
+                  placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
+                  secureTextEntry
+                  value={password}
+                  mode="light"
+                />
 
                 {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
                 {authError && <Text accessibilityRole="alert" style={styles.error}>{authError}</Text>}
                 {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
 
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={busy || !email.trim() || !password}
+                <KlippButton
+                  label={isRegister ? 'Crear cuenta' : 'Entrar'}
                   onPress={() => void handleSubmit()}
-                  style={({ pressed }) => [
-                    styles.submit,
-                    (busy || !email.trim() || !password) && styles.submitDisabled,
-                    pressed && !busy && styles.submitPressed,
-                  ]}>
-                  {busy
-                    ? <ActivityIndicator color="#FFFFFF" />
-                    : <Text style={styles.submitText}>{isRegister ? 'Crear cuenta' : 'Entrar'}</Text>}
-                  {!busy && <SymbolView name={{ ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' }} tintColor="#FFFFFF" size={17} />}
-                </Pressable>
+                  loading={busy}
+                  disabled={!email.trim() || !password || (isRegister && !fullName.trim())}
+                  mode="light"
+                />
 
                 <View style={styles.switchRow}>
                   <Text style={styles.switchText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Aún no tienes cuenta?'}</Text>
@@ -298,7 +282,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: '#F5F7FB' },
+  safeArea: { flex: 1, backgroundColor: KlippTokens.color.light.background },
   scrollContent: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 20, paddingVertical: 24 },
   authShell: { width: '100%', maxWidth: 1200, alignSelf: 'center', gap: 22 },
   topBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -312,7 +296,7 @@ const styles = StyleSheet.create({
   trustNoteText: { color: KlippColors.tealDark, fontSize: 11, fontWeight: '700' },
   main: { gap: 18 },
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
-  showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 26, backgroundColor: '#FFFFFF', shadowColor: '#17243D', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
+  showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippTokens.color.light.border, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippTokens.color.light.surface, shadowColor: '#17243D', shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
   showcaseCompact: { flexDirection: 'column', padding: 22 },
   showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
   showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
@@ -352,7 +336,7 @@ const styles = StyleSheet.create({
   previewTimelineDetail: { color: KlippColors.muted, fontSize: 8, lineHeight: 12, marginBottom: 7 },
   previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: '#E3E8EF' },
   previewFooterText: { color: '#627086', fontSize: 8, fontWeight: '700' },
-  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 13, padding: 25, borderWidth: 1, borderColor: '#E5EAF1', borderRadius: 26, backgroundColor: '#FFFFFF', shadowColor: '#17243D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 12 }, shadowRadius: 26, elevation: 3 },
+  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 13, padding: 25, borderWidth: 1, borderColor: KlippTokens.color.light.border, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippTokens.color.light.surface, shadowColor: '#17243D', shadowOpacity: 0.045, shadowOffset: { width: 0, height: 12 }, shadowRadius: 26, elevation: 3 },
   formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
   eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },

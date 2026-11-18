@@ -1,0 +1,86 @@
+/** Klipp UX system tokens. React Native / Expo safe; no web-only values. */
+export const KlippTokens = {
+  color: {
+    light: {
+      background: '#F7F9FC',
+      surface: '#FFFFFF',
+      surfaceRaised: '#FFFFFF',
+      text: '#102A43',
+      textSecondary: '#526579',
+      textTertiary: '#718096',
+      border: '#DCE5EE',
+      primary: '#123B66',
+      primaryPressed: '#0D2D4D',
+      primarySoft: '#EAF1F8',
+      secondary: '#13AFA5',
+      secondaryPressed: '#0C8F87',
+      secondarySoft: '#E5F7F5',
+      accent: '#F2A541',
+      accentSoft: '#FFF4E5',
+      success: '#16845B',
+      successSoft: '#E8F6EF',
+      warning: '#9A6700',
+      warningSoft: '#FFF5D9',
+      danger: '#B42318',
+      dangerSoft: '#FDECEA',
+      info: '#245B9A',
+      infoSoft: '#EAF2FC',
+      disabled: '#A8B4C2',
+      overlay: 'rgba(16, 42, 67, 0.48)',
+    },
+    dark: {
+      background: '#0C1724',
+      surface: '#142437',
+      surfaceRaised: '#1A2D42',
+      text: '#F4F7FA',
+      textSecondary: '#B6C4D2',
+      textTertiary: '#91A2B4',
+      border: '#2A4056',
+      primary: '#78AEE4',
+      primaryPressed: '#9CC7F0',
+      primarySoft: '#1B3652',
+      secondary: '#45C9BF',
+      secondaryPressed: '#6AD8D0',
+      secondarySoft: '#153E40',
+      accent: '#F6B95F',
+      accentSoft: '#46351D',
+      success: '#53C58E',
+      successSoft: '#183D32',
+      warning: '#F0C36A',
+      warningSoft: '#45391F',
+      danger: '#FF8D83',
+      dangerSoft: '#482522',
+      info: '#8CBDF2',
+      infoSoft: '#1D3855',
+      disabled: '#607286',
+      overlay: 'rgba(0, 0, 0, 0.64)',
+    },
+    pro: {
+      accent: '#0C9D91',
+      accentSoft: '#E5F7F5',
+      accentDark: '#08786F',
+    },
+  },
+  spacing: { 0: 0, 1: 4, 2: 8, 3: 12, 4: 16, 5: 20, 6: 24, 8: 32, 10: 40, 12: 48, 16: 64 },
+  radius: { xs: 8, sm: 12, md: 16, lg: 20, xl: 24, pill: 999 },
+  size: { touch: 48, button: 52, buttonCompact: 44, input: 52, icon: 24, avatarSm: 36, avatarMd: 48, avatarLg: 72 },
+  typography: {
+    family: 'Inter',
+    fallback: 'System',
+    size: { caption: 12, body: 14, bodyLarge: 16, title: 22, display: 28 },
+    lineHeight: { caption: 16, body: 20, bodyLarge: 24, title: 28, display: 34 },
+    weight: { regular: '400', medium: '500', semibold: '600', bold: '700', heavy: '800' },
+  },
+  motion: { fast: 120, standard: 200, transition: 260, pressScale: 0.985 },
+  elevation: {
+    card: { shadowColor: '#102A43', shadowOpacity: 0.06, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 2 },
+    floating: { shadowColor: '#102A43', shadowOpacity: 0.14, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 5 },
+  },
+} as const;
+
+export type KlippColorMode = 'light' | 'dark';
+export type KlippPalette = typeof KlippTokens.color.light;
+
+export function getKlippPalette(mode: KlippColorMode = 'light'): KlippPalette {
+  return KlippTokens.color[mode] as KlippPalette;
+}

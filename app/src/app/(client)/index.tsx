@@ -17,6 +17,8 @@ import {
 
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
+import { KlippTokens } from '@/design-system/tokens';
+import { KlippScreenState } from '@/design-system/components';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
@@ -302,7 +304,7 @@ export default function ClientHomeScreen() {
           accessibilityLabel="Buscar servicios o profesionales"
           autoCapitalize="none"
           onChangeText={setSearch}
-          placeholder="Buscar servicios, modalidades o profesionales..."
+          placeholder="¿Qué servicio necesitas?"
           placeholderTextColor={KlippColors.muted}
           returnKeyType="search"
           style={styles.searchInput}
@@ -320,10 +322,10 @@ export default function ClientHomeScreen() {
           <View style={styles.heroAccent} />
           <View style={styles.heroBadge}>
             <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.teal} size={14} />
-            <Text style={styles.heroBadgeText}>KLIPP EN SANTO DOMINGO</Text>
+            <Text style={styles.heroBadgeText}>SERVICIOS EN TU ZONA</Text>
           </View>
-          <Text style={styles.heroTitle}>Tu día, más fácil.{'\n'}Tus servicios, en buenas manos.</Text>
-          <Text style={styles.heroText}>Limpieza, cuidado personal, vehículos y mantenimiento con profesionales verificados.</Text>
+          <Text style={styles.heroTitle}>Resuelve lo de casa.{'\n'}Con profesionales de confianza.</Text>
+          <Text style={styles.heroText}>Encuentra profesionales para el hogar y otros servicios, con precios claros antes de reservar.</Text>
           {featuredService && (
             <MotionPressable
               accessibilityLabel="Explorar servicios"
@@ -338,8 +340,8 @@ export default function ClientHomeScreen() {
 
       <View style={styles.catalogHeader}>
         <View>
-          <Text style={styles.sectionEyebrow}>CATÁLOGO KLIPP</Text>
-          <Text style={styles.sectionTitle}>¿Qué necesitas hoy?</Text>
+          <Text style={styles.sectionEyebrow}>SERVICIOS DISPONIBLES</Text>
+          <Text style={styles.sectionTitle}>¿Qué necesitas resolver?</Text>
         </View>
         <View style={styles.serviceIcon}>
           <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor={KlippColors.blueDark} size={21} />
@@ -365,28 +367,23 @@ export default function ClientHomeScreen() {
       {loading ? (
         <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}><ServiceSkeleton /><ServiceSkeleton /></View>
       ) : loadError ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyTitle}>No pudimos cargar el catálogo</Text>
-          <Text style={styles.emptyText}>{loadError}</Text>
-          <Pressable accessibilityRole="button" onPress={() => void loadCatalog()} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Intentar de nuevo</Text>
-          </Pressable>
-        </View>
+        <KlippScreenState
+          kind="error"
+          title="No pudimos cargar el catálogo"
+          description="Comprueba tu conexión e inténtalo de nuevo."
+          actionLabel="Intentar de nuevo"
+          onAction={() => void loadCatalog()}
+        />
       ) : visibleServices.length === 0 && visiblePros.length === 0 ? (
-        <View style={styles.emptyState}>
-          <View style={styles.emptyIcon}>
-            <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.blueDark} size={25} />
-          </View>
-          <Text style={styles.emptyTitle}>No encontramos resultados</Text>
-          <Text style={styles.emptyText}>
-            {selectedCategory !== 'Todos'
-              ? 'No encontramos servicios en esta categoría. Prueba otra búsqueda o limpia los filtros.'
-              : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}
-          </Text>
-          <Pressable accessibilityRole="button" onPress={clearFilters} style={styles.clearButton}>
-            <Text style={styles.clearButtonText}>Limpiar filtros</Text>
-          </Pressable>
-        </View>
+        <KlippScreenState
+          kind="empty"
+          title="No encontramos resultados"
+          description={selectedCategory !== 'Todos'
+            ? 'No encontramos servicios en esta categoría. Prueba otra o limpia los filtros.'
+            : 'Prueba otra búsqueda para descubrir servicios y profesionales.'}
+          actionLabel="Limpiar filtros"
+          onAction={clearFilters}
+        />
       ) : (
         <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}>
           {visibleServices.map((service) => {
@@ -442,8 +439,8 @@ export default function ClientHomeScreen() {
           <SymbolView name={{ ios: 'checkmark.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor="#047857" size={19} />
         </View>
         <View style={styles.trustCopy}>
-          <Text style={styles.trustTitle}>Tu tranquilidad es primero</Text>
-          <Text style={styles.trustText}>Profesionales verificados cerca de ti.</Text>
+          <Text style={styles.trustTitle}>Contrata con confianza</Text>
+          <Text style={styles.trustText}>Consulta perfiles, valoraciones y precios antes de reservar.</Text>
         </View>
       </View>
 
@@ -544,10 +541,10 @@ export default function ClientHomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  page: { width: '100%', maxWidth: 1160, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 24, paddingTop: 30, paddingBottom: 44, gap: 22, backgroundColor: KlippColors.canvas },
+  page: { width: '100%', maxWidth: 1160, alignSelf: 'center', flexGrow: 1, paddingHorizontal: 16, paddingTop: 24, paddingBottom: 32, gap: 24, backgroundColor: KlippColors.canvas },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  logoMark: { width: 38, height: 38, borderRadius: 13, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
+  logoMark: { width: 40, height: 40, borderRadius: 12, backgroundColor: KlippColors.navy, alignItems: 'center', justifyContent: 'center' },
   logoLetter: { color: KlippColors.white, fontSize: 21, fontWeight: '800' },
   brand: { color: KlippColors.navy, fontSize: 23, fontWeight: '800', letterSpacing: -0.5 },
   locationButton: { flexDirection: 'row', alignItems: 'center', gap: 7, paddingVertical: 6 },
@@ -555,37 +552,37 @@ const styles = StyleSheet.create({
   locationText: { color: KlippColors.navy, fontSize: 13, fontWeight: '600', marginTop: 2 },
   locationError: { color: KlippColors.danger, fontSize: 12, lineHeight: 18 },
   greetingBlock: { gap: 5, marginTop: 2 },
-  greeting: { color: KlippColors.navy, fontSize: 26, lineHeight: 32, fontWeight: '700', letterSpacing: -0.5 },
+  greeting: { color: KlippColors.navy, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5 },
   wave: { color: KlippColors.gold, fontSize: 20 },
   greetingSubtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  searchBar: { minHeight: 54, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: 16, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  searchBar: { minHeight: KlippTokens.size.input, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: KlippTokens.radius.sm, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   searchInput: { flex: 1, height: 52, color: KlippColors.navy, fontSize: 14 },
   clearSearch: { padding: 5 },
-  hero: { overflow: 'hidden', padding: 22, borderRadius: 24, backgroundColor: KlippColors.navy, gap: 13 },
+  hero: { overflow: 'hidden', padding: 20, borderRadius: KlippTokens.radius.lg, backgroundColor: KlippColors.navy, gap: 13 },
   heroAccent: { position: 'absolute', width: 180, height: 180, borderRadius: 90, backgroundColor: '#14294B', right: -75, top: -85 },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 999, backgroundColor: '#1B2A42' },
   heroBadgeText: { color: '#D4E1F4', fontSize: 9, fontWeight: '700', letterSpacing: 0.7 },
-  heroTitle: { color: KlippColors.white, fontSize: 32, lineHeight: 38, fontWeight: '800', letterSpacing: -0.75, marginTop: 4, maxWidth: 560 },
-  heroText: { maxWidth: 480, color: '#CBD5E1', fontSize: 14, lineHeight: 22 },
-  primaryButton: { minHeight: 49, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, borderRadius: 13, backgroundColor: KlippColors.teal },
+  heroTitle: { color: KlippColors.white, fontSize: 24, lineHeight: 30, fontWeight: '800', letterSpacing: -0.75, marginTop: 4, maxWidth: 560 },
+  heroText: { maxWidth: 480, color: '#CBD5E1', fontSize: 14, lineHeight: 20 },
+  primaryButton: { minHeight: KlippTokens.size.button, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 3, borderRadius: 13, backgroundColor: KlippColors.teal },
   primaryButtonText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   catalogHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   sectionEyebrow: { color: KlippColors.blueDark, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  sectionTitle: { color: KlippColors.navy, fontSize: 19, fontWeight: '700', marginTop: 5 },
+  sectionTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 5 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
   categories: { gap: 9, paddingVertical: 1 },
-  categoryPill: { minHeight: 38, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  categoryPill: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 999, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   categorySelected: { borderColor: KlippColors.blue, backgroundColor: KlippColors.blue },
   categoryText: { color: KlippColors.slate, fontSize: 13, fontWeight: '600' },
   categoryTextSelected: { color: KlippColors.white },
   serviceList: { gap: 14 },
   serviceListWide: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 14, rowGap: 16 },
-  serviceCard: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 14, padding: 19, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  serviceCard: { width: '100%', flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16, borderRadius: KlippTokens.radius.md, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
   serviceCardWide: { width: '48%' },
-  serviceCardIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
+  serviceCardIcon: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },
   serviceCopy: { flex: 1, gap: 7 },
   serviceCardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6 },
-  serviceTitle: { flex: 1, color: KlippColors.navy, fontSize: 16, fontWeight: '700' },
+  serviceTitle: { flex: 1, color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
   categoryTag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999, backgroundColor: '#F1F5F9' },
   categoryTagText: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
   serviceDescription: { color: KlippColors.muted, fontSize: 13, lineHeight: 19 },
@@ -645,13 +642,13 @@ const styles = StyleSheet.create({
   benefit: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   benefitText: { color: KlippColors.slate, fontSize: 13, fontWeight: '500' },
   tierHeading: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
-  tierCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  tierCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: KlippTokens.radius.sm, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
   tierCardSelected: { borderColor: '#B8CBFF', backgroundColor: '#F4F7FF' },
   tierCopy: { gap: 4 },
   tierTitle: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
   tierMeta: { color: KlippColors.muted, fontSize: 12 },
   tierPrice: { color: KlippColors.blueDark, fontSize: 14, fontWeight: '800' },
-  bookButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 14, backgroundColor: KlippColors.blue },
+  bookButton: { minHeight: KlippTokens.size.button, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9, marginTop: 5, borderRadius: 14, backgroundColor: KlippColors.blue },
   bookButtonText: { color: KlippColors.white, fontSize: 15, fontWeight: '700' },
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.9 },
