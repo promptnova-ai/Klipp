@@ -116,3 +116,12 @@ jobs:
 
       - name: Type-check Stripe webhook endpoint
         run: deno check supabase/functions/stripe-webhook/index.ts
+
+      - name: Type-check Stripe Connect onboarding
+        run: deno check supabase/functions/stripe-connect-onboard/index.ts
+
+      - name: Type-check Stripe transfer release
+        run: deno check supabase/functions/stripe-release-transfer/index.ts
+
+      - name: Type-check Stripe refund workflow
+        run: deno check supabase/functions/stripe-refund/index.ts
