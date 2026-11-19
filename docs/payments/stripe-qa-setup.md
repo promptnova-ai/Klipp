@@ -10,7 +10,7 @@ The payment core remains country-aware. Connect onboarding is disabled unless th
 
 - `stripe-create-payment-intent`: authenticated checkout endpoint. Creates/reuses a Klipp payment attempt, uses a stable Stripe idempotency key and transfer group, and associates the PaymentIntent before returning its client secret.
 - `stripe-connect-onboard`: authenticated professional endpoint. Creates/reuses an Express connected account and returns a short-lived Stripe-hosted onboarding link. The legal country is server-controlled, never accepted from the mobile client.
-- `stripe-release-transfer`: authenticated professional/admin endpoint. Requires a completed booking, a captured payment and an eligible connected account. Creates a transfer linked to the original charge using `source_transaction` and an idempotency key.
+- `stripe-release-transfer`: authenticated professional/admin endpoint. Requires a customer-confirmed booking, a captured payment and an eligible connected account. Creates a transfer linked to the original charge using `source_transaction` and an idempotency key.
 - `stripe-refund`: customers create refund requests; staff with `finance.reconcile` approve/process them. Supports partial and full refunds, including asynchronous pending/failed statuses synchronized by refund webhooks. If a professional transfer has already been sent, it attempts the proportional transfer reversal only after the refund succeeds. Failed reversals remain flagged and can be retried with `action: retry_reversal`.
 - `stripe-webhook`: public Stripe endpoint. Verifies the signature against the raw request body. Processes PaymentIntent state, Connect account updates and dispute events; event IDs are deduplicated.
 
@@ -54,13 +54,14 @@ Stripe retries a webhook when Klipp returns a 5xx because the event was not dura
 4. Present the returned PaymentIntent client secret with Stripe PaymentSheet.
 5. Treat the client result as presentation feedback only. A booking is paid only after the signed webhook changes the database state.
 6. Refresh the booking from Supabase and wait for the server-side status transition before showing a confirmed booking or dispatching a professional.
-7. After completion, invoke `stripe-release-transfer` from a trusted authenticated workflow; never transfer from a mobile-only status claim.
+7. After the customer calls `advance_booking` to confirm service, the app invokes `stripe-release-transfer`. A database trigger first records a durable outbox item; a transfer is still created only by the trusted Edge Function, never from a mobile-only status claim.
 8. Refund requests use `stripe-refund` with `action: request`. Staff review uses `action: process`; pending transfer reversals use `action: retry_reversal`.
 
 ## Database protections
 
 - Server-calculated prices and 7% commission; no client-supplied amount is trusted.
 - PaymentIntent and refund/transfer operations use stable idempotency keys.
+- Customer confirmation enqueues a durable transfer outbox item only for Stripe-funded bookings; successful/failed transfers update the outbox state.
 - Webhook signatures are verified on raw request bodies; webhook event IDs are deduplicated.
 - Financial tables are RLS-enabled with no direct client grants; service role and guarded RPCs are used for writes.
 - Refund amounts cannot exceed the captured amount less prior successful and in-flight refunds.
