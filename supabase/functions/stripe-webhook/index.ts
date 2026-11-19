@@ -104,6 +104,25 @@ Deno.serve(async (req: Request) => {
       currentlyDue = account.requirements?.currently_due ?? [];
       pastDue = account.requirements?.past_due ?? [];
       disabledReason = account.requirements?.disabled_reason ?? null;
+      const proId = account.metadata?.klipp_pro_user_id;
+      if (proId && /^[0-9a-f-]{36}$/i.test(proId)) {
+        const { error: accountSyncError } = await service.rpc("upsert_stripe_connected_account", {
+          p_pro_id: proId,
+          p_account_id: account.id,
+          p_country_code: account.country,
+          p_details_submitted: account.details_submitted,
+          p_charges_enabled: account.charges_enabled,
+          p_payouts_enabled: account.payouts_enabled,
+          p_transfers_capability: account.capabilities?.transfers ?? null,
+          p_currently_due: account.requirements?.currently_due ?? [],
+          p_past_due: account.requirements?.past_due ?? [],
+          p_disabled_reason: account.requirements?.disabled_reason ?? null,
+        });
+        if (accountSyncError) {
+          console.error("stripe_connected_account_sync_failed", { eventId: event.id, message: accountSyncError.message });
+          return response(500, { error: "connected_account_sync_failed" });
+        }
+      }
     } else if (event.type.startsWith("charge.dispute.")) {
       const dispute = event.data.object as Stripe.Dispute;
       objectId = dispute.id;
