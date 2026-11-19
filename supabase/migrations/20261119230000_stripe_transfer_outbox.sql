@@ -58,6 +58,12 @@ begin
   select * into v_payment from public.payments where booking_id=p_booking_id
     and provider='stripe' and status in ('held','released') order by created_at desc limit 1 for update;
   if not found or v_payment.provider_ref is null then raise exception 'captured Stripe payment not found'; end if;
+  select * into v_transfer from public.stripe_transfers where booking_id=p_booking_id for update;
+  if found and v_transfer.status='paid' then
+    return query select v_transfer.id,v_payment.provider_ref,v_transfer.stripe_account_id,
+      v_transfer.amount_minor,v_transfer.currency_code,v_transfer.transfer_group;
+    return;
+  end if;
   if v_payment.refunded_amount_minor>0 then raise exception 'refunded booking requires manual settlement review'; end if;
   select * into v_account from public.stripe_connected_accounts where pro_id=v_booking.pro_id for update;
   if not found or not v_account.payouts_enabled or not v_account.details_submitted
