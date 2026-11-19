@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
       }, { idempotencyKey: `klipp-refund-${item.refund_id}` });
       stripeRefundId = refund.id;
 
-      if (item.transfer_id && Number(item.transfer_reversal_amount_minor) > 0) {
+      if (refund.status === "succeeded" && item.transfer_id && Number(item.transfer_reversal_amount_minor) > 0) {
         try {
           const reversal = await stripe.transfers.createReversal(String(item.transfer_id), {
             amount: Number(item.transfer_reversal_amount_minor),
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
       const { error: completeError } = await service.rpc("complete_stripe_refund", {
         p_refund_id: item.refund_id, p_stripe_refund_id: stripeRefundId,
         p_transfer_reversal_id: reversalId, p_failure_code: null, p_failure_message: null,
-        p_reversal_pending: reversalPending,
+        p_reversal_pending: reversalPending, p_refund_status: refund.status,
       });
       if (completeError) return json(503, { error: "refund_created_reconciliation_pending" });
       return json(200, { status: "succeeded", refundId: stripeRefundId, transferReversalId: reversalId, transferReversalPending: reversalPending });
@@ -107,7 +107,7 @@ Deno.serve(async (req) => {
         await service.rpc("complete_stripe_refund", {
           p_refund_id: item.refund_id, p_stripe_refund_id: null, p_transfer_reversal_id: null,
           p_failure_code: "stripe_refund_failed", p_failure_message: message.slice(0, 500),
-          p_reversal_pending: false,
+          p_reversal_pending: false, p_refund_status: "failed",
         });
       }
       throw error;
