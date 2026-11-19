@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feature/stripe-prepaid-booking-hardening
     paths:
       - "app/**"
       - "supabase/functions/**"
@@ -103,9 +104,15 @@ jobs:
 
       - name: Type-check notification dispatcher
         run: deno check supabase/functions/dispatch-notifications/index.ts
-      
+
       - name: Type-check automatic booking dispatcher
         run: deno check supabase/functions/auto-assign-booking/index.ts
 
       - name: Type-check booking route ETA
         run: deno check supabase/functions/booking-route-eta/index.ts
+
+      - name: Type-check Stripe PaymentIntent endpoint
+        run: deno check supabase/functions/stripe-create-payment-intent/index.ts
+
+      - name: Type-check Stripe webhook endpoint
+        run: deno check supabase/functions/stripe-webhook/index.ts
