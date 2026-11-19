@@ -1,3 +1,4 @@
+drop function if exists public.complete_stripe_refund(uuid,text,text,text,text,boolean);
 -- Correctly model asynchronous Stripe refund states and webhook reconciliation.
 create or replace function public.complete_stripe_refund(
   p_refund_id uuid,p_stripe_refund_id text,p_transfer_reversal_id text,
@@ -24,7 +25,7 @@ begin
   -- A webhook can win the race against the synchronous API response. Never
   -- downgrade a succeeded refund, but still accept its transfer reversal ID.
   if v_refund.status='succeeded' then
-    if p_transfer_reversal_id is not null and v_refund.stripe_transfer_reversal_id is null then
+    if p_transfer_reversal_id is not null and v_refund.stripe_transfer_reversal_id is null and v_refund.transfer_reversal_amount_minor>0 then
       update public.stripe_refund_requests set stripe_transfer_reversal_id=p_transfer_reversal_id,
         transfer_reversal_pending=false,transfer_reversal_amount_minor=greatest(transfer_reversal_amount_minor,0),
         failure_message=null,updated_at=clock_timestamp() where id=p_refund_id;
