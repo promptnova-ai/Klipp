@@ -12,9 +12,8 @@ export type KlippTabItem = { name: string; href: string; label: string; icon: Sy
 type KlippTabBarProps = { items: KlippTabItem[]; actionHref: string; actionLabel: string; role?: KlippRole };
 type TabButtonProps = TabTriggerSlotProps & { name: string; label: string; icon: SymbolName; accent: string; accentSoft: string };
 
-function TabButton({ name, label, icon, isFocused, onPress, accent, accentSoft }: TabButtonProps) {
+function TabButton({ label, icon, isFocused, onPress, accent, accentSoft }: TabButtonProps) {
   return (
-    <TabTrigger asChild name={name}>
       <Pressable
         onPress={onPress}
         hitSlop={6}
@@ -25,7 +24,6 @@ function TabButton({ name, label, icon, isFocused, onPress, accent, accentSoft }
         <SymbolView name={icon} tintColor={isFocused ? accent : KlippColors.muted} size={21} />
         <Text style={[styles.tabLabel, isFocused && { color: accent }]}>{label}</Text>
       </Pressable>
-    </TabTrigger>
   );
 }
 
@@ -49,7 +47,7 @@ export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }:
     <View style={[styles.navigation, desktop && styles.navigationDesktop, { paddingBottom: desktop ? 0 : Math.max(insets.bottom, 8) }]}>
       <View style={[styles.bar, desktop && styles.barDesktop]}>
         {items.slice(0, 2).map((item) => (
-          <TabButton key={item.name} name={item.name} label={item.label} icon={item.icon} accent={theme.accent} accentSoft={theme.accentSoft} />
+          <TabTrigger key={item.name} name={item.name} asChild><TabButton label={item.label} icon={item.icon} accent={theme.accent} accentSoft={theme.accentSoft} /></TabTrigger>
         ))}
         <Pressable
           accessibilityRole="button"
