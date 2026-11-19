@@ -33,17 +33,41 @@ Deno.serve(async (req) => {
       return json(202, { refundRequestId: data, status: "requested" });
     }
 
-    if (body.action !== "process" || typeof body.refundRequestId !== "string") return json(400, { error: "invalid_action" });
+    if (!["process", "retry_reversal"].includes(String(body.action)) || typeof body.refundRequestId !== "string") return json(400, { error: "invalid_action" });
     const { data: canManage, error: permissionError } = await userClient.rpc("has_admin_permission", { p_permission_code: "finance.reconcile" });
     if (permissionError || canManage !== true) return json(403, { error: "finance_permission_required" });
+
+    const stripe = new Stripe(env("STRIPE_SECRET_KEY"), { httpClient: Stripe.createFetchHttpClient(), maxNetworkRetries: 2, timeout: 20000 });
+    const service = createClient(supabaseUrl, env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
+
+    if (body.action === "retry_reversal") {
+      const { data: reversalRows, error: reversalPrepareError } = await userClient.rpc("prepare_stripe_transfer_reversal", { p_refund_id: body.refundRequestId });
+      if (reversalPrepareError) return json(409, { error: "transfer_reversal_not_eligible", detail: reversalPrepareError.message });
+      const reversalItem = Array.isArray(reversalRows) ? reversalRows[0] : reversalRows;
+      if (!reversalItem?.transfer_id || Number(reversalItem.amount_minor) <= 0) return json(500, { error: "invalid_reversal_payload" });
+      try {
+        const reversal = await stripe.transfers.createReversal(String(reversalItem.transfer_id), {
+          amount: Number(reversalItem.amount_minor), metadata: { klipp_refund_request_id: String(reversalItem.refund_id) },
+        }, { idempotencyKey: `klipp-refund-reversal-${reversalItem.refund_id}` });
+        const { error: completeReversalError } = await service.rpc("complete_stripe_transfer_reversal", {
+          p_refund_id: reversalItem.refund_id, p_reversal_id: reversal.id, p_failure_message: null,
+        });
+        if (completeReversalError) return json(503, { error: "reversal_created_reconciliation_pending" });
+        return json(200, { status: "reversed", transferReversalId: reversal.id });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Transfer reversal failed";
+        await service.rpc("complete_stripe_transfer_reversal", {
+          p_refund_id: reversalItem.refund_id, p_reversal_id: null, p_failure_message: message.slice(0, 500),
+        });
+        throw error;
+      }
+    }
 
     const { data: rows, error: prepareError } = await userClient.rpc("prepare_stripe_refund", { p_refund_request_id: body.refundRequestId });
     if (prepareError) return json(409, { error: "refund_not_eligible", detail: prepareError.message });
     const item = Array.isArray(rows) ? rows[0] : rows;
     if (!item?.refund_id || !item?.payment_intent_id || !Number.isSafeInteger(Number(item.amount_minor))) return json(500, { error: "invalid_refund_payload" });
 
-    const stripe = new Stripe(env("STRIPE_SECRET_KEY"), { httpClient: Stripe.createFetchHttpClient(), maxNetworkRetries: 2, timeout: 20000 });
-    const service = createClient(supabaseUrl, env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
     let stripeRefundId: string | null = null;
     let reversalId: string | null = null;
     let reversalPending = false;
