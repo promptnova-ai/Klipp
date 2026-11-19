@@ -33,6 +33,9 @@ Deno.serve(async (req) => {
 
     const service = createClient(supabaseUrl, env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: rows, error: prepareError } = await service.rpc("prepare_stripe_transfer", { p_booking_id: bookingId });
+    if (prepareError?.message?.includes("captured Stripe payment not found")) {
+      return json(200, { status: "not_applicable" });
+    }
     if (prepareError) return json(409, { error: "transfer_not_eligible", detail: prepareError.message });
     const transfer = Array.isArray(rows) ? rows[0] : rows;
     if (!transfer?.transfer_row_id || !transfer?.payment_intent_id || !transfer?.stripe_account_id) return json(500, { error: "invalid_transfer_payload" });
