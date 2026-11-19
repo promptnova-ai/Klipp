@@ -55,6 +55,13 @@ begin
   where id = p_service_type_id and active;
   if not found then raise exception 'service is no longer available'; end if;
 
+  if p_pricing_tier_id is not null and not exists (
+    select 1 from public.pricing_tiers tier
+    where tier.id = p_pricing_tier_id and tier.service_type_id = p_service_type_id
+  ) then
+    raise exception 'pricing tier does not belong to the selected service';
+  end if;
+
   v_point := extensions.st_setsrid(
     extensions.st_makepoint(p_lng, p_lat), 4326
   )::extensions.geography;
@@ -221,9 +228,11 @@ begin
     end if;
   end if;
 
-  if v_price is distinct from p_expected_price_dop
-     or v_minutes is distinct from p_expected_est_minutes then
-    raise exception 'service quote changed; refresh and confirm the updated price';
+  if v_price is distinct from p_expected_price_dop then
+    raise exception 'service price changed; refresh and confirm the updated price';
+  end if;
+  if p_mode = 'manual' and v_minutes is distinct from p_expected_est_minutes then
+    raise exception 'service duration changed; refresh and confirm the updated quote';
   end if;
 
   v_local := p_scheduled_start at time zone 'America/Santo_Domingo';
