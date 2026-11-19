@@ -241,7 +241,7 @@ begin
   select * into v_refund from public.stripe_refund_requests where id=p_refund_request_id for update;
   if not found then raise exception 'refund request not found'; end if;
   if v_refund.status='succeeded' then raise exception 'refund already completed'; end if;
-  if v_refund.status not in ('requested','failed') then raise exception 'refund is already processing'; end if;
+  if v_refund.status not in ('requested','failed','processing') then raise exception 'refund is already completed or rejected'; end if;
 
   select * into v_payment from public.payments where id=v_refund.payment_id for update;
   select * into v_booking from public.bookings where id=v_refund.booking_id;
@@ -249,7 +249,12 @@ begin
   if v_payment.provider_ref is null then raise exception 'payment has no Stripe PaymentIntent'; end if;
 
   update public.stripe_refund_requests set status='processing',reviewed_by=auth.uid(),
-    reviewed_at=clock_timestamp(),updated_at=clock_timestamp() where id=v_refund.id;
+    reviewed_at=coalesce(reviewed_at,clock_timestamp()),
+    transfer_reversal_amount_minor=case when v_transfer.stripe_transfer_id is null then 0
+      else least(v_transfer.amount_minor,
+        floor(v_refund.amount_minor::numeric * v_booking.pro_payout_dop / nullif(v_booking.price_dop,0))::bigint)
+      end,
+    updated_at=clock_timestamp() where id=v_refund.id;
 
   return query select v_refund.id,v_payment.provider_ref,v_refund.amount_minor,v_refund.currency_code,
     v_transfer.stripe_transfer_id,
@@ -439,3 +444,30 @@ grant execute on function public.complete_stripe_refund(uuid,text,text,text,text
 grant execute on function public.prepare_stripe_transfer(uuid) to service_role;
 grant execute on function public.complete_stripe_transfer(uuid,text,text,text) to service_role;
 grant execute on function public.process_stripe_connect_webhook_event(text,text,text,text,boolean,boolean,boolean,text,jsonb,jsonb,text,text,text,bigint,text,text,text,timestamptz) to service_role;
+
+-- Operational ledger: append one immutable set of entries when a signed Stripe
+-- webhook transitions a payment into held (captured but not yet transferred).
+create or replace function public.record_stripe_payment_ledger()
+returns trigger language plpgsql security definer set search_path = ''
+as $$
+declare v_booking public.bookings%rowtype;
+begin
+  if new.provider='stripe' and new.status='held' and old.status is distinct from 'held' then
+    select * into v_booking from public.bookings where id=new.booking_id;
+    if found then
+      insert into public.stripe_marketplace_ledger(booking_id,payment_id,entry_type,amount_minor,currency_code,idempotency_key)
+      values
+        (new.booking_id,new.id,'customer_charge',round(new.amount_dop*100)::bigint,new.currency_code,'charge:'||new.id::text),
+        (new.booking_id,new.id,'platform_fee',round(v_booking.commission_dop*100)::bigint,new.currency_code,'fee:'||new.id::text),
+        (new.booking_id,new.id,'professional_payable',round(v_booking.pro_payout_dop*100)::bigint,new.currency_code,'payable:'||new.id::text)
+      on conflict(idempotency_key) do nothing;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+drop trigger if exists trg_record_stripe_payment_ledger on public.payments;
+create trigger trg_record_stripe_payment_ledger
+after update of status on public.payments
+for each row execute function public.record_stripe_payment_ledger();
+revoke all on function public.record_stripe_payment_ledger() from public,anon,authenticated;
