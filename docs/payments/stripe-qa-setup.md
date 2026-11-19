@@ -11,7 +11,7 @@ The payment core remains country-aware. Connect onboarding is disabled unless th
 - `stripe-create-payment-intent`: authenticated checkout endpoint. Creates/reuses a Klipp payment attempt, uses a stable Stripe idempotency key and transfer group, and associates the PaymentIntent before returning its client secret.
 - `stripe-connect-onboard`: authenticated professional endpoint. Creates/reuses an Express connected account and returns a short-lived Stripe-hosted onboarding link. The legal country is server-controlled, never accepted from the mobile client.
 - `stripe-release-transfer`: authenticated professional/admin endpoint. Requires a completed booking, a captured payment and an eligible connected account. Creates a transfer linked to the original charge using `source_transaction` and an idempotency key.
-- `stripe-refund`: customers create refund requests; staff with `finance.reconcile` approve/process them. Supports partial and full refunds. If a professional transfer has already been sent, it attempts the proportional transfer reversal. Failed reversals remain flagged and can be retried with `action: retry_reversal`.
+- `stripe-refund`: customers create refund requests; staff with `finance.reconcile` approve/process them. Supports partial and full refunds, including asynchronous pending/failed statuses synchronized by refund webhooks. If a professional transfer has already been sent, it attempts the proportional transfer reversal only after the refund succeeds. Failed reversals remain flagged and can be retried with `action: retry_reversal`.
 - `stripe-webhook`: public Stripe endpoint. Verifies the signature against the raw request body. Processes PaymentIntent state, Connect account updates and dispute events; event IDs are deduplicated.
 
 ## Required Supabase Edge Function secrets
@@ -39,7 +39,9 @@ Configure the Stripe test-mode endpoint to send:
 - `charge.dispute.created`
 - `charge.dispute.updated`
 - `charge.dispute.closed`
+- `refund.created`
 - `refund.updated`
+- `refund.failed`
 - `charge.refunded`
 
 Stripe retries a webhook when Klipp returns a 5xx because the event was not durably processed. Duplicate event IDs are safe to replay.
