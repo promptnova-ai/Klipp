@@ -235,7 +235,14 @@ export function ClientBookingsScreen() {
     const { error: rpcError } = await supabase.rpc('advance_booking', { p_booking_id: bookingId, p_new_status: 'confirmed' });
     if (rpcError) setError(rpcError.message);
     else {
-      setNotice('Servicio confirmado.');
+      // The booking confirmation is authoritative. Settlement is a separate,
+      // retryable server-side operation and must never undo customer confirmation.
+      const { error: settlementError } = await supabase.functions.invoke('stripe-release-transfer', {
+        body: { bookingId },
+      });
+      setNotice(settlementError
+        ? 'Servicio confirmado. La liquidación al profesional queda pendiente de revisión.'
+        : 'Servicio confirmado. Klipp ha actualizado el estado de la liquidación.');
       await loadBookings();
     }
     setBusyId(null);
