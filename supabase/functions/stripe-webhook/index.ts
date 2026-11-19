@@ -7,84 +7,145 @@ function requiredEnv(name: string): string {
   if (!value) throw new Error(`Missing server configuration: ${name}`);
   return value;
 }
-
 function response(status: number, body: Record<string, unknown>) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
+const asId = (value: string | { id: string } | null | undefined): string | null =>
+  typeof value === "string" ? value : value?.id ?? null;
 
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return response(405, { error: "method_not_allowed" });
-
   const signature = req.headers.get("stripe-signature");
   if (!signature) return response(400, { error: "missing_signature" });
 
   try {
     const stripe = new Stripe(requiredEnv("STRIPE_SECRET_KEY"), {
-      httpClient: Stripe.createFetchHttpClient(),
-      maxNetworkRetries: 2,
+      httpClient: Stripe.createFetchHttpClient(), maxNetworkRetries: 2,
     });
-    const cryptoProvider = Stripe.createSubtleCryptoProvider();
     const rawBody = await req.text();
-
     let event: Stripe.Event;
     try {
       event = await stripe.webhooks.constructEventAsync(
-        rawBody,
-        signature,
-        requiredEnv("STRIPE_WEBHOOK_SECRET"),
-        undefined,
-        cryptoProvider,
+        rawBody, signature, requiredEnv("STRIPE_WEBHOOK_SECRET"), undefined,
+        Stripe.createSubtleCryptoProvider(),
       );
     } catch (error) {
       console.warn("stripe_webhook_signature_rejected", error);
       return response(400, { error: "invalid_signature" });
     }
 
-    let paymentIntentId: string | null = null;
-    let amountReceived: number | null = null;
-    let currency: string | null = null;
-    let failureMessage: string | null = null;
+    const service = createClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
 
     if (event.type.startsWith("payment_intent.")) {
       const intent = event.data.object as Stripe.PaymentIntent;
-      paymentIntentId = intent.id;
+      const latestChargeId = asId(intent.latest_charge);
+      if (latestChargeId) {
+        const { error: chargeLinkError } = await service.from("payments")
+          .update({ stripe_latest_charge_id: latestChargeId, stripe_transfer_group: intent.transfer_group })
+          .eq("provider", "stripe").eq("provider_ref", intent.id);
+        if (chargeLinkError) {
+          console.error("stripe_charge_link_failed", { eventId: event.id, message: chargeLinkError.message });
+          return response(500, { error: "charge_link_failed" });
+        }
+      }
+
+      let amountReceived: number | null = null;
+      let currency: string | null = null;
+      let failureMessage: string | null = null;
       if (event.type === "payment_intent.succeeded") {
         amountReceived = intent.amount_received;
         currency = intent.currency;
       } else if (event.type === "payment_intent.payment_failed") {
         failureMessage = intent.last_payment_error?.message?.slice(0, 500) ?? "Payment failed";
       }
+
+      const { data, error } = await service.rpc("process_stripe_webhook_event", {
+        p_event_id: event.id,
+        p_event_type: event.type,
+        p_payment_intent_id: intent.id,
+        p_amount_received_minor: amountReceived,
+        p_currency: currency,
+        p_failure_message: failureMessage,
+      });
+      if (error) {
+        console.error("stripe_webhook_processing_failed", { eventId: event.id, eventType: event.type, message: error.message });
+        return response(500, { error: "webhook_processing_failed" });
+      }
+      return response(200, { received: true, result: data });
     }
 
-    const serviceClient = createClient(
-      requiredEnv("SUPABASE_URL"),
-      requiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
-      { auth: { persistSession: false, autoRefreshToken: false } },
-    );
+    let objectId: string | null = null;
+    let accountId: string | null = null;
+    let detailsSubmitted: boolean | null = null;
+    let chargesEnabled: boolean | null = null;
+    let payoutsEnabled: boolean | null = null;
+    let transfersCapability: string | null = null;
+    let currentlyDue: unknown = [];
+    let pastDue: unknown = [];
+    let disabledReason: string | null = null;
+    let disputeChargeId: string | null = null;
+    let paymentIntentId: string | null = null;
+    let disputeAmount: number | null = null;
+    let currency: string | null = null;
+    let disputeStatus: string | null = null;
+    let disputeReason: string | null = null;
+    let evidenceDueAt: string | null = null;
 
-    const { data, error } = await serviceClient.rpc("process_stripe_webhook_event", {
+    if (event.type === "account.updated") {
+      const account = event.data.object as Stripe.Account;
+      objectId = account.id;
+      accountId = account.id;
+      detailsSubmitted = account.details_submitted;
+      chargesEnabled = account.charges_enabled;
+      payoutsEnabled = account.payouts_enabled;
+      transfersCapability = account.capabilities?.transfers ?? null;
+      currentlyDue = account.requirements?.currently_due ?? [];
+      pastDue = account.requirements?.past_due ?? [];
+      disabledReason = account.requirements?.disabled_reason ?? null;
+    } else if (event.type.startsWith("charge.dispute.")) {
+      const dispute = event.data.object as Stripe.Dispute;
+      objectId = dispute.id;
+      disputeChargeId = asId(dispute.charge);
+      paymentIntentId = asId(dispute.payment_intent);
+      disputeAmount = dispute.amount;
+      currency = dispute.currency;
+      disputeStatus = dispute.status;
+      disputeReason = dispute.reason;
+      evidenceDueAt = dispute.evidence_details?.due_by
+        ? new Date(dispute.evidence_details.due_by * 1000).toISOString() : null;
+    } else {
+      // Refund, transfer and other supported events are durably deduplicated.
+      // Their authoritative state is reconciled by the corresponding operation.
+      const object = event.data.object as { id?: string };
+      objectId = object.id ?? null;
+    }
+
+    const { data, error } = await service.rpc("process_stripe_connect_webhook_event", {
       p_event_id: event.id,
       p_event_type: event.type,
+      p_object_id: objectId,
+      p_account_id: accountId,
+      p_details_submitted: detailsSubmitted,
+      p_charges_enabled: chargesEnabled,
+      p_payouts_enabled: payoutsEnabled,
+      p_transfers_capability: transfersCapability,
+      p_currently_due: currentlyDue,
+      p_past_due: pastDue,
+      p_disabled_reason: disabledReason,
+      p_dispute_charge_id: disputeChargeId,
       p_payment_intent_id: paymentIntentId,
-      p_amount_received_minor: amountReceived,
+      p_dispute_amount_minor: disputeAmount,
       p_currency: currency,
-      p_failure_message: failureMessage,
+      p_dispute_status: disputeStatus,
+      p_dispute_reason: disputeReason,
+      p_evidence_due_at: evidenceDueAt,
     });
-
     if (error) {
-      console.error("stripe_webhook_processing_failed", {
-        eventId: event.id,
-        eventType: event.type,
-        message: error.message,
-      });
-      // Stripe must retry transient/database failures. Never acknowledge
-      // an event that has not been committed by the database transaction.
-      return response(500, { error: "webhook_processing_failed" });
+      console.error("stripe_connect_webhook_processing_failed", { eventId: event.id, eventType: event.type, message: error.message });
+      return response(500, { error: "connect_webhook_processing_failed" });
     }
-
     return response(200, { received: true, result: data });
   } catch (error) {
     console.error("stripe_webhook_unexpected_error", error);
