@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import type { ComponentProps } from 'react';
 import { SymbolView } from 'expo-symbols';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -7,10 +8,11 @@ import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors, type KlippRole } from '@/lib/brand';
 
+type SymbolName = ComponentProps<typeof SymbolView>['name'];
 type AccountLink = {
   title: string;
   description: string;
-  icon: { ios: string; android: string; web: string };
+  icon: SymbolName;
   route: '/(client)/addresses' | '/(client)/bookings' | '/(client)/notifications';
 };
 
