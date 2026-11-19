@@ -38,6 +38,8 @@ Deno.serve(async (req) => {
 
     const stripe = new Stripe(env("STRIPE_SECRET_KEY"), { httpClient: Stripe.createFetchHttpClient(), maxNetworkRetries: 2, timeout: 20000 });
     const intent = await stripe.paymentIntents.retrieve(transfer.payment_intent_id);
+    const expectedTransferGroup = `klipp_booking_${bookingId}`;
+    if (intent.transfer_group !== expectedTransferGroup) return json(409, { error: "payment_transfer_group_mismatch" });
     const chargeId = typeof intent.latest_charge === "string" ? intent.latest_charge : intent.latest_charge?.id;
     if (!chargeId) return json(409, { error: "payment_charge_not_available" });
 
