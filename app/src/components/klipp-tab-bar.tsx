@@ -10,7 +10,7 @@ import { KlippColors, RoleThemes, type KlippRole } from '@/lib/brand';
 type SymbolName = ComponentProps<typeof SymbolView>['name'];
 export type KlippTabItem = { name: string; href: string; label: string; icon: SymbolName };
 type KlippTabBarProps = { items: KlippTabItem[]; actionHref: string; actionLabel: string; role?: KlippRole };
-type TabButtonProps = TabTriggerSlotProps & { name: string; label: string; icon: SymbolName; accent: string; accentSoft: string };
+type TabButtonProps = TabTriggerSlotProps & { label: string; icon: SymbolName; accent: string; accentSoft: string };
 
 function TabButton({ label, icon, isFocused, onPress, accent, accentSoft }: TabButtonProps) {
   return (
@@ -57,7 +57,7 @@ export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }:
           <Text style={styles.centerMark}>K</Text>
         </Pressable>
         {items.slice(2).map((item) => (
-          <TabButton key={item.name} label={item.label} icon={item.icon} accent={theme.accent} accentSoft={theme.accentSoft} />
+          <TabTrigger key={item.name} name={item.name} asChild><TabButton label={item.label} icon={item.icon} accent={theme.accent} accentSoft={theme.accentSoft} /></TabTrigger>
         ))}
       </View>
     </View>
