@@ -123,6 +123,22 @@ Deno.serve(async (req: Request) => {
           return response(500, { error: "connected_account_sync_failed" });
         }
       }
+    } else if (event.type.startsWith("refund.")) {
+      const refund = event.data.object as Stripe.Refund;
+      objectId = refund.id;
+      const refundRequestId = refund.metadata?.klipp_refund_request_id;
+      if (refundRequestId && ["pending", "succeeded", "failed", "canceled"].includes(String(refund.status))) {
+        const { error: refundSyncError } = await service.rpc("sync_stripe_refund_status", {
+          p_refund_request_id: refundRequestId,
+          p_stripe_refund_id: refund.id,
+          p_status: refund.status,
+          p_failure_reason: refund.failure_reason ?? null,
+        });
+        if (refundSyncError) {
+          console.error("stripe_refund_webhook_sync_failed", { eventId: event.id, message: refundSyncError.message });
+          return response(500, { error: "refund_webhook_sync_failed" });
+        }
+      }
     } else if (event.type.startsWith("charge.dispute.")) {
       const dispute = event.data.object as Stripe.Dispute;
       objectId = dispute.id;
