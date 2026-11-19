@@ -35,10 +35,11 @@ Deno.serve(async (req) => {
       .from("pro_profiles").select("user_id").eq("user_id", auth.user.id).maybeSingle();
     if (proError || !pro) return json(403, { error: "professional_account_required" });
 
-    let body: Record<string, unknown>;
-    try { body = await req.json(); } catch { return json(400, { error: "invalid_json" }); }
-    const country = typeof body.country === "string" ? body.country.toUpperCase() : "";
-    if (!/^[A-Z]{2}$/.test(country)) return json(400, { error: "invalid_country" });
+    try { await req.json(); } catch { return json(400, { error: "invalid_json" }); }
+    // The legal country is configured server-side; never trust a country code
+    // submitted by a professional from the mobile client.
+    const country = (Deno.env.get("STRIPE_CONNECT_DEFAULT_COUNTRY") ?? "").toUpperCase();
+    if (!/^[A-Z]{2}$/.test(country)) return json(503, { error: "connect_country_not_configured" });
 
     const allowed = (Deno.env.get("STRIPE_CONNECT_ALLOWED_COUNTRIES") ?? "")
       .split(",").map((v) => v.trim().toUpperCase()).filter(Boolean);
