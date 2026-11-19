@@ -24,11 +24,12 @@ Deno.serve(async (req) => {
     if (typeof bookingId !== "string" || !/^[0-9a-f-]{36}$/i.test(bookingId)) return json(400, { error: "invalid_booking_id" });
 
     const { data: booking, error: bookingError } = await userClient.from("bookings")
-      .select("id,pro_id,status").eq("id", bookingId).maybeSingle();
-    if (bookingError || !booking || booking.status !== "completed") return json(404, { error: "completed_booking_not_found" });
+      .select("id,client_id,pro_id,status").eq("id", bookingId).maybeSingle();
+    if (bookingError || !booking || booking.status !== "confirmed") return json(404, { error: "customer_confirmed_booking_not_found" });
     const isPro = booking.pro_id === auth.user.id;
+    const isClient = booking.client_id === auth.user.id;
     const { data: canManage } = await userClient.rpc("has_admin_permission", { p_permission_code: "finance.reconcile" });
-    if (!isPro && canManage !== true) return json(403, { error: "forbidden" });
+    if (!isPro && !isClient && canManage !== true) return json(403, { error: "forbidden" });
 
     const service = createClient(supabaseUrl, env("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: rows, error: prepareError } = await service.rpc("prepare_stripe_transfer", { p_booking_id: bookingId });
