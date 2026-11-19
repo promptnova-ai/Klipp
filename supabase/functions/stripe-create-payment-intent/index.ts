@@ -93,6 +93,7 @@ Deno.serve(async (req: Request) => {
         amount: amountMinor,
         currency: "dop",
         payment_method_types: ["card"],
+        transfer_group: `klipp_booking_${payload.bookingId}`,
         metadata: {
           klipp_payment_id: String(attempt.payment_id),
           klipp_booking_id: payload.bookingId,
