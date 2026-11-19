@@ -51,6 +51,7 @@ create table if not exists public.stripe_refund_requests (
   stripe_refund_id text unique,
   stripe_transfer_reversal_id text unique,
   transfer_reversal_amount_minor bigint not null default 0 check (transfer_reversal_amount_minor >= 0),
+  transfer_reversal_pending boolean not null default false,
   reviewed_by uuid references auth.users(id),
   reviewed_at timestamptz,
   failure_code text,
@@ -130,7 +131,7 @@ create or replace function public.upsert_stripe_connected_account(
 language plpgsql security definer set search_path = ''
 as $$
 begin
-  if auth.role() <> 'service_role' and current_user <> 'service_role' then
+  if coalesce(auth.jwt()->>'role','') <> 'service_role' then
     raise exception 'service role required';
   end if;
   if p_account_id !~ '^acct_[A-Za-z0-9]+$' or p_country_code !~ '^[A-Z]{2}$' then
@@ -261,19 +262,19 @@ end;
 $$;
 
 create or replace function public.complete_stripe_refund(
-  p_refund_id uuid,p_stripe_refund_id text,p_transfer_reversal_id text,p_failure_code text,p_failure_message text
+  p_refund_id uuid,p_stripe_refund_id text,p_transfer_reversal_id text,p_failure_code text,p_failure_message text,p_reversal_pending boolean default false
 ) returns void
 language plpgsql security definer set search_path = ''
 as $$
 declare v_refund public.stripe_refund_requests%rowtype;
 begin
-  if current_user <> 'service_role' then raise exception 'service role required'; end if;
+  if coalesce(auth.jwt()->>'role','') <> 'service_role' then raise exception 'service role required'; end if;
   select * into v_refund from public.stripe_refund_requests where id=p_refund_id for update;
   if not found then raise exception 'refund request not found'; end if;
   if v_refund.status='succeeded' then return; end if;
   if p_stripe_refund_id is not null then
     update public.stripe_refund_requests set status='succeeded',stripe_refund_id=p_stripe_refund_id,
-      stripe_transfer_reversal_id=p_transfer_reversal_id,failure_code=null,failure_message=null,
+      stripe_transfer_reversal_id=p_transfer_reversal_id,transfer_reversal_pending=coalesce(p_reversal_pending,false),failure_code=null,failure_message=case when coalesce(p_reversal_pending,false) then 'Customer refund succeeded; professional transfer reversal requires reconciliation' else null end,
       updated_at=clock_timestamp() where id=p_refund_id;
     update public.payments set refunded_amount_minor=refunded_amount_minor+v_refund.amount_minor,
       status=case when refunded_amount_minor+v_refund.amount_minor>=round(amount_dop*100)::bigint
@@ -304,7 +305,7 @@ declare
   v_account public.stripe_connected_accounts%rowtype;
   v_transfer public.stripe_transfers%rowtype;
 begin
-  if current_user <> 'service_role' then raise exception 'service role required'; end if;
+  if coalesce(auth.jwt()->>'role','') <> 'service_role' then raise exception 'service role required'; end if;
   select * into v_booking from public.bookings where id=p_booking_id for update;
   if not found or v_booking.status<>'completed' or v_booking.pro_id is null then
     raise exception 'booking must be completed and assigned before settlement';
@@ -315,7 +316,7 @@ begin
   if v_payment.refunded_amount_minor>0 then raise exception 'partially or fully refunded booking requires manual settlement review'; end if;
   select * into v_account from public.stripe_connected_accounts where pro_id=v_booking.pro_id for update;
   if not found or not v_account.payouts_enabled or not v_account.details_submitted
-    or v_account.transfers_capability not in ('active','pending') then
+    or v_account.transfers_capability <> 'active' then
     raise exception 'professional Stripe account is not payout eligible';
   end if;
 
@@ -339,7 +340,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare v_transfer public.stripe_transfers%rowtype;
 begin
-  if current_user <> 'service_role' then raise exception 'service role required'; end if;
+  if coalesce(auth.jwt()->>'role','') <> 'service_role' then raise exception 'service role required'; end if;
   select * into v_transfer from public.stripe_transfers where id=p_transfer_row_id for update;
   if not found then raise exception 'transfer record not found'; end if;
   if p_stripe_transfer_id is not null then
@@ -374,7 +375,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare v_booking_id uuid; v_account public.stripe_connected_accounts%rowtype;
 begin
-  if current_user <> 'service_role' then raise exception 'service role required'; end if;
+  if coalesce(auth.jwt()->>'role','') <> 'service_role' then raise exception 'service role required'; end if;
   if p_event_id is null or p_event_id !~ '^evt_[A-Za-z0-9]+$' then raise exception 'invalid event id'; end if;
   insert into public.stripe_connect_webhook_events(event_id,event_type,object_id)
     values(p_event_id,p_event_type,p_object_id) on conflict(event_id) do nothing;
@@ -425,7 +426,7 @@ revoke all on function public.upsert_stripe_connected_account(uuid,text,text,boo
 revoke all on function public.get_my_stripe_connect_status() from public,anon;
 revoke all on function public.request_stripe_refund(uuid,bigint,text,text,text) from public,anon;
 revoke all on function public.prepare_stripe_refund(uuid) from public,anon,authenticated;
-revoke all on function public.complete_stripe_refund(uuid,text,text,text,text) from public,anon,authenticated;
+revoke all on function public.complete_stripe_refund(uuid,text,text,text,text,boolean) from public,anon,authenticated;
 revoke all on function public.prepare_stripe_transfer(uuid) from public,anon,authenticated;
 revoke all on function public.complete_stripe_transfer(uuid,text,text,text) from public,anon,authenticated;
 revoke all on function public.process_stripe_connect_webhook_event(text,text,text,text,boolean,boolean,boolean,text,jsonb,jsonb,text,text,text,bigint,text,text,text,timestamptz) from public,anon,authenticated;
@@ -434,7 +435,7 @@ grant execute on function public.upsert_stripe_connected_account(uuid,text,text,
 grant execute on function public.get_my_stripe_connect_status() to authenticated;
 grant execute on function public.request_stripe_refund(uuid,bigint,text,text,text) to authenticated;
 grant execute on function public.prepare_stripe_refund(uuid) to authenticated;
-grant execute on function public.complete_stripe_refund(uuid,text,text,text,text) to service_role;
+grant execute on function public.complete_stripe_refund(uuid,text,text,text,text,boolean) to service_role;
 grant execute on function public.prepare_stripe_transfer(uuid) to service_role;
 grant execute on function public.complete_stripe_transfer(uuid,text,text,text) to service_role;
 grant execute on function public.process_stripe_connect_webhook_event(text,text,text,text,boolean,boolean,boolean,text,jsonb,jsonb,text,text,text,bigint,text,text,text,timestamptz) to service_role;
