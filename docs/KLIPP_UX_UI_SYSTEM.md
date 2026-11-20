@@ -58,7 +58,7 @@ Familia objetivo: Inter; alternativa Plus Jakarta Sans; fallback del sistema ope
 
 ## Componentes nativos base
 
-Importar desde `app/src/design-system/components.tsx`:
+Importar los componentes base desde `app/src/design-system/components.tsx` y las tarjetas desde `app/src/design-system/cards.tsx`:
 
 - `KlippButton`: primary, secondary, outline, ghost y danger; large/medium; loading y disabled.
 - `KlippCard`: superficie consistente, borde, radio y elevación discreta.
