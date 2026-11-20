@@ -1,17 +1,19 @@
 name: Remediate SDK 58 dependency audit
 
 on:
+  push:
+    branches:
+      - fix/sdk58-dependency-security-20261120
+    paths:
+      - app/package.json
+      - app/package-lock.json
+      - .github/workflows/dependency-remediation.yml
   pull_request:
     branches:
       - feat/ios-android-responsive-pass-20261120
     paths:
       - app/package.json
       - app/package-lock.json
-      - .github/workflows/dependency-remediation.yml
-  push:
-    branches:
-      - fix/sdk58-dependency-security-20261120
-    paths:
       - .github/workflows/dependency-remediation.yml
 
 permissions:
@@ -23,6 +25,7 @@ concurrency:
 
 jobs:
   remediate:
+    if: github.event_name == 'push' || github.event.pull_request.head.ref == 'fix/sdk58-dependency-security-20261120'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout remediation branch
@@ -38,7 +41,7 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Update Expo SDK 58 patch and align Expo packages
+      - name: Upgrade Expo within SDK 58 and align native packages
         working-directory: app
         run: |
           npm install expo@~58.0.26
@@ -46,9 +49,29 @@ jobs:
 
       - name: Apply non-breaking npm security fixes
         working-directory: app
-        run: npm audit fix
+        run: npm audit fix || true
 
-      - name: Reinstall exact lockfile
+      - name: Diagnose remaining dependency paths
+        working-directory: app
+        run: |
+          npm ls minimatch glob --all || true
+          npm audit --json > npm-audit-diagnostic.json || true
+          node - <<'NODE'
+          const report = require('./npm-audit-diagnostic.json');
+          console.log('Vulnerability totals:', JSON.stringify(report.metadata?.vulnerabilities ?? {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({
+              name,
+              severity: item.severity,
+              range: item.range,
+              direct: item.isDirect,
+              fixAvailable: item.fixAvailable,
+              via: item.via
+            }));
+          }
+          NODE
+
+      - name: Verify exact lockfile install
         working-directory: app
         run: npm ci
 
@@ -60,30 +83,52 @@ jobs:
         working-directory: app
         run: npm run lint
 
-      - name: Expo SDK compatibility check
+      - name: Expo package compatibility
         working-directory: app
         run: npx expo install --check
 
-      - name: Export iOS JavaScript bundle
+      - name: Expo native fingerprint smoke test
+        working-directory: app
+        run: node -e "require('@expo/fingerprint').createProjectHashAsync(process.cwd()).then(hash => { if (!hash) process.exit(1); console.log('Expo fingerprint:', hash); })"
+
+      - name: iOS JavaScript export
         working-directory: app
         run: npx expo export --platform ios --output-dir dist-ios
 
-      - name: Export Android JavaScript bundle
+      - name: Android JavaScript export
         working-directory: app
         run: npx expo export --platform android --output-dir dist-android
 
-      - name: Enforce zero high or critical dependency findings
+      - name: Enforce zero dependency vulnerabilities
         working-directory: app
         run: |
           npm audit --json > npm-audit-final.json || true
-          node -e 'const r=require("./npm-audit-final.json"); const v=r.metadata?.vulnerabilities ?? {}; console.log("Final audit:", JSON.stringify(v)); if ((v.high ?? 0) > 0 || (v.critical ?? 0) > 0) process.exit(1);'
-          rm -f npm-audit-final.json
+          node - <<'NODE'
+          const report = require('./npm-audit-final.json');
+          const counts = report.metadata?.vulnerabilities ?? {};
+          console.log('Final audit:', JSON.stringify(counts));
+          if (Object.values(counts).some(value => typeof value === 'number' && value > 0)) process.exit(1);
+          NODE
 
-      - name: Commit verified dependency manifests and lockfile
+      - name: Upload dependency audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-sdk58-dependency-audit
+          path: |
+            app/npm-audit-diagnostic.json
+            app/npm-audit-final.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Commit verified manifests and lockfile
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/package.json app/package-lock.json
-          git diff --cached --quiet && { echo "No dependency changes to commit"; exit 0; }
-          git commit -m "fix(deps): remediate SDK 58 dependency advisories"
-          git push origin fix/sdk58-dependency-security-20261120
+          if git diff --cached --quiet; then
+            echo "No dependency changes to commit"
+          else
+            git commit -m "fix(deps): remediate SDK 58 dependency advisories"
+            git push origin HEAD:fix/sdk58-dependency-security-20261120
+          fi
