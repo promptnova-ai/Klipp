@@ -57,7 +57,7 @@ export function KlippTabBar({ items, actionHref, actionLabel, role = 'client' }:
           <Text style={styles.centerMark}>K</Text>
         </Pressable>
         {items.slice(2).map((item) => (
-          <TabTrigger key={item.name} name={item.name} asChild><TabButton label={item.label} icon={item.icon} accent={theme.accent} accentSoft={theme.accentSoft} /></TabTrigger>
+          <TabTrigger key={item.name} name={item.name} asChild><TabButton label={item.label} icon={item.icon} accent={theme.accent} accentSoft={theme.accentSoft} compact={compact} /></TabTrigger>
         ))}
       </View>
     </View>
