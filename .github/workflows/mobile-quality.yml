@@ -1,0 +1,53 @@
+name: Klipp mobile quality
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+    paths:
+      - 'app/**'
+      - '.github/workflows/mobile-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile-quality:
+    name: TypeScript, lint and native bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Export iOS JavaScript bundle
+        run: npx expo export --platform ios --output-dir dist-ios
+
+      - name: Export Android JavaScript bundle
+        run: npx expo export --platform android --output-dir dist-android
