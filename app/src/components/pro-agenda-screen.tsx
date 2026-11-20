@@ -5,7 +5,8 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippBadge, KlippButton, KlippCard, KlippNotice, KlippScreenState } from '@/design-system';
+import { KlippBadge, KlippButton, KlippCard, KlippScreenState } from '@/components/design-system';
+import { KlippNotice } from '@/design-system';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
