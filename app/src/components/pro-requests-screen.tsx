@@ -42,13 +42,13 @@ export function ProRequestsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
-  const [materialsConfirmed, setMaterialsConfirmed] = useState(false);
-  const [materialsError, setMaterialsError] = useState(false);
+  const [materialsConfirmedRequestId, setMaterialsConfirmedRequestId] = useState<string | null>(null);
+  const [materialsErrorRequestId, setMaterialsErrorRequestId] = useState<string | null>(null);
   const [materialsShake] = useState(() => new Animated.Value(0));
   const activeRequest = requests[0] ?? null;
+  const materialsConfirmed = Boolean(activeRequest && materialsConfirmedRequestId === activeRequest.id);
+  const materialsError = Boolean(activeRequest && materialsErrorRequestId === activeRequest.id);
   useEffect(() => {
-    setMaterialsConfirmed(false);
-    setMaterialsError(false);
     materialsShake.setValue(0);
   }, [activeRequest?.id, materialsShake]);
 
@@ -150,7 +150,7 @@ export function ProRequestsScreen() {
 
   async function respond(requestId: string, accept: boolean) {
     if (accept && !materialsConfirmed) {
-      setMaterialsError(true);
+      setMaterialsErrorRequestId(requestId);
       Vibration.vibrate(90);
       Animated.sequence([
         Animated.timing(materialsShake, { toValue: 1, duration: 55, useNativeDriver: true }),
@@ -299,8 +299,8 @@ export function ProRequestsScreen() {
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: materialsConfirmed }}
                   onPress={() => {
-                    setMaterialsConfirmed((current) => !current);
-                    setMaterialsError(false);
+                    setMaterialsConfirmedRequestId((current) => current === activeRequest.id ? null : activeRequest.id);
+                    setMaterialsErrorRequestId(null);
                     Vibration.vibrate(18);
                   }}
                   style={[styles.materialsCard, materialsError && styles.materialsCardError, materialsConfirmed && styles.materialsCardConfirmed]}>
@@ -317,6 +317,7 @@ export function ProRequestsScreen() {
               </Animated.View>
 
               <SlideToAccept
+                key={busyId === activeRequest.id || secondsLeft <= 0 ? 'blocked' : 'ready'}
                 disabled={busyId === activeRequest.id || secondsLeft <= 0}
                 label={busyId === activeRequest.id ? 'Enviando…' : secondsLeft <= 0 ? 'Solicitud expirada' : 'Desliza para aceptar'}
                 onAccept={() => void respond(activeRequest.id, true)}
@@ -421,13 +422,6 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
       ]).start();
     },
   }), [disabled, fillProgress, translateX]);
-  useEffect(() => {
-    if (disabled) {
-      translateX.setValue(0);
-      fillProgress.setValue(0);
-      setReady(false);
-    }
-  }, [disabled, fillProgress, translateX]);
   const fillWidth = fillProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <View style={[styles.slideTrack, disabled && styles.slideDisabled]} onLayout={(event) => { trackWidth.current = event.nativeEvent.layout.width; }}>
