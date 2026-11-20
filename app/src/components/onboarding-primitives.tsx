@@ -36,8 +36,10 @@ export function DominicanPhoneField({
             <Pressable
               key={item}
               accessibilityRole="radio"
+              accessibilityLabel={`Prefijo ${item}`}
               accessibilityState={{ selected: prefix === item }}
               disabled={disabled}
+              hitSlop={6}
               onPress={() => onChangeText(item + local)}
               style={[styles.prefixOption, prefix === item && styles.prefixSelected]}>
               <Text style={[styles.prefixText, prefix === item && styles.prefixTextSelected]}>{item}</Text>
@@ -82,14 +84,16 @@ export function OnboardingProgress({
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: accent }]} />
       </View>
-      <View style={styles.stepLabels}>
-        {steps.map((step, index) => (
-          <View key={step} style={styles.stepLabel}>
-            <View style={[styles.stepDot, index <= current && { backgroundColor: accent }, index === current && styles.stepDotCurrent]} />
-            <Text numberOfLines={1} style={[styles.stepText, index === current && styles.stepTextCurrent]}>{step}</Text>
-          </View>
-        ))}
-      </View>
+      {steps.length <= 4 ? (
+        <View style={styles.stepLabels}>
+          {steps.map((step, index) => (
+            <View key={step} style={styles.stepLabel}>
+              <View style={[styles.stepDot, index <= current && { backgroundColor: accent }, index === current && styles.stepDotCurrent]} />
+              <Text numberOfLines={1} style={[styles.stepText, index === current && styles.stepTextCurrent]}>{step}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -132,16 +136,16 @@ export function OnboardingChoiceCard({
 const styles = StyleSheet.create({
   field: { gap: 8 },
   label: { color: '#344054', fontSize: 12, fontWeight: '800' },
-  phoneShell: { minHeight: 58, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, borderWidth: 1, borderColor: '#DCE5EC', borderRadius: 16, backgroundColor: '#FFFFFF', gap: 8 },
+  phoneShell: { minHeight: 60, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, borderWidth: 1, borderColor: '#DCE5EC', borderRadius: 16, backgroundColor: '#FFFFFF', gap: 6 },
   phoneShellError: { borderColor: '#B42318' },
-  country: { paddingRight: 8, borderRightWidth: 1, borderRightColor: '#E4EAF0' },
-  countryCode: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
+  country: { paddingRight: 6, borderRightWidth: 1, borderRightColor: '#E4EAF0' },
+  countryCode: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
   prefixGroup: { flexDirection: 'row', gap: 3 },
-  prefixOption: { paddingHorizontal: 6, paddingVertical: 7, borderRadius: 8 },
+  prefixOption: { minWidth: 30, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderRadius: 8 },
   prefixSelected: { backgroundColor: '#E8F0F7' },
   prefixText: { color: '#718096', fontSize: 10, fontWeight: '700' },
   prefixTextSelected: { color: KlippColors.navy, fontWeight: '900' },
-  phoneInput: { flex: 1, minWidth: 60, color: KlippColors.navy, fontSize: 16, fontWeight: '600', paddingVertical: 10 },
+  phoneInput: { flex: 1, minWidth: 48, color: KlippColors.navy, fontSize: 16, fontWeight: '600', paddingVertical: 10 },
   helper: { color: '#718096', fontSize: 11, lineHeight: 16 },
   error: { color: '#B42318', fontSize: 12, lineHeight: 17 },
   disabled: { opacity: 0.55 },

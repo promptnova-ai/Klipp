@@ -1,0 +1,84 @@
+name: Klipp mobile quality
+
+on:
+  push:
+    branches:
+      - 'feat/**'
+    paths:
+      - 'app/**'
+      - '.github/workflows/mobile-quality.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+    paths:
+      - 'app/**'
+      - '.github/workflows/mobile-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile-quality:
+    name: TypeScript, lint and native bundles
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Dependency audit
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e 'const report=require("./npm-audit.json"); const counts=report.metadata?.vulnerabilities ?? {}; console.log("Dependency audit:", JSON.stringify(counts)); for (const [name, issue] of Object.entries(report.vulnerabilities ?? {})) console.log(name + ": " + issue.severity + "; direct=" + issue.isDirect + "; fix=" + JSON.stringify(issue.fixAvailable));'
+
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-dependency-audit
+          path: app/npm-audit.json
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: TypeScript
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Export iOS JavaScript bundle
+        run: npx expo export --platform ios --output-dir dist-ios
+
+      - name: Export Android JavaScript bundle
+        run: npx expo export --platform android --output-dir dist-android
+
+      - name: Upload iOS and Android JavaScript bundles
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-mobile-js-bundles
+          path: |
+            app/dist-ios
+            app/dist-android
+          if-no-files-found: error
+          retention-days: 7

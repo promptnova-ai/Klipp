@@ -712,3 +712,22 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 6. Comprobar que el indicador de progreso no desborda el ancho en móviles estrechos.
 
 **Resultado esperado:** Los patrones de progreso, elección y teléfono se reutilizan de forma coherente. La interfaz funciona en tamaños compactos sin recortes ni pérdida de estado. La validación visual en dispositivos debe registrarse por separado.
+
+
+### QA-UI-07 — Adaptación integral iPhone y Android
+
+**Prioridad:** Crítica  
+**Precondición:** Builds de QA instalados en simulador iOS y emulador Android, además de al menos un dispositivo físico de cada plataforma.
+
+1. Ejecutar los flujos Cliente y Klipp PRO en iPhone compacto (375 pt de ancho), iPhone estándar (390 pt) y iPhone grande (430 pt); incluir un equipo con notch o Dynamic Island.
+2. Ejecutar los mismos flujos en Android con anchos lógicos de 320, 360, 393 y 412 dp, usando al menos dos densidades/fabricantes.
+3. Comprobar login, registro, onboarding PRO, inicio, búsqueda/reserva, seguimiento, reservas, agenda, solicitudes, perfil y notificaciones.
+4. Verificar que ningún contenido queda bajo la barra de estado, notch, Dynamic Island, cámara frontal, gesto inferior o barra de navegación Android.
+5. Abrir el teclado en todos los formularios: nombre, correo, teléfono, contraseña, dirección, chat y soporte. Comprobar que el campo activo y la acción principal siguen visibles y que el teclado no tapa el contenido.
+6. Repetir con escalado de texto del sistema al 100 %, 130 % y 150 %; revisar títulos, etiquetas, botones, chips, tarjetas y navegación inferior.
+7. Verificar la barra inferior en 320/360 dp: cuatro destinos y acción central visibles, sin solapamiento ni recorte; comprobar que se oculta con el teclado.
+8. Probar gestos de atrás de iOS y Android, permisos de ubicación, mapas, cámara/archivos si aplica, notificaciones push y retorno desde segundo plano.
+9. Repetir con conexión lenta, errores de red y carga larga; comprobar que los estados de carga/error no provocan desbordamientos ni bloquean la navegación.
+10. Registrar capturas y resultados por dispositivo, sistema operativo, versión de build y tamaño lógico; cualquier fallo debe quedar asociado a pantalla y pasos reproducibles.
+
+**Resultado esperado:** Los flujos críticos se pueden completar en iPhone y Android sin recortes, solapamientos, pérdida de datos ni controles inaccesibles. No se marca aprobado por inspección de código: se exige evidencia visual y funcional en ambas plataformas.

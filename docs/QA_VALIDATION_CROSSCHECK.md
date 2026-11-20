@@ -1,13 +1,13 @@
 # Klipp — Cruce de validación QA
 
 **Corte:** 20 de noviembre de 2026  
-**Rama:** `feat/uber-airbnb-onboarding-rebuild-20261120`  
+**Rama:** `feat/ios-android-responsive-pass-20261120`  
 **Propósito:** contrastar la lista manual de `QA_SCENARIOS.md` con el trabajo realizado en la rama.  
 **Regla de evidencia:** implementar código o documentar un escenario no equivale a ejecutar una prueba. Ningún caso se marca como aprobado sin evidencia reproducible del resultado.
 
 ## Resultado del cruce
 
-Se identifican **52 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron estáticamente los cambios del onboarding progresivo cliente/PRO y sus componentes compartidos. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
+Se identifican **53 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron estáticamente los cambios del onboarding progresivo cliente/PRO, la navegación móvil, las safe areas y el comportamiento del teclado. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
 
 | ID | Escenario | Estado verificable |
 |---|---|---|
@@ -64,6 +64,7 @@ Se identifican **52 escenarios** en `QA_SCENARIOS.md`. En esta iteración se rev
 | QA-UI-04 | Login y registro de cliente y profesional | Recorrido cliente de tres pasos y entrada dominicana implementados; pruebas E2E pendientes. OTP SMS real pendiente de configuración del proveedor. |
 | QA-UI-05 | Onboarding profesional progresivo de siete pasos | Refactor de interfaz y validaciones implementado; prueba E2E transaccional pendiente. |
 | QA-UI-06 | Componentes compartidos de onboarding y accesibilidad | Componentes nativos implementados; validación en dispositivos y lectores de pantalla pendiente. |
+| QA-UI-07 | Adaptación integral iPhone y Android | Ajustes responsive/safe-area/teclado aplicados en navegación y onboarding; ejecución en simuladores y dispositivos físicos pendiente. |
 
 ## Hallazgos de revisión por disciplina
 
@@ -107,3 +108,25 @@ Se revisaron los componentes `auth-screen.tsx` y `pro-registration-screen.tsx`. 
 - Actualiza QA-UI-04 y añade QA-UI-05/06.
 
 **Limitaciones verificables:** la captura de teléfono no es una verificación SMS. La autenticación sigue siendo correo/contraseña con confirmación por correo; el proveedor SMS y OTP real no están configurados ni probados. No se han ejecutado TypeScript, lint, pruebas E2E ni pruebas visuales/dispositivo en esta revisión.
+
+
+## Adaptación móvil iOS / Android — 20/11/2026
+
+- La navegación Cliente y PRO aplica safe areas superiores y laterales a todas las rutas y gestión del teclado a nivel de layout.
+- Se eliminan safe areas duplicadas en seguimiento y notificaciones para evitar márgenes dobles.
+- La barra inferior adapta objetivos y espaciado para anchos inferiores a 360 dp.
+- Login y onboarding PRO ajustan teclado, espaciado y cabeceras para pantallas compactas.
+- El indicador del onboarding no muestra siete etiquetas comprimidas en una sola fila; mantiene paso actual y progreso.
+- Los controles del teléfono dominicano reducen su huella horizontal y mantienen áreas táctiles ampliadas.
+
+**Pendiente:** build iOS/Android, TypeScript/lint, pruebas en iPhone y Android físicos, escalado de texto, teclado y capturas. Ninguna validación de dispositivo se considera aprobada todavía.
+
+
+### Revisión adicional de pantallas críticas — 20/11/2026
+
+- Solicitud entrante PRO: el modal de pantalla completa ahora respeta safe areas superior e inferior; se reduce el padding superior duplicado del encabezado.
+- Perfil PRO: la selección de día puede envolver a varias filas en pantallas estrechas; los controles tienen altura mínima de 44 pt/dp y semántica de selección única.
+- Nueva reserva cliente: se eliminan márgenes horizontales anidados que reducían innecesariamente el ancho útil en móviles compactos. Las fechas siguen en una lista horizontal desplazable.
+- Navegación inferior: las etiquetas en anchuras compactas suben a 10 px para mejorar legibilidad; verificar visualmente que caben en 320 dp.
+
+**Pendiente de evidencia:** no hay simulador, dispositivo ni preview ejecutada. Estas correcciones son revisión estática de layout, no validación visual.

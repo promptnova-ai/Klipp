@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
+// Metro resolves the platform-specific .native.tsx and .web.tsx implementations.
+// eslint-disable-next-line import/no-unresolved
 import { AdminOperationsMap } from '@/components/admin-operations-map';
 import { supabase } from '../../lib/supabase';
 
@@ -98,8 +100,8 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   const [reassignmentNotice, setReassignmentNotice] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
-    setError(null);
     const { data, error: requestError } = await supabase.rpc('admin_list_operational_bookings', { p_limit: 150 });
+    setError(null);
     if (requestError) {
       setError(requestError.message);
       return;
@@ -110,9 +112,8 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    void loadBookings().finally(() => { if (active) setLoading(false); });
-    const interval = setInterval(() => { void loadBookings(); }, 15000);
+    void Promise.resolve().then(loadBookings).finally(() => { if (active) setLoading(false); });
+    const interval = setInterval(() => { void Promise.resolve().then(loadBookings); }, 15000);
     return () => { active = false; clearInterval(interval); };
   }, [loadBookings]);
 
@@ -255,7 +256,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
         } },
       ],
     );
-  }, [interventionReason, loadBookings, openTimeline]);
+  }, [interventionReason, loadBookings]);
 
   const attentionCount = useMemo(() => bookings.filter((item) => attentionReason(item)).length, [bookings]);
   const visibleBookings = useMemo(() => bookings.filter((item) => {

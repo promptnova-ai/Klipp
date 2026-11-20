@@ -78,6 +78,7 @@ function verificationLabel(status: VerificationStatus) {
 export function ProProfileScreen() {
   const { session, signOut } = useAuth();
   const userId = session?.user.id;
+  const onboardingDraft = session?.user.user_metadata?.pro_onboarding;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -129,7 +130,7 @@ export function ProProfileScreen() {
     }
     setPortfolio((portfolioResult.data ?? []) as PortfolioPhoto[]);
     const savedProfile = profileResult.data as ProProfile;
-    const registrationDraft = getRegistrationDraft(session?.user.user_metadata?.pro_onboarding);
+    const registrationDraft = getRegistrationDraft(onboardingDraft);
     setProProfile(savedProfile);
     setPhone(typeof accountProfileResult.data?.phone === 'string' ? accountProfileResult.data.phone : '');
     setBio(savedProfile.bio ?? registrationDraft?.bio ?? '');
@@ -184,7 +185,7 @@ export function ProProfileScreen() {
     setSelectedServices(configuredServices.map((service) => service.service_type_id).slice(0, 1));
     setServiceDetails(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, service.details ?? {}])));
     setLoading(false);
-  }, [userId]);
+  }, [userId, onboardingDraft]);
 
   useEffect(() => {
     void Promise.resolve().then(loadProfile);
@@ -812,7 +813,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={onPress} style={[styles.choice, selected && styles.choiceSelected]}>
+    <Pressable accessibilityRole="radio" accessibilityState={{ selected }} onPress={onPress} style={[styles.choice, selected && styles.choiceSelected]}>
       <Text style={[styles.choiceText, selected && styles.choiceTextSelected]}>{label}</Text>
     </Pressable>
   );
@@ -847,8 +848,8 @@ const styles = StyleSheet.create({
   choiceList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   locationButton: { minHeight: 44, paddingHorizontal: 14, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceTeal },
   locationButtonText: { color: KlippColors.tealDark, fontSize: 14, fontWeight: '700' },
-  weekdays: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
-  choice: { minHeight: 38, paddingHorizontal: 12, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
+  weekdays: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', gap: 8 },
+  choice: { minWidth: 42, minHeight: 44, paddingHorizontal: 7, borderWidth: 1, borderColor: '#cbd7d1', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff' },
   choiceSelected: { borderColor: KlippColors.teal, backgroundColor: KlippColors.surfaceTeal },
   choiceText: { color: KlippColors.muted, fontSize: 13, fontWeight: '600' },
   choiceTextSelected: { color: KlippColors.tealDark },

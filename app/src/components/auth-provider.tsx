@@ -101,15 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     if (!session) {
-      setProfile(null);
-      setProfileError(null);
-      setLoading(false);
       return () => {
         mounted = false;
       };
     }
 
-    setLoading(true);
     void supabase
       .from('profiles')
       .select('id, role, full_name, phone, avatar_url, created_at')

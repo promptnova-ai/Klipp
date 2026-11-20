@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SymbolView } from 'expo-symbols';
 
@@ -7,44 +7,41 @@ import { supabase } from '../../lib/supabase';
 
 export function NotificationTabIcon({ color }: { color: string }) {
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [unread, setUnread] = useState(0);
 
-  const loadUnread = useCallback(async () => {
-    if (!session?.user.id) {
-      setUnread(0);
-      return;
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    async function loadUnread() {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('show_in_app', true)
+        .is('read_at', null);
+      if (active && !error) setUnread(count ?? 0);
     }
-    const { count, error } = await supabase
-      .from('notifications')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', session.user.id)
-      .eq('show_in_app', true)
-      .is('read_at', null);
-    if (!error) setUnread(count ?? 0);
-  }, [session?.user.id]);
-
-  useEffect(() => {
     void loadUnread();
-  }, [loadUnread]);
-
-  useEffect(() => {
-    if (!session?.user.id) return;
     const channel = supabase
-      .channel(`notification-tab-badge:${session.user.id}`)
+      .channel(`notification-tab-badge:${userId}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'notifications',
-        filter: `user_id=eq.${session.user.id}`,
+        filter: `user_id=eq.${userId}`,
       }, () => { void loadUnread(); })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
-  }, [session?.user.id, loadUnread]);
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
+  }, [userId]);
 
   return (
     <View style={styles.container}>
       <SymbolView name={{ ios: 'bell', android: 'notifications', web: 'notifications' }} tintColor={color} size={20} />
-      {unread > 0 && (
+      {Boolean(userId) && unread > 0 && (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{unread > 99 ? '99+' : unread}</Text>
         </View>

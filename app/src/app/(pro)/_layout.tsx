@@ -1,5 +1,6 @@
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
-import { useWindowDimensions } from 'react-native';
+import { KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoleGuard } from '@/components/role-guard';
 import { KlippTabBar, type KlippTabItem } from '@/components/klipp-tab-bar';
@@ -19,7 +20,11 @@ export default function ProLayout() {
         <TabList style={{ display: 'none' }}>
           {proTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
-        <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={{ flex: 1 }}>
+          <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
+            <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />
+          </SafeAreaView>
+        </KeyboardAvoidingView>
         <KlippTabBar items={proTabs} actionHref="/(pro)" actionLabel="Ir a solicitudes" role="pro" />
       </Tabs>
     </RoleGuard>

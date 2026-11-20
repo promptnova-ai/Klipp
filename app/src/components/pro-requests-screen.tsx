@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -41,13 +42,13 @@ export function ProRequestsScreen() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(0);
-  const [materialsConfirmed, setMaterialsConfirmed] = useState(false);
-  const [materialsError, setMaterialsError] = useState(false);
+  const [materialsConfirmedRequestId, setMaterialsConfirmedRequestId] = useState<string | null>(null);
+  const [materialsErrorRequestId, setMaterialsErrorRequestId] = useState<string | null>(null);
   const [materialsShake] = useState(() => new Animated.Value(0));
   const activeRequest = requests[0] ?? null;
+  const materialsConfirmed = Boolean(activeRequest && materialsConfirmedRequestId === activeRequest.id);
+  const materialsError = Boolean(activeRequest && materialsErrorRequestId === activeRequest.id);
   useEffect(() => {
-    setMaterialsConfirmed(false);
-    setMaterialsError(false);
     materialsShake.setValue(0);
   }, [activeRequest?.id, materialsShake]);
 
@@ -101,7 +102,7 @@ export function ProRequestsScreen() {
         if (!cancelled) void loadRequests();
       });
     return () => { cancelled = true; };
-  }, [activeRequest?.id, secondsLeft, loadRequests]);
+  }, [activeRequest, secondsLeft, loadRequests]);
 
   useEffect(() => {
     const proId = session?.user.id;
@@ -149,7 +150,7 @@ export function ProRequestsScreen() {
 
   async function respond(requestId: string, accept: boolean) {
     if (accept && !materialsConfirmed) {
-      setMaterialsError(true);
+      setMaterialsErrorRequestId(requestId);
       Vibration.vibrate(90);
       Animated.sequence([
         Animated.timing(materialsShake, { toValue: 1, duration: 55, useNativeDriver: true }),
@@ -204,7 +205,7 @@ export function ProRequestsScreen() {
         statusBarTranslucent
         onRequestClose={() => undefined}>
         {activeRequest && (
-          <View style={styles.offerScreen}>
+          <SafeAreaView style={styles.offerScreen} edges={['top', 'bottom']}>
             <View style={styles.offerHeader}>
               <Text style={styles.offerBrand}>KLIPP PRO</Text>
               <Text style={styles.offerEyebrow}>NUEVA SOLICITUD DE SERVICIO</Text>
@@ -298,8 +299,8 @@ export function ProRequestsScreen() {
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: materialsConfirmed }}
                   onPress={() => {
-                    setMaterialsConfirmed((current) => !current);
-                    setMaterialsError(false);
+                    setMaterialsConfirmedRequestId((current) => current === activeRequest.id ? null : activeRequest.id);
+                    setMaterialsErrorRequestId(null);
                     Vibration.vibrate(18);
                   }}
                   style={[styles.materialsCard, materialsError && styles.materialsCardError, materialsConfirmed && styles.materialsCardConfirmed]}>
@@ -316,6 +317,7 @@ export function ProRequestsScreen() {
               </Animated.View>
 
               <SlideToAccept
+                key={busyId === activeRequest.id || secondsLeft <= 0 ? 'blocked' : 'ready'}
                 disabled={busyId === activeRequest.id || secondsLeft <= 0}
                 label={busyId === activeRequest.id ? 'Enviando…' : secondsLeft <= 0 ? 'Solicitud expirada' : 'Desliza para aceptar'}
                 onAccept={() => void respond(activeRequest.id, true)}
@@ -327,7 +329,7 @@ export function ProRequestsScreen() {
               <Text style={styles.offerFootnote}>Para aceptar, confirma primero que llevas tus propias herramientas y materiales.</Text>
               <Text style={styles.offerFootnote}>Si otro profesional acepta primero, esta solicitud dejará de estar disponible.</Text>
             </ScrollView>
-          </View>
+          </SafeAreaView>
         )}
       </Modal>
     <ScrollView
@@ -420,13 +422,6 @@ function SlideToAccept({ disabled, label, onAccept }: { disabled: boolean; label
       ]).start();
     },
   }), [disabled, fillProgress, translateX]);
-  useEffect(() => {
-    if (disabled) {
-      translateX.setValue(0);
-      fillProgress.setValue(0);
-      setReady(false);
-    }
-  }, [disabled, fillProgress, translateX]);
   const fillWidth = fillProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
   return (
     <View style={[styles.slideTrack, disabled && styles.slideDisabled]} onLayout={(event) => { trackWidth.current = event.nativeEvent.layout.width; }}>
@@ -488,7 +483,7 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 
 const styles = StyleSheet.create({
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
+  offerHeader: { width: '100%', paddingTop: 12, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
   offerBrand: { color: '#A9F0E8', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: '#FFFFFF', fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
   countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.gold },
