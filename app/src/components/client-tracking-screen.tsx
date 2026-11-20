@@ -250,12 +250,9 @@ export function ClientTrackingScreen() {
         body: { bookingId: booking.id },
       });
       if (!active) return;
-      if (routeError || !data || typeof data.etaMinutes !== 'number') {
-        setRouteEtaMinutes(null);
-        setRouteDistanceMeters(null);
-        setRoutePolyline(null);
-        return;
-      }
+      // Keep the last successful route while a refresh is throttled or temporarily unavailable.
+      // The server owns the route origin; GPS updates must not restart this billable request loop.
+      if (routeError || !data || typeof data.etaMinutes !== 'number') return;
       setRouteEtaMinutes(data.etaMinutes);
       setRouteDistanceMeters(typeof data.distanceMeters === 'number' ? data.distanceMeters : null);
       setRoutePolyline(typeof data.encodedPolyline === 'string' ? data.encodedPolyline : null);
@@ -268,7 +265,7 @@ export function ClientTrackingScreen() {
       active = false;
       clearInterval(interval);
     };
-  }, [booking?.id, booking?.status, professionalCoordinate?.latitude, professionalCoordinate?.longitude]);
+  }, [booking?.id, booking?.status]);
 
   const destination = booking && typeof booking.client_lat === 'number' && typeof booking.client_lng === 'number'
     ? { latitude: booking.client_lat, longitude: booking.client_lng }
