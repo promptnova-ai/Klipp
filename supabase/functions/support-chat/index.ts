@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
     let handedOff = requiresHuman(conversation.category, message);
 
     if (aiKey && aiModel && !handedOff) {
-      const [{ data: booking }, { data: knowledge }, { data: history }] = await Promise.all([
+      const [{ data: booking }, { data: matchedKnowledge }, { data: history }] = await Promise.all([
         conversation.booking_id
           ? userClient.from("bookings")
               .select("status, scheduled_start, service_types(name)")
@@ -146,6 +146,22 @@ Deno.serve(async (req: Request) => {
           .order("created_at", { ascending: false })
           .limit(8),
       ]);
+      const categoryFallback: Record<string, string> = {
+        booking: "reservas",
+        professional: "profesionales",
+        payment: "pagos",
+        safety: "privacidad",
+        other: "soporte",
+      };
+      let knowledge = matchedKnowledge ?? [];
+      if (knowledge.length === 0) {
+        const { data: fallbackKnowledge } = await userClient.from("support_knowledge_articles")
+          .select("title, content, category")
+          .eq("published", true)
+          .eq("category", categoryFallback[conversation.category] ?? "soporte")
+          .limit(3);
+        knowledge = fallbackKnowledge ?? [];
+      }
 
       const safeHistory = (history ?? []).reverse().map((entry) => ({
         role: entry.sender_type === "admin" ? "support_agent" : entry.sender_type === "assistant" ? "assistant" : "user",
