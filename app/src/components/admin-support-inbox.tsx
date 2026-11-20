@@ -49,8 +49,6 @@ export function AdminSupportInbox() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadCases = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     const { data, error: queryError } = await supabase
       .from('support_conversations')
       .select('id, booking_id, category, subject, status, handoff_requested, resolution_note, created_at, updated_at')
@@ -60,10 +58,9 @@ export function AdminSupportInbox() {
     else {
       const rows = (data ?? []) as SupportCase[];
       setCases(rows);
-      if (selectedId && !rows.some((row) => row.id === selectedId)) setSelectedId(null);
     }
     setLoading(false);
-  }, [selectedId]);
+  }, []);
 
   const loadArticles = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -77,7 +74,7 @@ export function AdminSupportInbox() {
   useEffect(() => { void loadCases(); void loadArticles(); }, [loadCases, loadArticles]);
 
   useEffect(() => {
-    if (!selectedId) { setMessages([]); return; }
+    if (!selectedId) return;
     let active = true;
     void supabase.from('support_messages')
       .select('id, sender_type, content, created_at')

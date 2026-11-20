@@ -64,6 +64,8 @@ jobs:
         run: npx eslint src/components/notifications-screen.tsx src/components/client-bookings-screen.tsx src/components/pro-agenda-screen.tsx src/lib/push-notifications.ts src/lib/push-notifications.web.ts
       - name: Lint client tracking and lifecycle screen
         run: npx eslint src/components/client-tracking-screen.tsx
+      - name: Lint support and admin support screens
+        run: npx eslint src/components/client-support-screen.tsx src/components/admin-support-inbox.tsx
       - name: Lint shared UI primitives and role-aware header
         run: npx eslint src/components/ui-primitives.tsx src/components/brand-screen-header.tsx
       - name: Run TypeScript
@@ -96,3 +98,5 @@ jobs:
         run: deno check supabase/functions/stripe-create-payment-intent/index.ts
       - name: Type-check Stripe webhook handler
         run: deno check supabase/functions/stripe-webhook/index.ts
+      - name: Type-check support chat assistant
+        run: deno check supabase/functions/support-chat/index.ts

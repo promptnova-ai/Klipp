@@ -54,7 +54,7 @@ export function ClientSupportScreen() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   useEffect(() => {
-    if (!selectedCaseId) { setMessages([]); return; }
+    if (!selectedCaseId) return;
     let active = true;
     void supabase.from('support_messages')
       .select('id, sender_type, content, created_at')
@@ -93,6 +93,7 @@ export function ClientSupportScreen() {
       return;
     }
     const initialMessage = description.trim();
+    setMessages([]);
     setSelectedCaseId(conversation.id);
     setChatDraft(initialMessage);
     const { error: chatError } = await supabase.functions.invoke('support-chat', {
@@ -193,7 +194,7 @@ export function ClientSupportScreen() {
 
         <View style={styles.casesHeader}><Text style={styles.sectionTitle}>Tus consultas recientes</Text><Pressable onPress={() => void load()}><Text style={styles.refresh}>Actualizar</Text></Pressable></View>
         {loading ? <ActivityIndicator color={KlippColors.blue} /> : cases.length === 0 ? <Text style={styles.emptyText}>Todavía no has abierto ninguna consulta.</Text> : cases.map((item) => (
-          <Pressable key={item.id} onPress={() => { setSelectedCaseId(item.id); setNotice(null); }} style={[styles.caseRow, selectedCaseId === item.id && styles.caseSelected]}>
+          <Pressable key={item.id} onPress={() => { setMessages([]); setSelectedCaseId(item.id); setNotice(null); }} style={[styles.caseRow, selectedCaseId === item.id && styles.caseSelected]}>
             <View style={styles.caseCopy}><Text style={styles.caseTitle}>{item.subject}</Text><Text style={styles.caseDate}>{new Date(item.created_at).toLocaleDateString('es-DO')} · {item.category}</Text></View>
             <View style={[styles.caseStatus, item.status === 'resolved' && styles.caseResolved, item.status === 'in_review' && styles.caseReview]}><Text style={styles.caseStatusText}>{item.status === 'resolved' ? 'Resuelta' : item.status === 'in_review' ? 'En revisión' : 'Abierta'}</Text></View>
           </Pressable>
