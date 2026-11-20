@@ -601,7 +601,7 @@ export function ProProfileScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
-      <KlippCard style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
+      <KlippCard style={styles.statusBanner}>
         <View style={styles.statusRow}>
           <Text style={styles.statusTitle}>Estado de tu cuenta</Text>
           <KlippBadge
