@@ -96,6 +96,8 @@ jobs:
         run: deno check supabase/functions/booking-route-eta/index.ts
       - name: Type-check Stripe PaymentIntent endpoint
         run: deno check supabase/functions/stripe-create-payment-intent/index.ts
+      - name: Type-check Stripe Checkout Session endpoint
+        run: deno check supabase/functions/stripe-create-checkout-session/index.ts
       - name: Type-check Stripe webhook handler
         run: deno check supabase/functions/stripe-webhook/index.ts
       - name: Type-check support chat assistant
