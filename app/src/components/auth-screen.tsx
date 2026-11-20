@@ -65,7 +65,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const compact = width < 600;\n  const narrow = width < 370;
+  const compact = width < 600;
+  const narrow = width < 370;
   const { session, signIn, signUp, authError } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
@@ -284,7 +285,8 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 28, paddingVertical: 20 },
   scrollCompact: { paddingHorizontal: 18, paddingVertical: 12 },
   shell: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1 },
-  topBar: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, gap: 8 },\n  topBarNarrow: { minHeight: 52, marginBottom: 16 },
+  topBar: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, gap: 8 },
+  topBarNarrow: { minHeight: 52, marginBottom: 16 },
   backButton: { width: 42, height: 42, justifyContent: 'center' },
   backArrow: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 'auto' },
@@ -302,13 +304,15 @@ const styles = StyleSheet.create({
   introTag: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   introDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: KlippColors.teal },
   introTagText: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  headline: { color: KlippColors.navy, fontSize: 34, lineHeight: 41, fontWeight: '900', letterSpacing: -0.8, maxWidth: 470 },\n  headlineCompact: { fontSize: 29, lineHeight: 35, letterSpacing: -0.55 },
+  headline: { color: KlippColors.navy, fontSize: 34, lineHeight: 41, fontWeight: '900', letterSpacing: -0.8, maxWidth: 470 },
+  headlineCompact: { fontSize: 29, lineHeight: 35, letterSpacing: -0.55 },
   introText: { color: '#526579', fontSize: 15, lineHeight: 23, maxWidth: 430 },
   valueList: { gap: 15, marginTop: 10 },
   valueItem: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   valueNumber: { color: KlippColors.tealDark, fontSize: 11, fontWeight: '900' },
   valueText: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
-  formCard: { width: '100%', maxWidth: 500, alignSelf: 'center', padding: 28, borderRadius: 24, borderWidth: 1, borderColor: '#E0E7EF', backgroundColor: '#FFFFFF', gap: 22, shadowColor: '#153B66', shadowOpacity: 0.07, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 4 },\n  formCardCompact: { padding: 18, borderRadius: 20, gap: 18 },
+  formCard: { width: '100%', maxWidth: 500, alignSelf: 'center', padding: 28, borderRadius: 24, borderWidth: 1, borderColor: '#E0E7EF', backgroundColor: '#FFFFFF', gap: 22, shadowColor: '#153B66', shadowOpacity: 0.07, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 4 },
+  formCardCompact: { padding: 18, borderRadius: 20, gap: 18 },
   formHeading: { gap: 7 },
   eyebrow: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   formTitle: { color: KlippColors.navy, fontSize: 27, lineHeight: 33, fontWeight: '900', letterSpacing: -0.5 },
