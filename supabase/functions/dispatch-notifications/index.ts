@@ -25,6 +25,8 @@ const PRIVATE_LOCATION_KEYS = new Set([
   "address", "addresstext", "street", "references", "referencestext",
   "landmark", "landmarknotes", "location", "coordinates", "geolocation",
   "latitude", "longitude", "lat", "lng", "clientlat", "clientlng",
+  "clientlocation", "formattedaddress", "fulladdress", "addressline",
+  "placeid", "postalcode", "unitnumber",
 ]);
 
 function sanitizePrivateLocationFields(value: unknown): unknown {
