@@ -7,7 +7,7 @@
 
 ## Resultado del cruce
 
-Se identifican **50 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron los cambios de tarjetas y recuperación de errores en código. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
+Se identifican **51 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron los cambios de tarjetas y recuperación de errores en código. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
 
 | ID | Escenario | Estado verificable |
 |---|---|---|
@@ -61,6 +61,7 @@ Se identifican **50 escenarios** en `QA_SCENARIOS.md`. En esta iteración se rev
 | QA-UI-01 | Recuperación de errores en bandejas de trabajo | Implementación revisada en código; prueba de red y recuperación pendiente. |
 | QA-UI-02 | Liberación de controles después de fallos RPC | Implementación revisada en código; pruebas de fallo RPC pendientes. |
 | QA-UI-03 | Consistencia de fichas de servicio, profesionales y reservas | Componentes implementados y escenario añadido; validación visual/dispositivo pendiente. |
+| QA-UI-04 | Login y registro de cliente y profesional | Cambios visuales y validación de contraseña implementados; pruebas E2E y OTP telefónico pendientes. |
 
 ## Hallazgos de revisión por disciplina
 
