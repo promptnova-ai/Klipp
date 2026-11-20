@@ -106,7 +106,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    setLoading(true);
     void supabase
       .from('profiles')
       .select('id, role, full_name, phone, avatar_url, created_at')
