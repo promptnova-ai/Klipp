@@ -64,15 +64,15 @@ create policy support_conversations_client_create on public.support_conversation
 drop policy if exists support_conversations_admin_read on public.support_conversations;
 create policy support_conversations_admin_read on public.support_conversations
   for select to authenticated using (
-    exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    public.has_admin_permission('support.manage')
   );
 
 drop policy if exists support_conversations_admin_update on public.support_conversations;
 create policy support_conversations_admin_update on public.support_conversations
   for update to authenticated using (
-    exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    public.has_admin_permission('support.manage')
   ) with check (
-    exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    public.has_admin_permission('support.manage')
   );
 
 drop policy if exists support_messages_participant_read on public.support_messages;
@@ -82,7 +82,7 @@ create policy support_messages_participant_read on public.support_messages
       select 1 from public.support_conversations c
       where c.id = support_messages.conversation_id
         and (c.client_id = (select auth.uid())
-          or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin'))
+          or public.has_admin_permission('support.manage'))
     )
   );
 
@@ -104,7 +104,7 @@ create policy support_messages_admin_create on public.support_messages
   for insert to authenticated with check (
     sender_type = 'admin'
     and sender_id = (select auth.uid())
-    and exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    and public.has_admin_permission('support.manage')
     and exists (select 1 from public.support_conversations c where c.id = support_messages.conversation_id)
   );
 
@@ -112,15 +112,15 @@ drop policy if exists support_knowledge_published_read on public.support_knowled
 create policy support_knowledge_published_read on public.support_knowledge_articles
   for select to authenticated using (
     published = true
-    or exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    or public.has_admin_permission('support.manage')
   );
 
 drop policy if exists support_knowledge_admin_manage on public.support_knowledge_articles;
 create policy support_knowledge_admin_manage on public.support_knowledge_articles
   for all to authenticated using (
-    exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    public.has_admin_permission('support.manage')
   ) with check (
-    exists (select 1 from public.profiles p where p.id = (select auth.uid()) and p.role = 'admin')
+    public.has_admin_permission('support.manage')
   );
 
 grant select, insert on public.support_conversations to authenticated;

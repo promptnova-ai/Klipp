@@ -214,7 +214,7 @@ export function ProRequestsScreen() {
                 {!!activeRequest.pricing_tier_label && <Text style={styles.detailValue}>{activeRequest.pricing_tier_label}</Text>}
                 <View style={styles.detailDivider} />
                 <Text style={styles.detailLabel}>DÓNDE</Text>
-                <Text style={styles.detailValue}>{activeRequest.address_text || 'Ubicación compartida en la reserva'}</Text>
+                <Text style={styles.detailValue}>{activeRequest.address_text || 'Zona aproximada'}</Text>
                 {!!activeRequest.landmark_notes && <Text style={styles.detailMuted}>Referencia: {activeRequest.landmark_notes}</Text>}
                 <View style={styles.detailDivider} />
                 <Text style={styles.detailLabel}>CUÁNDO</Text>
@@ -225,8 +225,8 @@ export function ProRequestsScreen() {
               <View style={styles.mapCard}>
                 <View style={styles.mapHeading}>
                   <View style={styles.mapHeadingCopy}>
-                    <Text style={styles.detailLabel}>PUNTO DEL SERVICIO</Text>
-                    <Text style={styles.mapAddress}>{activeRequest.address_text || 'Ubicación del cliente'}</Text>
+                    <Text style={styles.detailLabel}>ZONA DEL SERVICIO</Text>
+                    <Text style={styles.mapAddress}>{activeRequest.address_text || 'Zona aproximada'}</Text>
                     {!!activeRequest.landmark_notes && <Text style={styles.detailMuted}>Referencia: {activeRequest.landmark_notes}</Text>}
                   </View>
                   <View style={styles.mapPinBadge}><Text style={styles.mapPinGlyph}>⌖</Text></View>
@@ -254,8 +254,8 @@ export function ProRequestsScreen() {
                   </MapView>
                 ) : (
                   <View style={styles.mapUnavailable}>
-                    <Text style={styles.mapUnavailableTitle}>{Platform.OS === 'web' ? 'Mapa disponible en la app móvil' : 'Ubicación exacta no disponible'}</Text>
-                    <Text style={styles.mapUnavailableText}>{Platform.OS === 'web' ? 'Consulta el punto del servicio desde Klipp PRO en tu móvil.' : 'El cliente no ha compartido coordenadas para esta solicitud. Usa la dirección y referencia indicadas.'}</Text>
+                    <Text style={styles.mapUnavailableTitle}>{Platform.OS === 'web' ? 'Mapa disponible en la app móvil' : 'Dirección protegida hasta aceptar'}</Text>
+                    <Text style={styles.mapUnavailableText}>{Platform.OS === 'web' ? 'Consulta el punto del servicio desde Klipp PRO en tu móvil.' : 'La dirección exacta y las referencias se mostrarán después de aceptar el servicio.'}</Text>
                   </View>
                 )}
                 {activeRequest.client_lat != null && activeRequest.client_lng != null && (
