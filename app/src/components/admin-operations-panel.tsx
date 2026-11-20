@@ -100,8 +100,8 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
   const [reassignmentNotice, setReassignmentNotice] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
-    setError(null);
     const { data, error: requestError } = await supabase.rpc('admin_list_operational_bookings', { p_limit: 150 });
+    setError(null);
     if (requestError) {
       setError(requestError.message);
       return;
