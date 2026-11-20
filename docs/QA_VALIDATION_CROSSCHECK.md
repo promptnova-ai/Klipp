@@ -120,3 +120,13 @@ Se revisaron los componentes `auth-screen.tsx` y `pro-registration-screen.tsx`. 
 - Los controles del teléfono dominicano reducen su huella horizontal y mantienen áreas táctiles ampliadas.
 
 **Pendiente:** build iOS/Android, TypeScript/lint, pruebas en iPhone y Android físicos, escalado de texto, teclado y capturas. Ninguna validación de dispositivo se considera aprobada todavía.
+
+
+### Revisión adicional de pantallas críticas — 20/11/2026
+
+- Solicitud entrante PRO: el modal de pantalla completa ahora respeta safe areas superior e inferior; se reduce el padding superior duplicado del encabezado.
+- Perfil PRO: la selección de día puede envolver a varias filas en pantallas estrechas; los controles tienen altura mínima de 44 pt/dp y semántica de selección única.
+- Nueva reserva cliente: se eliminan márgenes horizontales anidados que reducían innecesariamente el ancho útil en móviles compactos. Las fechas siguen en una lista horizontal desplazable.
+- Navegación inferior: las etiquetas en anchuras compactas suben a 10 px para mejorar legibilidad; verificar visualmente que caben en 320 dp.
+
+**Pendiente de evidencia:** no hay simulador, dispositivo ni preview ejecutada. Estas correcciones son revisión estática de layout, no validación visual.
