@@ -117,6 +117,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<ExtractRole>('client');
   const [busy, setBusy] = useState(false);
@@ -140,6 +141,10 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     }
     if (isRegister && password.length < 8) {
       setError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (isRegister && password !== confirmPassword) {
+      setError('Las contraseñas no coinciden.');
       return;
     }
     setBusy(true);
@@ -178,12 +183,15 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               <View style={[styles.main, wide && styles.mainWide]}>
               <AuthShowcase compact={!wide} />
               <View style={[styles.formCard, wide && styles.formCardWide]}>
-                <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'QUÉ BUENO VERTE'}</Text>
+                <View style={styles.formIntroRow}>
+                  <Text style={styles.eyebrow}>{isRegister ? 'ÚNETE A KLIPP' : 'TU CUENTA KLIPP'}</Text>
+                  <View style={styles.formModePill}><Text style={styles.formModeText}>{isRegister ? 'REGISTRO' : 'ACCESO'}</Text></View>
+                </View>
                 <Text style={styles.title}>{isRegister ? 'Crea tu cuenta' : 'Inicia sesión'}</Text>
                 <Text style={styles.subtitle}>
                   {isRegister
-                    ? 'Crea tu cuenta para descubrir y reservar servicios.'
-                    : 'Accede para gestionar tus reservas y servicios.'}
+                    ? 'Completa tus datos para empezar a reservar servicios a domicilio.'
+                    : 'Entra para consultar tus reservas y continuar donde lo dejaste.'}
                 </Text>
 
                 {isRegister && (
@@ -202,6 +210,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                       <View style={styles.roleOptions}>
                         <Pressable
                           accessibilityRole="radio"
+                          accessibilityLabel="Quiero contratar servicios como cliente"
                           accessibilityState={{ selected: role === 'client' }}
                           onPress={() => setRole('client')}
                           style={[styles.roleOption, role === 'client' && styles.roleOptionSelected]}>
@@ -217,8 +226,9 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                           </View>
                         </Pressable>
                         <Pressable
-                          accessibilityRole="radio"
-                          accessibilityState={{ selected: false }}
+                          accessibilityRole="button"
+                          accessibilityLabel="Registrarme como profesional"
+                          accessibilityHint="Abre el registro profesional de cuatro pasos"
                           onPress={() => router.push('/(auth)/pro-register')}
                           style={styles.roleOption}>
                           <View style={styles.roleIcon}>
@@ -254,7 +264,20 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   secureTextEntry={!showPassword}
                   value={password}
                   mode="light"
+                  helper={isRegister ? 'Usa al menos 8 caracteres.' : undefined}
                 />
+                {isRegister && (
+                  <KlippField
+                    label="Confirmar contraseña"
+                    autoComplete="new-password"
+                    onChangeText={setConfirmPassword}
+                    placeholder="Repite tu contraseña"
+                    secureTextEntry={!showPassword}
+                    value={confirmPassword}
+                    mode="light"
+                    error={confirmPassword && password !== confirmPassword ? 'Las contraseñas no coinciden.' : undefined}
+                  />
+                )}
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
@@ -279,7 +302,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   label={isRegister ? 'Crear cuenta' : 'Entrar'}
                   onPress={() => void handleSubmit()}
                   loading={busy}
-                  disabled={!email.trim() || !password || (isRegister && !fullName.trim())}
+                  disabled={!email.trim() || !password || (isRegister && (!fullName.trim() || !confirmPassword || password !== confirmPassword))}
                   mode="light"
                 />
 
@@ -314,23 +337,23 @@ const styles = StyleSheet.create({
   location: { color: KlippColors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
   main: { gap: 18 },
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
-  showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippTokens.color.light.border, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippTokens.color.light.surface, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
-  showcaseCompact: { flexDirection: 'column', padding: 22 },
+  showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippColors.navyDeep, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippColors.navy, shadowColor: KlippColors.navy, shadowOpacity: 0.14, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 4 },
+  showcaseCompact: { flexDirection: 'column', padding: 20, gap: 12 },
   showcaseCopy: { flex: 1, minWidth: 0, gap: 13, justifyContent: 'center' },
   showcaseBrandLine: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  showcaseMark: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: KlippColors.blue },
-  showcaseMarkLetter: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
-  showcaseBrand: { color: KlippColors.navy, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
-  showcaseRegion: { color: KlippColors.muted, fontSize: 8, fontWeight: '800', letterSpacing: 0.7, marginLeft: 'auto' },
-  showcaseKicker: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
-  showcaseTitle: { color: KlippColors.navy, fontSize: 30, lineHeight: 37, fontWeight: '900', maxWidth: 470, letterSpacing: -0.7 },
-  showcaseDescription: { color: KlippColors.muted, fontSize: 14, lineHeight: 22, maxWidth: 470 },
+  showcaseMark: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: KlippColors.teal },
+  showcaseMarkLetter: { color: KlippColors.navyDeep, fontSize: 17, fontWeight: '900' },
+  showcaseBrand: { color: KlippColors.white, fontSize: 14, fontWeight: '900', letterSpacing: 1.5 },
+  showcaseRegion: { color: '#B8D0E3', fontSize: 8, fontWeight: '800', letterSpacing: 0.7, marginLeft: 'auto' },
+  showcaseKicker: { color: KlippColors.gold, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
+  showcaseTitle: { color: KlippColors.white, fontSize: 30, lineHeight: 37, fontWeight: '900', maxWidth: 470, letterSpacing: -0.7 },
+  showcaseDescription: { color: '#D1DFEA', fontSize: 14, lineHeight: 22, maxWidth: 470 },
   showcaseHighlights: { gap: 12, marginTop: 8 },
   showcaseHighlight: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  showcaseHighlightIcon: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: KlippColors.surfaceTeal },
+  showcaseHighlightIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: 'rgba(22,184,173,0.14)', borderWidth: 1, borderColor: 'rgba(22,184,173,0.24)' },
   showcaseHighlightCopy: { flex: 1, gap: 2 },
-  showcaseHighlightTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
-  showcaseHighlightDetail: { color: KlippColors.muted, fontSize: 11, lineHeight: 15 },
+  showcaseHighlightTitle: { color: KlippColors.white, fontSize: 12, fontWeight: '800' },
+  showcaseHighlightDetail: { color: '#B8CAD9', fontSize: 11, lineHeight: 15 },
   bookingPreview: { width: 230, alignSelf: 'center', padding: 17, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.canvas },
   previewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 15 },
   previewEyebrow: { color: KlippColors.muted, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
@@ -354,8 +377,11 @@ const styles = StyleSheet.create({
   previewTimelineDetail: { color: KlippColors.muted, fontSize: 8, lineHeight: 12, marginBottom: 7 },
   previewFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 11, borderTopWidth: 1, borderTopColor: KlippColors.border },
   previewFooterText: { color: KlippColors.muted, fontSize: 8, fontWeight: '700' },
-  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 13, padding: 25, borderWidth: 1, borderColor: KlippTokens.color.light.border, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippTokens.color.light.surface, shadowColor: KlippColors.navy, shadowOpacity: 0.045, shadowOffset: { width: 0, height: 12 }, shadowRadius: 26, elevation: 3 },
+  formCard: { width: '100%', maxWidth: 480, alignSelf: 'center', gap: 15, padding: 25, borderWidth: 1, borderColor: KlippTokens.color.light.border, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippTokens.color.light.surface, shadowColor: KlippColors.navy, shadowOpacity: 0.07, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 4 },
   formCardWide: { width: 430, alignSelf: 'auto', padding: 28 },
+  formIntroRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  formModePill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: KlippColors.surfaceBlue },
+  formModeText: { color: KlippColors.blueDark, fontSize: 9, fontWeight: '900', letterSpacing: 0.8 },
   eyebrow: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   title: { color: KlippColors.navy, fontSize: 30, lineHeight: 36, fontWeight: '900', letterSpacing: -0.6 },
   subtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, marginBottom: 5 },
@@ -363,7 +389,7 @@ const styles = StyleSheet.create({
   label: { color: KlippColors.slate, fontSize: 12, fontWeight: '800' },
   input: { minHeight: 52, paddingHorizontal: 15, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 14, backgroundColor: '#FFFFFF', color: KlippColors.navy, fontSize: 15 },
   roleOptions: { gap: 9 },
-  roleOption: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: '#FFFFFF' },
+  roleOption: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 13, paddingVertical: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 17, backgroundColor: '#FFFFFF' },
   roleOptionSelected: { borderColor: KlippColors.teal, backgroundColor: KlippColors.surfaceBlue },
   roleIcon: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: KlippColors.surfaceMuted },
   roleIconSelected: { backgroundColor: KlippColors.surfaceBlue },
