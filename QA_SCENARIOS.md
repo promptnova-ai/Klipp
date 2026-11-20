@@ -609,3 +609,17 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 7. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
 
 **Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.
+
+### QA-CLI-08 — Idempotencia del alta de reserva prepaga
+
+**Prioridad:** Crítica  
+**Precondición:** Cliente autenticado y entorno QA con una modalidad y tarifa válidas.
+
+1. Crear una solicitud de reserva con una clave UUID de idempotencia.
+2. Repetir exactamente la misma llamada con la misma clave, simulando que el primer resultado RPC se perdió.
+3. Comprobar que ambas respuestas contienen el mismo `booking_id` y que solo existe una reserva y una dirección asociadas.
+4. Repetir la clave con una fecha, modalidad, profesional, ubicación o precio diferente.
+5. Repetir la llamada con una clave nueva y los mismos datos de reserva.
+6. Intentar invocar el RPC antiguo de 11 argumentos desde `authenticated`.
+
+**Resultado esperado:** La repetición con la misma clave y los mismos datos devuelve la reserva original sin insertar otra. Reutilizar la clave con datos distintos se rechaza. Una clave nueva representa una nueva intención de reserva. El RPC antiguo no es ejecutable por clientes autenticados; la nueva firma exige clave de idempotencia. La tabla de idempotencia no es legible directamente por `anon` ni `authenticated`.
