@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ error: "Payment reference not found" }, 404);
       }
       if (linkedPayment.provider_ref !== paymentIntentId) {
-        if (linkedPayment.status !== "pending") {
+        if (!["pending", "failed", "held"].includes(linkedPayment.status)) {
           return jsonResponse({ error: "Payment reference is no longer attachable" }, 409);
         }
         const { error: attachError } = await admin.rpc("attach_stripe_payment_intent", {
