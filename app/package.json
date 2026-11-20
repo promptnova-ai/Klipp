@@ -44,6 +44,11 @@
     "eslint-config-expo": "~58.0.4",
     "typescript": "~6.0.3"
   },
+  "overrides": {
+    "@expo/fingerprint": {
+      "minimatch": "11.0.1"
+    }
+  },
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
