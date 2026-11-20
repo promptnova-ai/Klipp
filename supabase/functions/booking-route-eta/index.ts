@@ -6,10 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function jsonResponse(body: unknown, status = 200) {
+function jsonResponse(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders, "Content-Type": "application/json", ...extraHeaders },
   });
 }
 
@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
-    const accessToken = req.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
+    const accessToken = req.headers.get("Authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
     if (!accessToken) return jsonResponse({ error: "Authentication required" }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -35,7 +35,9 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const bookingId = body?.bookingId;
     const notifyDelay = body?.notifyDelay !== false;
-    if (typeof bookingId !== "string") return jsonResponse({ error: "bookingId is required" }, 400);
+    if (typeof bookingId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bookingId)) {
+      return jsonResponse({ error: "A valid bookingId is required" }, 400);
+    }
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${accessToken}` } },
@@ -80,6 +82,21 @@ Deno.serve(async (req) => {
         locationUpdatedAt: location.updated_at,
         locationAgeSeconds: Math.round(locationAgeSeconds),
       }, 202);
+    }
+
+    // Google Routes is a billable external API. Claim a per-booking cooldown
+    // atomically before calling it so parallel/repeated requests cannot fan out.
+    const { data: etaClaimed, error: etaClaimError } = await admin.rpc("claim_booking_eta_request", {
+      p_booking_id: bookingId,
+      p_user_id: authResult.user.id,
+    });
+    if (etaClaimError) throw etaClaimError;
+    if (etaClaimed !== true) {
+      return jsonResponse(
+        { error: "ETA was calculated recently", code: "ETA_RATE_LIMITED", retryAfterSeconds: 30 },
+        429,
+        { "Retry-After": "30" },
+      );
     }
 
     const routeResponse = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
