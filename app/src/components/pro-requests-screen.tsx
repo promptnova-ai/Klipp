@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -204,7 +205,7 @@ export function ProRequestsScreen() {
         statusBarTranslucent
         onRequestClose={() => undefined}>
         {activeRequest && (
-          <View style={styles.offerScreen}>
+          <SafeAreaView style={styles.offerScreen} edges={['top', 'bottom']}>
             <View style={styles.offerHeader}>
               <Text style={styles.offerBrand}>KLIPP PRO</Text>
               <Text style={styles.offerEyebrow}>NUEVA SOLICITUD DE SERVICIO</Text>
@@ -327,7 +328,7 @@ export function ProRequestsScreen() {
               <Text style={styles.offerFootnote}>Para aceptar, confirma primero que llevas tus propias herramientas y materiales.</Text>
               <Text style={styles.offerFootnote}>Si otro profesional acepta primero, esta solicitud dejará de estar disponible.</Text>
             </ScrollView>
-          </View>
+          </SafeAreaView>
         )}
       </Modal>
     <ScrollView
@@ -488,7 +489,7 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 
 const styles = StyleSheet.create({
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
-  offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
+  offerHeader: { width: '100%', paddingTop: 12, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
   offerBrand: { color: '#A9F0E8', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: '#FFFFFF', fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
   countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.gold },
