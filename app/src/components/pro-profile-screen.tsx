@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
