@@ -70,6 +70,8 @@ Deno.serve(async (req) => {
     const returnUrl = `klipp://payment-return?booking_id=${encodeURIComponent(bookingId)}`;
     const params = new URLSearchParams();
     params.set("mode", "payment");
+    // Stripe requires a minimum 30-minute Checkout expiry; the DB payment window is shorter and rejects/refunds late captures.
+    params.set("expires_at", String(Math.floor(Date.now() / 1000) + 30 * 60));
     params.set("payment_method_types[0]", "card");
     params.set("line_items[0][price_data][currency]", "dop");
     params.set("line_items[0][price_data][unit_amount]", String(amountMinor));
