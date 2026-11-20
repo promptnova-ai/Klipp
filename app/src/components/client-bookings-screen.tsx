@@ -476,7 +476,7 @@ export function ClientBookingsScreen() {
                 : payment?.status === 'failed'
                   ? 'El último intento no fue aprobado. Puedes volver a intentarlo desde esta misma reserva.'
                   : booking.status === 'payment_pending'
-                    ? 'Completa el pago seguro para activar la reserva. Si cierras el checkout, podrás retomarlo sin crear otra solicitud.'
+                    ? 'Completa el pago seguro en 10 minutos. Si cierras el checkout, podrás retomarlo sin crear otra solicitud. Un pago procesado fuera de plazo no activará la reserva y requerirá revisión.'
                     : 'Todavía no se ha confirmado el pago. La reserva no está confirmada.';
               return (
                 <View style={styles.payment}>
