@@ -6,7 +6,8 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippCard, KlippNotice, KlippProfessionalCard, KlippScreenState } from '@/design-system';
+import { KlippProfessionalCard } from '@/design-system/cards';
+import { KlippCard, KlippNotice, KlippScreenState } from '@/design-system/components';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';

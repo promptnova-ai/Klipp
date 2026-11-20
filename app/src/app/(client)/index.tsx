@@ -17,7 +17,9 @@ import {
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { KlippTokens } from '@/design-system/tokens';
-import { KlippProfessionalCard, KlippScreenState, KlippSearchBar, KlippServiceCard } from '@/design-system';
+import { KlippProfessionalCard, KlippServiceCard } from '@/design-system/cards';
+import { KlippScreenState } from '@/design-system/components';
+import { KlippSearchBar } from '@/design-system/search-bar';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';

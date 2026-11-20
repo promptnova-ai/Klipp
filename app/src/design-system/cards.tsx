@@ -107,7 +107,10 @@ export function KlippProfessionalCard({
           <View style={styles.avatarFallback}><Text style={styles.avatarInitial}>{displayName.charAt(0).toLocaleUpperCase()}</Text></View>
         )}
         <View style={styles.professionalCopy}>
-          <Text numberOfLines={1} style={styles.professionalName}>{displayName}</Text>
+          <View style={styles.professionalNameRow}>
+            <Text numberOfLines={1} style={styles.professionalName}>{displayName}</Text>
+            {selected ? <Text style={styles.selectedLabel}>Seleccionado</Text> : null}
+          </View>
           {bio ? <Text numberOfLines={compact ? 1 : 2} style={styles.professionalBio}>{bio}</Text> : null}
           <View style={styles.professionalMeta}>
             <Text style={styles.professionalMetaText}>{hasRating ? `★ ${rating!.toFixed(1)} · ${ratingCount} reseñas` : 'Sin valoraciones'}</Text>
@@ -135,6 +138,7 @@ export function KlippProfessionalCard({
       accessibilityRole="radio"
       accessibilityLabel={`${displayName}. ${summary}`}
       accessibilityState={{ selected }}
+      accessibilityHint="Selecciona este profesional para la reserva."
       onPress={onPress}
       style={({ pressed }) => [styles.professionalPressable, pressed && styles.pressed]}>
       {content}
@@ -168,7 +172,9 @@ const styles = StyleSheet.create({
   avatarFallback: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.surfaceBlue },
   avatarInitial: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
   professionalCopy: { flex: 1, gap: 3 },
-  professionalName: { color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  professionalNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  professionalName: { flex: 1, color: KlippColors.navy, fontSize: 14, fontWeight: '800' },
+  selectedLabel: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '800' },
   professionalBio: { color: KlippColors.muted, fontSize: 12, lineHeight: 17 },
   professionalMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
   professionalMetaText: { color: KlippColors.muted, fontSize: 11, fontWeight: '600' },
