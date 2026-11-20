@@ -1,13 +1,13 @@
 # Klipp — Cruce de validación QA
 
 **Corte:** 20 de noviembre de 2026  
-**Rama:** `feat/uber-airbnb-onboarding-rebuild-20261120`  
+**Rama:** `feat/ios-android-responsive-pass-20261120`  
 **Propósito:** contrastar la lista manual de `QA_SCENARIOS.md` con el trabajo realizado en la rama.  
 **Regla de evidencia:** implementar código o documentar un escenario no equivale a ejecutar una prueba. Ningún caso se marca como aprobado sin evidencia reproducible del resultado.
 
 ## Resultado del cruce
 
-Se identifican **53 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron estáticamente los cambios del onboarding progresivo cliente/PRO y sus componentes compartidos. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
+Se identifican **53 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron estáticamente los cambios del onboarding progresivo cliente/PRO, la navegación móvil, las safe areas y el comportamiento del teclado. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
 
 | ID | Escenario | Estado verificable |
 |---|---|---|
