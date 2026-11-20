@@ -82,14 +82,16 @@ export function OnboardingProgress({
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: accent }]} />
       </View>
-      <View style={styles.stepLabels}>
-        {steps.map((step, index) => (
-          <View key={step} style={styles.stepLabel}>
-            <View style={[styles.stepDot, index <= current && { backgroundColor: accent }, index === current && styles.stepDotCurrent]} />
-            <Text numberOfLines={1} style={[styles.stepText, index === current && styles.stepTextCurrent]}>{step}</Text>
-          </View>
-        ))}
-      </View>
+      {steps.length <= 4 ? (
+        <View style={styles.stepLabels}>
+          {steps.map((step, index) => (
+            <View key={step} style={styles.stepLabel}>
+              <View style={[styles.stepDot, index <= current && { backgroundColor: accent }, index === current && styles.stepDotCurrent]} />
+              <Text numberOfLines={1} style={[styles.stepText, index === current && styles.stepTextCurrent]}>{step}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
