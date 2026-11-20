@@ -398,7 +398,7 @@ export function AdminScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={styles.keyboardContainer}>
         <ScrollView automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} contentContainerStyle={styles.page} keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader role="admin" eyebrow={isSuperAdmin ? 'ADMINISTRACIÓN · PROPIETARIO' : 'ESPACIO DE TRABAJO'} title={isSuperAdmin ? 'Panel de control' : 'Centro de operaciones'} subtitle={isSuperAdmin ? 'Gestiona el equipo, las cuentas y la operación de Klipp.' : 'Accede a las herramientas disponibles para tu puesto. Las opciones visibles dependen de tus permisos.'} />
       <View style={styles.sectionTabs}>
@@ -699,7 +699,7 @@ function ActionButton({ label, onPress, disabled = false, secondary = false }: {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
+  keyboardContainer: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
   page: { width: '100%', maxWidth: 1200, alignSelf: 'center', paddingHorizontal: 24, paddingTop: 8, paddingBottom: 52, gap: 20, backgroundColor: KlippColors.canvas },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: KlippColors.canvas },
