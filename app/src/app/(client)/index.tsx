@@ -10,7 +10,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -18,7 +17,7 @@ import {
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { KlippTokens } from '@/design-system/tokens';
-import { KlippScreenState } from '@/design-system/components';
+import { KlippScreenState, KlippSearchBar } from '@/design-system';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
@@ -298,24 +297,13 @@ export default function ClientHomeScreen() {
         <Text style={styles.greetingSubtitle}>Servicios confiables, justo donde los necesitas.</Text>
       </View>
 
-      <View style={styles.searchBar}>
-        <SymbolView name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }} tintColor={KlippColors.muted} size={20} />
-        <TextInput
-          accessibilityLabel="Buscar servicios o profesionales"
-          autoCapitalize="none"
-          onChangeText={setSearch}
-          placeholder="¿Qué servicio necesitas?"
-          placeholderTextColor={KlippColors.muted}
-          returnKeyType="search"
-          style={styles.searchInput}
-          value={search}
-        />
-        {!!search && (
-          <Pressable accessibilityRole="button" accessibilityLabel="Borrar búsqueda" onPress={() => setSearch('')} style={styles.clearSearch}>
-            <SymbolView name={{ ios: 'xmark.circle.fill', android: 'cancel', web: 'cancel' }} tintColor={KlippColors.muted} size={18} />
-          </Pressable>
-        )}
-      </View>
+      <KlippSearchBar
+        accessibilityLabel="Buscar servicios o profesionales"
+        onChangeText={setSearch}
+        onClear={() => setSearch('')}
+        placeholder="¿Qué servicio necesitas?"
+        value={search}
+      />
 
       {!search && (
         <View style={styles.hero}>
@@ -555,9 +543,6 @@ const styles = StyleSheet.create({
   greeting: { color: KlippColors.navy, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.5 },
   wave: { color: KlippColors.gold, fontSize: 20 },
   greetingSubtitle: { color: KlippColors.muted, fontSize: 15, lineHeight: 22 },
-  searchBar: { minHeight: KlippTokens.size.input, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, borderRadius: KlippTokens.radius.sm, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
-  searchInput: { flex: 1, height: 52, color: KlippColors.navy, fontSize: 14 },
-  clearSearch: { padding: 5 },
   hero: { overflow: 'hidden', padding: 20, borderRadius: KlippTokens.radius.lg, backgroundColor: KlippColors.navy, gap: 13 },
   heroAccent: { position: 'absolute', width: 190, height: 190, borderRadius: 95, backgroundColor: '#1B4A78', right: -78, top: -92, opacity: 0.82 },
   heroBadge: { alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(22,184,173,0.16)', borderWidth: 1, borderColor: 'rgba(22,184,173,0.28)' },
