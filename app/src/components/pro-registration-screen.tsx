@@ -433,7 +433,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 5 && (
+            {step === 2 && (
               <View style={styles.serviceList}>
                 {selectedProfession && (
                   <View style={styles.card}>
@@ -532,7 +532,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 2 && (
+            {step === 3 && (
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -579,7 +579,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 3 && (
+            {step === 5 && (
               <>
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
