@@ -1,3 +1,4 @@
+# Keep the stacked PR checks covering payment-state and privacy hardening changes.
 name: Validate Klipp app
 
 on:
