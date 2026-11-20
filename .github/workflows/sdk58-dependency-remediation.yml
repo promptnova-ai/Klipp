@@ -11,7 +11,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
 
 concurrency:
   group: klipp-sdk58-remediation-${{ github.event.pull_request.number || github.ref }}
@@ -43,7 +42,27 @@ jobs:
 
       - name: Apply compatible npm security fixes
         working-directory: app
-        run: npm audit fix
+        run: npm audit fix || true
+
+      - name: Diagnose remaining dependency paths
+        working-directory: app
+        run: |
+          npm ls minimatch glob --all || true
+          npm audit --json > npm-audit-diagnostic.json || true
+          node - <<'NODE'
+          const report = require('./npm-audit-diagnostic.json');
+          console.log('Vulnerability totals:', JSON.stringify(report.metadata?.vulnerabilities ?? {}));
+          for (const [name, item] of Object.entries(report.vulnerabilities ?? {})) {
+            console.log(JSON.stringify({
+              name,
+              severity: item.severity,
+              range: item.range,
+              direct: item.isDirect,
+              fixAvailable: item.fixAvailable,
+              via: item.via
+            }));
+          }
+          NODE
 
       - name: Verify exact lockfile install
         working-directory: app
@@ -73,7 +92,25 @@ jobs:
         working-directory: app
         run: |
           npm audit --json > npm-audit-final.json || true
-          node -e 'const r=require("./npm-audit-final.json"); const v=r.metadata?.vulnerabilities ?? {}; console.log("Final audit:", JSON.stringify(v)); if ((v.high ?? 0) > 0 || (v.critical ?? 0) > 0) process.exit(1);'
+          node - <<'NODE'
+          const report = require('./npm-audit-final.json');
+          const counts = report.metadata?.vulnerabilities ?? {};
+          console.log('Final audit:', JSON.stringify(counts));
+          if (Object.values(counts).some(value => typeof value === 'number' && value > 0)) {
+            process.exit(1);
+          }
+          NODE
+
+      - name: Upload dependency audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-sdk58-dependency-audit
+          path: |
+            app/npm-audit-diagnostic.json
+            app/npm-audit-final.json
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Commit verified manifests and lockfile
         run: |
