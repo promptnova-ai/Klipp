@@ -14,6 +14,7 @@ on:
       - security/008-profile-permissions
       - fix/supabase-qa-hardening-20261117
       - feat/klipp-ux-system-20261118
+      - feat/klipp-auth-recovery-20261118-v2
     paths:
       - "app/**"
       - "supabase/functions/**"
