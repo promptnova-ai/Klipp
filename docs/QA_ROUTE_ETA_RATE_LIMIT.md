@@ -17,6 +17,12 @@ Ejecutar únicamente en un proyecto Supabase de QA con Google Routes configurado
 5. Llamar desde una cuenta que no sea cliente ni administrador con permiso `bookings.read`; debe recibir `403` y no consumir el límite.
 6. Probar un identificador que no sea UUID; debe recibir `400` sin consultar reservas ni Google Routes.
 
+## QA-ETA-03 — Estado y recuperación
+1. Probar reserva que no esté en `en_route`; debe recibir `409` sin reclamar el límite.
+2. Probar ubicación profesional ausente o con más de 120 segundos; debe devolver `202` y no consumir el límite.
+3. Simular error de Google Routes después de reclamar el límite; debe respetarse el cooldown para evitar reintentos que generen gasto repetido.
+4. Confirmar que el worker de notificaciones conserva su cálculo de ETA independiente y no queda bloqueado por este límite interactivo.
+
 ## QA-ETA-04 — Frecuencia de actualización de la interfaz
 1. Abrir el seguimiento de una reserva en estado `en_route`.
 2. Mantener activo el flujo de actualizaciones GPS en tiempo real durante dos minutos.
@@ -25,12 +31,6 @@ Ejecutar únicamente en un proyecto Supabase de QA con Google Routes configurado
 5. Cambiar el estado de la reserva fuera de `en_route`; el ETA y la polilínea deben limpiarse.
 
 **Resultado esperado:** Las actualizaciones de posición no generan llamadas de rutas facturables y un límite temporal no borra un ETA válido que ya se había mostrado.
-
-## QA-ETA-03 — Estado y recuperación
-1. Probar reserva que no esté en `en_route`; debe recibir `409` sin reclamar el límite.
-2. Probar ubicación profesional ausente o con más de 120 segundos; debe devolver `202` y no consumir el límite.
-3. Simular error de Google Routes después de reclamar el límite; debe respetarse el cooldown para evitar reintentos que generen gasto repetido.
-4. Confirmar que el worker de notificaciones conserva su cálculo de ETA independiente y no queda bloqueado por este límite interactivo.
 
 ## Criterio de aceptación
 El bloqueo se aplica de forma atómica en PostgreSQL, antes de la llamada facturable, y no depende de memoria local de la Edge Function. La prueba debe verificar tanto respuestas HTTP como el número real de peticiones al proveedor.
