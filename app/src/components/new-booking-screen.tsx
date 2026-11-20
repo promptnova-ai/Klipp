@@ -713,7 +713,7 @@ export function NewBookingScreen() {
       {pendingPaymentBookingId && (
         <View style={styles.successBanner}>
           <Text style={styles.successTitle}>Reserva guardada. Falta confirmar el pago.</Text>
-          <Text style={styles.body}>No vuelvas a crear la solicitud. Usa el botón inferior para reabrir el pago seguro de esta misma reserva.</Text>
+          <Text style={styles.body}>No vuelvas a crear la solicitud. Reabre el pago seguro de esta misma reserva y complétalo en 10 minutos; los pagos tardíos no activan la reserva y requieren revisión.</Text>
         </View>
       )}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
