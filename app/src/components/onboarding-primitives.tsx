@@ -17,7 +17,7 @@ export function DominicanPhoneField({
   error?: string;
   disabled?: boolean;
 }) {
-  const digits = value.replace(/\\D/g, '');
+  const digits = value.replace(/\D/g, '');
   const prefix = DOMINICAN_PREFIXES.includes(digits.slice(0, 3) as typeof DOMINICAN_PREFIXES[number])
     ? digits.slice(0, 3)
     : '809';
@@ -49,7 +49,7 @@ export function DominicanPhoneField({
           editable={!disabled}
           keyboardType="number-pad"
           maxLength={7}
-          onChangeText={(text) => onChangeText(prefix + text.replace(/\\D/g, '').slice(0, 7))}
+          onChangeText={(text) => onChangeText(prefix + text.replace(/\D/g, '').slice(0, 7))}
           placeholder="555 0123"
           placeholderTextColor="#98A5B5"
           style={styles.phoneInput}
