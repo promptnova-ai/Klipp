@@ -63,7 +63,8 @@ Se identifican **53 escenarios** en `QA_SCENARIOS.md`. En esta iteración se rev
 | QA-UI-03 | Consistencia de fichas de servicio, profesionales y reservas | Componentes implementados y escenario añadido; validación visual/dispositivo pendiente. |
 | QA-UI-04 | Login y registro de cliente y profesional | Recorrido cliente de tres pasos y entrada dominicana implementados; pruebas E2E pendientes. OTP SMS real pendiente de configuración del proveedor. |
 | QA-UI-05 | Onboarding profesional progresivo de siete pasos | Refactor de interfaz y validaciones implementado; prueba E2E transaccional pendiente. |
-| QA-UI-06 | Componentes compartidos de onboarding y accesibilidad | Componentes nativos implementados; validación en dispositivos y lectores de pantalla pendiente. |\n| QA-UI-07 | Adaptación integral iPhone y Android | Ajustes responsive/safe-area/teclado aplicados en navegación y onboarding; ejecución en simuladores y dispositivos físicos pendiente. |
+| QA-UI-06 | Componentes compartidos de onboarding y accesibilidad | Componentes nativos implementados; validación en dispositivos y lectores de pantalla pendiente. |
+| QA-UI-07 | Adaptación integral iPhone y Android | Ajustes responsive/safe-area/teclado aplicados en navegación y onboarding; ejecución en simuladores y dispositivos físicos pendiente. |
 
 ## Hallazgos de revisión por disciplina
 
@@ -107,4 +108,15 @@ Se revisaron los componentes `auth-screen.tsx` y `pro-registration-screen.tsx`. 
 - Actualiza QA-UI-04 y añade QA-UI-05/06.
 
 **Limitaciones verificables:** la captura de teléfono no es una verificación SMS. La autenticación sigue siendo correo/contraseña con confirmación por correo; el proveedor SMS y OTP real no están configurados ni probados. No se han ejecutado TypeScript, lint, pruebas E2E ni pruebas visuales/dispositivo en esta revisión.
-\n\n## Adaptación móvil iOS / Android — 20/11/2026\n\n- La navegación Cliente y PRO aplica safe areas superiores y laterales a todas las rutas y gestión del teclado a nivel de layout.\n- Se eliminan safe areas duplicadas en seguimiento y notificaciones para evitar márgenes dobles.\n- La barra inferior adapta objetivos y espaciado para anchos inferiores a 360 dp.\n- Login y onboarding PRO ajustan teclado, espaciado y cabeceras para pantallas compactas.\n- El indicador del onboarding no muestra siete etiquetas comprimidas en una sola fila; mantiene paso actual y progreso.\n- Los controles del teléfono dominicano reducen su huella horizontal y mantienen áreas táctiles ampliadas.\n\n**Pendiente:** build iOS/Android, TypeScript/lint, pruebas en iPhone y Android físicos, escalado de texto, teclado y capturas. Ninguna validación de dispositivo se considera aprobada todavía.\n
+
+
+## Adaptación móvil iOS / Android — 20/11/2026
+
+- La navegación Cliente y PRO aplica safe areas superiores y laterales a todas las rutas y gestión del teclado a nivel de layout.
+- Se eliminan safe areas duplicadas en seguimiento y notificaciones para evitar márgenes dobles.
+- La barra inferior adapta objetivos y espaciado para anchos inferiores a 360 dp.
+- Login y onboarding PRO ajustan teclado, espaciado y cabeceras para pantallas compactas.
+- El indicador del onboarding no muestra siete etiquetas comprimidas en una sola fila; mantiene paso actual y progreso.
+- Los controles del teléfono dominicano reducen su huella horizontal y mantienen áreas táctiles ampliadas.
+
+**Pendiente:** build iOS/Android, TypeScript/lint, pruebas en iPhone y Android físicos, escalado de texto, teclado y capturas. Ninguna validación de dispositivo se considera aprobada todavía.
