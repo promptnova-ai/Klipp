@@ -56,6 +56,19 @@ export function ClientSupportScreen() {
   useEffect(() => {
     if (!selectedCaseId) return;
     let active = true;
+    const channel = supabase.channel(`client-support-messages-${selectedCaseId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `conversation_id=eq.${selectedCaseId}`,
+      }, (payload) => {
+        const incoming = payload.new as SupportMessage;
+        setMessages((current) => current.some((item) => item.id === incoming.id)
+          ? current
+          : [...current, incoming].sort((a, b) => a.created_at.localeCompare(b.created_at)));
+      })
+      .subscribe();
     void supabase.from('support_messages')
       .select('id, sender_type, content, created_at')
       .eq('conversation_id', selectedCaseId)
@@ -64,9 +77,25 @@ export function ClientSupportScreen() {
       .then(({ data, error: queryError }) => {
         if (!active) return;
         if (queryError) setError(queryError.message);
-        else setMessages((data ?? []) as SupportMessage[]);
+        else setMessages((current) => {
+          const combined = [...(data ?? []) as SupportMessage[], ...current];
+          return Array.from(new Map(combined.map((item) => [item.id, item])).values())
+            .sort((a, b) => a.created_at.localeCompare(b.created_at));
+        });
       });
-    return () => { active = false; };
+    const caseChannel = supabase.channel(`client-support-case-${selectedCaseId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'support_conversations',
+        filter: `id=eq.${selectedCaseId}`,
+      }, () => { void load(); })
+      .subscribe();
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+      void supabase.removeChannel(caseChannel);
+    };
   }, [selectedCaseId]);
 
   async function submitCase() {

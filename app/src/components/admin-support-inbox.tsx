@@ -78,6 +78,19 @@ export function AdminSupportInbox() {
   useEffect(() => {
     if (!selectedId) return;
     let active = true;
+    const channel = supabase.channel(`admin-support-messages-${selectedId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'support_messages',
+        filter: `conversation_id=eq.${selectedId}`,
+      }, (payload) => {
+        const incoming = payload.new as SupportMessage;
+        setMessages((current) => current.some((item) => item.id === incoming.id)
+          ? current
+          : [...current, incoming].sort((a, b) => a.created_at.localeCompare(b.created_at)));
+      })
+      .subscribe();
     void supabase.from('support_messages')
       .select('id, sender_type, content, created_at')
       .eq('conversation_id', selectedId)
@@ -86,10 +99,28 @@ export function AdminSupportInbox() {
       .then(({ data, error: queryError }) => {
         if (!active) return;
         if (queryError) setError(queryError.message);
-        else setMessages((data ?? []) as SupportMessage[]);
+        else setMessages((current) => {
+          const combined = [...(data ?? []) as SupportMessage[], ...current];
+          return Array.from(new Map(combined.map((item) => [item.id, item])).values())
+            .sort((a, b) => a.created_at.localeCompare(b.created_at));
+        });
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      void supabase.removeChannel(channel);
+    };
   }, [selectedId]);
+
+    useEffect(() => {
+    const channel = supabase.channel('admin-support-cases')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'support_conversations',
+      }, () => { void loadCases(); })
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [loadCases]);
 
   const filteredCases = useMemo(
     () => cases.filter((item) => filter === 'all' || item.status === filter),
