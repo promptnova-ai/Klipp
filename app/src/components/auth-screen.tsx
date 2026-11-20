@@ -172,10 +172,6 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   <Text style={styles.location}>REPÚBLICA DOMINICANA</Text>
                 </View>
               </View>
-              <View style={styles.trustNote}>
-                <SymbolView name={{ ios: 'lock.shield.fill', android: 'verified_user', web: 'verified_user' }} tintColor={KlippColors.tealDark} size={15} />
-                <Text style={styles.trustNoteText}>Acceso seguro</Text>
-              </View>
             </View>
 
             <ScreenEntrance delay={30}>
@@ -316,8 +312,6 @@ const styles = StyleSheet.create({
   brandCopy: { gap: 1 },
   brand: { color: KlippColors.navy, fontSize: 22, fontWeight: '900', letterSpacing: 1.1 },
   location: { color: KlippColors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  trustNote: { minHeight: 34, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 12, borderRadius: 999, backgroundColor: KlippColors.surfaceTeal },
-  trustNoteText: { color: KlippColors.tealDark, fontSize: 11, fontWeight: '700' },
   main: { gap: 18 },
   mainWide: { flexDirection: 'row', alignItems: 'stretch', gap: 24 },
   showcase: { width: '100%', flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'stretch', gap: 20, padding: 28, borderWidth: 1, borderColor: KlippTokens.color.light.border, borderRadius: KlippTokens.radius.xl, backgroundColor: KlippTokens.color.light.surface, shadowColor: KlippColors.navy, shadowOpacity: 0.035, shadowOffset: { width: 0, height: 10 }, shadowRadius: 24, elevation: 2 },
