@@ -39,6 +39,7 @@ type ServiceOffer = {
   est_minutes: number;
   pro?: SearchablePro;
   avatar_url?: string | null;
+  bio?: string | null;
   rating_avg?: number;
   rating_count?: number;
   jobs_completed?: number;

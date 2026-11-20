@@ -27,7 +27,7 @@ export function KlippButton({ label, onPress, variant = 'primary', size = 'large
   );
 }
 
-export function KlippCard({ children, mode = 'light', style }: { children: ReactNode; mode?: KlippColorMode; style?: ViewStyle }) {
+export function KlippCard({ children, mode = 'light', style }: { children: ReactNode; mode?: KlippColorMode; style?: StyleProp<ViewStyle> }) {
   const p = getKlippPalette(mode);
   return <View style={[styles.card, { backgroundColor: p.surface, borderColor: p.border }, style]}>{children}</View>;
 }
