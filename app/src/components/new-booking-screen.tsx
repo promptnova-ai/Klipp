@@ -125,7 +125,7 @@ export function NewBookingScreen() {
   );
   const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) ?? null;
   const bookingStepState = [
-    selectedServiceId !== null && (visibleTiers.length === 0 ? selectedOfferId !== null : selectedTierId !== null),
+    selectedServiceId !== null && (tiers.some((tier) => tier.service_type_id === selectedServiceId) ? true : selectedOfferId !== null),
     coordinate !== null,
     timing === 'now' || scheduledTime.length > 0,
     selectedOfferId !== null || mode === 'auto' || selectedProId !== null,
@@ -933,7 +933,7 @@ export function NewBookingScreen() {
       {submissionUncertain ? (
         <View style={styles.horizontalMargin}><KlippButton label="Revisar mis reservas" onPress={() => router.replace('/(client)/bookings')} mode="light" /></View>
       ) : !success && (
-        <View style={styles.horizontalMargin}><KlippButton label={timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'} onPress={() => void createBooking()} loading={saving} disabled={!coordinate || locationLoading || !selectedServiceId || (!selectedOffer && !selectedTier && mode !== 'auto') || (timing === 'scheduled' && !scheduledTime) || (mode === 'manual' && !selectedOffer && !selectedProId)} mode="light" accessibilityHint="Envía tu solicitud de servicio a Klipp." /></View>
+        <View style={styles.horizontalMargin}><KlippButton label={timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'} onPress={() => void createBooking()} loading={saving} disabled={!coordinate || locationLoading} mode="light" accessibilityHint="Envía tu solicitud de servicio a Klipp." /></View>
       )}
     </ScrollView>
   );
