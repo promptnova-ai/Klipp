@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   tabButton: { minWidth: 64, minHeight: 54, flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4, borderRadius: 14 },
   tabButtonCompact: { minWidth: 0, minHeight: 48, gap: 3 },
   tabLabel: { color: KlippColors.muted, fontSize: 11, fontWeight: '700', letterSpacing: 0.1 },
-  tabLabelCompact: { fontSize: 9, letterSpacing: 0 },
+  tabLabelCompact: { fontSize: 10, letterSpacing: 0 },
   centerButton: { width: 66, height: 66, marginTop: -28, borderRadius: 33, alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: KlippColors.white, shadowColor: KlippColors.navy, shadowOpacity: 0.16, shadowRadius: 14, shadowOffset: { width: 0, height: 5 }, elevation: 9 },
   centerButtonDesktop: { width: 52, height: 52, marginTop: 0, borderWidth: 0, shadowOpacity: 0.04, elevation: 1 },
   centerButtonCompact: { width: 56, height: 56, marginTop: -22, borderWidth: 3 },
