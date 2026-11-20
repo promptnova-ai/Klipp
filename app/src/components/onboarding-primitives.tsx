@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   country: { paddingRight: 6, borderRightWidth: 1, borderRightColor: '#E4EAF0' },
   countryCode: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
   prefixGroup: { flexDirection: 'row', gap: 3 },
-  prefixOption: { minWidth: 32, minHeight: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderRadius: 8 },
+  prefixOption: { minWidth: 34, minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderRadius: 8 },
   prefixSelected: { backgroundColor: '#E8F0F7' },
   prefixText: { color: '#718096', fontSize: 10, fontWeight: '700' },
   prefixTextSelected: { color: KlippColors.navy, fontWeight: '900' },
