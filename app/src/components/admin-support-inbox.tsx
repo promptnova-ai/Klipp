@@ -71,7 +71,9 @@ export function AdminSupportInbox() {
     else setArticles((data ?? []) as KnowledgeArticle[]);
   }, []);
 
-  useEffect(() => { void loadCases(); void loadArticles(); }, [loadCases, loadArticles]);
+  useEffect(() => {
+    void Promise.resolve().then(() => { void loadCases(); void loadArticles(); });
+  }, [loadCases, loadArticles]);
 
   useEffect(() => {
     if (!selectedId) return;

@@ -161,9 +161,12 @@ Deno.serve(async (req: Request) => {
         knowledge = fallbackKnowledge ?? [];
       }
 
-      const serviceName = Array.isArray(booking?.service_types)
-        ? booking.service_types[0]?.name
-        : (booking?.service_types as { name?: string } | null)?.name;
+      const serviceRelation = booking?.service_types as unknown;
+      const serviceName = Array.isArray(serviceRelation)
+        ? (serviceRelation[0] as { name?: string } | undefined)?.name
+        : serviceRelation && typeof serviceRelation === "object" && "name" in serviceRelation
+          ? (serviceRelation as { name?: string }).name
+          : undefined;
       const safeBooking = booking ? {
         service: serviceName ?? "Servicio Klipp",
         status: booking.status,
