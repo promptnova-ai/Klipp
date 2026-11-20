@@ -65,7 +65,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const isRegister = mode === 'register';
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const compact = width < 600;
+  const compact = width < 600;\n  const narrow = width < 370;
   const { session, signIn, signUp, authError } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
@@ -147,10 +147,10 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <ScrollView contentContainerStyle={[styles.scrollContent, compact && styles.scrollCompact]} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0} style={styles.flex}>
+        <ScrollView automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} contentContainerStyle={[styles.scrollContent, compact && styles.scrollCompact]} keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} keyboardShouldPersistTaps="handled">
           <View style={styles.shell}>
-            <View style={styles.topBar}>
+            <View style={[styles.topBar, narrow && styles.topBarNarrow]}>
               <Pressable accessibilityRole="button" onPress={() => router.canGoBack() ? router.back() : router.replace('/')} style={styles.backButton}>
                 <Text style={styles.backArrow}>‹</Text>
               </Pressable>
@@ -158,11 +158,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 <View style={styles.brandMark}><Text style={styles.brandMarkText}>K</Text></View>
                 <View>
                   <Text style={styles.brandName}>KLIPP</Text>
-                  <Text style={styles.brandRegion}>REPÚBLICA DOMINICANA</Text>
+                  {!narrow && <Text style={styles.brandRegion}>REPÚBLICA DOMINICANA</Text>}
                 </View>
               </View>
               <View style={styles.topRight}>
-                <Text style={styles.topRightText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Primera vez?'}</Text>
+                {!narrow && <Text style={styles.topRightText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Primera vez?'}</Text>}
                 <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild>
                   <Text style={styles.topLink}>{isRegister ? 'Entrar' : 'Crear cuenta'}</Text>
                 </Link>
@@ -172,7 +172,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             <View style={[styles.content, !compact && styles.contentWide]}>
               <View style={[styles.intro, !compact && styles.introWide]}>
                 <View style={styles.introTag}><View style={styles.introDot} /><Text style={styles.introTagText}>SERVICIOS A DOMICILIO</Text></View>
-                <Text style={styles.headline}>{isRegister ? 'Todo lo que necesitas, empieza aquí.' : 'Qué bueno verte de nuevo.'}</Text>
+                <Text style={[styles.headline, compact && styles.headlineCompact]}>{isRegister ? 'Todo lo que necesitas, empieza aquí.' : 'Qué bueno verte de nuevo.'}</Text>
                 <Text style={styles.introText}>
                   {isRegister
                     ? 'Reserva servicios en casa con profesionales de tu zona. Crea tu cuenta en unos pasos.'
@@ -187,7 +187,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 )}
               </View>
 
-              <View style={styles.formCard}>
+              <View style={[styles.formCard, compact && styles.formCardCompact]}>
                 {isRegister ? (
                   <>
                     <OnboardingProgress steps={registrationSteps} current={step} />
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: 28, paddingVertical: 20 },
   scrollCompact: { paddingHorizontal: 18, paddingVertical: 12 },
   shell: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1 },
-  topBar: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 },
+  topBar: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, gap: 8 },\n  topBarNarrow: { minHeight: 52, marginBottom: 16 },
   backButton: { width: 42, height: 42, justifyContent: 'center' },
   backArrow: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 'auto' },
@@ -302,13 +302,13 @@ const styles = StyleSheet.create({
   introTag: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   introDot: { width: 7, height: 7, borderRadius: 99, backgroundColor: KlippColors.teal },
   introTagText: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  headline: { color: KlippColors.navy, fontSize: 34, lineHeight: 41, fontWeight: '900', letterSpacing: -0.8, maxWidth: 470 },
+  headline: { color: KlippColors.navy, fontSize: 34, lineHeight: 41, fontWeight: '900', letterSpacing: -0.8, maxWidth: 470 },\n  headlineCompact: { fontSize: 29, lineHeight: 35, letterSpacing: -0.55 },
   introText: { color: '#526579', fontSize: 15, lineHeight: 23, maxWidth: 430 },
   valueList: { gap: 15, marginTop: 10 },
   valueItem: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   valueNumber: { color: KlippColors.tealDark, fontSize: 11, fontWeight: '900' },
   valueText: { color: KlippColors.navy, fontSize: 13, fontWeight: '700' },
-  formCard: { width: '100%', maxWidth: 500, alignSelf: 'center', padding: 28, borderRadius: 24, borderWidth: 1, borderColor: '#E0E7EF', backgroundColor: '#FFFFFF', gap: 22, shadowColor: '#153B66', shadowOpacity: 0.07, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 4 },
+  formCard: { width: '100%', maxWidth: 500, alignSelf: 'center', padding: 28, borderRadius: 24, borderWidth: 1, borderColor: '#E0E7EF', backgroundColor: '#FFFFFF', gap: 22, shadowColor: '#153B66', shadowOpacity: 0.07, shadowOffset: { width: 0, height: 14 }, shadowRadius: 28, elevation: 4 },\n  formCardCompact: { padding: 18, borderRadius: 20, gap: 18 },
   formHeading: { gap: 7 },
   eyebrow: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   formTitle: { color: KlippColors.navy, fontSize: 27, lineHeight: 33, fontWeight: '900', letterSpacing: -0.5 },
