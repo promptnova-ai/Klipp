@@ -1,18 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { KlippColors } from '@/lib/brand';
 
 export type MapCoordinate = { latitude: number; longitude: number };
 
-export function LocationPicker({ coordinate, onChange }: { coordinate: MapCoordinate; onChange: (coordinate: MapCoordinate) => void }) {
+export function LocationPicker(props: { coordinate: MapCoordinate; onChange: (coordinate: MapCoordinate) => void }) {
+  const { coordinate } = props;
+  return <LocationPickerFields key={`${coordinate.latitude}:${coordinate.longitude}`} {...props} />;
+}
+
+function LocationPickerFields({ coordinate, onChange }: { coordinate: MapCoordinate; onChange: (coordinate: MapCoordinate) => void }) {
   const [latitude, setLatitude] = useState(String(coordinate.latitude));
   const [longitude, setLongitude] = useState(String(coordinate.longitude));
-
-  useEffect(() => {
-    setLatitude(String(coordinate.latitude));
-    setLongitude(String(coordinate.longitude));
-  }, [coordinate.latitude, coordinate.longitude]);
 
   function applyCoordinates() {
     const parsedLatitude = Number(latitude);
