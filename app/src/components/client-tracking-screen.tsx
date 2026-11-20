@@ -32,6 +32,7 @@ function distanceInKm(from: Coordinate, to: Coordinate) {
 function statusLabel(status: BookingStatus) {
   const labels: Record<BookingStatus, string> = {
     requested: 'Solicitud creada',
+    payment_pending: 'Pago pendiente',
     awaiting_payment: 'Pago pendiente',
     scheduled: 'Reserva confirmada',
     en_route: 'Profesional en camino',
