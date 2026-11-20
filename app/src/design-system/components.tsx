@@ -51,6 +51,40 @@ export function KlippStatus({ label, tone = 'neutral', mode = 'light' }: { label
   return <View style={[styles.status, { backgroundColor: pair[0] }]}><Text style={[styles.statusText, { color: pair[1] }]}>{label}</Text></View>;
 }
 
+type NoticeTone = 'info' | 'success' | 'warning' | 'danger';
+
+export function KlippNotice({
+  message,
+  title,
+  tone = 'info',
+  actionLabel,
+  onAction,
+  mode = 'light',
+}: {
+  message: string;
+  title?: string;
+  tone?: NoticeTone;
+  actionLabel?: string;
+  onAction?: () => void;
+  mode?: KlippColorMode;
+}) {
+  const p = getKlippPalette(mode);
+  const colors = tone === 'danger'
+    ? { background: p.dangerSoft, foreground: p.danger, border: p.danger }
+    : tone === 'warning'
+      ? { background: p.warningSoft, foreground: p.warning, border: p.warning }
+      : tone === 'success'
+        ? { background: p.successSoft, foreground: p.success, border: p.success }
+        : { background: p.primarySoft, foreground: p.primary, border: p.border };
+  return (
+    <View accessibilityLiveRegion="polite" style={[styles.notice, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      {title ? <Text style={[styles.noticeTitle, { color: colors.foreground }]}>{title}</Text> : null}
+      <Text accessibilityRole={tone === 'danger' ? 'alert' : undefined} style={[styles.noticeMessage, { color: colors.foreground }]}>{message}</Text>
+      {actionLabel && onAction ? <KlippButton label={actionLabel} onPress={onAction} variant="outline" size="medium" fullWidth={false} mode={mode} /> : null}
+    </View>
+  );
+}
+
 type ScreenStateKind = 'loading' | 'empty' | 'error' | 'offline';
 export function KlippScreenState({ kind, title, description, actionLabel, onAction, mode = 'light' }: { kind: ScreenStateKind; title: string; description: string; actionLabel?: string; onAction?: () => void; mode?: KlippColorMode }) {
   const p = getKlippPalette(mode);
@@ -76,6 +110,9 @@ const styles = StyleSheet.create({
   helper: { fontSize: 12, lineHeight: 16 },
   status: { alignSelf: 'flex-start', minHeight: 28, borderRadius: KlippTokens.radius.pill, paddingHorizontal: 10, paddingVertical: 5, justifyContent: 'center' },
   statusText: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  notice: { borderWidth: 1, borderRadius: KlippTokens.radius.md, padding: 14, gap: 9 },
+  noticeTitle: { fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  noticeMessage: { fontSize: 13, lineHeight: 19 },
   state: { minHeight: 220, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   stateMark: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   stateMarkText: { fontSize: 26, fontWeight: '700' },
