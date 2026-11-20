@@ -163,8 +163,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               </View>
               <View style={styles.topRight}>
                 <Text style={styles.topRightText}>{isRegister ? '¿Ya tienes cuenta?' : '¿Primera vez?'}</Text>
-                <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} style={styles.topLink}>
-                  {isRegister ? 'Entrar' : 'Crear cuenta'}
+                <Link href={isRegister ? '/(auth)/login' : '/(auth)/register'} asChild>
+                  <Text style={styles.topLink}>{isRegister ? 'Entrar' : 'Crear cuenta'}</Text>
                 </Link>
               </View>
             </View>
@@ -243,7 +243,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                       <Pressable accessibilityRole="button" onPress={() => setShowPassword((current) => !current)} style={styles.passwordToggle}>
                         <Text style={styles.passwordToggleText}>{showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}</Text>
                       </Pressable>
-                      <View style={styles.forgotRow}><Link href="/(auth)/reset-password" style={styles.textLink}>¿Olvidaste tu contraseña?</Link></View>
+                      <View style={styles.forgotRow}><Link href="/(auth)/reset-password" asChild><Text style={styles.textLink}>¿Olvidaste tu contraseña?</Text></Link></View>
                     </View>
                   </>
                 )}
