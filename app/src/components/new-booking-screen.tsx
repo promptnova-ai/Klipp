@@ -1,4 +1,5 @@
 import { Image } from 'expo-image';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -35,6 +36,37 @@ type ServiceOffer = {
   distance_m?: number;
 };
 type BookingDateOption = { key: string; weekday: string; day: string; month: string };
+
+function createBookingIdempotencyUuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === 'x' ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
+async function getBookingIdempotencyKey(userId: string, fingerprint: string) {
+  const storageKey = `klipp:booking-create:${userId}`;
+  const existing = await AsyncStorage.getItem(storageKey);
+  if (existing) {
+    try {
+      const parsed = JSON.parse(existing) as { key?: string; fingerprint?: string };
+      if (
+        parsed.fingerprint === fingerprint
+        && typeof parsed.key === 'string'
+        && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(parsed.key)
+      ) {
+        return { key: parsed.key, storageKey };
+      }
+    } catch {
+      // Replace malformed local state with a fresh idempotency key.
+    }
+  }
+
+  const key = createBookingIdempotencyUuid();
+  await AsyncStorage.setItem(storageKey, JSON.stringify({ key, fingerprint }));
+  return { key, storageKey };
+}
 
 function isAmbiguousBookingRpcError(error: { code?: string; status?: number }) {
   if (typeof error.status === 'number') return error.status >= 500;
@@ -576,6 +608,9 @@ export function NewBookingScreen() {
 
       const browserResult = await WebBrowser.openAuthSessionAsync(data.checkoutUrl, 'klipp://payment-return');
       if (browserResult.type === 'success' && browserResult.url.includes('result=success')) {
+        if (session?.user.id) {
+          await AsyncStorage.removeItem(`klipp:booking-create:${session.user.id}`).catch(() => undefined);
+        }
         setPendingPaymentBookingId(null);
         setSuccess('Pago completado. Estamos confirmando la reserva con Stripe; podrás seguir su estado en Mis reservas.');
         return;
@@ -640,6 +675,20 @@ export function NewBookingScreen() {
     let bookingCreationAttempted = false;
 
     try {
+      const requestFingerprint = JSON.stringify({
+        serviceTypeId,
+        pricingTierId,
+        professionalId,
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        addressText,
+        landmarkNotes,
+        scheduledStart,
+        expectedPrice,
+        expectedMinutes,
+        mode,
+      });
+      const { key: idempotencyKey } = await getBookingIdempotencyKey(session.user.id, requestFingerprint);
       bookingCreationAttempted = true;
       const { data: bookingId, error: rpcError } = await supabase.rpc('create_stripe_prepaid_service_booking_at_location', {
         p_service_type_id: serviceTypeId,
@@ -653,6 +702,7 @@ export function NewBookingScreen() {
         p_expected_price_dop: expectedPrice,
         p_expected_est_minutes: expectedMinutes,
         p_mode: mode,
+        p_idempotency_key: idempotencyKey,
       });
 
       if (rpcError) {
