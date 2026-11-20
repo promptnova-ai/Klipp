@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 
 import { useAuth } from '@/components/auth-provider';
@@ -124,7 +124,7 @@ export function ClientSupportScreen() {
               {bookings.map((booking) => (
                 <Pressable key={booking.id} onPress={() => setSelectedBooking(booking.id)} style={[styles.bookingOption, selectedBooking === booking.id && styles.bookingOptionSelected]}>
                   <Text style={styles.bookingText}>{booking.service_types?.name ?? 'Servicio'} · {new Date(booking.scheduled_start).toLocaleDateString('es-DO')}</Text>
-                  <Text style={styles.bookingStatus}>{booking.status.replaceAll('_', ' ')}</Text>
+                  <Text style={styles.bookingStatus}>{booking.status.replace(/_/g, ' ')}</Text>
                 </Pressable>
               ))}
             </View>
