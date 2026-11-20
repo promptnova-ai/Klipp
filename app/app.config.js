@@ -13,6 +13,9 @@ module.exports = {
 
   plugins: [
     ...appConfig.plugins,
+    'expo-image',
+    'expo-status-bar',
+    'expo-web-browser',
     [
       'react-native-maps',
       {
