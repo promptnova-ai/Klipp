@@ -202,3 +202,11 @@ Toda pantalla con datos remotos debe definir:
 ## Estado de implementación
 
 En esta rama se añaden tokens exportables y componentes nativos reutilizables. El documento define el contrato visual y el inventario de producto; no significa que todas las pantallas existentes ya hayan sido migradas. La adopción debe hacerse por flujo, con revisión visual y pruebas en dispositivos reales.
+
+
+## Autenticación y registro
+
+- Login y registro cliente comparten la presentación corporativa azul marino, turquesa y dorado.
+- El registro cliente exige confirmación de contraseña antes de habilitar el envío.
+- El registro profesional mantiene onboarding de cuatro pasos, una sola profesión principal, precios por modalidad, herramientas, cobertura y disponibilidad.
+- La implementación actual de autenticación usa correo y contraseña con confirmación por correo. El OTP telefónico RD de seis dígitos es una necesidad pendiente, no una función que deba simularse en la interfaz.

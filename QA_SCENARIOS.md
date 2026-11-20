@@ -665,3 +665,19 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 6. Comparar la tarifa base mostrada en la ficha con el importe definitivo que devuelve la reserva; no presentar la tarifa base como total final si la modalidad aún no está elegida.
 
 **Resultado esperado:** Las tarjetas comparten jerarquía, superficies y espaciado del sistema Klipp. Los datos ausentes se representan con alternativas explícitas, nunca con valores inventados. La selección es accesible y el precio se identifica como tarifa base cuando todavía no constituye el total de la reserva.
+
+
+### QA-UI-04 — Login y registro de cliente y profesional
+
+**Prioridad:** Crítica  
+**Precondición:** Entorno QA, correo de prueba controlado y proveedor de correo de confirmación disponible.
+
+1. Abrir login y comprobar jerarquía visual, legibilidad, navegación a registro y recuperación de contraseña en móvil y escritorio.
+2. Abrir registro cliente, validar nombre, correo, contraseña mínima y confirmación; probar contraseñas no coincidentes y campos vacíos.
+3. Completar registro con un correo sintético y verificar el comportamiento real de confirmación de correo de Supabase; no asumir que existe OTP telefónico.
+4. Abrir registro profesional y completar los cuatro pasos: datos personales, una única profesión, modalidades/herramientas y cobertura/horario, y credenciales.
+5. Probar errores de red y de catálogo, volver atrás entre pasos y comprobar que los datos ya introducidos se conservan.
+6. Probar mostrar/ocultar contraseña, estados busy, teclado y lector de pantalla.
+7. Confirmar que ningún estado visual afirma que el teléfono fue verificado si no se ejecutó una verificación OTP real.
+
+**Resultado esperado:** Login, registro cliente y onboarding PRO mantienen la autenticación existente y ofrecen una experiencia visual coherente con Klipp. Las validaciones locales son claras. La confirmación por correo se comunica como tal; el OTP telefónico se considera pendiente hasta que exista y se pruebe el flujo backend correspondiente.

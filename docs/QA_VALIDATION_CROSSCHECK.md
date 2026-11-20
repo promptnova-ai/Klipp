@@ -85,3 +85,10 @@ Se identifican **50 escenarios** en `QA_SCENARIOS.md`. En esta iteración se rev
 - **Bloqueado:** no se puede ejecutar por dependencia o entorno ausente.
 - **Pendiente:** todavía no ejecutado.
 
+
+
+## Anexo — Autenticación y registro
+
+Se revisaron los componentes `auth-screen.tsx` y `pro-registration-screen.tsx`. La iteración visual actualiza la jerarquía del acceso, la cabecera de marca, las tarjetas de rol y la presentación del onboarding PRO. El registro cliente ahora solicita confirmar la contraseña y valida coincidencia antes de habilitar el envío.
+
+**Limitación funcional importante:** el flujo conectado actualmente usa `signInWithPassword` y `signUp` de Supabase con correo y contraseña y confirmación por correo. No hay evidencia en el código revisado de un OTP SMS de seis dígitos ni de un flujo de autenticación telefónica RD (+1 809/829/849). No se debe presentar el teléfono como verificado ni simular un OTP en UI. QA-UI-04 debe mantenerse pendiente hasta ejecutar pruebas reales en QA y resolver esa brecha de producto/backend.
