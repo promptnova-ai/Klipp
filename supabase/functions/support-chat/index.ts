@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
     let handedOff = requiresHuman(conversation.category, message);
 
     if (aiKey && aiModel && !handedOff) {
-      const [{ data: booking }, { data: matchedKnowledge }, { data: history }] = await Promise.all([
+      const [{ data: booking }, { data: matchedKnowledge }] = await Promise.all([
         conversation.booking_id
           ? userClient.from("bookings")
               .select("status, scheduled_start, service_types(name)")
@@ -143,11 +143,6 @@ Deno.serve(async (req: Request) => {
           .eq("published", true)
           .textSearch("search_vector", redactSensitiveText(message), { config: "spanish", type: "websearch" })
           .limit(5),
-        userClient.from("support_messages")
-          .select("sender_type, content, created_at")
-          .eq("conversation_id", conversationId)
-          .order("created_at", { ascending: false })
-          .limit(8),
       ]);
       const categoryFallback: Record<string, string> = {
         booking: "reservas",
@@ -166,10 +161,6 @@ Deno.serve(async (req: Request) => {
         knowledge = fallbackKnowledge ?? [];
       }
 
-      const safeHistory = (history ?? []).reverse().map((entry) => ({
-        role: entry.sender_type === "admin" ? "support_agent" : entry.sender_type === "assistant" ? "assistant" : "user",
-        content: redactSensitiveText(entry.content),
-      }));
       const serviceName = Array.isArray(booking?.service_types)
         ? booking.service_types[0]?.name
         : (booking?.service_types as { name?: string } | null)?.name;
@@ -187,7 +178,6 @@ Deno.serve(async (req: Request) => {
       if (safeKnowledge.length > 0) {
         const prompt = JSON.stringify({
           customer_message: redactSensitiveText(message),
-          conversation_history: safeHistory,
           booking_context: safeBooking,
           knowledge_base: safeKnowledge,
         });

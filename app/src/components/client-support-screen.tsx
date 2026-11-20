@@ -146,7 +146,7 @@ export function ClientSupportScreen() {
           <View style={styles.assistantIcon}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor="#EAB308" size={22} /></View>
           <View style={styles.assistantCopy}>
             <Text style={styles.assistantTitle}>Asistente Klipp</Text>
-            <Text style={styles.assistantText}>El asistente consulta la información oficial de Klipp y solo los datos necesarios de tu reserva. Si no encuentra una respuesta fiable, deriva el caso a nuestro equipo.</Text>
+            <Text style={styles.assistantText}>El asistente consulta artículos oficiales y el estado básico de tu reserva. Filtramos patrones habituales de datos sensibles antes de procesar el mensaje. No envíes contraseñas, códigos, documentos, direcciones completas ni datos bancarios.</Text>
           </View>
         </View>
 
