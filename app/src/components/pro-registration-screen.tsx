@@ -59,7 +59,7 @@ const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicle
 export function ProRegistrationScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const compact = width < 540;
+  const compact = width < 540;\n  const narrow = width < 360;
   const { signUp } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
@@ -334,8 +334,8 @@ export function ProRegistrationScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
-        <View style={styles.header}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0} style={styles.flex}>
+        <View style={[styles.header, narrow && styles.headerNarrow]}>
           <Pressable accessibilityRole="button" onPress={() => step === 0 ? router.back() : animateToStep(step - 1)} style={styles.backButton}>
             <Text style={styles.backText}>‹</Text>
           </Pressable>
@@ -351,7 +351,7 @@ export function ProRegistrationScreen() {
         <View style={styles.progressWrap}>
           <OnboardingProgress steps={steps.map((item) => item.eyebrow)} current={step} accent={RoleThemes.pro.accent} />
         </View>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'} contentContainerStyle={[styles.scrollContent, compact && styles.scrollContentCompact]} keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'} keyboardShouldPersistTaps="handled">
           <Animated.View
             style={[
               styles.stepContent,
@@ -659,7 +659,7 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  header: { width: '100%', maxWidth: 760, minHeight: 68, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: KlippColors.white, borderBottomWidth: 1, borderBottomColor: KlippColors.border },
+  header: { width: '100%', maxWidth: 760, minHeight: 68, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: KlippColors.white, borderBottomWidth: 1, borderBottomColor: KlippColors.border, gap: 8 },\n  headerNarrow: { minHeight: 58, paddingHorizontal: 14 },
   backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13 },
   backText: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -670,7 +670,7 @@ const styles = StyleSheet.create({
   brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
   stepCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   progressWrap: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 32 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 32 },\n  scrollContentCompact: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24 },
   stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
