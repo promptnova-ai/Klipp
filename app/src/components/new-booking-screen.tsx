@@ -9,6 +9,7 @@ import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
 import { KlippColors } from '@/lib/brand';
+import { KlippButton, KlippCard, KlippField, KlippScreenState, KlippStatus } from '@/design-system';
 import { supabase } from '../../lib/supabase';
 import { formatDop } from '@/lib/format';
 import type { ProCard, PricingTier, Review, ServiceType } from '@/lib/types';
@@ -123,6 +124,14 @@ export function NewBookingScreen() {
     [],
   );
   const selectedOffer = offers.find((offer) => offer.id === selectedOfferId) ?? null;
+  const bookingStepState = [
+    selectedServiceId !== null && (visibleTiers.length === 0 ? selectedOfferId !== null : selectedTierId !== null),
+    coordinate !== null,
+    timing === 'now' || scheduledTime.length > 0,
+    selectedOfferId !== null || mode === 'auto' || selectedProId !== null,
+  ];
+  const completedBookingSteps = bookingStepState.filter(Boolean).length;
+  const bookingProgress = Math.round((completedBookingSteps / bookingStepState.length) * 100);
   const getScheduledStart = useCallback(() => {
     if (timing === 'now') return new Date(Date.now() + 15 * 60 * 1000).toISOString();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(scheduledTime)) return null;
@@ -684,12 +693,30 @@ export function NewBookingScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando opciones...</Text></View>;
+  if (loading) return <KlippScreenState kind="loading" title="Preparando tu reserva" description="Estamos cargando los servicios y horarios disponibles." mode="light" />;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.back, pressed && styles.pressed]}><Text style={styles.backText}>‹  Volver</Text></Pressable>
-      <BrandScreenHeader eyebrow="RESERVAS" title="Nueva reserva" subtitle="Elige servicio, horario y profesional." />
+      <BrandScreenHeader eyebrow="RESERVAS" title="Solicita un servicio" subtitle="Selecciona lo que necesitas y cuándo quieres recibirlo." />
+      <View style={styles.progressCard}>
+        <View style={styles.progressHeading}>
+          <View style={styles.progressCopy}>
+            <Text style={styles.progressEyebrow}>TU RESERVA</Text>
+            <Text style={styles.progressTitle}>Completa los detalles</Text>
+          </View>
+          <KlippStatus label={`${completedBookingSteps} de 4 pasos`} tone={completedBookingSteps === 4 ? 'success' : 'info'} mode="light" />
+        </View>
+        <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${bookingProgress}%` }]} /></View>
+        <View style={styles.progressLabels}>
+          {['Servicio', 'Ubicación', 'Horario', 'Profesional'].map((label, index) => (
+            <View key={label} style={styles.progressLabelItem}>
+              <View style={[styles.progressDot, bookingStepState[index] && styles.progressDotDone]} />
+              <Text style={[styles.progressLabel, bookingStepState[index] && styles.progressLabelDone]}>{label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
       {success && <View style={styles.successBanner}><Text style={styles.successTitle}>{success}</Text><Pressable onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => pressed && styles.pressed}><Text style={styles.successLink}>Ver mis reservas</Text></Pressable></View>}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
 
@@ -743,28 +770,11 @@ export function NewBookingScreen() {
         ) : coordinate ? (
           <>
             <LocationPicker coordinate={coordinate} onChange={updateCoordinate} />
-            <Text style={styles.label}>Dirección aproximada</Text>
-            <TextInput
-              accessibilityLabel="Dirección aproximada"
-              onChangeText={setAddressText}
-              placeholder="Calle, barrio y ciudad"
-              placeholderTextColor={KlippColors.muted}
-              style={styles.addressInput}
-              value={addressText}
-            />
+            <KlippField label="Dirección aproximada" helper="Comprueba que el punto del mapa coincide con la dirección." onChangeText={setAddressText} placeholder="Calle, sector y ciudad" value={addressText} mode="light" />
             <Pressable accessibilityRole="button" onPress={() => void requestCurrentLocation()} style={({ pressed }) => [styles.adjustLocation, pressed && styles.pressed]}>
               <Text style={styles.adjustLocationText}>Actualizar a mi ubicación actual</Text>
             </Pressable>
-            <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
-            <TextInput
-              accessibilityLabel="Indicaciones / Punto de referencia"
-              multiline
-              onChangeText={setLandmarkNotes}
-              placeholder="Apto 4B, frente al colmado, portón blanco"
-              placeholderTextColor={KlippColors.muted}
-              style={styles.notesInput}
-              value={landmarkNotes}
-            />
+            <KlippField label="Punto de referencia" helper="Añade detalles para que el profesional encuentre la entrada." multiline numberOfLines={3} onChangeText={setLandmarkNotes} placeholder="Ej. edificio azul, portón blanco..." style={styles.notesInput} value={landmarkNotes} mode="light" />
           </>
         ) : (
           <View style={styles.locationPermissionPrompt}>
@@ -884,7 +894,7 @@ export function NewBookingScreen() {
       </Section>
 
       {(selectedTier || selectedOffer || (mode === 'auto' && selectedServiceId)) && coordinate && (timing === 'now' || (scheduledDate && scheduledTime)) && (
-        <View style={styles.summaryCard}>
+        <KlippCard style={styles.summaryCard} mode="light">
           <View style={styles.summaryHeading}>
             <View>
               <Text style={styles.totalLabel}>RESUMEN DE TU RESERVA</Text>
@@ -917,24 +927,20 @@ export function NewBookingScreen() {
               <Text style={styles.priceLine}>{mode === 'manual' && !selectedOffer && !selectedProId ? 'Elige profesional' : manualPriceLoading ? 'Consultando…' : selectedPrice ? formatDop(selectedPrice) : mode === 'manual' && !selectedOffer ? 'Tarifa no disponible' : formatDop(0)}</Text>
             </View>
           )}
-        </View>
+        </KlippCard>
       )}
       {error && <Text accessibilityRole="alert" style={[styles.error, styles.horizontalMargin]}>{error}</Text>}
       {submissionUncertain ? (
-        <Pressable accessibilityRole="button" onPress={() => router.replace('/(client)/bookings')} style={({ pressed }) => [styles.submit, pressed && styles.buttonPressed]}>
-          <Text style={styles.submitText}>Revisar Mis reservas</Text>
-        </Pressable>
+        <View style={styles.horizontalMargin}><KlippButton label="Revisar mis reservas" onPress={() => router.replace('/(client)/bookings')} mode="light" /></View>
       ) : !success && (
-        <Pressable accessibilityRole="button" disabled={saving || !coordinate || locationLoading} onPress={() => void createBooking()} style={({ pressed }) => [styles.submit, (saving || !coordinate || locationLoading) && styles.disabled, pressed && !saving && styles.buttonPressed]}>
-          {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'}</Text>}
-        </Pressable>
+        <View style={styles.horizontalMargin}><KlippButton label={timing === 'now' ? 'Solicitar ahora' : 'Solicitar servicio'} onPress={() => void createBooking()} loading={saving} disabled={!coordinate || locationLoading || !selectedServiceId || (!selectedOffer && !selectedTier && mode !== 'auto') || (timing === 'scheduled' && !scheduledTime) || (mode === 'manual' && !selectedOffer && !selectedProId)} mode="light" accessibilityHint="Envía tu solicitud de servicio a Klipp." /></View>
       )}
     </ScrollView>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
+  return <KlippCard style={styles.section} mode="light"><Text style={styles.sectionTitle}>{title}</Text>{children}</KlippCard>;
 }
 
 function Choice({ selected, label, secondary, onPress }: { selected: boolean; label: string; secondary?: string; onPress: () => void }) {
@@ -954,6 +960,19 @@ function ModeOption({ label, selected, onPress }: { label: string; selected: boo
 }
 
 const styles = StyleSheet.create({
+  progressCard: { marginHorizontal: 20, padding: 16, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border, gap: 13 },
+  progressHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  progressCopy: { flex: 1, gap: 3 },
+  progressEyebrow: { color: KlippColors.blueDark, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
+  progressTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '800' },
+  progressTrack: { height: 6, overflow: 'hidden', borderRadius: 999, backgroundColor: '#E8EDF4' },
+  progressFill: { height: 6, borderRadius: 999, backgroundColor: KlippColors.teal },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', gap: 5 },
+  progressLabelItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  progressDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#CBD5E1' },
+  progressDotDone: { backgroundColor: KlippColors.teal },
+  progressLabel: { color: KlippColors.muted, fontSize: 9, fontWeight: '600' },
+  progressLabelDone: { color: KlippColors.tealDark, fontWeight: '800' },
   equipmentNotice: { color: KlippColors.slate, fontSize: 13, lineHeight: 19, padding: 12, borderRadius: 10, backgroundColor: '#F1F7FD', borderWidth: 1, borderColor: '#C9DDF2' },
   equipmentRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 3 },
   equipmentBullet: { color: '#047857', fontSize: 14, fontWeight: '800' },
@@ -966,7 +985,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.88 },
   backText: { color: KlippColors.blueDark, fontSize: 15, fontWeight: '700' },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
-  section: { marginHorizontal: 20, padding: 18, borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 12, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  section: { marginHorizontal: 20, padding: 18, borderRadius: 22, gap: 12 },
   sectionTitle: { color: KlippColors.navy, fontSize: 17, fontWeight: '700', marginBottom: 2 },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   addressInput: { minHeight: 48, paddingHorizontal: 13, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 13, color: KlippColors.navy, fontSize: 14, backgroundColor: KlippColors.white },
@@ -1038,7 +1057,7 @@ const styles = StyleSheet.create({
   totalLabel: { color: KlippColors.blueDark, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
   totalHint: { color: KlippColors.muted, fontSize: 12, marginTop: 4 },
   priceLine: { color: KlippColors.blueDark, fontSize: 17, fontWeight: '800' },
-  summaryCard: { marginHorizontal: 20, padding: 17, borderRadius: 20, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white, gap: 13, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  summaryCard: { marginHorizontal: 20, padding: 17, borderRadius: 20, gap: 13 },
   summaryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   summaryTitle: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', marginTop: 4 },
   summaryIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ECFDF5' },
