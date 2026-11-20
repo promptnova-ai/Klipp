@@ -10,6 +10,7 @@ export type GeoPoint = { type: 'Point'; coordinates: [number, number] };
 export type AssignmentMode = 'manual' | 'auto';
 export type BookingStatus =
   | 'requested'
+  | 'payment_pending'
   | 'awaiting_payment'
   | 'scheduled'
   | 'en_route'
