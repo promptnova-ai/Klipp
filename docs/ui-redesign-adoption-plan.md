@@ -22,8 +22,8 @@ Motivos:
 
 ## Dirección visual para Klipp
 
-- Tema principal oscuro: fondo `#0A0A0B`, superficies `#18181B`, bordes `#27272A`.
-- Acentos bronce/oro: `#EAB308` a `#CA8A04`.
+- Identidad corporativa como fuente de verdad: azul marino `#153B66`, azul profundo `#0E2D50`, turquesa `#16B8AD` y dorado cálido `#F4A340`.
+- La experiencia principal conserva el lienzo claro `#F5F7FA`, superficies blancas y texto azul marino. El modo oscuro opcional usa fondos azul profundo y los mismos acentos turquesa/dorado; no se introduce una paleta negra/dorada ajena a la marca.
 - Tipografía consistente, jerarquía fuerte y espaciado amplio.
 - Cliente: búsqueda y elección de servicio primero; reserva guiada en pasos cortos; mapa y estado como foco durante el servicio.
 - Klipp PRO: panel operativo; disponibilidad y solicitudes en primer plano; oferta entrante de pantalla completa con temporizador, ubicación, precio neto y acciones inequívocas.
