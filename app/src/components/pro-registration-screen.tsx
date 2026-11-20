@@ -59,7 +59,8 @@ const transportOptions = ['Motor', 'Automóvil', 'Transporte público', 'Bicicle
 export function ProRegistrationScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const compact = width < 540;\n  const narrow = width < 360;
+  const compact = width < 540;
+  const narrow = width < 360;
   const { signUp } = useAuth();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState('');
@@ -659,7 +660,8 @@ function Chip({ label, selected, onPress }: { label: string; selected: boolean; 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   safeArea: { flex: 1, backgroundColor: KlippColors.canvas },
-  header: { width: '100%', maxWidth: 760, minHeight: 68, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: KlippColors.white, borderBottomWidth: 1, borderBottomColor: KlippColors.border, gap: 8 },\n  headerNarrow: { minHeight: 58, paddingHorizontal: 14 },
+  header: { width: '100%', maxWidth: 760, minHeight: 68, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, backgroundColor: KlippColors.white, borderBottomWidth: 1, borderBottomColor: KlippColors.border, gap: 8 },
+  headerNarrow: { minHeight: 58, paddingHorizontal: 14 },
   backButton: { width: 42, height: 42, alignItems: 'flex-start', justifyContent: 'center', borderRadius: 13 },
   backText: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -670,7 +672,8 @@ const styles = StyleSheet.create({
   brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
   stepCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
   progressWrap: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
-  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 32 },\n  scrollContentCompact: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24 },
+  scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 32 },
+  scrollContentCompact: { paddingHorizontal: 16, paddingTop: 22, paddingBottom: 24 },
   stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
   heading: { gap: 8, marginBottom: 2 },
   eyebrow: { color: RoleThemes.pro.accentStrong, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
