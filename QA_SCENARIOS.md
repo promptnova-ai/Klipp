@@ -623,3 +623,30 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 6. Intentar invocar el RPC antiguo de 11 argumentos desde `authenticated`.
 
 **Resultado esperado:** La repetición con la misma clave y los mismos datos devuelve la reserva original sin insertar otra. Reutilizar la clave con datos distintos se rechaza. Una clave nueva representa una nueva intención de reserva. El RPC antiguo no es ejecutable por clientes autenticados; la nueva firma exige clave de idempotencia. La tabla de idempotencia no es legible directamente por `anon` ni `authenticated`.
+
+### QA-UI-01 — Recuperación de errores en bandejas de trabajo
+
+**Prioridad:** Alta  
+**Precondición:** Sesión autenticada de cliente y de profesional en el entorno QA.
+
+1. Abrir **Solicitudes PRO**, **Agenda PRO** y **Mis reservas** con conexión disponible.
+2. Interrumpir la red antes de que terminen las consultas iniciales.
+3. Comprobar que cada pantalla deja de mostrar el estado de carga y presenta un aviso de error con acción **Reintentar**.
+4. Restaurar la conexión y pulsar **Reintentar**.
+5. Repetir provocando un fallo parcial: solicitudes pero no sustituciones, agenda pero no bloqueos de reasignación, reservas pero no reseñas/pagos/cola.
+6. Comprobar que la información que sí se pudo recuperar permanece visible y que el aviso identifica que la actualización fue parcial.
+
+**Resultado esperado:** Ninguna pantalla queda cargando indefinidamente. El reintento vuelve a consultar los datos y los errores parciales no borran datos válidos que ya estaban disponibles.
+
+### QA-UI-02 — Liberación de controles después de fallos RPC
+
+**Prioridad:** Alta  
+**Precondición:** Reserva u oferta de prueba en un estado que permita ejecutar la acción correspondiente.
+
+1. En Solicitudes PRO, provocar un error de red al aceptar/rechazar una oferta y comprobar que el control deja de mostrar «Enviando».
+2. Reintentar con la conexión restablecida y comprobar que el servidor determina el resultado final de la oferta.
+3. En Agenda PRO, provocar un error al avanzar el estado o confirmar herramientas.
+4. Comprobar que el botón vuelve a estar habilitado y que no se muestra un estado local como confirmado si el servidor no lo confirmó.
+5. Repetir la acción después de una respuesta satisfactoria y comprobar que el flujo no duplica mensajes ni reservas.
+
+**Resultado esperado:** Los indicadores busy y refreshing se liberan incluso si la llamada falla por excepción. La interfaz solo refleja un cambio de estado después de una respuesta válida del servidor; los reintentos consultan el estado persistido antes de continuar.
