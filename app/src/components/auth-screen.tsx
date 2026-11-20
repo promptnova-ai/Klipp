@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   shell: { width: '100%', maxWidth: 1180, alignSelf: 'center', flex: 1 },
   topBar: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28, gap: 8 },
   topBarNarrow: { minHeight: 52, marginBottom: 16 },
-  backButton: { width: 42, height: 42, justifyContent: 'center' },
+  backButton: { width: 44, height: 44, justifyContent: 'center' },
   backArrow: { color: KlippColors.navy, fontSize: 34, lineHeight: 38 },
   brandLockup: { flexDirection: 'row', alignItems: 'center', gap: 10, marginRight: 'auto' },
   brandMark: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: KlippColors.navy },
