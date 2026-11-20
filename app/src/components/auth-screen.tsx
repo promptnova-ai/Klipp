@@ -86,8 +86,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   function validateStep() {
     if (step === 0 && fullName.trim().length < 2) return 'Escribe tu nombre y apellido para continuar.';
     if (step === 1) {
-      if (phone.replace(/\\D/g, '').length !== 10) return 'Introduce un número dominicano válido de 10 dígitos.';
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+      if (phone.replace(/\D/g, '').length !== 10) return 'Introduce un número dominicano válido de 10 dígitos.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
     }
     if (step === 2) {
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
@@ -116,7 +116,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
         return;
       }
     } else {
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         setError('Escribe un correo electrónico válido.');
         return;
       }
@@ -130,7 +130,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     try {
       if (isRegister) {
         const hasSession = await signUp(email.trim(), password, fullName.trim(), role, {
-          phone: `+1${phone.replace(/\\D/g, '')}`,
+          phone: `+1${phone.replace(/\D/g, '')}`,
         });
         if (hasSession) router.replace('/');
         else setNotice('Te enviamos un correo para confirmar tu cuenta. Después podrás iniciar sesión.');
