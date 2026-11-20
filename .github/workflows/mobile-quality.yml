@@ -46,6 +46,20 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Dependency audit
+        run: |
+          npm audit --json > npm-audit.json || true
+          node -e 'const report=require("./npm-audit.json"); const counts=report.metadata?.vulnerabilities ?? {}; console.log("Dependency audit:", JSON.stringify(counts)); for (const [name, issue] of Object.entries(report.vulnerabilities ?? {})) console.log(name + ": " + issue.severity + "; direct=" + issue.isDirect + "; fix=" + JSON.stringify(issue.fixAvailable));'
+
+      - name: Upload dependency audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-dependency-audit
+          path: app/npm-audit.json
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: TypeScript
         run: npx tsc --noEmit
 
@@ -57,3 +71,14 @@ jobs:
 
       - name: Export Android JavaScript bundle
         run: npx expo export --platform android --output-dir dist-android
+
+      - name: Upload iOS and Android JavaScript bundles
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: klipp-mobile-js-bundles
+          path: |
+            app/dist-ios
+            app/dist-android
+          if-no-files-found: error
+          retention-days: 7
