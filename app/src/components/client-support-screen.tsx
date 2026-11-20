@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
@@ -9,7 +9,8 @@ import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 
 type BookingOption = { id: string; status: string; scheduled_start: string; service_types: { name: string } | null };
-type SupportCase = { id: string; subject: string; category: string; status: 'open' | 'in_review' | 'resolved'; created_at: string };
+type SupportCase = { id: string; subject: string; category: string; status: 'open' | 'in_review' | 'resolved'; handoff_requested: boolean; created_at: string };
+type SupportMessage = { id: number; sender_type: 'client' | 'admin' | 'assistant' | 'system'; content: string; created_at: string };
 
 const topics = [
   { id: 'booking', title: 'Mi reserva', detail: 'Cambios, retrasos o cancelaciones', icon: 'calendar' },
@@ -20,7 +21,6 @@ const topics = [
 ] as const;
 
 export function ClientSupportScreen() {
-  const router = useRouter();
   const { session } = useAuth();
   const userId = session?.user.id;
   const [bookings, setBookings] = useState<BookingOption[]>([]);
@@ -28,6 +28,9 @@ export function ClientSupportScreen() {
   const [selectedTopic, setSelectedTopic] = useState<string>('booking');
   const [selectedBooking, setSelectedBooking] = useState<string | null>(null);
   const [description, setDescription] = useState('');
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<SupportMessage[]>([]);
+  const [chatDraft, setChatDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +41,7 @@ export function ClientSupportScreen() {
     setLoading(true);
     const [bookingResult, caseResult] = await Promise.all([
       supabase.from('bookings').select('id, status, scheduled_start, service_types(name)').eq('client_id', userId).order('created_at', { ascending: false }).limit(8),
-      supabase.from('support_conversations').select('id, subject, category, status, created_at').eq('client_id', userId).order('created_at', { ascending: false }).limit(5),
+      supabase.from('support_conversations').select('id, subject, category, status, handoff_requested, created_at').eq('client_id', userId).order('created_at', { ascending: false }).limit(5),
     ]);
     if (bookingResult.error || caseResult.error) setError(bookingResult.error?.message ?? caseResult.error?.message ?? 'No pudimos cargar el centro de ayuda.');
     else {
@@ -49,6 +52,22 @@ export function ClientSupportScreen() {
   }, [userId]);
 
   useFocusEffect(useCallback(() => { void load(); }, [load]));
+
+  useEffect(() => {
+    if (!selectedCaseId) { setMessages([]); return; }
+    let active = true;
+    void supabase.from('support_messages')
+      .select('id, sender_type, content, created_at')
+      .eq('conversation_id', selectedCaseId)
+      .order('created_at', { ascending: true })
+      .limit(100)
+      .then(({ data, error: queryError }) => {
+        if (!active) return;
+        if (queryError) setError(queryError.message);
+        else setMessages((data ?? []) as SupportMessage[]);
+      });
+    return () => { active = false; };
+  }, [selectedCaseId]);
 
   async function submitCase() {
     if (!userId || description.trim().length < 12 || sending) return;
@@ -64,7 +83,7 @@ export function ClientSupportScreen() {
         category: selectedTopic,
         subject: topic?.title ?? 'Consulta',
         status: 'open',
-        handoff_requested: true,
+        handoff_requested: false,
       })
       .select('id')
       .single();
@@ -73,21 +92,50 @@ export function ClientSupportScreen() {
       setSending(false);
       return;
     }
-    const { error: messageError } = await supabase.from('support_messages').insert({
-      conversation_id: conversation.id,
-      sender_id: userId,
-      sender_type: 'client',
-      content: description.trim(),
+    const initialMessage = description.trim();
+    setSelectedCaseId(conversation.id);
+    setChatDraft(initialMessage);
+    const { error: chatError } = await supabase.functions.invoke('support-chat', {
+      body: { conversationId: conversation.id, message: initialMessage },
     });
-    if (messageError) {
-      setError('El caso se creó, pero no pudimos guardar el mensaje. Vuelve a intentarlo desde el centro de ayuda.');
+    if (chatError) {
+      setError('El caso se ha creado, pero no pudimos activar el chat. Tu mensaje sigue preparado para que puedas reintentarlo.');
     } else {
       setDescription('');
-      setNotice('Hemos recibido tu consulta. Está pendiente de revisión por el equipo Klipp.');
+      setChatDraft('');
+      setNotice('Tu consulta está registrada. Si hace falta, el equipo Klipp continuará contigo por este chat.');
       await load();
+      const { data } = await supabase.from('support_messages')
+        .select('id, sender_type, content, created_at')
+        .eq('conversation_id', conversation.id)
+        .order('created_at', { ascending: true }).limit(100);
+      setMessages((data ?? []) as SupportMessage[]);
     }
     setSending(false);
   }
+
+  async function sendChatMessage() {
+    if (!userId || !selectedCaseId || chatDraft.trim().length < 2 || sending) return;
+    setSending(true); setError(null); setNotice(null);
+    const { error: chatError } = await supabase.functions.invoke('support-chat', {
+      body: { conversationId: selectedCaseId, message: chatDraft.trim() },
+    });
+    if (chatError) {
+      setError('No se pudo enviar el mensaje. Conservamos el texto para que puedas reintentarlo.');
+    } else {
+      setChatDraft('');
+      await load();
+      const { data, error: queryError } = await supabase.from('support_messages')
+        .select('id, sender_type, content, created_at')
+        .eq('conversation_id', selectedCaseId)
+        .order('created_at', { ascending: true }).limit(100);
+      if (queryError) setError(queryError.message);
+      else setMessages((data ?? []) as SupportMessage[]);
+    }
+    setSending(false);
+  }
+
+  const selectedCase = cases.find((item) => item.id === selectedCaseId) ?? null;
 
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
@@ -97,7 +145,7 @@ export function ClientSupportScreen() {
           <View style={styles.assistantIcon}><SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor="#EAB308" size={22} /></View>
           <View style={styles.assistantCopy}>
             <Text style={styles.assistantTitle}>Asistente Klipp</Text>
-            <Text style={styles.assistantText}>Estamos preparando la asistencia automática para resolver dudas usando información de tus reservas. Mientras tanto, puedes abrir un caso y lo revisaremos personalmente.</Text>
+            <Text style={styles.assistantText}>El asistente consulta la información oficial de Klipp y solo los datos necesarios de tu reserva. Si no encuentra una respuesta fiable, deriva el caso a nuestro equipo.</Text>
           </View>
         </View>
 
@@ -145,11 +193,37 @@ export function ClientSupportScreen() {
 
         <View style={styles.casesHeader}><Text style={styles.sectionTitle}>Tus consultas recientes</Text><Pressable onPress={() => void load()}><Text style={styles.refresh}>Actualizar</Text></Pressable></View>
         {loading ? <ActivityIndicator color={KlippColors.blue} /> : cases.length === 0 ? <Text style={styles.emptyText}>Todavía no has abierto ninguna consulta.</Text> : cases.map((item) => (
-          <View key={item.id} style={styles.caseRow}>
-            <View style={styles.caseCopy}><Text style={styles.caseTitle}>{item.subject}</Text><Text style={styles.caseDate}>{new Date(item.created_at).toLocaleDateString('es-DO')}</Text></View>
-            <View style={[styles.caseStatus, item.status === 'resolved' && styles.caseResolved]}><Text style={styles.caseStatusText}>{item.status === 'resolved' ? 'Resuelta' : item.status === 'in_review' ? 'En revisión' : 'Abierta'}</Text></View>
-          </View>
+          <Pressable key={item.id} onPress={() => { setSelectedCaseId(item.id); setNotice(null); }} style={[styles.caseRow, selectedCaseId === item.id && styles.caseSelected]}>
+            <View style={styles.caseCopy}><Text style={styles.caseTitle}>{item.subject}</Text><Text style={styles.caseDate}>{new Date(item.created_at).toLocaleDateString('es-DO')} · {item.category}</Text></View>
+            <View style={[styles.caseStatus, item.status === 'resolved' && styles.caseResolved, item.status === 'in_review' && styles.caseReview]}><Text style={styles.caseStatusText}>{item.status === 'resolved' ? 'Resuelta' : item.status === 'in_review' ? 'En revisión' : 'Abierta'}</Text></View>
+          </Pressable>
         ))}
+        {selectedCase && (
+          <View style={styles.thread}>
+            <View style={styles.casesHeader}>
+              <Text style={styles.sectionTitle}>{selectedCase.subject}</Text>
+              <Text style={styles.caseDate}>{selectedCase.status === 'resolved' ? 'Resuelta' : selectedCase.handoff_requested ? 'Atención humana' : selectedCase.status === 'in_review' ? 'En revisión' : 'Asistente activo'}</Text>
+            </View>
+            <View style={styles.threadMessages}>
+              {messages.map((message) => (
+                <View key={message.id} style={[styles.threadMessage, message.sender_type === 'client' ? styles.threadClient : styles.threadStaff]}>
+                  <Text style={styles.threadSender}>{message.sender_type === 'client' ? 'Tú' : message.sender_type === 'admin' ? 'Equipo Klipp' : message.sender_type === 'assistant' ? 'Asistente Klipp' : 'Klipp'}</Text>
+                  <Text style={styles.threadText}>{message.content}</Text>
+                  <Text style={styles.threadTime}>{new Date(message.created_at).toLocaleString('es-DO')}</Text>
+                </View>
+              ))}
+              {messages.length === 0 && <Text style={styles.emptyText}>Cargando conversación...</Text>}
+            </View>
+            {selectedCase.status !== 'resolved' ? (
+              <>
+                <TextInput accessibilityLabel="Escribe un mensaje al equipo Klipp" multiline maxLength={1800} value={chatDraft} onChangeText={setChatDraft} placeholder="Escribe tu mensaje..." placeholderTextColor="#8A96A5" style={styles.messageInput} textAlignVertical="top" />
+                <Pressable accessibilityRole="button" disabled={sending || chatDraft.trim().length < 2} onPress={() => void sendChatMessage()} style={[styles.submit, (sending || chatDraft.trim().length < 2) && styles.submitDisabled]}>
+                  {sending ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.submitText}>Enviar mensaje</Text>}
+                </Pressable>
+              </>
+            ) : <Text style={styles.emptyText}>Este caso está resuelto. Si necesitas más ayuda, abre una nueva consulta.</Text>}
+          </View>
+        )}
         <Text style={styles.footnote}>Las reclamaciones relacionadas con un servicio quedan vinculadas a su reserva para facilitar la revisión.</Text>
       </View>
     </ScrollView>
@@ -189,6 +263,16 @@ const styles = StyleSheet.create({
   casesHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   refresh: { color: KlippColors.blue, fontSize: 12, fontWeight: '700' },
   caseRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 13, borderWidth: 1, borderColor: KlippColors.border, backgroundColor: KlippColors.white },
+  caseSelected: { borderColor: KlippColors.blue, backgroundColor: '#F1F6FF' },
+  caseReview: { backgroundColor: '#EAF2FF' },
+  thread: { padding: 14, gap: 11, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 16, backgroundColor: '#F8FAFD' },
+  threadMessages: { gap: 8, maxHeight: 420 },
+  threadMessage: { padding: 11, borderRadius: 12, gap: 5, maxWidth: '92%' },
+  threadClient: { alignSelf: 'flex-end', backgroundColor: '#E8F0FF' },
+  threadStaff: { alignSelf: 'flex-start', backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: KlippColors.border },
+  threadSender: { color: KlippColors.slate, fontSize: 10, fontWeight: '800' },
+  threadText: { color: KlippColors.navy, fontSize: 12, lineHeight: 18 },
+  threadTime: { color: KlippColors.muted, fontSize: 9 },
   caseCopy: { flex: 1, gap: 4 },
   caseTitle: { color: KlippColors.navy, fontSize: 12, fontWeight: '800' },
   caseDate: { color: KlippColors.muted, fontSize: 10 },
