@@ -4,6 +4,8 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
+import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippCard, KlippScreenState, KlippStatus } from '@/design-system';
 import { TrackingMap } from '@/components/tracking-map';
 import { KlippColors } from '@/lib/brand';
 import { formatBusinessDate } from '@/lib/format';
@@ -281,9 +283,7 @@ export function ClientTrackingScreen() {
       ? `Última ubicación recibida hace ${Math.floor(locationAgeSeconds / 60)} min. Puede estar desactualizada.`
       : `Ubicación actualizada hace ${locationAgeSeconds} s.`;
 
-  if (loading) {
-    return <SafeAreaView style={styles.centered}><ActivityIndicator color={KlippColors.blue} /><Text style={styles.body}>Cargando seguimiento...</Text></SafeAreaView>;
-  }
+  if (loading) return <KlippScreenState kind="loading" title="Abriendo seguimiento" description="Estamos actualizando el estado de tu servicio." mode="light" />;
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -296,19 +296,16 @@ export function ClientTrackingScreen() {
           <View style={styles.statusCard}><Text style={styles.title}>No disponible</Text><Text style={styles.body}>No pudimos cargar esta reserva.</Text></View>
         ) : (
           <>
-            <View style={styles.heading}>
-              <Text style={styles.eyebrow}>SEGUIMIENTO DE TU SERVICIO</Text>
-              <Text style={styles.title}>{booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'}</Text>
-              <Text style={styles.body}>{booking.service_types?.name ?? 'Servicio Klipp'} · {formatBusinessDate(booking.scheduled_start)}</Text>
-            </View>
+            <BrandScreenHeader eyebrow="SEGUIMIENTO DE TU SERVICIO" title={booking.status === 'en_route' ? 'Tu profesional va en camino' : 'Estado de tu servicio'} subtitle={`${booking.service_types?.name ?? 'Servicio Klipp'} · ${formatBusinessDate(booking.scheduled_start)}`} />
 
             {booking.status === 'en_route' ? (
               <>
-                <View style={styles.etaCard}>
-                  <Text style={styles.etaLabel}>ESTIMACIÓN INICIAL DE LLEGADA</Text>
+                <KlippCard style={styles.etaCard} mode="dark">
+                  <KlippStatus label="EN CAMINO" tone="success" mode="dark" />
+                  <Text style={styles.etaLabel}>ESTIMACIÓN DE LLEGADA</Text>
                   <Text style={styles.etaValue}>{routeEtaMinutes !== null ? `~${routeEtaMinutes} min` : etaMinutes === null ? 'Calculando…' : `~${etaMinutes} min`}</Text>
                   <Text style={styles.etaHint}>{locationFreshnessLabel} {routeEtaMinutes !== null ? `Ruta por carretera con tráfico estimado · ${routeDistanceMeters !== null ? (routeDistanceMeters / 1000).toFixed(1) + ' km' : ''} · Actualizado ${routeEtaUpdatedAt ? new Date(routeEtaUpdatedAt).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' }) : ''}.` : 'Mostrando una estimación provisional en línea recta; la ruta con tráfico todavía no está disponible.'}</Text>
-                </View>
+                </KlippCard>
                 {professionalCoordinate && destination ? (
                   <TrackingMap clientCoordinate={destination} proCoordinate={professionalCoordinate} routePolyline={routePolyline} />
                 ) : (
@@ -317,32 +314,34 @@ export function ClientTrackingScreen() {
                     <Text style={styles.body}>Preparando el mapa de seguimiento…</Text>
                   </View>
                 )}
-                <View style={styles.professionalCard}>
-                  <View style={styles.avatar}><Text style={styles.avatarText}>{professional?.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.professionalDetails}>
-                    <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
-                    <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
+                <KlippCard style={styles.professionalCard} mode="light">
+                  <View style={styles.professionalIdentity}>
+                    <View style={styles.avatar}><Text style={styles.avatarText}>{professional?.full_name?.[0] ?? 'K'}</Text></View>
+                    <View style={styles.professionalDetails}>
+                      <Text style={styles.professionalName}>{professional?.full_name ?? 'Profesional Klipp'}</Text>
+                      <Text style={styles.body}>★ {Number(professional?.rating_avg ?? 0).toFixed(1)} · {professional?.transport_type || 'Medio de transporte no indicado'}</Text>
+                      <Text style={styles.acceptanceRate}>Tasa de aceptación: {professionalAcceptanceRate === null ? 'Aún sin datos' : `${Math.round(professionalAcceptanceRate)}%`}</Text>
+                    </View>
                   </View>
                   <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/(client)/bookings', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.callButton, pressed && styles.pressed]}>
-                    <Text style={styles.callButtonText}>Contactar por el chat de Klipp</Text>
+                    <Text style={styles.callButtonText}>Abrir chat en Klipp</Text>
                   </Pressable>
-                </View>
-                <View style={styles.destinationCard}>
+                </KlippCard>
+                <KlippCard style={styles.destinationCard} mode="light">
                   <Text style={styles.destinationLabel}>DESTINO</Text>
                   <Text style={styles.destinationText}>{booking.address_text || 'Dirección guardada en la reserva'}</Text>
                   {!!booking.landmark_notes && <Text style={styles.body}>{booking.landmark_notes}</Text>}
-                </View>
+                </KlippCard>
               </>
             ) : (
-              <View style={styles.statusCard}>
+              <KlippCard style={styles.statusCard} mode="light">
                 <View style={styles.statusIcon}><Text style={styles.statusIconText}>{booking.status === 'in_progress' ? '✓' : 'i'}</Text></View>
                 <Text style={styles.statusMessage}>{statusMessage(booking.status, booking.assignment_mode)}</Text>
                 <Text style={styles.body}>Servicio: {booking.service_types?.name ?? 'Servicio Klipp'}</Text>
                 <Text style={styles.body}>Dirección: {booking.address_text || 'Dirección guardada en la reserva'}</Text>
-              </View>
+              </KlippCard>
             )}
-            <View style={styles.stepsCard}>
+            <KlippCard style={styles.stepsCard} mode="light">
               <Text style={styles.stepsTitle}>Historial de tu orden</Text>
               {statusEvents.length === 0 ? (
                 <Text style={styles.body}>Todavía no hay eventos registrados para esta reserva.</Text>
@@ -355,7 +354,7 @@ export function ClientTrackingScreen() {
                   </View>
                 </View>
               ))}
-            </View>
+            </KlippCard>
           </>
         )}
       </ScrollView>
@@ -378,7 +377,8 @@ const styles = StyleSheet.create({
   etaValue: { color: KlippColors.white, fontSize: 32, fontWeight: '800' },
   etaHint: { color: '#D5DFF0', fontSize: 12, lineHeight: 18 },
   mapPlaceholder: { height: 280, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: '#E8EEF7', gap: 10 },
-  professionalCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 18, backgroundColor: KlippColors.white },
+  professionalCard: { padding: 15, borderRadius: 18, gap: 14 },
+  professionalIdentity: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatar: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: '#EEF4FF' },
   avatarText: { color: KlippColors.blueDark, fontSize: 20, fontWeight: '800' },
   professionalDetails: { flex: 1, gap: 3 },
@@ -386,14 +386,14 @@ const styles = StyleSheet.create({
   acceptanceRate: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '700' },
   callButton: { minHeight: 40, justifyContent: 'center', paddingHorizontal: 16, borderRadius: 12, backgroundColor: KlippColors.blue },
   callButtonText: { color: KlippColors.white, fontSize: 13, fontWeight: '700' },
-  destinationCard: { padding: 15, borderRadius: 16, backgroundColor: KlippColors.white, gap: 5 },
+  destinationCard: { padding: 15, borderRadius: 16, gap: 5 },
   destinationLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   destinationText: { color: KlippColors.navy, fontSize: 14, fontWeight: '700' },
-  statusCard: { alignItems: 'center', padding: 22, borderRadius: 18, backgroundColor: KlippColors.white, gap: 10 },
+  statusCard: { alignItems: 'center', padding: 22, borderRadius: 18, gap: 10 },
   statusIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#EEF4FF' },
   statusIconText: { color: KlippColors.blue, fontSize: 20, fontWeight: '800' },
   statusMessage: { color: KlippColors.navy, fontSize: 16, fontWeight: '700', textAlign: 'center' },
-  stepsCard: { padding: 17, borderRadius: 18, backgroundColor: KlippColors.white, gap: 13 },
+  stepsCard: { padding: 17, borderRadius: 18, gap: 13 },
   stepsTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '800', marginBottom: 2 },
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   stepDone: { width: 24, height: 24, textAlign: 'center', textAlignVertical: 'center', overflow: 'hidden', borderRadius: 12, backgroundColor: '#DCFCE7', color: '#047857', fontSize: 13, fontWeight: '800' },
