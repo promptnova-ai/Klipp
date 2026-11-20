@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
+import { Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
+import { KlippNotice, KlippScreenState } from '@/design-system';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 
@@ -53,18 +54,28 @@ export function ProRequestsScreen() {
   const secondsLeft = activeRequest ? Math.max(0, Math.ceil((new Date(activeRequest.expires_at).getTime() - nowMs) / 1000)) : 0;
 
   const loadRequests = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!session?.user.id) {
+      setLoading(false);
+      return;
+    }
     setError(null);
-    const [requestResult, reassignmentResult] = await Promise.all([
-      supabase.rpc('pro_list_incoming_booking_requests'),
-      supabase.rpc('pro_list_pending_booking_reassignments'),
-    ]);
-    if (requestResult.error) setError(requestResult.error.message);
-    else setRequests((requestResult.data ?? []) as IncomingRequest[]);
-    if (reassignmentResult.error) setError(reassignmentResult.error.message);
-    else setReassignments((reassignmentResult.data ?? []) as IncomingReassignment[]);
-    setLoading(false);
-  }, [session]);
+    try {
+      const [requestResult, reassignmentResult] = await Promise.all([
+        supabase.rpc('pro_list_incoming_booking_requests'),
+        supabase.rpc('pro_list_pending_booking_reassignments'),
+      ]);
+      const failures: string[] = [];
+      if (requestResult.error) failures.push(`Solicitudes: ${requestResult.error.message}`);
+      else setRequests((requestResult.data ?? []) as IncomingRequest[]);
+      if (reassignmentResult.error) failures.push(`Sustituciones: ${reassignmentResult.error.message}`);
+      else setReassignments((reassignmentResult.data ?? []) as IncomingReassignment[]);
+      if (failures.length) setError(failures.join(' · '));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar las solicitudes. Comprueba tu conexión e inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,8 +140,11 @@ export function ProRequestsScreen() {
 
   async function refresh() {
     setRefreshing(true);
-    await loadRequests();
-    setRefreshing(false);
+    try {
+      await loadRequests();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function respond(requestId: string, accept: boolean) {
@@ -147,29 +161,39 @@ export function ProRequestsScreen() {
     }
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('respond_to_request', {
-      p_request_id: requestId,
-      p_accept: accept,
-      p_materials_confirmed: accept ? materialsConfirmed : false,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('respond_to_request', {
+        p_request_id: requestId,
+        p_accept: accept,
+        p_materials_confirmed: accept ? materialsConfirmed : false,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos registrar tu respuesta. Vuelve a intentarlo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function respondReassignment(requestId: string, accept: boolean) {
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
-      p_request_id: requestId,
-      p_accept: accept,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
+        p_request_id: requestId,
+        p_accept: accept,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos registrar tu respuesta. Vuelve a intentarlo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <KlippScreenState kind="loading" title="Cargando solicitudes" description="Estamos consultando las solicitudes y sustituciones pendientes." />;
 
   return (
     <>
@@ -310,7 +334,7 @@ export function ProRequestsScreen() {
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {error && <KlippNotice tone="danger" title="No se pudieron actualizar todas las solicitudes" message={error} actionLabel="Reintentar" onAction={() => void refresh()} />}
       {!error && requests.length === 0 && reassignments.length === 0 && (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No tienes solicitudes pendientes</Text>
@@ -465,10 +489,10 @@ function ResponseButton({ label, onPress, disabled, secondary = false }: { label
 const styles = StyleSheet.create({
   offerScreen: { flex: 1, backgroundColor: KlippColors.canvas },
   offerHeader: { width: '100%', paddingTop: 36, paddingHorizontal: 24, paddingBottom: 22, backgroundColor: KlippColors.navy, alignItems: 'center', gap: 9 },
-  offerBrand: { color: '#B9C9FF', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
+  offerBrand: { color: '#A9F0E8', fontSize: 12, fontWeight: '900', letterSpacing: 2.2 },
   offerEyebrow: { color: '#FFFFFF', fontSize: 11, fontWeight: '800', letterSpacing: 1.15 },
-  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.teal },
-  countdownText: { color: '#ffffff', fontWeight: '900', fontSize: 18, textAlign: 'center' },
+  countdownPill: { marginTop: 3, minWidth: 82, paddingHorizontal: 17, paddingVertical: 9, borderRadius: 999, backgroundColor: KlippColors.gold },
+  countdownText: { color: KlippColors.navyDeep, fontWeight: '900', fontSize: 18, textAlign: 'center' },
   offerContent: { width: '100%', maxWidth: 820, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 24, paddingBottom: 48, gap: 16, backgroundColor: KlippColors.canvas, flexGrow: 1 },
   offerTitle: { color: KlippColors.navy, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'left' },
   offerSubtitle: { color: KlippColors.muted, fontSize: 14, lineHeight: 21, textAlign: 'left', marginBottom: 4 },
@@ -494,7 +518,7 @@ const styles = StyleSheet.create({
   mapUnavailableTitle: { color: '#344950', fontSize: 13, fontWeight: '900', textAlign: 'center' },
   mapUnavailableText: { color: '#64747a', fontSize: 11, lineHeight: 17, textAlign: 'center' },
   mapCoordinates: { color: '#16836f', fontSize: 11, fontWeight: '800', textAlign: 'center' },
-  earningCard: { padding: 20, borderRadius: 20, backgroundColor: KlippColors.surfaceTeal, alignItems: 'center', gap: 6 },
+  earningCard: { padding: 22, borderRadius: 20, backgroundColor: KlippColors.surfaceTeal, borderWidth: 1, borderColor: '#C8EEE9', alignItems: 'center', gap: 7 },
   earningLabel: { color: KlippColors.tealDark, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   earningAmount: { color: KlippColors.tealDark, fontSize: 32, fontWeight: '900' },
   earningNote: { color: KlippColors.slate, fontSize: 11, textAlign: 'center' },
@@ -513,7 +537,7 @@ const styles = StyleSheet.create({
   declineButton: { minHeight: 52, borderWidth: 1.5, borderColor: '#F2C4C4', borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF' },
   declineText: { color: KlippColors.danger, fontSize: 14, fontWeight: '900' },
   slideTrack: { height: 66, borderRadius: 18, backgroundColor: KlippColors.navyDeep, justifyContent: 'center', padding: 4, overflow: 'hidden' },
-  slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: KlippColors.teal },
+  slideFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 18, backgroundColor: KlippColors.tealDark },
   slideDisabled: { opacity: 0.5 },
   slideLabel: { position: 'absolute', left: 65, right: 12, textAlign: 'center', color: '#ffffff', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
   slideThumb: { width: 56, height: 56, borderRadius: 15, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', elevation: 3 },

@@ -609,3 +609,75 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 7. Simular un error al iniciar el despacho automático después de crear correctamente la reserva y comprobar que el mensaje informa de que la solicitud ya existe y puede seguirse desde Mis reservas.
 
 **Resultado esperado:** Una doble pulsación no ejecuta dos envíos concurrentes. Si el resultado del envío es incierto por un corte de red, la app no permite un reintento ciego que pueda duplicar la reserva; guía al cliente a comprobar primero el estado persistido. Un error explícito del servidor deja disponible el reintento una vez corregidos los datos.
+
+### QA-CLI-08 — Idempotencia del alta de reserva prepaga
+
+**Prioridad:** Crítica  
+**Precondición:** Cliente autenticado y entorno QA con una modalidad y tarifa válidas.
+
+1. Crear una solicitud de reserva con una clave UUID de idempotencia.
+2. Repetir exactamente la misma llamada con la misma clave, simulando que el primer resultado RPC se perdió.
+3. Comprobar que ambas respuestas contienen el mismo `booking_id` y que solo existe una reserva y una dirección asociadas.
+4. Repetir la clave con una fecha, modalidad, profesional, ubicación o precio diferente.
+5. Repetir la llamada con una clave nueva y los mismos datos de reserva.
+6. Intentar invocar el RPC antiguo de 11 argumentos desde `authenticated`.
+
+**Resultado esperado:** La repetición con la misma clave y los mismos datos devuelve la reserva original sin insertar otra. Reutilizar la clave con datos distintos se rechaza. Una clave nueva representa una nueva intención de reserva. El RPC antiguo no es ejecutable por clientes autenticados; la nueva firma exige clave de idempotencia. La tabla de idempotencia no es legible directamente por `anon` ni `authenticated`.
+
+### QA-UI-01 — Recuperación de errores en bandejas de trabajo
+
+**Prioridad:** Alta  
+**Precondición:** Sesión autenticada de cliente y de profesional en el entorno QA.
+
+1. Abrir **Solicitudes PRO**, **Agenda PRO** y **Mis reservas** con conexión disponible.
+2. Interrumpir la red antes de que terminen las consultas iniciales.
+3. Comprobar que cada pantalla deja de mostrar el estado de carga y presenta un aviso de error con acción **Reintentar**.
+4. Restaurar la conexión y pulsar **Reintentar**.
+5. Repetir provocando un fallo parcial: solicitudes pero no sustituciones, agenda pero no bloqueos de reasignación, reservas pero no reseñas/pagos/cola.
+6. Comprobar que la información que sí se pudo recuperar permanece visible y que el aviso identifica que la actualización fue parcial.
+
+**Resultado esperado:** Ninguna pantalla queda cargando indefinidamente. El reintento vuelve a consultar los datos y los errores parciales no borran datos válidos que ya estaban disponibles.
+
+### QA-UI-02 — Liberación de controles después de fallos RPC
+
+**Prioridad:** Alta  
+**Precondición:** Reserva u oferta de prueba en un estado que permita ejecutar la acción correspondiente.
+
+1. En Solicitudes PRO, provocar un error de red al aceptar/rechazar una oferta y comprobar que el control deja de mostrar «Enviando».
+2. Reintentar con la conexión restablecida y comprobar que el servidor determina el resultado final de la oferta.
+3. En Agenda PRO, provocar un error al avanzar el estado o confirmar herramientas.
+4. Comprobar que el botón vuelve a estar habilitado y que no se muestra un estado local como confirmado si el servidor no lo confirmó.
+5. Repetir la acción después de una respuesta satisfactoria y comprobar que el flujo no duplica mensajes ni reservas.
+
+**Resultado esperado:** Los indicadores busy y refreshing se liberan incluso si la llamada falla por excepción. La interfaz solo refleja un cambio de estado después de una respuesta válida del servidor; los reintentos consultan el estado persistido antes de continuar.
+
+
+### QA-UI-03 — Consistencia de fichas de servicio, profesionales y reservas
+
+**Prioridad:** Alta  
+**Precondición:** Catálogo activo y al menos un profesional aprobado con oferta publicada; usar también un profesional sin foto o sin reseñas.
+
+1. Comparar la tarjeta de servicio del inicio, la ficha de oferta profesional, los resultados de búsqueda y el resumen del profesional en seguimiento.
+2. Comprobar que nombre, foto, valoración, número de reseñas, trabajos, distancia, tarifa base y duración solo aparecen cuando existe un dato válido.
+3. Repetir con avatar ausente, biografía vacía, cero reseñas, distancia no disponible y precio no publicado.
+4. Seleccionar y deseleccionar profesionales con lector de pantalla o inspección de accesibilidad; verificar que el control expone el estado seleccionado.
+5. Comprobar en Android/iOS que el área táctil de la tarjeta permite seleccionar sin activar accidentalmente otra acción.
+6. Comparar la tarifa base mostrada en la ficha con el importe definitivo que devuelve la reserva; no presentar la tarifa base como total final si la modalidad aún no está elegida.
+
+**Resultado esperado:** Las tarjetas comparten jerarquía, superficies y espaciado del sistema Klipp. Los datos ausentes se representan con alternativas explícitas, nunca con valores inventados. La selección es accesible y el precio se identifica como tarifa base cuando todavía no constituye el total de la reserva.
+
+
+### QA-UI-04 — Login y registro de cliente y profesional
+
+**Prioridad:** Crítica  
+**Precondición:** Entorno QA, correo de prueba controlado y proveedor de correo de confirmación disponible.
+
+1. Abrir login y comprobar jerarquía visual, legibilidad, navegación a registro y recuperación de contraseña en móvil y escritorio.
+2. Abrir registro cliente, validar nombre, correo, contraseña mínima y confirmación; probar contraseñas no coincidentes y campos vacíos.
+3. Completar registro con un correo sintético y verificar el comportamiento real de confirmación de correo de Supabase; no asumir que existe OTP telefónico.
+4. Abrir registro profesional y completar los cuatro pasos: datos personales, una única profesión, modalidades/herramientas y cobertura/horario, y credenciales.
+5. Probar errores de red y de catálogo, volver atrás entre pasos y comprobar que los datos ya introducidos se conservan.
+6. Probar mostrar/ocultar contraseña, estados busy, teclado y lector de pantalla.
+7. Confirmar que ningún estado visual afirma que el teléfono fue verificado si no se ejecutó una verificación OTP real.
+
+**Resultado esperado:** Login, registro cliente y onboarding PRO mantienen la autenticación existente y ofrecen una experiencia visual coherente con Klipp. Las validaciones locales son claras. La confirmación por correo se comunica como tal; el OTP telefónico se considera pendiente hasta que exista y se pruebe el flujo backend correspondiente.

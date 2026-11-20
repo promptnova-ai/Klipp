@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippProfessionalCard } from '@/design-system/cards';
+import { KlippCard, KlippNotice, KlippScreenState } from '@/design-system/components';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -61,56 +63,62 @@ export function ClientBookingsScreen() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadBookings = useCallback(async () => {
-    if (!userId) return;
-    setError(null);
-    const { data, error: queryError } = await supabase
-      .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
-      .eq('client_id', userId)
-      .order('scheduled_start', { ascending: false });
-    if (queryError) {
-      setError(queryError.message);
+    if (!userId) {
       setLoading(false);
       return;
     }
-    const bookingRows = (data ?? []) as unknown as ClientBooking[];
-    setBookings(bookingRows);
-    if (bookingRows.length) {
-      const bookingIds = bookingRows.map((booking) => booking.id);
-      const [reviewResult, proResult, paymentResult] = await Promise.all([
-        supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
-        supabase.rpc('get_client_booking_pro_cards', { p_booking_ids: bookingIds }),
-        supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at').in('booking_id', bookingIds).order('created_at', { ascending: false }),
-      ]);
-      if (reviewResult.error || proResult.error || paymentResult.error) setError(reviewResult.error?.message ?? proResult.error?.message ?? paymentResult.error?.message ?? 'No pudimos cargar los detalles.');
-      if (!reviewResult.error) setReviews(Object.fromEntries(((reviewResult.data ?? []) as Review[]).map((review) => [review.booking_id, review])));
-      if (!proResult.error) setPros(Object.fromEntries(((proResult.data ?? []) as ProCard[]).map((pro) => [pro.pro_id, pro])));
-      if (!paymentResult.error) {
-        const latestPayments = new Map<string, PaymentSummary>();
-        for (const payment of (paymentResult.data ?? []) as PaymentSummary[]) {
-          if (!latestPayments.has(payment.booking_id)) latestPayments.set(payment.booking_id, payment);
+    setError(null);
+    try {
+      const { data, error: queryError } = await supabase
+        .from('bookings')
+        .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
+        .eq('client_id', userId)
+        .order('scheduled_start', { ascending: false });
+      if (queryError) throw queryError;
+
+      const bookingRows = (data ?? []) as unknown as ClientBooking[];
+      setBookings(bookingRows);
+      if (bookingRows.length) {
+        const bookingIds = bookingRows.map((booking) => booking.id);
+        const [reviewResult, proResult, paymentResult] = await Promise.all([
+          supabase.from('reviews').select('id, booking_id, client_id, pro_id, rating, comment, created_at').in('booking_id', bookingIds),
+          supabase.rpc('get_client_booking_pro_cards', { p_booking_ids: bookingIds }),
+          supabase.from('payments').select('id, booking_id, provider, amount_dop, status, created_at, held_at, released_at').in('booking_id', bookingIds).order('created_at', { ascending: false }),
+        ]);
+        const detailFailures = [reviewResult.error?.message, proResult.error?.message, paymentResult.error?.message].filter(Boolean);
+        if (detailFailures.length) setError(detailFailures.join(' · '));
+        if (!reviewResult.error) setReviews(Object.fromEntries(((reviewResult.data ?? []) as Review[]).map((review) => [review.booking_id, review])));
+        if (!proResult.error) setPros(Object.fromEntries(((proResult.data ?? []) as ProCard[]).map((pro) => [pro.pro_id, pro])));
+        if (!paymentResult.error) {
+          const latestPayments = new Map<string, PaymentSummary>();
+          for (const payment of (paymentResult.data ?? []) as PaymentSummary[]) {
+            if (!latestPayments.has(payment.booking_id)) latestPayments.set(payment.booking_id, payment);
+          }
+          setPayments(Object.fromEntries(latestPayments));
         }
-        setPayments(Object.fromEntries(latestPayments));
+      } else {
+        setReviews({});
+        setPros({});
+        setPayments({});
       }
-    } else {
-      setReviews({});
-      setPros({});
-      setPayments({});
+
+      const scheduledBookings = bookingRows.filter((booking) => booking.status === 'scheduled' && booking.pro_id);
+      const queueResults = await Promise.all(scheduledBookings.map(async (booking) => {
+        const { data: queueData, error: queueError } = await supabase.rpc('get_booking_queue_info', { p_booking_id: booking.id });
+        if (queueError) return { bookingId: booking.id, error: queueError.message };
+        const first = (queueData ?? [])[0] as QueueInfo | undefined;
+        return { bookingId: booking.id, info: first };
+      }));
+      const queueErrors = queueResults.flatMap((result) => 'error' in result ? [result.error] : []);
+      if (queueErrors.length) setError((current) => [current, ...queueErrors].filter(Boolean).join(' · '));
+      setQueueInfo(Object.fromEntries(queueResults.flatMap((result) =>
+        'info' in result && result.info ? [[result.bookingId, result.info]] : [],
+      )));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar tus reservas. Comprueba tu conexión e inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
     }
-    const scheduledBookings = bookingRows.filter((booking) => booking.status === 'scheduled' && booking.pro_id);
-    const queueResults = await Promise.all(scheduledBookings.map(async (booking) => {
-      const { data, error: queueError } = await supabase.rpc('get_booking_queue_info', { p_booking_id: booking.id });
-      if (queueError) return { bookingId: booking.id, error: queueError.message };
-      const first = (data ?? [])[0] as QueueInfo | undefined;
-      return { bookingId: booking.id, info: first };
-    }));
-    const queueErrors = queueResults.flatMap((result) => 'error' in result ? [result.error] : []);
-    const firstQueueError = queueErrors[0];
-    if (firstQueueError) setError(firstQueueError);
-    setQueueInfo(Object.fromEntries(queueResults.flatMap((result) =>
-      'info' in result && result.info ? [[result.bookingId, result.info]] : [],
-    )));
-    setLoading(false);
   }, [userId]);
 
   useFocusEffect(useCallback(() => { void loadBookings(); }, [loadBookings]));
@@ -227,8 +235,11 @@ export function ClientBookingsScreen() {
 
   async function refresh() {
     setRefreshing(true);
-    await loadBookings();
-    setRefreshing(false);
+    try {
+      await loadBookings();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function retryPayment(bookingId: string) {
@@ -329,13 +340,13 @@ export function ClientBookingsScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando reservas...</Text></View>;
+  if (loading) return <KlippScreenState kind="loading" title="Cargando reservas" description="Estamos consultando tus servicios y pagos." />;
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader eyebrow="SERVICIOS" title="Mis reservas" subtitle="Consulta el estado de tus servicios." />
       {notice && <Text accessibilityRole="status" style={styles.notice}>{notice}</Text>}
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {error && <KlippNotice tone="danger" title="Hay información que no se pudo actualizar" message={error} actionLabel="Reintentar" onAction={() => void refresh()} />}
       {!error && bookings.length === 0 && <View style={styles.empty}><Text style={styles.cardTitle}>Todavía no tienes reservas</Text><Text style={styles.body}>Cuando solicites un servicio, podrás seguirlo aquí.</Text></View>}
       {bookings.map((booking) => {
         const pro = booking.pro_id ? pros[booking.pro_id] : undefined;
@@ -373,7 +384,7 @@ export function ClientBookingsScreen() {
             ? styles.statusDotNeutral
             : styles.statusDotActive;
         return (
-          <View key={booking.id} style={styles.card}>
+          <KlippCard key={booking.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.serviceHeading}>
                 <View style={styles.serviceIcon}>
@@ -414,13 +425,7 @@ export function ClientBookingsScreen() {
             {booking.status === 'en_route' && (
               <View style={styles.trackingPanel}>
                 <Text style={styles.etaBadge}>{eta === null ? 'Buscando ubicación en vivo...' : `Estimación preliminar: ~${eta} min`}</Text>
-                {pro && <View style={styles.trackingPro}>
-                  <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.serviceHeadingCopy}>
-                    <Text style={styles.cardTitle}>{pro.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text style={styles.tier}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.transport_type || 'En camino'}</Text>
-                  </View>
-                </View>}
+                {pro && <KlippProfessionalCard name={pro.full_name} avatarUrl={pro.avatar_url} rating={pro.rating_avg} ratingCount={pro.rating_count} jobsCompleted={pro.jobs_completed} transportLabel={pro.transport_type || 'En camino'} compact />}
                 <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/tracking', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.followButton, pressed && styles.buttonPressed]}>
                   <Text style={styles.followButtonText}>Ver seguimiento en vivo</Text>
                 </Pressable>
@@ -508,7 +513,7 @@ export function ClientBookingsScreen() {
               </View>
             )}
             {review && <Text style={styles.reviewDone}>Tu reseña: {'★'.repeat(review.rating)} {review.comment ?? ''}</Text>}
-          </View>
+          </KlippCard>
         );
       })}
     </ScrollView>
@@ -529,7 +534,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   empty: { marginTop: 4, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  card: { padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  card: { padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, gap: 15 },
   cardHeader: { gap: 12 },
   serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },

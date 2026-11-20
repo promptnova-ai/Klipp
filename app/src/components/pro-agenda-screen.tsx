@@ -5,7 +5,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippBadge, KlippButton, KlippCard, KlippScreenState } from '@/components/design-system';
+import { KlippBadge, KlippButton, KlippCard, KlippNotice, KlippScreenState } from '@/components/design-system';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -49,20 +49,32 @@ export function ProAgendaScreen() {
     .join(',');
 
   const loadBookings = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     setError(null);
-    const { data, error: queryError } = await supabase
-      .from('bookings')
-      .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
-      .eq('pro_id', userId)
-      .in('status', ['awaiting_payment', 'scheduled', 'en_route', 'arrived', 'in_progress'])
-      .order('scheduled_start');
-    if (queryError) setError(queryError.message);
-    else setBookings((data ?? []) as unknown as AgendaBooking[]);
-    const { data: lockedData, error: lockedError } = await supabase.rpc('pro_list_pending_reassignment_locks');
-    if (lockedError) setError(lockedError.message);
-    else setReassignmentLockedIds((lockedData ?? []).map((row: { booking_id: string }) => row.booking_id));
-    setLoading(false);
+    try {
+      const [bookingResult, lockResult] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select('id, client_id, pro_id, service_type_id, pricing_tier_id, pro_service_id, address_id, client_lat, client_lng, address_text, landmark_notes, assignment_mode, status, scheduled_start, est_minutes, price_dop, commission_pct, commission_dop, pro_payout_dop, notes, created_at, accepted_at, en_route_at, arrived_at, started_at, completed_at, confirmed_at, cancelled_at, cancelled_by, cancel_reason, service_types(name), pricing_tiers(label), addresses(label, street, references_text)')
+          .eq('pro_id', userId)
+          .in('status', ['awaiting_payment', 'scheduled', 'en_route', 'arrived', 'in_progress'])
+          .order('scheduled_start'),
+        supabase.rpc('pro_list_pending_reassignment_locks'),
+      ]);
+      const failures: string[] = [];
+      if (bookingResult.error) failures.push(`Agenda: ${bookingResult.error.message}`);
+      else setBookings((bookingResult.data ?? []) as unknown as AgendaBooking[]);
+      if (lockResult.error) failures.push(`Bloqueos de sustitución: ${lockResult.error.message}`);
+      else setReassignmentLockedIds((lockResult.data ?? []).map((row: { booking_id: string }) => row.booking_id));
+      if (failures.length) setError(failures.join(' · '));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar tu agenda. Comprueba tu conexión e inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   }, [userId]);
 
   useFocusEffect(useCallback(() => {
@@ -296,8 +308,11 @@ export function ProAgendaScreen() {
 
   async function refresh() {
     setRefreshing(true);
-    await loadBookings();
-    setRefreshing(false);
+    try {
+      await loadBookings();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function advance(booking: AgendaBooking) {
@@ -313,16 +328,21 @@ export function ProAgendaScreen() {
     }
     setBusyId(booking.id);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('advance_booking', {
-      p_booking_id: booking.id,
-      p_new_status: step.status,
-    });
-    if (rpcError) setError(rpcError.message);
-    else {
-      setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: step.status } : item));
-      await loadBookings();
+    try {
+      const { error: rpcError } = await supabase.rpc('advance_booking', {
+        p_booking_id: booking.id,
+        p_new_status: step.status,
+      });
+      if (rpcError) setError(rpcError.message);
+      else {
+        setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: step.status } : item));
+        await loadBookings();
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar el estado del servicio. Vuelve a intentarlo.');
+    } finally {
+      setBusyId(null);
     }
-    setBusyId(null);
   }
 
   async function confirmEquipmentAndStart() {
@@ -330,17 +350,22 @@ export function ProAgendaScreen() {
     if (!booking) return;
     setBusyId(booking.id);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('confirm_booking_equipment_and_start', {
-      p_booking_id: booking.id,
-    });
-    if (rpcError) {
-      setError(rpcError.message);
-    } else {
-      setEquipmentConfirmationBooking(null);
-      setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: 'in_progress' } : item));
-      await loadBookings();
+    try {
+      const { error: rpcError } = await supabase.rpc('confirm_booking_equipment_and_start', {
+        p_booking_id: booking.id,
+      });
+      if (rpcError) {
+        setError(rpcError.message);
+      } else {
+        setEquipmentConfirmationBooking(null);
+        setBookings((current) => current.map((item) => item.id === booking.id ? { ...item, status: 'in_progress' } : item));
+        await loadBookings();
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos confirmar el equipamiento. Vuelve a intentarlo.');
+    } finally {
+      setBusyId(null);
     }
-    setBusyId(null);
   }
 
   async function toggleChat(bookingId: string) {
@@ -418,7 +443,7 @@ export function ProAgendaScreen() {
           loading={presenceBusy}
         />
       </KlippCard>
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {error && <KlippNotice tone="danger" title="Hay datos que no se pudieron actualizar" message={error} actionLabel="Reintentar" onAction={() => void refresh()} />}
       {!error && bookings.length === 0 && (
         <KlippCard style={styles.empty}>
           <KlippScreenState kind="empty" title="No tienes servicios próximos" description="Las reservas aceptadas aparecerán aquí." />

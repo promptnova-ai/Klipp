@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps, type ViewStyle, type StyleProp } from 'react-native';
 import { getKlippPalette, KlippTokens, type KlippColorMode } from './tokens';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
@@ -19,7 +19,7 @@ type ButtonProps = {
 export function KlippButton({ label, onPress, variant = 'primary', size = 'large', disabled = false, loading = false, fullWidth = true, mode = 'light', accessibilityHint }: ButtonProps) {
   const p = getKlippPalette(mode);
   const backgroundColor = variant === 'primary' ? p.primary : variant === 'secondary' ? p.secondary : variant === 'danger' ? p.danger : 'transparent';
-  const foregroundColor = variant === 'primary' ? (mode === 'dark' ? '#0C1724' : '#FFFFFF') : variant === 'secondary' ? '#082B34' : variant === 'danger' ? (mode === 'dark' ? '#2A0B08' : '#FFFFFF') : variant === 'outline' ? p.primary : p.text;
+  const foregroundColor = variant === 'primary' ? (mode === 'dark' ? '#0E2D50' : '#FFFFFF') : variant === 'secondary' ? '#082B34' : variant === 'danger' ? (mode === 'dark' ? '#2A0B08' : '#FFFFFF') : variant === 'outline' ? p.primary : p.text;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} accessibilityHint={accessibilityHint} accessibilityState={{ disabled: disabled || loading, busy: loading }} disabled={disabled || loading} onPress={onPress} style={({ pressed }) => [styles.button, size === 'medium' && styles.buttonMedium, fullWidth && styles.fullWidth, { backgroundColor, borderColor: variant === 'outline' ? p.border : backgroundColor, borderWidth: variant === 'outline' ? 1 : 0, opacity: disabled ? 0.48 : pressed ? 0.88 : 1, transform: [{ scale: pressed ? KlippTokens.motion.pressScale : 1 }] }]}>
       {loading ? <ActivityIndicator color={foregroundColor} /> : <Text style={[styles.buttonText, { color: foregroundColor }]}>{label}</Text>}
@@ -27,7 +27,7 @@ export function KlippButton({ label, onPress, variant = 'primary', size = 'large
   );
 }
 
-export function KlippCard({ children, mode = 'light', style }: { children: ReactNode; mode?: KlippColorMode; style?: ViewStyle }) {
+export function KlippCard({ children, mode = 'light', style }: { children: ReactNode; mode?: KlippColorMode; style?: StyleProp<ViewStyle> }) {
   const p = getKlippPalette(mode);
   return <View style={[styles.card, { backgroundColor: p.surface, borderColor: p.border }, style]}>{children}</View>;
 }
@@ -49,6 +49,40 @@ export function KlippStatus({ label, tone = 'neutral', mode = 'light' }: { label
   const p = getKlippPalette(mode);
   const pair = tone === 'success' ? [p.successSoft, p.success] : tone === 'warning' ? [p.warningSoft, p.warning] : tone === 'danger' ? [p.dangerSoft, p.danger] : tone === 'info' ? [p.infoSoft, p.info] : [p.primarySoft, p.textSecondary];
   return <View style={[styles.status, { backgroundColor: pair[0] }]}><Text style={[styles.statusText, { color: pair[1] }]}>{label}</Text></View>;
+}
+
+type NoticeTone = 'info' | 'success' | 'warning' | 'danger';
+
+export function KlippNotice({
+  message,
+  title,
+  tone = 'info',
+  actionLabel,
+  onAction,
+  mode = 'light',
+}: {
+  message: string;
+  title?: string;
+  tone?: NoticeTone;
+  actionLabel?: string;
+  onAction?: () => void;
+  mode?: KlippColorMode;
+}) {
+  const p = getKlippPalette(mode);
+  const colors = tone === 'danger'
+    ? { background: p.dangerSoft, foreground: p.danger, border: p.danger }
+    : tone === 'warning'
+      ? { background: p.warningSoft, foreground: p.warning, border: p.warning }
+      : tone === 'success'
+        ? { background: p.successSoft, foreground: p.success, border: p.success }
+        : { background: p.primarySoft, foreground: p.primary, border: p.border };
+  return (
+    <View accessibilityLiveRegion="polite" style={[styles.notice, { backgroundColor: colors.background, borderColor: colors.border }]}>
+      {title ? <Text style={[styles.noticeTitle, { color: colors.foreground }]}>{title}</Text> : null}
+      <Text accessibilityRole={tone === 'danger' ? 'alert' : undefined} style={[styles.noticeMessage, { color: colors.foreground }]}>{message}</Text>
+      {actionLabel && onAction ? <KlippButton label={actionLabel} onPress={onAction} variant="outline" size="medium" fullWidth={false} mode={mode} /> : null}
+    </View>
+  );
 }
 
 type ScreenStateKind = 'loading' | 'empty' | 'error' | 'offline';
@@ -76,6 +110,9 @@ const styles = StyleSheet.create({
   helper: { fontSize: 12, lineHeight: 16 },
   status: { alignSelf: 'flex-start', minHeight: 28, borderRadius: KlippTokens.radius.pill, paddingHorizontal: 10, paddingVertical: 5, justifyContent: 'center' },
   statusText: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
+  notice: { borderWidth: 1, borderRadius: KlippTokens.radius.md, padding: 14, gap: 9 },
+  noticeTitle: { fontSize: 14, lineHeight: 19, fontWeight: '800' },
+  noticeMessage: { fontSize: 13, lineHeight: 19 },
   state: { minHeight: 220, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
   stateMark: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   stateMarkText: { fontSize: 26, fontWeight: '700' },

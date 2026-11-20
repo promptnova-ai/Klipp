@@ -58,13 +58,16 @@ Familia objetivo: Inter; alternativa Plus Jakarta Sans; fallback del sistema ope
 
 ## Componentes nativos base
 
-Importar desde `app/src/design-system/components.tsx`:
+Importar los componentes base desde `app/src/design-system/components.tsx` y las tarjetas desde `app/src/design-system/cards.tsx`:
 
 - `KlippButton`: primary, secondary, outline, ghost y danger; large/medium; loading y disabled.
 - `KlippCard`: superficie consistente, borde, radio y elevación discreta.
 - `KlippField`: etiqueta, ayuda, error y props estándar de `TextInput`.
 - `KlippStatus`: neutral, success, warning, danger e info.
 - `KlippScreenState`: loading, empty, error y offline con CTA opcional.
+- `KlippServiceCard`: tarjeta de catálogo con categoría, descripción, precio orientativo y duración, sobre la superficie compartida.
+- `KlippProfessionalCard`: ficha reutilizable para resultados, selección de oferta y seguimiento; admite avatar, valoración, reseñas, trabajos, distancia, tarifa base y duración sin inventar datos ausentes.
+- `KlippCard`: contenedor base compartido para tarjetas de reservas y otros bloques de contenido.
 
 Estos componentes no requieren dependencias adicionales. Los iconos de línea deben mantener un solo lenguaje visual y medir 20–24 dp. Usar `expo-symbols` donde esté soportado o el paquete de iconos ya adoptado por la app; no mezclar packs arbitrariamente.
 
@@ -199,3 +202,11 @@ Toda pantalla con datos remotos debe definir:
 ## Estado de implementación
 
 En esta rama se añaden tokens exportables y componentes nativos reutilizables. El documento define el contrato visual y el inventario de producto; no significa que todas las pantallas existentes ya hayan sido migradas. La adopción debe hacerse por flujo, con revisión visual y pruebas en dispositivos reales.
+
+
+## Autenticación y registro
+
+- Login y registro cliente comparten la presentación corporativa azul marino, turquesa y dorado.
+- El registro cliente exige confirmación de contraseña antes de habilitar el envío.
+- El registro profesional mantiene onboarding de cuatro pasos, una sola profesión principal, precios por modalidad, herramientas, cobertura y disponibilidad.
+- La implementación actual de autenticación usa correo y contraseña con confirmación por correo. El OTP telefónico RD de seis dígitos es una necesidad pendiente, no una función que deba simularse en la interfaz.
