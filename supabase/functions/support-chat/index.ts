@@ -93,7 +93,6 @@ Deno.serve(async (req: Request) => {
     const { data: recentClientMessages, error: rateError } = await userClient
       .from("support_messages")
       .select("id")
-      .eq("conversation_id", conversationId)
       .eq("sender_type", "client")
       .gte("created_at", new Date(Date.now() - 60_000).toISOString())
       .limit(9);
