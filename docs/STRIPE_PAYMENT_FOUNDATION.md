@@ -56,12 +56,12 @@ Antes de cerrar precios hay que simular la tarifa real por importe medio, import
 
 1. El cliente confirma una reserva y el precio final queda bloqueado en backend.
 2. La reserva entra en `payment_pending`; todavía no se inicia la asignación ni se muestra como pagada.
-3. Edge Function autenticada crea un PaymentIntent con importe leído de Postgres, moneda DOP e idempotency key estable.
-4. La app confirma el PaymentIntent mediante Stripe React Native SDK / PaymentSheet y gestiona autenticación adicional (3DS) cuando Stripe la requiera.
-5. Stripe envía un webhook firmado.
-6. El webhook verifica la firma sobre el cuerpo HTTP original y llama a una RPC de servicio.
+3. Edge Function autenticada crea una Checkout Session alojada con importe leído de Postgres, moneda DOP, metadata vinculada a payment_id/booking_id e idempotency key estable.
+4. La app abre Stripe Checkout en una sesión segura del navegador y vuelve al esquema nativo `klipp://payment-return`. La app nunca confirma el pago por sí misma.
+5. Stripe envía eventos firmados `checkout.session.completed` y `payment_intent.succeeded`; el webhook admite que lleguen en distinto orden.
+6. El webhook verifica la firma sobre el cuerpo HTTP original, vincula el PaymentIntent a la fila de pago y llama a la RPC de servicio.
 7. La RPC comprueba evento único, PaymentIntent asociado, importe, moneda, caducidad y estado de reserva.
-8. Sólo una confirmación válida cambia la reserva a `requested` y permite iniciar dispatch.
+8. Sólo una confirmación válida y dentro del plazo cambia la reserva a `requested` y permite iniciar dispatch. Una captura tardía se registra como `refund_required` y no crea ofertas.
 9. La comisión del 7% y el neto profesional se calculan en backend; el payout sólo se registra cuando se complete el servicio y se cumplan las reglas de liberación.
 
 ## 5. Preparación técnica incluida
@@ -137,3 +137,15 @@ Nunca usar `sk_live_...` en QA. Para pruebas futuras usar exclusivamente claves 
 - DGII — Personas Jurídicas: https://dgii.gov.do/contribuyentesRegistrados/personasJuridicas/Paginas/default.aspx
 - Formalízate RD: https://formalizate.gob.do/procesodetalladodeformalizacion/
 - BOE — Ley del Impuesto sobre Sociedades: https://www.boe.es/buscar/act.php?id=BOE-A-2014-12328
+
+
+## 6. Actualización de integración QA (2026-11-20)
+
+- La pantalla de nueva reserva usa `create_stripe_prepaid_service_booking_at_location`; ya no llama a los RPC antiguos que podían crear una reserva sin pago.
+- La integración de cliente usa Checkout alojado, no Stripe React Native PaymentSheet. La función `stripe-create-checkout-session` valida el JWT y crea el intento mediante la RPC autenticada; no acepta importe enviado por el cliente.
+- `stripe-webhook` procesa Checkout completado y PaymentIntent, enlazando el ID del pago desde metadata firmada por Stripe. La RPC `attach_stripe_payment_intent` sigue restringida a `service_role` y permite enlazar capturas tardías para que la RPC de procesamiento las marque para revisión en vez de perder el evento.
+- La pantalla Mis reservas permite reabrir el checkout de la misma reserva en estado `payment_pending`; no crea una segunda reserva al reintentar.
+- QA usa un plazo de pago de 10 minutos, mientras que Stripe Checkout alojado impone una expiración mínima de 30 minutos. El backend impide que una captura posterior active dispatch y la marca `refund_required`, pero el reembolso debe completarlo el operador. Este desajuste debe resolverse antes de producción; no se considera una experiencia de pago terminada.
+- QA dispone de un cron cada minuto para llamar a `dispatch-notifications`, con un secreto aleatorio almacenado en Supabase Vault y validado por RPC. La prueba HTTP devolvió 200; no se enviaron push porque QA no tiene dispositivos registrados.
+- Las pruebas de webhook de esta iteración fueron simulaciones SQL con IDs sintéticos y rollback. No se ha realizado ningún cargo Stripe real ni se ha probado un webhook firmado real.
+- Las Edge Functions de Stripe requieren `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET`. No se han configurado credenciales en esta iteración ni se ha tocado producción.
