@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return jsonResponse({ error: "Method not allowed" }, 405);
 
   try {
-    const accessToken = req.headers.get("Authorization")?.match(/^Bearer\\s+(.+)$/i)?.[1];
+    const accessToken = req.headers.get("Authorization")?.match(/^Bearer\s+(.+)$/i)?.[1];
     if (!accessToken) return jsonResponse({ error: "Authentication required" }, 401);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
