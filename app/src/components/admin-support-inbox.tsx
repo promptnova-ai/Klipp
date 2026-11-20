@@ -30,6 +30,7 @@ function statusLabel(status: SupportCase['status']) {
 
 export function AdminSupportInbox() {
   const { session } = useAuth();
+  const userId = session?.user.id;
   const [tab, setTab] = useState<'cases' | 'knowledge'>('cases');
   const [cases, setCases] = useState<SupportCase[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -50,22 +51,22 @@ export function AdminSupportInbox() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const loadAlerts = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!userId) return;
     const { count, error: alertError } = await supabase.from('notifications')
       .select('id', { count: 'exact', head: true })
-      .eq('user_id', session.user.id)
+      .eq('user_id', userId)
       .in('type', ['support_case', 'support_message'])
       .is('read_at', null)
       .eq('show_in_app', true);
     if (alertError) setError(alertError.message);
     else setUnreadSupportAlerts(count ?? 0);
-  }, [session?.user.id]);
+  }, [userId]);
 
   async function markAlertsRead() {
-    if (!session?.user.id || unreadSupportAlerts === 0) return;
+    if (!userId || unreadSupportAlerts === 0) return;
     const { error: updateError } = await supabase.from('notifications').update({
       read_at: new Date().toISOString(),
-    }).eq('user_id', session.user.id)
+    }).eq('user_id', userId)
       .in('type', ['support_case', 'support_message'])
       .is('read_at', null);
     if (updateError) setError(updateError.message);
