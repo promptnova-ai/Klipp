@@ -1,5 +1,6 @@
 import { Tabs, TabList, TabSlot, TabTrigger } from 'expo-router/ui';
 import { KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { RoleGuard } from '@/components/role-guard';
 import { KlippTabBar, type KlippTabItem } from '@/components/klipp-tab-bar';
