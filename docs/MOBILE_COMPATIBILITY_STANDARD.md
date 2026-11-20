@@ -38,6 +38,6 @@ Por cada caso registrar dispositivo, versión de sistema, versión/build de Klip
 
 ## Estado de esta iteración
 
-Se han aplicado ajustes globales de safe area y teclado a las rutas Cliente y PRO, compactación de la navegación inferior, y ajustes de teclado y anchura en login/onboarding. Se han actualizado los controles compartidos de teléfono y progreso.
+Se han aplicado ajustes globales de safe area y teclado a las rutas Cliente y PRO, compactación de la navegación inferior, y ajustes de teclado y anchura en login/onboarding. Se han actualizado los controles compartidos de teléfono y progreso. También se han ajustado el modal de solicitudes entrantes PRO, la selección de disponibilidad semanal del perfil PRO, los márgenes del flujo de nueva reserva y la legibilidad de las etiquetas de navegación en pantallas compactas.
 
 **No se declara compatibilidad certificada:** faltan builds iOS/Android, compilación TypeScript/lint, ejecución en simuladores y dispositivos físicos, pruebas de accesibilidad y evidencia visual por tamaño.
