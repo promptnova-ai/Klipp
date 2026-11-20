@@ -1,6 +1,12 @@
 name: Klipp mobile quality
 
 on:
+  push:
+    branches:
+      - 'feat/**'
+    paths:
+      - 'app/**'
+      - '.github/workflows/mobile-quality.yml'
   pull_request:
     branches:
       - main
