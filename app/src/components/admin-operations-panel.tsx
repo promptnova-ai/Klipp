@@ -112,8 +112,8 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
 
   useEffect(() => {
     let active = true;
-    void loadBookings().finally(() => { if (active) setLoading(false); });
-    const interval = setInterval(() => { void loadBookings(); }, 15000);
+    void Promise.resolve().then(loadBookings).finally(() => { if (active) setLoading(false); });
+    const interval = setInterval(() => { void Promise.resolve().then(loadBookings); }, 15000);
     return () => { active = false; clearInterval(interval); };
   }, [loadBookings]);
 
@@ -224,7 +224,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
       await openTimeline(bookingId);
     }
     setInterventionBusy(false);
-  }, [interventionReason, loadBookings]);
+  }, [interventionReason, loadBookings, openTimeline]);
 
   const cancelUnassignedBooking = useCallback((bookingId: string) => {
     if (interventionReason.trim().length < 5) {
@@ -256,7 +256,7 @@ export function AdminOperationsPanel({ canManage = false }: { canManage?: boolea
         } },
       ],
     );
-  }, [interventionReason, loadBookings, openTimeline]);
+  }, [interventionReason, loadBookings]);
 
   const attentionCount = useMemo(() => bookings.filter((item) => attentionReason(item)).length, [bookings]);
   const visibleBookings = useMemo(() => bookings.filter((item) => {
