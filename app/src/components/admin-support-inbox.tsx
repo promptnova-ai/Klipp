@@ -38,6 +38,7 @@ export function AdminSupportInbox() {
   const [resolutionNote, setResolutionNote] = useState('');
   const [filter, setFilter] = useState<'all' | SupportCase['status']>('all');
   const [articles, setArticles] = useState<KnowledgeArticle[]>([]);
+  const [unreadSupportAlerts, setUnreadSupportAlerts] = useState(0);
   const [articleId, setArticleId] = useState<string | null>(null);
   const [articleTitle, setArticleTitle] = useState('');
   const [articleCategory, setArticleCategory] = useState('general');
@@ -47,6 +48,29 @@ export function AdminSupportInbox() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const loadAlerts = useCallback(async () => {
+    if (!session?.user.id) return;
+    const { count, error: alertError } = await supabase.from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', session.user.id)
+      .in('type', ['support_case', 'support_message'])
+      .is('read_at', null)
+      .eq('show_in_app', true);
+    if (alertError) setError(alertError.message);
+    else setUnreadSupportAlerts(count ?? 0);
+  }, [session?.user.id]);
+
+  async function markAlertsRead() {
+    if (!session?.user.id || unreadSupportAlerts === 0) return;
+    const { error: updateError } = await supabase.from('notifications').update({
+      read_at: new Date().toISOString(),
+    }).eq('user_id', session.user.id)
+      .in('type', ['support_case', 'support_message'])
+      .is('read_at', null);
+    if (updateError) setError(updateError.message);
+    else await loadAlerts();
+  }
 
   const loadCases = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -72,8 +96,8 @@ export function AdminSupportInbox() {
   }, []);
 
   useEffect(() => {
-    void Promise.resolve().then(() => { void loadCases(); void loadArticles(); });
-  }, [loadCases, loadArticles]);
+    void Promise.resolve().then(() => { void loadCases(); void loadArticles(); void loadAlerts(); });
+  }, [loadCases, loadArticles, loadAlerts]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -117,10 +141,10 @@ export function AdminSupportInbox() {
         event: '*',
         schema: 'public',
         table: 'support_conversations',
-      }, () => { void loadCases(); })
+      }, () => { void loadCases(); void loadAlerts(); })
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
-  }, [loadCases]);
+  }, [loadCases, loadAlerts]);
 
   const filteredCases = useMemo(
     () => cases.filter((item) => filter === 'all' || item.status === filter),
@@ -253,6 +277,17 @@ export function AdminSupportInbox() {
         <View style={styles.section}>
           <Text style={styles.heading}>Atención al cliente</Text>
           <Text style={styles.muted}>Consulta los casos, responde y registra la resolución. No se muestran teléfonos, direcciones ni datos de pago en esta bandeja.</Text>
+          {unreadSupportAlerts > 0 && (
+            <View style={styles.alertCard}>
+              <View style={styles.articleCopy}>
+                <Text style={styles.alertTitle}>{unreadSupportAlerts} aviso{unreadSupportAlerts === 1 ? '' : 's'} nuevo{unreadSupportAlerts === 1 ? '' : 's'}</Text>
+                <Text style={styles.muted}>Hay consultas o mensajes pendientes de revisar.</Text>
+              </View>
+              <Pressable onPress={() => void markAlertsRead()} style={styles.filter}>
+                <Text style={styles.filterText}>Marcar vistos</Text>
+              </Pressable>
+            </View>
+          )}
           <View style={styles.counts}>
             <Count label="Abiertas" value={counts.open} />
             <Count label="En revisión" value={counts.in_review} />
@@ -354,6 +389,8 @@ const styles = StyleSheet.create({
   heading: { color: KlippColors.navy, fontSize: 18, fontWeight: '800' },
   muted: { color: KlippColors.muted, fontSize: 12, lineHeight: 18 },
   counts: { flexDirection: 'row', gap: 8 },
+  alertCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, backgroundColor: '#FFF7E5', borderWidth: 1, borderColor: '#F3D79A' },
+  alertTitle: { color: KlippColors.navy, fontSize: 13, fontWeight: '800' },
   count: { flex: 1, padding: 11, borderRadius: 11, backgroundColor: '#F3F6FA', gap: 3 },
   countValue: { color: KlippColors.navy, fontSize: 21, fontWeight: '800' },
   countLabel: { color: KlippColors.muted, fontSize: 10, fontWeight: '700' },
