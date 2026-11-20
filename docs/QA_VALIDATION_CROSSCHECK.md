@@ -1,13 +1,13 @@
 # Klipp — Cruce de validación QA
 
 **Corte:** 20 de noviembre de 2026  
-**Rama:** `feat/booking-idempotency-and-ui-foundation-20261120`  
+**Rama:** `feat/uber-airbnb-onboarding-rebuild-20261120`  
 **Propósito:** contrastar la lista manual de `QA_SCENARIOS.md` con el trabajo realizado en la rama.  
 **Regla de evidencia:** implementar código o documentar un escenario no equivale a ejecutar una prueba. Ningún caso se marca como aprobado sin evidencia reproducible del resultado.
 
 ## Resultado del cruce
 
-Se identifican **51 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron los cambios de tarjetas y recuperación de errores en código. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
+Se identifican **52 escenarios** en `QA_SCENARIOS.md`. En esta iteración se revisaron estáticamente los cambios del onboarding progresivo cliente/PRO y sus componentes compartidos. No se ejecutaron sesiones E2E, pruebas en dispositivos físicos ni pentest automatizado. Por tanto, no se declara ningún escenario como aprobado.
 
 | ID | Escenario | Estado verificable |
 |---|---|---|
@@ -61,7 +61,9 @@ Se identifican **51 escenarios** en `QA_SCENARIOS.md`. En esta iteración se rev
 | QA-UI-01 | Recuperación de errores en bandejas de trabajo | Implementación revisada en código; prueba de red y recuperación pendiente. |
 | QA-UI-02 | Liberación de controles después de fallos RPC | Implementación revisada en código; pruebas de fallo RPC pendientes. |
 | QA-UI-03 | Consistencia de fichas de servicio, profesionales y reservas | Componentes implementados y escenario añadido; validación visual/dispositivo pendiente. |
-| QA-UI-04 | Login y registro de cliente y profesional | Cambios visuales y validación de contraseña implementados; pruebas E2E y OTP telefónico pendientes. |
+| QA-UI-04 | Login y registro de cliente y profesional | Recorrido cliente de tres pasos y entrada dominicana implementados; pruebas E2E pendientes. OTP SMS real pendiente de configuración del proveedor. |
+| QA-UI-05 | Onboarding profesional progresivo de siete pasos | Refactor de interfaz y validaciones implementado; prueba E2E transaccional pendiente. |
+| QA-UI-06 | Componentes compartidos de onboarding y accesibilidad | Componentes nativos implementados; validación en dispositivos y lectores de pantalla pendiente. |
 
 ## Hallazgos de revisión por disciplina
 
@@ -93,3 +95,15 @@ Se identifican **51 escenarios** en `QA_SCENARIOS.md`. En esta iteración se rev
 Se revisaron los componentes `auth-screen.tsx` y `pro-registration-screen.tsx`. La iteración visual actualiza la jerarquía del acceso, la cabecera de marca, las tarjetas de rol y la presentación del onboarding PRO. El registro cliente ahora solicita confirmar la contraseña y valida coincidencia antes de habilitar el envío.
 
 **Limitación funcional importante:** el flujo conectado actualmente usa `signInWithPassword` y `signUp` de Supabase con correo y contraseña y confirmación por correo. No hay evidencia en el código revisado de un OTP SMS de seis dígitos ni de un flujo de autenticación telefónica RD (+1 809/829/849). No se debe presentar el teléfono como verificado ni simular un OTP en UI. QA-UI-04 debe mantenerse pendiente hasta ejecutar pruebas reales en QA y resolver esa brecha de producto/backend.
+
+
+## Iteración onboarding progresivo — 20/11/2026
+
+- Reemplaza el formulario de registro cliente por tres pasos: perfil, contacto y cuenta.
+- Añade selector telefónico dominicano reutilizable para +1 con prefijos 809, 829 y 849.
+- Separa el onboarding PRO en siete pasos: identidad, profesión, especialidad, tarifas/equipamiento, cobertura, disponibilidad y cuenta.
+- Mantiene la profesión única y el payload que valida y persiste el trigger transaccional de alta profesional.
+- Añade `OnboardingProgress`, `OnboardingChoiceCard` y `DominicanPhoneField` nativos, sin nuevas dependencias.
+- Actualiza QA-UI-04 y añade QA-UI-05/06.
+
+**Limitaciones verificables:** la captura de teléfono no es una verificación SMS. La autenticación sigue siendo correo/contraseña con confirmación por correo; el proveedor SMS y OTP real no están configurados ni probados. No se han ejecutado TypeScript, lint, pruebas E2E ni pruebas visuales/dispositivo en esta revisión.
