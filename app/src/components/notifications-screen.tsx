@@ -342,7 +342,7 @@ export function NotificationsScreen() {
         : 'No hemos podido comprobar el estado de este dispositivo.';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <View style={styles.headerCopy}>
@@ -522,7 +522,7 @@ export function NotificationsScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
