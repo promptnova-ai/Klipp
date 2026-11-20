@@ -427,3 +427,6 @@ verify_jwt = true
 # Stripe webhook authenticates requests using the Stripe-Signature header.
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.support-chat]
+verify_jwt = true

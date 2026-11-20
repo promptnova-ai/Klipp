@@ -165,15 +165,16 @@ Deno.serve(async (req: Request) => {
         content: article.content.slice(0, 3500),
       }));
 
-      const prompt = JSON.stringify({
-        customer_message: redactSensitiveText(message),
-        conversation_history: safeHistory,
-        booking_context: safeBooking,
-        knowledge_base: safeKnowledge,
-      });
+      if (safeKnowledge.length > 0) {
+        const prompt = JSON.stringify({
+          customer_message: redactSensitiveText(message),
+          conversation_history: safeHistory,
+          booking_context: safeBooking,
+          knowledge_base: safeKnowledge,
+        });
 
-      try {
-        const aiResponse = await fetch("https://api.openai.com/v1/responses", {
+        try {
+          const aiResponse = await fetch("https://api.openai.com/v1/responses", {
           method: "POST",
           headers: {
             "Authorization": `Bearer ${aiKey}`,
@@ -196,15 +197,16 @@ Deno.serve(async (req: Request) => {
             ].join("\n"),
             input: prompt,
           }),
-        });
-        if (aiResponse.ok) {
-          const payload = await aiResponse.json();
-          answer = extractResponseText(payload);
-        } else {
-          console.error("Support AI provider returned status", aiResponse.status);
+          });
+          if (aiResponse.ok) {
+            const payload = await aiResponse.json();
+            answer = extractResponseText(payload);
+          } else {
+            console.error("Support AI provider returned status", aiResponse.status);
+          }
+        } catch {
+          console.error("Support AI provider request failed");
         }
-      } catch {
-        console.error("Support AI provider request failed");
       }
     }
 
