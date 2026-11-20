@@ -19,7 +19,7 @@ export default function ProLayout() {
         <TabList style={{ display: 'none' }}>
           {proTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
-        <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />
+        <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>\n          <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />\n        </SafeAreaView>
         <KlippTabBar items={proTabs} actionHref="/(pro)" actionLabel="Ir a solicitudes" role="pro" />
       </Tabs>
     </RoleGuard>
