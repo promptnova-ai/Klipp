@@ -290,7 +290,7 @@ export function ClientTrackingScreen() {
   if (loading) return <KlippScreenState kind="loading" title="Abriendo seguimiento" description="Estamos actualizando el estado de tu servicio." mode="light" />;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.page}>
         <Pressable accessibilityRole="button" onPress={() => router.back()} style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
           <Text style={styles.backText}>‹  Volver a mis reservas</Text>
@@ -362,7 +362,7 @@ export function ClientTrackingScreen() {
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
