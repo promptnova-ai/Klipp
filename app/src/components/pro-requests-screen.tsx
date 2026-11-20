@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
+import { Animated, Image, Modal, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, Vibration, Platform } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { KlippColors } from '@/lib/brand';
+import { KlippNotice, KlippScreenState } from '@/design-system';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
 
@@ -53,18 +54,28 @@ export function ProRequestsScreen() {
   const secondsLeft = activeRequest ? Math.max(0, Math.ceil((new Date(activeRequest.expires_at).getTime() - nowMs) / 1000)) : 0;
 
   const loadRequests = useCallback(async () => {
-    if (!session?.user.id) return;
+    if (!session?.user.id) {
+      setLoading(false);
+      return;
+    }
     setError(null);
-    const [requestResult, reassignmentResult] = await Promise.all([
-      supabase.rpc('pro_list_incoming_booking_requests'),
-      supabase.rpc('pro_list_pending_booking_reassignments'),
-    ]);
-    if (requestResult.error) setError(requestResult.error.message);
-    else setRequests((requestResult.data ?? []) as IncomingRequest[]);
-    if (reassignmentResult.error) setError(reassignmentResult.error.message);
-    else setReassignments((reassignmentResult.data ?? []) as IncomingReassignment[]);
-    setLoading(false);
-  }, [session]);
+    try {
+      const [requestResult, reassignmentResult] = await Promise.all([
+        supabase.rpc('pro_list_incoming_booking_requests'),
+        supabase.rpc('pro_list_pending_booking_reassignments'),
+      ]);
+      const failures: string[] = [];
+      if (requestResult.error) failures.push(`Solicitudes: ${requestResult.error.message}`);
+      else setRequests((requestResult.data ?? []) as IncomingRequest[]);
+      if (reassignmentResult.error) failures.push(`Sustituciones: ${reassignmentResult.error.message}`);
+      else setReassignments((reassignmentResult.data ?? []) as IncomingReassignment[]);
+      if (failures.length) setError(failures.join(' · '));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos actualizar las solicitudes. Comprueba tu conexión e inténtalo de nuevo.');
+    } finally {
+      setLoading(false);
+    }
+  }, [session?.user.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,8 +140,11 @@ export function ProRequestsScreen() {
 
   async function refresh() {
     setRefreshing(true);
-    await loadRequests();
-    setRefreshing(false);
+    try {
+      await loadRequests();
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   async function respond(requestId: string, accept: boolean) {
@@ -147,29 +161,39 @@ export function ProRequestsScreen() {
     }
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('respond_to_request', {
-      p_request_id: requestId,
-      p_accept: accept,
-      p_materials_confirmed: accept ? materialsConfirmed : false,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('respond_to_request', {
+        p_request_id: requestId,
+        p_accept: accept,
+        p_materials_confirmed: accept ? materialsConfirmed : false,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos registrar tu respuesta. Vuelve a intentarlo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
   async function respondReassignment(requestId: string, accept: boolean) {
     setBusyId(requestId);
     setError(null);
-    const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
-      p_request_id: requestId,
-      p_accept: accept,
-    });
-    if (rpcError) setError(rpcError.message);
-    else await loadRequests();
-    setBusyId(null);
+    try {
+      const { error: rpcError } = await supabase.rpc('pro_respond_booking_reassignment', {
+        p_request_id: requestId,
+        p_accept: accept,
+      });
+      if (rpcError) setError(rpcError.message);
+      else await loadRequests();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos registrar tu respuesta. Vuelve a intentarlo.');
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando solicitudes...</Text></View>;
+  if (loading) return <KlippScreenState kind="loading" title="Cargando solicitudes" description="Estamos consultando las solicitudes y sustituciones pendientes." />;
 
   return (
     <>
@@ -310,7 +334,7 @@ export function ProRequestsScreen() {
       contentContainerStyle={styles.page}
       refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Solicitudes" subtitle="Solicitudes nuevas y sustituciones de reservas confirmadas." />
-      {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
+      {error && <KlippNotice tone="danger" title="No se pudieron actualizar todas las solicitudes" message={error} actionLabel="Reintentar" onAction={() => void refresh()} />}
       {!error && requests.length === 0 && reassignments.length === 0 && (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No tienes solicitudes pendientes</Text>
