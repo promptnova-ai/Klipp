@@ -53,6 +53,9 @@ function statusMessage(status: BookingStatus, assignmentMode: 'manual' | 'auto')
       ? 'Klipp está buscando un profesional disponible para tu servicio. Te avisaremos en cuanto alguien acepte.'
       : 'Tu solicitud está pendiente de respuesta del profesional. Te avisaremos cuando acepte o rechace.';
   }
+  if (status === 'payment_pending') {
+    return 'El pago seguro está pendiente. No se enviará ninguna oferta al profesional hasta que Stripe confirme el cobro.';
+  }
   if (status === 'awaiting_payment') {
     return 'El profesional ha aceptado, pero el pago integrado todavía no está habilitado. No realices transferencias ni pagos fuera de Klipp; la reserva aún no está confirmada.';
   }
