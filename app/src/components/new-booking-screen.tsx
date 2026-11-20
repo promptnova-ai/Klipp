@@ -713,8 +713,7 @@ export function NewBookingScreen() {
       {pendingPaymentBookingId && (
         <View style={styles.successBanner}>
           <Text style={styles.successTitle}>Reserva guardada. Falta confirmar el pago.</Text>
-          <Text style={styles.body}>No vuelvas a crear la solicitud. Puedes reabrir el pago seguro para esta misma reserva.</Text>
-          <KlippButton label="Reintentar pago" onPress={() => void openCheckoutForBooking(pendingPaymentBookingId)} loading={paymentOpening} disabled={paymentOpening} mode="light" />
+          <Text style={styles.body}>No vuelvas a crear la solicitud. Usa el botón inferior para reabrir el pago seguro de esta misma reserva.</Text>
         </View>
       )}
       {services.length === 0 && <Text style={styles.empty}>No hay servicios disponibles ahora mismo.</Text>}
@@ -932,7 +931,7 @@ export function NewBookingScreen() {
       {submissionUncertain ? (
         <View style={styles.horizontalMargin}><KlippButton label="Revisar mis reservas" onPress={() => router.replace('/(client)/bookings')} mode="light" /></View>
       ) : !success && (
-        <View style={styles.horizontalMargin}><KlippButton label={pendingPaymentBookingId ? 'Reintentar pago' : 'Continuar al pago seguro'} onPress={() => void createBooking()} loading={saving || paymentOpening} disabled={!pendingPaymentBookingId && (!coordinate || locationLoading)} mode="light" accessibilityHint="Crea la reserva pendiente de pago y abre el checkout seguro de Stripe." /></View>
+        <View style={styles.horizontalMargin}><KlippButton label={pendingPaymentBookingId ? 'Reintentar pago' : 'Continuar al pago seguro'} onPress={() => void createBooking()} loading={saving || paymentOpening} disabled={success !== null || submissionUncertain || (!pendingPaymentBookingId && (!coordinate || locationLoading))} mode="light" accessibilityHint="Crea la reserva pendiente de pago y abre el checkout seguro de Stripe." /></View>
       )}
     </ScrollView>
   );
