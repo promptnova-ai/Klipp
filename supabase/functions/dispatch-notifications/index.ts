@@ -17,6 +17,22 @@ function jsonResponse(body: unknown, status = 200) {
 type ClaimedDelivery = { queue_id: string; notification_id: string; attempts: number };
 type ExpoTicket = { status: "ok" | "error"; id?: string; message?: string; details?: { error?: string } };
 type TicketMapItem = { id: string; token: string };
+const PRIVATE_LOCATION_KEYS = new Set([
+  "address", "addresstext", "street", "references", "referencestext",
+  "landmark", "landmarknotes", "location", "coordinates", "geolocation",
+  "latitude", "longitude", "lat", "lng", "clientlat", "clientlng",
+]);
+
+function sanitizePrivateLocationFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizePrivateLocationFields);
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !PRIVATE_LOCATION_KEYS.has(key.toLowerCase().replace(/[_-]/g, "")))
+      .map(([key, nested]) => [key, sanitizePrivateLocationFields(nested)]),
+  );
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -259,7 +275,7 @@ Deno.serve(async (req) => {
         sound: "default",
         title: notification.title,
         body: notification.body,
-        data: { ...(notification.data ?? {}), notificationId: notification.id },
+        data: { ...((notification.type === "booking_request" ? sanitizePrivateLocationFields(notification.data ?? {}) : notification.data ?? {}) as Record<string, unknown>), notificationId: notification.id },
         priority: "high",
         channelId: notification.type === "booking_request" ? "klipp-requests" : "klipp-updates",
       }));
