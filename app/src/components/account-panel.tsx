@@ -13,7 +13,7 @@ type AccountLink = {
   title: string;
   description: string;
   icon: SymbolName;
-  route: '/(client)/addresses' | '/(client)/bookings' | '/(client)/notifications';
+  route: '/(client)/addresses' | '/(client)/bookings' | '/(client)/notifications' | '/(client)/support';
 };
 
 const accountLinks: AccountLink[] = [
