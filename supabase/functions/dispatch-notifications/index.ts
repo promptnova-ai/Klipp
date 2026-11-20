@@ -1,11 +1,15 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { parseBearerToken } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-notification-cron-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function parseBearerToken(authorization: string | null): string | null {
+  const match = authorization?.match(/^Bearer\\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
