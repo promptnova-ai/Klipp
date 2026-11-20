@@ -17,6 +17,15 @@ Ejecutar únicamente en un proyecto Supabase de QA con Google Routes configurado
 5. Llamar desde una cuenta que no sea cliente ni administrador con permiso `bookings.read`; debe recibir `403` y no consumir el límite.
 6. Probar un identificador que no sea UUID; debe recibir `400` sin consultar reservas ni Google Routes.
 
+## QA-ETA-04 — Frecuencia de actualización de la interfaz
+1. Abrir el seguimiento de una reserva en estado `en_route`.
+2. Mantener activo el flujo de actualizaciones GPS en tiempo real durante dos minutos.
+3. Verificar que el cliente solo solicita el ETA al abrir el seguimiento y en su intervalo de 60 segundos; los cambios de latitud/longitud no reinician el temporizador ni disparan peticiones adicionales.
+4. Simular una respuesta HTTP 429 y una respuesta temporal 202; el último ETA correcto debe permanecer visible hasta que llegue un cálculo nuevo o la reserva deje de estar `en_route`.
+5. Cambiar el estado de la reserva fuera de `en_route`; el ETA y la polilínea deben limpiarse.
+
+**Resultado esperado:** Las actualizaciones de posición no generan llamadas de rutas facturables y un límite temporal no borra un ETA válido que ya se había mostrado.
+
 ## QA-ETA-03 — Estado y recuperación
 1. Probar reserva que no esté en `en_route`; debe recibir `409` sin reclamar el límite.
 2. Probar ubicación profesional ausente o con más de 120 segundos; debe devolver `202` y no consumir el límite.
