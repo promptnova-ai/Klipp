@@ -30,6 +30,12 @@ const accountLinks: AccountLink[] = [
     route: '/(client)/bookings',
   },
   {
+    title: 'Centro de ayuda',
+    description: 'Consultas, incidencias y reclamaciones',
+    icon: { ios: 'questionmark.circle', android: 'help_outline', web: 'help_outline' },
+    route: '/(client)/support',
+  },
+  {
     title: 'Notificaciones',
     description: 'Avisos y preferencias de comunicación',
     icon: { ios: 'bell', android: 'notifications', web: 'notifications' },

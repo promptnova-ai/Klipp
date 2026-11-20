@@ -54,6 +54,11 @@ create policy support_conversations_client_create on public.support_conversation
     client_id = (select auth.uid())
     and assigned_admin_id is null
     and status = 'open'
+    and (booking_id is null or exists (
+      select 1 from public.bookings b
+      where b.id = support_conversations.booking_id
+        and b.client_id = (select auth.uid())
+    ))
   );
 
 drop policy if exists support_conversations_admin_read on public.support_conversations;
