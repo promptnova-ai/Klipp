@@ -78,6 +78,7 @@ function verificationLabel(status: VerificationStatus) {
 export function ProProfileScreen() {
   const { session, signOut } = useAuth();
   const userId = session?.user.id;
+  const onboardingDraft = session?.user.user_metadata?.pro_onboarding;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -129,7 +130,7 @@ export function ProProfileScreen() {
     }
     setPortfolio((portfolioResult.data ?? []) as PortfolioPhoto[]);
     const savedProfile = profileResult.data as ProProfile;
-    const registrationDraft = getRegistrationDraft(session?.user.user_metadata?.pro_onboarding);
+    const registrationDraft = getRegistrationDraft(onboardingDraft);
     setProProfile(savedProfile);
     setPhone(typeof accountProfileResult.data?.phone === 'string' ? accountProfileResult.data.phone : '');
     setBio(savedProfile.bio ?? registrationDraft?.bio ?? '');
@@ -184,7 +185,7 @@ export function ProProfileScreen() {
     setSelectedServices(configuredServices.map((service) => service.service_type_id).slice(0, 1));
     setServiceDetails(Object.fromEntries(configuredServices.map((service) => [service.service_type_id, service.details ?? {}])));
     setLoading(false);
-  }, [userId]);
+  }, [userId, onboardingDraft]);
 
   useEffect(() => {
     void Promise.resolve().then(loadProfile);
