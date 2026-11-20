@@ -65,6 +65,9 @@ Importar desde `app/src/design-system/components.tsx`:
 - `KlippField`: etiqueta, ayuda, error y props estándar de `TextInput`.
 - `KlippStatus`: neutral, success, warning, danger e info.
 - `KlippScreenState`: loading, empty, error y offline con CTA opcional.
+- `KlippServiceCard`: tarjeta de catálogo con categoría, descripción, precio orientativo y duración, sobre la superficie compartida.
+- `KlippProfessionalCard`: ficha reutilizable para resultados, selección de oferta y seguimiento; admite avatar, valoración, reseñas, trabajos, distancia, tarifa base y duración sin inventar datos ausentes.
+- `KlippCard`: contenedor base compartido para tarjetas de reservas y otros bloques de contenido.
 
 Estos componentes no requieren dependencias adicionales. Los iconos de línea deben mantener un solo lenguaje visual y medir 20–24 dp. Usar `expo-symbols` donde esté soportado o el paquete de iconos ya adoptado por la app; no mezclar packs arbitrariamente.
 

@@ -650,3 +650,18 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 5. Repetir la acción después de una respuesta satisfactoria y comprobar que el flujo no duplica mensajes ni reservas.
 
 **Resultado esperado:** Los indicadores busy y refreshing se liberan incluso si la llamada falla por excepción. La interfaz solo refleja un cambio de estado después de una respuesta válida del servidor; los reintentos consultan el estado persistido antes de continuar.
+
+
+### QA-UI-03 — Consistencia de fichas de servicio, profesionales y reservas
+
+**Prioridad:** Alta  
+**Precondición:** Catálogo activo y al menos un profesional aprobado con oferta publicada; usar también un profesional sin foto o sin reseñas.
+
+1. Comparar la tarjeta de servicio del inicio, la ficha de oferta profesional, los resultados de búsqueda y el resumen del profesional en seguimiento.
+2. Comprobar que nombre, foto, valoración, número de reseñas, trabajos, distancia, tarifa base y duración solo aparecen cuando existe un dato válido.
+3. Repetir con avatar ausente, biografía vacía, cero reseñas, distancia no disponible y precio no publicado.
+4. Seleccionar y deseleccionar profesionales con lector de pantalla o inspección de accesibilidad; verificar que el control expone el estado seleccionado.
+5. Comprobar en Android/iOS que el área táctil de la tarjeta permite seleccionar sin activar accidentalmente otra acción.
+6. Comparar la tarifa base mostrada en la ficha con el importe definitivo que devuelve la reserva; no presentar la tarifa base como total final si la modalidad aún no está elegida.
+
+**Resultado esperado:** Las tarjetas comparten jerarquía, superficies y espaciado del sistema Klipp. Los datos ausentes se representan con alternativas explícitas, nunca con valores inventados. La selección es accesible y el precio se identifica como tarifa base cuando todavía no constituye el total de la reserva.

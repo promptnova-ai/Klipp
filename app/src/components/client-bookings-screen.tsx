@@ -6,7 +6,7 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
-import { KlippNotice, KlippScreenState } from '@/design-system';
+import { KlippCard, KlippNotice, KlippProfessionalCard, KlippScreenState } from '@/design-system';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -383,7 +383,7 @@ export function ClientBookingsScreen() {
             ? styles.statusDotNeutral
             : styles.statusDotActive;
         return (
-          <View key={booking.id} style={styles.card}>
+          <KlippCard key={booking.id} style={styles.card}>
             <View style={styles.cardHeader}>
               <View style={styles.serviceHeading}>
                 <View style={styles.serviceIcon}>
@@ -424,13 +424,7 @@ export function ClientBookingsScreen() {
             {booking.status === 'en_route' && (
               <View style={styles.trackingPanel}>
                 <Text style={styles.etaBadge}>{eta === null ? 'Buscando ubicación en vivo...' : `Estimación preliminar: ~${eta} min`}</Text>
-                {pro && <View style={styles.trackingPro}>
-                  <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.serviceHeadingCopy}>
-                    <Text style={styles.cardTitle}>{pro.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text style={styles.tier}>★ {Number(pro.rating_avg).toFixed(1)} · {pro.transport_type || 'En camino'}</Text>
-                  </View>
-                </View>}
+                {pro && <KlippProfessionalCard name={pro.full_name} avatarUrl={pro.avatar_url} rating={pro.rating_avg} ratingCount={pro.rating_count} jobsCompleted={pro.jobs_completed} transportLabel={pro.transport_type || 'En camino'} compact />}
                 <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/tracking', params: { bookingId: booking.id } })} style={({ pressed }) => [styles.followButton, pressed && styles.buttonPressed]}>
                   <Text style={styles.followButtonText}>Ver seguimiento en vivo</Text>
                 </Pressable>
@@ -518,7 +512,7 @@ export function ClientBookingsScreen() {
               </View>
             )}
             {review && <Text style={styles.reviewDone}>Tu reseña: {'★'.repeat(review.rating)} {review.comment ?? ''}</Text>}
-          </View>
+          </KlippCard>
         );
       })}
     </ScrollView>
@@ -539,7 +533,7 @@ const styles = StyleSheet.create({
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, backgroundColor: KlippColors.canvas },
   title: { color: KlippColors.navy, fontSize: 28, fontWeight: '700' },
   empty: { marginTop: 4, padding: 20, borderRadius: 18, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 8 },
-  card: { padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, backgroundColor: KlippColors.white, borderWidth: 1, borderColor: KlippColors.border, gap: 15, shadowColor: '#0F172A', shadowOpacity: 0.04, shadowOffset: { width: 0, height: 8 }, shadowRadius: 16, elevation: 3 },
+  card: { padding: 18, width: '100%', maxWidth: 860, alignSelf: 'center', borderRadius: 22, gap: 15 },
   cardHeader: { gap: 12 },
   serviceHeading: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   serviceIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: '#EEF4FF', alignItems: 'center', justifyContent: 'center' },

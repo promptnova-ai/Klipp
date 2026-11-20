@@ -17,7 +17,7 @@ import {
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import { KlippTokens } from '@/design-system/tokens';
-import { KlippScreenState, KlippSearchBar } from '@/design-system';
+import { KlippProfessionalCard, KlippScreenState, KlippSearchBar, KlippServiceCard } from '@/design-system';
 import { MotionPressable, ScreenEntrance } from '@/components/ui-primitives';
 import { formatDop } from '@/lib/format';
 import type { PricingTier, ProCard, ServiceType } from '@/lib/types';
@@ -30,7 +30,7 @@ type CatalogService = ServiceType & {
   offers: ServiceOffer[];
   equipmentRequirements: EquipmentRequirement[];
 };
-type SearchablePro = Pick<ProCard, 'pro_id' | 'full_name' | 'bio'>;
+type SearchablePro = Pick<ProCard, 'pro_id' | 'full_name' | 'bio' | 'avatar_url' | 'years_experience' | 'rating_avg' | 'rating_count' | 'jobs_completed' | 'transport_type'> & { distance_m?: number };
 type ServiceOffer = {
   id: string;
   pro_id: string;
@@ -38,6 +38,11 @@ type ServiceOffer = {
   base_price_dop: number;
   est_minutes: number;
   pro?: SearchablePro;
+  avatar_url?: string | null;
+  rating_avg?: number;
+  rating_count?: number;
+  jobs_completed?: number;
+  distance_m?: number;
 };
 type CatalogCategory = { id: number; name: string };
 type NearbyOffer = ServiceOffer & {
@@ -200,10 +205,10 @@ export default function ClientHomeScreen() {
       const nearby = results.flatMap((result) => (result.data ?? []) as NearbyOffer[]);
       const nearbyPros = new Map<string, SearchablePro>();
       const enrichedOffers: ServiceOffer[] = nearby.map((offer) => {
-        nearbyPros.set(offer.pro_id, { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio });
+        nearbyPros.set(offer.pro_id, { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio, avatar_url: offer.avatar_url, years_experience: offer.years_experience, rating_avg: offer.rating_avg, rating_count: offer.rating_count, jobs_completed: offer.jobs_completed, distance_m: offer.distance_m });
         return {
           ...offer,
-          pro: { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio },
+          pro: { pro_id: offer.pro_id, full_name: offer.pro_name, bio: offer.bio, avatar_url: offer.avatar_url, years_experience: offer.years_experience, rating_avg: offer.rating_avg, rating_count: offer.rating_count, jobs_completed: offer.jobs_completed, distance_m: offer.distance_m },
         };
       });
       setServices((current) => current.map((service) => ({
@@ -375,47 +380,39 @@ export default function ClientHomeScreen() {
       ) : (
         <View style={[styles.serviceList, wideLayout && styles.serviceListWide]}>
           {visibleServices.map((service) => {
-            const priceOptions = service.offers
+            const lowestOption = service.offers
               .filter((offer) => offer.base_price_dop > 0)
               .map((offer) => ({ price: offer.base_price_dop, duration: offer.est_minutes }))
-              .sort((left, right) => left.price - right.price);
-            const lowestOption = priceOptions[0];
+              .sort((left, right) => left.price - right.price)[0];
             return (
-              <MotionPressable
-                accessibilityLabel={`Ver detalles de ${service.name}`}
+              <KlippServiceCard
                 key={service.id}
+                title={service.name}
+                category={getCategory(service)}
+                description={service.description || 'Un servicio cuidado por profesionales verificados.'}
+                priceLabel={lowestOption ? `Desde ${formatDop(lowestOption.price)}` : 'Precio según modalidad y profesional'}
+                durationLabel={lowestOption ? `${lowestOption.duration} min aprox.` : undefined}
+                icon={<SymbolView name={serviceIcon(service.code)} tintColor={KlippColors.blueDark} size={23} />}
+                wide={wideLayout}
                 onPress={() => showServiceDetails(service)}
-                style={[styles.serviceCard, wideLayout && styles.serviceCardWide]}>
-                <View style={styles.serviceCardIcon}>
-                  <SymbolView name={serviceIcon(service.code)} tintColor={KlippColors.blueDark} size={23} />
-                </View>
-                <View style={styles.serviceCopy}>
-                  <View style={styles.serviceCardTop}>
-                    <Text style={styles.serviceTitle}>{service.name}</Text>
-                    <View style={styles.categoryTag}><Text style={styles.categoryTagText}>{getCategory(service)}</Text></View>
-                  </View>
-                  <Text style={styles.serviceDescription}>{service.description || 'Un servicio cuidado por profesionales verificados.'}</Text>
-                  <View style={styles.serviceMeta}>
-                    {lowestOption ? <Text style={styles.servicePrice}>Desde {formatDop(lowestOption.price)}</Text> : <Text style={styles.servicePriceHint}>Precio según modalidad y profesional</Text>}
-                    {lowestOption && <Text style={styles.metaDot}>·</Text>}
-                    {lowestOption && <Text style={styles.serviceDuration}>{lowestOption.duration} min aprox.</Text>}
-                  </View>
-                  <Text style={styles.serviceLink}>Ver detalles  <Text style={styles.linkArrow}>›</Text></Text>
-                </View>
-              </MotionPressable>
+              />
             );
           })}
           {visiblePros.length > 0 && (
             <View style={styles.proResults}>
               <Text style={styles.proResultsTitle}>Profesionales</Text>
               {visiblePros.map((pro) => (
-                <View key={pro.pro_id} style={styles.proResult}>
-                  <View style={styles.proAvatar}><Text style={styles.proAvatarText}>{pro.full_name?.[0] ?? 'K'}</Text></View>
-                  <View style={styles.proResultCopy}>
-                    <Text style={styles.proResultName}>{pro.full_name ?? 'Profesional Klipp'}</Text>
-                    <Text numberOfLines={2} style={styles.proResultBio}>{pro.bio || 'Profesional verificado de Klipp'}</Text>
-                  </View>
-                </View>
+                <KlippProfessionalCard
+                  key={pro.pro_id}
+                  name={pro.full_name}
+                  avatarUrl={pro.avatar_url}
+                  bio={pro.bio || 'Profesional disponible en tu zona.'}
+                  rating={pro.rating_avg}
+                  ratingCount={pro.rating_count}
+                  jobsCompleted={pro.jobs_completed}
+                  distanceMeters={pro.distance_m}
+                  compact
+                />
               ))}
             </View>
           )}
@@ -479,18 +476,20 @@ export default function ClientHomeScreen() {
                 </View>
                 {selectedService.offers.length > 0 && <Text style={styles.tierHeading}>Profesionales y precios</Text>}
                 {selectedService.offers.map((offer) => (
-                  <Pressable
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: offer.id === selectedOfferId }}
+                  <KlippProfessionalCard
                     key={offer.id}
+                    name={offer.pro?.full_name}
+                    avatarUrl={offer.avatar_url ?? offer.pro?.avatar_url}
+                    bio={offer.bio ?? offer.pro?.bio}
+                    rating={offer.rating_avg ?? offer.pro?.rating_avg}
+                    ratingCount={offer.rating_count ?? offer.pro?.rating_count}
+                    jobsCompleted={offer.jobs_completed ?? offer.pro?.jobs_completed}
+                    distanceMeters={offer.distance_m ?? offer.pro?.distance_m}
+                    priceLabel={`Tarifa base ${formatDop(offer.base_price_dop)}`}
+                    durationMinutes={offer.est_minutes}
+                    selected={offer.id === selectedOfferId}
                     onPress={() => { setSelectedOfferId(offer.id); setSelectedDetailTierId(null); }}
-                    style={({ pressed }) => [styles.tierCard, offer.id === selectedOfferId && styles.tierCardSelected, pressed && styles.pressed]}>
-                    <View style={styles.tierCopy}>
-                      <Text style={styles.tierTitle}>{offer.pro?.full_name ?? 'Profesional Klipp'}</Text>
-                      <Text style={styles.tierMeta}>{offer.est_minutes} min · precio base</Text>
-                    </View>
-                    <Text style={styles.tierPrice}>{formatDop(offer.base_price_dop)}</Text>
-                  </Pressable>
+                  />
                 ))}
                 {selectedService.tiers.length > 0 && <Text style={styles.tierHeading}>Elige la modalidad del servicio</Text>}
                 {selectedService.tiers.map((tier) => (
