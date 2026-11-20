@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as WebBrowser from 'expo-web-browser';
 import { SymbolView } from 'expo-symbols';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
@@ -22,6 +23,7 @@ type PaymentSummary = { id: string; booking_id: string; provider: string; amount
 
 const statusLabels: Record<BookingStatus, string> = {
   requested: 'Solicitud enviada',
+  payment_pending: 'Pago pendiente',
   awaiting_payment: 'Pago pendiente',
   scheduled: 'Programada',
   en_route: 'En camino',
@@ -229,6 +231,36 @@ export function ClientBookingsScreen() {
     setRefreshing(false);
   }
 
+  async function retryPayment(bookingId: string) {
+    if (busyId) return;
+    if (Platform.OS === 'web') {
+      setError('El pago seguro está disponible desde la app móvil de Klipp.');
+      return;
+    }
+    setBusyId(bookingId);
+    setError(null);
+    setNotice(null);
+    try {
+      const { data, error: checkoutError } = await supabase.functions.invoke('stripe-create-checkout-session', {
+        body: { bookingId },
+      });
+      if (checkoutError || typeof data?.checkoutUrl !== 'string') {
+        throw new Error(checkoutError?.message ?? data?.error ?? 'No pudimos preparar el pago seguro.');
+      }
+      const result = await WebBrowser.openAuthSessionAsync(data.checkoutUrl, 'klipp://payment-return');
+      if (result.type === 'success' && result.url.includes('result=success')) {
+        setNotice('Pago recibido. Estamos confirmando la reserva con Stripe.');
+        await loadBookings();
+      } else {
+        setNotice('El pago no se completó. Puedes reintentarlo desde esta misma reserva.');
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'No pudimos abrir el pago seguro.');
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   async function confirmService(bookingId: string) {
     setBusyId(bookingId);
     setError(null);
@@ -426,22 +458,39 @@ export function ClientBookingsScreen() {
               <Text style={styles.priceLabel}>Total</Text>
               <Text style={styles.price}>{formatDop(booking.price_dop)}</Text>
             </View>
-            {booking.status === 'awaiting_payment' && (() => {
+            {(booking.status === 'awaiting_payment' || booking.status === 'payment_pending') && (() => {
               const payment = payments[booking.id];
-              const paymentTitle = payment?.status === 'held' || payment?.status === 'released'
+              const paymentConfirmed = payment?.status === 'held' || payment?.status === 'released';
+              const paymentTitle = paymentConfirmed
                 ? 'Pago recibido'
                 : payment?.status === 'failed'
                   ? 'Pago no completado'
                   : 'Pago pendiente';
-              const paymentMessage = payment?.status === 'held' || payment?.status === 'released'
+              const paymentMessage = paymentConfirmed
                 ? 'Hemos recibido la confirmación del proveedor de pago. Estamos actualizando tu reserva.'
                 : payment?.status === 'failed'
-                  ? 'El pago no fue aprobado y la reserva todavía no está confirmada.'
-                  : payment
-                    ? 'Todavía no se ha confirmado el pago. La reserva no está confirmada.'
-                    : 'El pago con tarjeta aún no está habilitado. No realices transferencias ni pagos fuera de Klipp.';
-              return <View style={styles.payment}><Text style={styles.paymentTitle}>{paymentTitle}</Text><Text style={styles.body}>{paymentMessage}</Text></View>;
+                  ? 'El último intento no fue aprobado. Puedes volver a intentarlo desde esta misma reserva.'
+                  : booking.status === 'payment_pending'
+                    ? 'Completa el pago seguro para activar la reserva. Si cierras el checkout, podrás retomarlo sin crear otra solicitud.'
+                    : 'Todavía no se ha confirmado el pago. La reserva no está confirmada.';
+              return (
+                <View style={styles.payment}>
+                  <Text style={styles.paymentTitle}>{paymentTitle}</Text>
+                  <Text style={styles.body}>{paymentMessage}</Text>
+                  {booking.status === 'payment_pending' && !paymentConfirmed && (
+                    <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void retryPayment(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}>
+                      <Text style={styles.buttonText}>{busyId === booking.id ? 'Abriendo pago seguro...' : 'Completar pago seguro'}</Text>
+                    </Pressable>
+                  )}
+                </View>
+              );
             })()}
+            {booking.assignment_mode === 'manual' && booking.status === 'requested' && !booking.pro_id && (
+              <View style={styles.payment}>
+                <Text style={styles.paymentTitle}>El profesional no pudo aceptar</Text>
+                <Text style={styles.body}>La solicitud está sin profesional asignado. Tu pago no se libera automáticamente a ningún profesional. Contacta con el Centro de ayuda para elegir una alternativa o solicitar la revisión del pago.</Text>
+              </View>
+            )}
             {booking.status === 'completed' && <Pressable accessibilityRole="button" disabled={busyId === booking.id} onPress={() => void confirmService(booking.id)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Confirmando...' : 'Confirmar servicio'}</Text></Pressable>}
             {canReview && (
               <View style={styles.reviewForm}>
