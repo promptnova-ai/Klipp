@@ -421,6 +421,9 @@ enabled = true
 verify_jwt = false
 
 # Stripe client checkout endpoint requires a valid Supabase user JWT.
+[functions.stripe-create-checkout-session]
+verify_jwt = true
+
 [functions.stripe-create-payment-intent]
 verify_jwt = true
 
