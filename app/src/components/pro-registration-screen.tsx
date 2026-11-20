@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import {
@@ -18,6 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/components/auth-provider';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
+import { DominicanPhoneField, OnboardingProgress } from '@/components/onboarding-primitives';
 import { KlippColors, RoleThemes } from '@/lib/brand';
 import type { ServiceType } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
@@ -43,10 +44,12 @@ type ProOnboardingDraft = {
 };
 
 const steps = [
-  { eyebrow: 'TU PERFIL', title: 'Cuéntanos sobre ti', subtitle: 'Un buen perfil genera confianza y te ayuda a destacar.' },
-  { eyebrow: 'TU PROFESIÓN', title: 'Elige tu profesión', subtitle: 'Selecciona una profesión principal y configura sus modalidades y tarifas.' },
-  { eyebrow: 'TU COBERTURA', title: 'Define dónde trabajas', subtitle: 'Te conectaremos con clientes dentro de tu radio.' },
-  { eyebrow: 'TU CUENTA', title: 'Ya casi está', subtitle: 'Crea tus credenciales. Te enviaremos un correo para confirmar.' },
+  { eyebrow: 'IDENTIDAD', title: 'Cuéntanos sobre ti', subtitle: 'Empezamos con tus datos de contacto y experiencia.' },
+  { eyebrow: 'PROFESIÓN', title: '¿Qué servicio ofreces?', subtitle: 'Selecciona una sola profesión principal para tu cuenta.' },
+  { eyebrow: 'PERFIL Y TARIFAS', title: 'Define tu servicio', subtitle: 'Describe tu especialidad y configura las modalidades que ofrecerás.' },
+  { eyebrow: 'COBERTURA', title: '¿Dónde puedes trabajar?', subtitle: 'Marca tu punto de partida y el radio en el que puedes atender.' },
+  { eyebrow: 'DISPONIBILIDAD', title: 'Define tu horario', subtitle: 'Selecciona los días y las horas en que puedes recibir solicitudes.' },
+  { eyebrow: 'CUENTA', title: 'Revisa y crea tu cuenta', subtitle: 'Comprueba tu información y configura el acceso.' },
 ];
 const weekdays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const radiusOptions = [5, 10, 15, 20, 30, 50];
@@ -89,11 +92,6 @@ export function ProRegistrationScreen() {
   const [notice, setNotice] = useState<string | null>(null);
   const [transition] = useState(() => new Animated.Value(1));
   const tierRequestId = useRef(0);
-  const [progress] = useState(() => new Animated.Value(0));
-  const progressWidth = useMemo(
-    () => progress.interpolate({ inputRange: [0, steps.length - 1], outputRange: ['8%', '100%'] }),
-    [progress],
-  );
 
   const fetchCatalog = useCallback(async () => {
     const { data, error: queryError } = await supabase
@@ -139,17 +137,14 @@ export function ProRegistrationScreen() {
     Animated.timing(transition, { toValue: 0, duration: 100, useNativeDriver: Platform.OS !== 'web' }).start(() => {
       setStep(nextStep);
       transition.setValue(0);
-      Animated.parallel([
-        Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: Platform.OS !== 'web' }),
-        Animated.timing(progress, { toValue: nextStep, duration: 350, useNativeDriver: false }),
-      ]).start();
+      Animated.timing(transition, { toValue: 1, duration: 260, useNativeDriver: Platform.OS !== 'web' }).start();
     });
   }
 
   function validateStep() {
     if (step === 0) {
       if (fullName.trim().length < 2) return 'Escribe tu nombre completo para continuar.';
-      if (phone.replace(/\D/g, '').length < 10) return 'Escribe un número de teléfono válido de 10 dígitos.';
+      if (phone.replace(/\\D/g, '').length !== 10) return 'Selecciona un prefijo dominicano e introduce los 7 dígitos restantes.';
       if (years.trim() && (!Number.isInteger(Number(years)) || Number(years) < 0)) return 'Los años de experiencia deben ser un número entero válido.';
       if (transportType === 'Otro' && !otherTransportType.trim()) return 'Especifica cómo te trasladas para llegar a tus clientes.';
     }
@@ -157,6 +152,8 @@ export function ProRegistrationScreen() {
       if (servicesLoading) return 'Espera un momento mientras cargamos las profesiones.';
       if (catalog.length === 0) return 'No hay profesiones disponibles ahora mismo.';
       if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
+    }
+    if (step === 2) {
       if (tiersLoading || equipmentLoading) return 'Espera mientras cargamos las modalidades y el equipamiento de esta profesión.';
       if (equipmentRequirements.length === 0) return 'No pudimos cargar el equipamiento de esta profesión. Reintenta o vuelve a seleccionar la profesión.';
       if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
@@ -176,23 +173,21 @@ export function ProRegistrationScreen() {
         : selectedProfession?.code === 'mantenimiento' ? 'tools' : null;
       if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
       if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
-
     }
-    if (step === 2) {
-      if (!center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 3 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 4) {
       if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
-      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime) || startTime >= endTime) {
+      if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime) || startTime >= endTime) {
         return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
       }
     }
-    if (step === 3) {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
+    if (step === 5) {
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
     }
     return null;
   }
-
   function continueRegistration() {
     const validationError = validateStep();
     if (validationError) {
@@ -349,8 +344,8 @@ export function ProRegistrationScreen() {
           </View>
           <Text style={styles.stepCount}>{String(step + 1).padStart(2, '0')} / {String(steps.length).padStart(2, '0')}</Text>
         </View>
-        <View style={styles.progressTrack}>
-          <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+        <View style={styles.progressWrap}>
+          <OnboardingProgress steps={steps.map((item) => item.eyebrow)} current={step} accent={RoleThemes.pro.accent} />
         </View>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Animated.View
@@ -369,9 +364,7 @@ export function ProRegistrationScreen() {
                 <Field label="Nombre completo">
                   <TextInput autoComplete="name" autoCapitalize="words" onChangeText={setFullName} placeholder="¿Cómo te llamas?" placeholderTextColor={KlippColors.muted} style={styles.input} value={fullName} />
                 </Field>
-                <Field label="Teléfono de contacto">
-                  <TextInput autoComplete="tel" keyboardType="phone-pad" onChangeText={setPhone} placeholder="809 555 0123" placeholderTextColor={KlippColors.muted} style={styles.input} value={phone} />
-                </Field>
+                <DominicanPhoneField value={phone} onChangeText={setPhone} />
                 <View style={[styles.twoColumns, compact && styles.stackedColumns]}>
                   <Field label="Años de experiencia">
                     <TextInput keyboardType="number-pad" onChangeText={setYears} placeholder="Ej. 4" placeholderTextColor={KlippColors.muted} style={styles.input} value={years} />
@@ -437,6 +430,11 @@ export function ProRegistrationScreen() {
                     );
                   })}
                 </View>
+              </View>
+            )}
+
+            {step === 5 && (
+              <View style={styles.serviceList}>
                 {selectedProfession && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Detalles de {selectedProfession.name.toLowerCase()}</Text>
@@ -530,6 +528,7 @@ export function ProRegistrationScreen() {
                     <Text style={styles.helper}>Klipp no proporciona herramientas ni materiales. El profesional debe acudir con todo lo necesario para realizar el servicio. No se utilizarán los materiales del cliente.</Text>
                   </View>
                 </Pressable>
+
               </View>
             )}
 
@@ -556,6 +555,11 @@ export function ProRegistrationScreen() {
                     <Chip key={radius} label={`${radius} km`} selected={radiusKm === radius} onPress={() => setRadiusKm(radius)} />
                   ))}
                 </View>
+              </View>
+            )}
+
+            {step === 4 && (
+              <View style={styles.card}>
                 <View style={styles.divider} />
                 <Text style={styles.cardTitle}>¿Qué días estás disponible?</Text>
                 <View style={styles.chips}>
@@ -571,6 +575,7 @@ export function ProRegistrationScreen() {
                     <TextInput keyboardType="numbers-and-punctuation" onChangeText={setEndTime} placeholder="17:00" placeholderTextColor={KlippColors.muted} style={styles.input} value={endTime} />
                   </Field>
                 </View>
+
               </View>
             )}
 
@@ -654,8 +659,7 @@ const styles = StyleSheet.create({
   brand: { color: KlippColors.navy, fontSize: 20, fontWeight: '900', letterSpacing: 1 },
   brandRole: { color: RoleThemes.pro.accentStrong, fontSize: 8, fontWeight: '900', letterSpacing: 1.2 },
   stepCount: { color: KlippColors.muted, fontSize: 11, fontWeight: '800', letterSpacing: 0.3 },
-  progressTrack: { width: '100%', maxWidth: 720, height: 5, alignSelf: 'center', marginHorizontal: 20, overflow: 'hidden', borderRadius: 999, backgroundColor: '#DCE8EC' },
-  progressFill: { height: 4, borderRadius: 999, backgroundColor: RoleThemes.pro.accent },
+  progressWrap: { width: '100%', maxWidth: 720, alignSelf: 'center', paddingHorizontal: 20, paddingTop: 12, paddingBottom: 4 },
   scrollContent: { flexGrow: 1, paddingHorizontal: 20, paddingTop: 30, paddingBottom: 32 },
   stepContent: { width: '100%', maxWidth: 720, alignSelf: 'center', gap: 22 },
   heading: { gap: 8, marginBottom: 2 },
