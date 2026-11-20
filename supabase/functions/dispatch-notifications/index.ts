@@ -60,9 +60,18 @@ Deno.serve(async (req) => {
   }
   if (!isServiceRole && !isScheduledCall) return jsonResponse({ error: "Not authorized" }, 401);
 
-  const summary = { autoDispatchRoundsStarted: 0, remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
+  const summary = { unpaidCheckoutsExpired: 0, reassignmentRequestsExpired: 0, autoDispatchRoundsStarted: 0, remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
 
   try {
+    // Expire unpaid checkouts and pending reassignment offers before opening new dispatch rounds.
+    const { data: expiredCheckouts, error: checkoutExpiryError } = await admin.rpc("expire_unpaid_booking_checkouts");
+    if (checkoutExpiryError) throw checkoutExpiryError;
+    summary.unpaidCheckoutsExpired = typeof expiredCheckouts === "number" ? expiredCheckouts : 0;
+
+    const { data: expiredReassignments, error: reassignmentExpiryError } = await admin.rpc("expire_booking_reassignment_requests");
+    if (reassignmentExpiryError) throw reassignmentExpiryError;
+    summary.reassignmentRequestsExpired = typeof expiredReassignments === "number" ? expiredReassignments : 0;
+
     const { data: dispatchRounds, error: dispatchRoundsError } = await admin.rpc("process_scheduled_booking_dispatch");
     if (dispatchRoundsError) {
       console.error("Scheduled booking dispatch failed", dispatchRoundsError);
