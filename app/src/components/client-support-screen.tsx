@@ -96,7 +96,7 @@ export function ClientSupportScreen() {
       void supabase.removeChannel(channel);
       void supabase.removeChannel(caseChannel);
     };
-  }, [selectedCaseId]);
+  }, [selectedCaseId, load]);
 
   async function submitCase() {
     if (!userId || description.trim().length < 12 || sending) return;
