@@ -46,7 +46,8 @@ type ProOnboardingDraft = {
 const steps = [
   { eyebrow: 'IDENTIDAD', title: 'Cuéntanos sobre ti', subtitle: 'Empezamos con tus datos de contacto y experiencia.' },
   { eyebrow: 'PROFESIÓN', title: '¿Qué servicio ofreces?', subtitle: 'Selecciona una sola profesión principal para tu cuenta.' },
-  { eyebrow: 'PERFIL Y TARIFAS', title: 'Define tu servicio', subtitle: 'Describe tu especialidad y configura las modalidades que ofrecerás.' },
+  { eyebrow: 'ESPECIALIDAD', title: 'Describe tu trabajo', subtitle: 'Añade los detalles que ayudan a tus clientes a saber qué haces.' },
+  { eyebrow: 'TARIFAS Y EQUIPO', title: 'Configura tus servicios', subtitle: 'Define precios, duración y las herramientas que llevarás.' },
   { eyebrow: 'COBERTURA', title: '¿Dónde puedes trabajar?', subtitle: 'Marca tu punto de partida y el radio en el que puedes atender.' },
   { eyebrow: 'DISPONIBILIDAD', title: 'Define tu horario', subtitle: 'Selecciona los días y las horas en que puedes recibir solicitudes.' },
   { eyebrow: 'CUENTA', title: 'Revisa y crea tu cuenta', subtitle: 'Comprueba tu información y configura el acceso.' },
@@ -154,6 +155,19 @@ export function ProRegistrationScreen() {
       if (selectedServiceId === null) return 'Selecciona una profesión para continuar.';
     }
     if (step === 2) {
+      const selectedProfession = catalog.find((item) => item.id === selectedServiceId);
+      if (!selectedProfession) return 'Selecciona una profesión antes de continuar.';
+      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
+      const requiredDetail = selectedProfession.code === 'peluqueria' ? 'hair_lengths'
+        : selectedProfession.code === 'estetica' ? 'hygiene'
+        : selectedProfession.code === 'carwash' ? 'utilities'
+        : selectedProfession.code === 'detailing' ? 'vehicle_types'
+        : ['limpieza_regular', 'limpieza-oficinas'].includes(selectedProfession.code) ? 'frequency'
+        : selectedProfession.code === 'limpieza_profunda' ? 'extras'
+        : selectedProfession.code === 'mantenimiento' ? 'tools' : null;
+      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
+    }
+    if (step === 3) {
       if (tiersLoading || equipmentLoading) return 'Espera mientras cargamos las modalidades y el equipamiento de esta profesión.';
       if (equipmentRequirements.length === 0) return 'No pudimos cargar el equipamiento de esta profesión. Reintenta o vuelve a seleccionar la profesión.';
       if (pricingTiers.length === 0) return 'Esta profesión no tiene modalidades configuradas. No podemos completar el registro todavía.';
@@ -162,26 +176,16 @@ export function ProRegistrationScreen() {
         return !draft || !Number.isFinite(parseDopPrice(draft.price)) || parseDopPrice(draft.price) <= 0
           || !Number.isInteger(Number(draft.minutes)) || Number(draft.minutes) <= 0;
       })) return 'Indica un precio y una duración válidos para cada modalidad.';
-      const selectedProfession = catalog.find((item) => item.id === selectedServiceId);
-      if (!serviceDetails.specialty?.trim()) return 'Indica tu especialidad o el trabajo que realizas.';
-      const requiredDetail = selectedProfession?.code === 'peluqueria' ? 'hair_lengths'
-        : selectedProfession?.code === 'estetica' ? 'hygiene'
-        : selectedProfession?.code === 'carwash' ? 'utilities'
-        : selectedProfession?.code === 'detailing' ? 'vehicle_types'
-        : ['limpieza_regular', 'limpieza-oficinas'].includes(selectedProfession?.code ?? '') ? 'frequency'
-        : selectedProfession?.code === 'limpieza_profunda' ? 'extras'
-        : selectedProfession?.code === 'mantenimiento' ? 'tools' : null;
-      if (requiredDetail && !serviceDetails[requiredDetail]?.trim()) return 'Completa el dato específico que necesita esta profesión.';
       if (!equipmentConfirmed) return 'Confirma que llevarás tus propias herramientas y materiales.';
     }
-    if (step === 3 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
-    if (step === 4) {
+    if (step === 4 && !center) return 'Define el centro de tu área de trabajo con tu ubicación o ajustando el mapa.';
+    if (step === 5) {
       if (selectedWeekdays.length === 0) return 'Selecciona al menos un día de trabajo.';
       if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime) || startTime >= endTime) {
         return 'Indica un horario válido en formato de 24 horas y asegúrate de que la hora final sea posterior.';
       }
     }
-    if (step === 5) {
+    if (step === 6) {
       if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) return 'Escribe un correo electrónico válido.';
       if (password.length < 8) return 'La contraseña debe tener al menos 8 caracteres.';
       if (password !== confirmPassword) return 'Las contraseñas no coinciden.';
@@ -478,6 +482,11 @@ export function ProRegistrationScreen() {
                     )}
                   </View>
                 )}
+              </View>
+            )}
+
+            {step === 3 && (
+              <View style={styles.serviceList}>
                 {selectedProfession && (
                   <View style={styles.card}>
                     <Text style={styles.cardTitle}>Precios por modalidad</Text>
@@ -529,10 +538,11 @@ export function ProRegistrationScreen() {
                   </View>
                 </Pressable>
 
+
               </View>
             )}
 
-            {step === 3 && (
+            {step === 4 && (
               <View style={styles.card}>
                 <View style={styles.locationIntro}>
                   <View style={styles.locationIcon}><Text style={styles.locationPin}>⌖</Text></View>
@@ -558,7 +568,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 4 && (
+            {step === 5 && (
               <View style={styles.card}>
                 <View style={styles.divider} />
                 <Text style={styles.cardTitle}>¿Qué días estás disponible?</Text>
@@ -579,7 +589,7 @@ export function ProRegistrationScreen() {
               </View>
             )}
 
-            {step === 5 && (
+            {step === 6 && (
               <>
                 <View style={styles.summaryCard}>
                   <View style={styles.summaryIcon}><Text style={styles.summaryIconText}>✓</Text></View>
