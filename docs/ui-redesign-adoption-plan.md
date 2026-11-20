@@ -29,6 +29,11 @@ Motivos:
 - Klipp PRO: panel operativo; disponibilidad y solicitudes en primer plano; oferta entrante de pantalla completa con temporizador, ubicación, precio neto y acciones inequívocas.
 - Mantener componentes nativos y navegación accesible; evitar que la estética de lujo reduzca legibilidad, contraste o velocidad de uso.
 
+## Componentes adaptados
+
+- `app/src/design-system/search-bar.tsx`: barra de búsqueda accesible basada en el patrón SearchBar de Expo UI Kit, adaptada a `expo-symbols`, los tokens y la paleta de Klipp. No añade dependencias externas.
+- Se reutilizan los componentes nativos y los primitives que ya existen en Klipp para botones, campos, tarjetas y estados; no se duplica el sistema de temas del kit.
+
 ## Orden de implementación
 
 1. Inventariar rutas, componentes compartidos, estados y estilos hardcodeados.
