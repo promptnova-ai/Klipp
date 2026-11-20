@@ -672,12 +672,43 @@ tokens de sesión, enlaces de confirmación ni coordenadas privadas.
 **Prioridad:** Crítica  
 **Precondición:** Entorno QA, correo de prueba controlado y proveedor de correo de confirmación disponible.
 
-1. Abrir login y comprobar jerarquía visual, legibilidad, navegación a registro y recuperación de contraseña en móvil y escritorio.
-2. Abrir registro cliente, validar nombre, correo, contraseña mínima y confirmación; probar contraseñas no coincidentes y campos vacíos.
-3. Completar registro con un correo sintético y verificar el comportamiento real de confirmación de correo de Supabase; no asumir que existe OTP telefónico.
-4. Abrir registro profesional y completar los cuatro pasos: datos personales, una única profesión, modalidades/herramientas y cobertura/horario, y credenciales.
-5. Probar errores de red y de catálogo, volver atrás entre pasos y comprobar que los datos ya introducidos se conservan.
-6. Probar mostrar/ocultar contraseña, estados busy, teclado y lector de pantalla.
-7. Confirmar que ningún estado visual afirma que el teléfono fue verificado si no se ejecutó una verificación OTP real.
+1. Abrir login en móvil y escritorio; comprobar navegación, recuperación de contraseña, estados de carga y errores.
+2. Recorrer el registro cliente de tres pasos: tipo de cuenta/nombre, teléfono y correo, contraseña y confirmación.
+3. Probar los prefijos dominicanos 809, 829 y 849, la entrada de siete dígitos y números incompletos o con caracteres no numéricos.
+4. Completar registro con un correo sintético y verificar el comportamiento real de confirmación de correo de Supabase.
+5. Confirmar que el teléfono se guarda como contacto en metadatos de alta, pero no se considera verificado por SMS.
+6. Comprobar que el profesional se deriva al onboarding PRO sin crear una cuenta de cliente por error.
+7. Probar contraseñas no coincidentes, campos vacíos, teclado, mostrar/ocultar contraseña, lector de pantalla y pantallas estrechas.
 
-**Resultado esperado:** Login, registro cliente y onboarding PRO mantienen la autenticación existente y ofrecen una experiencia visual coherente con Klipp. Las validaciones locales son claras. La confirmación por correo se comunica como tal; el OTP telefónico se considera pendiente hasta que exista y se pruebe el flujo backend correspondiente.
+**Resultado esperado:** El cliente recorre un formulario progresivo con navegación clara y los tres prefijos RD. El login conserva la autenticación por correo y contraseña. No se comunica verificación SMS inexistente.
+
+### QA-UI-05 — Onboarding profesional progresivo de siete pasos
+
+**Prioridad:** Crítica  
+**Precondición:** Entorno QA con catálogo activo, modalidades y requisitos de equipamiento para una profesión de prueba.
+
+1. Completar los pasos de identidad, profesión, especialidad, tarifas/equipamiento, cobertura, disponibilidad y cuenta.
+2. Confirmar que solo puede elegirse una profesión principal.
+3. Cambiar de profesión y comprobar que modalidades, precios, detalles y equipamiento se vuelven a cargar para la selección actual.
+4. Verificar que los campos específicos se adaptan al código de profesión (peluquería, estética, carwash, detailing, limpieza o mantenimiento).
+5. Introducir precios y duraciones inválidos; comprobar que no se permite avanzar.
+6. No aceptar el compromiso de herramientas y materiales y comprobar que no se puede finalizar.
+7. Definir cobertura GPS, ajustar el radio y navegar hacia atrás; verificar que se conserva el centro y el radio.
+8. Seleccionar días y horarios inválidos, incluyendo hora final anterior a la inicial.
+9. Completar credenciales y comprobar que el payload enviado conserva una sola profesión, sus tarifas, detalles, cobertura, disponibilidad y compromiso de equipamiento.
+
+**Resultado esperado:** Cada paso tiene una finalidad concreta. No se pierde información al retroceder. La validación de cada etapa coincide con los datos que exige la función transaccional de alta profesional. No se crea ninguna cuenta incompleta.
+
+### QA-UI-06 — Componentes compartidos de onboarding y accesibilidad
+
+**Prioridad:** Alta  
+**Precondición:** App ejecutada en Android, iOS y web con tamaños compactos y amplios.
+
+1. Comprobar el progreso actual, total de pasos y etiquetas en los flujos cliente y PRO.
+2. Verificar que el selector telefónico muestra +1 y permite 809, 829 y 849; comprobar el foco y el teclado numérico.
+3. Verificar que las tarjetas de elección comunican estado seleccionado mediante accesibilidad y no solo mediante color.
+4. Comprobar objetivos táctiles, escalado de texto, orden de lectura y contraste.
+5. Probar navegación atrás/adelante con teclado abierto y contenido largo.
+6. Comprobar que el indicador de progreso no desborda el ancho en móviles estrechos.
+
+**Resultado esperado:** Los patrones de progreso, elección y teléfono se reutilizan de forma coherente. La interfaz funciona en tamaños compactos sin recortes ni pérdida de estado. La validación visual en dispositivos debe registrarse por separado.

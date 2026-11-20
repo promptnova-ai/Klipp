@@ -206,7 +206,36 @@ En esta rama se añaden tokens exportables y componentes nativos reutilizables. 
 
 ## Autenticación y registro
 
-- Login y registro cliente comparten la presentación corporativa azul marino, turquesa y dorado.
-- El registro cliente exige confirmación de contraseña antes de habilitar el envío.
-- El registro profesional mantiene onboarding de cuatro pasos, una sola profesión principal, precios por modalidad, herramientas, cobertura y disponibilidad.
-- La implementación actual de autenticación usa correo y contraseña con confirmación por correo. El OTP telefónico RD de seis dígitos es una necesidad pendiente, no una función que deba simularse en la interfaz.
+### Entrada y acceso
+
+- Login y registro comparten el lenguaje visual corporativo de Klipp: azul marino, turquesa, dorado cálido y superficies claras.
+- El login prioriza correo, contraseña, recuperación de acceso y mensajes de estado concretos.
+- El registro cliente se presenta como un recorrido progresivo de tres pasos: perfil y tipo de cuenta, contacto y cuenta.
+- La elección de profesional deriva al onboarding PRO dedicado; no se crea primero una cuenta cliente para después cambiar de rol.
+- El selector de teléfono dominicano expone +1 y permite los prefijos 809, 829 y 849. Los siete dígitos locales se introducen en un campo numérico compartido.
+- El teléfono recogido por la interfaz es un dato de contacto. No debe etiquetarse como verificado hasta que Supabase Auth confirme un OTP SMS real.
+
+### Onboarding profesional
+
+El alta profesional se divide en siete etapas con progreso compartido y navegación hacia atrás:
+
+1. Identidad: nombre, teléfono, experiencia, presentación y transporte.
+2. Profesión: selección exclusiva de una profesión principal.
+3. Especialidad: descripción y campos particulares de la profesión elegida.
+4. Tarifas y equipo: precio y duración por modalidad, requisitos de herramientas y aceptación expresa.
+5. Cobertura: ubicación GPS/manual y radio de servicio.
+6. Disponibilidad: días y franja horaria.
+7. Cuenta: resumen, correo y credenciales.
+
+Cada paso valida únicamente sus propios datos antes de avanzar. La creación final mantiene el payload transaccional existente y no permite crear una cuenta profesional incompleta.
+
+### Componentes compartidos
+
+- `DominicanPhoneField`: prefijos dominicanos y captura de siete dígitos.
+- `OnboardingProgress`: paso actual, total y progreso accesible.
+- `OnboardingChoiceCard`: selección de tipo de cuenta y otros patrones de elección.
+- Los componentes son nativos de React Native y no añaden dependencias ni cambian la arquitectura Expo SDK 58 / React Native 0.88.
+
+### Autenticación telefónica pendiente
+
+La autenticación actual sigue utilizando correo y contraseña con confirmación por correo. El OTP telefónico RD de seis dígitos no se simula ni se marca como verificado. Para habilitarlo se necesita activar Phone Auth en Supabase, configurar un proveedor SMS, limitar frecuencia e intentos, habilitar CAPTCHA cuando proceda y probar envío, expiración, reenvío, verificación, duplicados y recuperación de sesión en QA. La documentación vigente de Supabase describe `signInWithOtp` y `verifyOtp` para SMS; la configuración del proveedor es un requisito externo al código móvil.
