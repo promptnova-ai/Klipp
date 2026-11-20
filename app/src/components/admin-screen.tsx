@@ -3,12 +3,13 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, T
 
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { AdminOperationsPanel } from '@/components/admin-operations-panel';
+import { AdminSupportInbox } from '@/components/admin-support-inbox';
 import { useAuth } from '@/components/auth-provider';
 import { KlippColors } from '@/lib/brand';
 import type { VerificationStatus } from '@/lib/types';
 import { supabase } from '../../lib/supabase';
 
-type AdminSection = 'operations' | 'verification' | 'accounts' | 'issues' | 'configuration' | 'staff';
+type AdminSection = 'operations' | 'verification' | 'accounts' | 'issues' | 'support' | 'configuration' | 'staff';
 type StaffPermission = { code: string; description: string; sensitive: boolean; allowed: boolean; overridden: boolean };
 type StaffRow = { user_id: string; email: string | null; full_name: string | null; template_key: string; is_owner: boolean; permissions: StaffPermission[] };
 type StaffTemplate = { template_key: string; name: string; description: string; permissions: string[] };
@@ -46,6 +47,7 @@ const sections: { key: AdminSection; title: string }[] = [
   { key: 'verification', title: 'Verificaciones' },
   { key: 'accounts', title: 'Cuentas y roles' },
   { key: 'issues', title: 'Incidencias' },
+  { key: 'support', title: 'Atención IA' },
   { key: 'configuration', title: 'Configuración' },
   { key: 'staff', title: 'Equipo y permisos' },
 ];
@@ -115,7 +117,7 @@ export function AdminScreen() {
 
       const permissionCodes = [
         'accounts.read', 'accounts.manage_clients', 'verification.review',
-        'catalog.manage', 'bookings.read', 'bookings.manage',
+        'catalog.manage', 'bookings.read', 'bookings.manage', 'support.manage',
       ];
       const permissionResults = owner
         ? permissionCodes.map(() => ({ data: true, error: null }))
@@ -204,6 +206,7 @@ export function AdminScreen() {
     if (item.key === 'verification') return isSuperAdmin || permissions.includes('verification.review');
     if (item.key === 'accounts') return isSuperAdmin || permissions.includes('accounts.read');
     if (item.key === 'issues') return isSuperAdmin || permissions.includes('support.manage');
+    if (item.key === 'support') return isSuperAdmin || permissions.includes('support.manage');
     if (item.key === 'configuration') return isSuperAdmin || permissions.includes('catalog.manage');
     return false;
   });
@@ -498,6 +501,12 @@ export function AdminScreen() {
               <Text style={styles.permissionCode}>{new Date(entry.created_at).toLocaleString()}</Text>
             </View>
           ))}
+        </View>
+      )}
+
+      {activeSection === 'support' && (
+        <View style={styles.section}>
+          <AdminSupportInbox />
         </View>
       )}
 

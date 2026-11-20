@@ -117,6 +117,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<ExtractRole>('client');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +132,14 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     setNotice(null);
     if (isRegister && !fullName.trim()) {
       setError('Escribe tu nombre para continuar.');
+      return;
+    }
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+      setError('Escribe un correo electrónico válido.');
+      return;
+    }
+    if (isRegister && password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
     setBusy(true);
@@ -245,11 +254,19 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   label="Contraseña"
                   autoComplete={isRegister ? 'new-password' : 'current-password'}
                   onChangeText={setPassword}
-                  placeholder={isRegister ? 'Mínimo 6 caracteres' : 'Tu contraseña'}
-                  secureTextEntry
+                  placeholder={isRegister ? 'Al menos 8 caracteres' : 'Tu contraseña'}
+                  secureTextEntry={!showPassword}
                   value={password}
                   mode="light"
                 />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  accessibilityState={{ selected: showPassword }}
+                  onPress={() => setShowPassword((visible) => !visible)}
+                  style={styles.passwordVisibility}>
+                  <Text style={styles.passwordVisibilityText}>{showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}</Text>
+                </Pressable>
                 {!isRegister && (
                   <View style={styles.forgotRow}>
                     <Link href="/(auth)/reset-password" asChild>
@@ -369,6 +386,8 @@ const styles = StyleSheet.create({
   submitDisabled: { opacity: 0.5 },
   submitPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
   submitText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  passwordVisibility: { alignSelf: 'flex-end', minHeight: 32, justifyContent: 'center', paddingHorizontal: 4 },
+  passwordVisibilityText: { color: KlippColors.blueDark, fontSize: 12, fontWeight: '800' },
   forgotRow: { alignSelf: 'flex-end', marginTop: -4, minHeight: 32, justifyContent: 'center' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' },
   switchText: { color: KlippColors.muted, fontSize: 12 },

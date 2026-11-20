@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { Image } from 'expo-image';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippBadge, KlippButton, KlippCard, KlippScreenState } from '@/components/design-system';
 import { CoverageRadiusPicker, type CoverageCoordinate } from '@/components/coverage-radius-picker';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
@@ -584,7 +585,7 @@ export function ProProfileScreen() {
   }
 
   if (loading) {
-    return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando perfil...</Text></View>;
+    return <KlippScreenState kind="loading" title="Cargando perfil" description="Estamos recuperando tu información profesional." />;
   }
 
   if (!proProfile) {
@@ -600,13 +601,19 @@ export function ProProfileScreen() {
   return (
     <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi perfil" subtitle="Mantén al día tu experiencia y disponibilidad." />
-      <View style={[styles.statusBanner, proProfile.verification_status === 'approved' && styles.statusApproved]}>
-        <Text style={styles.statusTitle}>{verificationLabel(proProfile.verification_status)}</Text>
+      <KlippCard style={styles.statusBanner}>
+        <View style={styles.statusRow}>
+          <Text style={styles.statusTitle}>Estado de tu cuenta</Text>
+          <KlippBadge
+            label={verificationLabel(proProfile.verification_status)}
+            tone={proProfile.verification_status === 'approved' ? 'success' : proProfile.verification_status === 'rejected' ? 'danger' : 'warning'}
+          />
+        </View>
         {proProfile.verification_status !== 'approved' && (
           <Text style={styles.body}>Debes completar la verificación antes de recibir solicitudes.</Text>
         )}
         {proProfile.verification_note && <Text style={styles.body}>Nota del equipo: {proProfile.verification_note}</Text>}
-      </View>
+      </KlippCard>
       <Pressable
         accessibilityRole="button"
         disabled={signingOut}
@@ -800,7 +807,7 @@ export function ProProfileScreen() {
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return <View style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</View>;
+  return <KlippCard style={styles.section}><Text style={styles.sectionTitle}>{title}</Text>{children}</KlippCard>;
 }
 
 function Choice({ selected, label, onPress }: { selected: boolean; label: string; onPress: () => void }) {
@@ -812,7 +819,7 @@ function Choice({ selected, label, onPress }: { selected: boolean; label: string
 }
 
 function ActionButton({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) {
-  return <Pressable accessibilityRole="button" disabled={disabled} onPress={onPress} style={[styles.actionButton, disabled && styles.buttonDisabled]}><Text style={styles.actionText}>{label}</Text></Pressable>;
+  return <KlippButton label={label} onPress={onPress} disabled={disabled} size="medium" />;
 }
 
 const styles = StyleSheet.create({
@@ -832,6 +839,7 @@ const styles = StyleSheet.create({
   signOutText: { color: KlippColors.danger, fontSize: 14, fontWeight: '700' },
   statusApproved: { backgroundColor: '#E6F8F0' },
   statusTitle: { color: KlippColors.navy, fontSize: 15, fontWeight: '700' },
+  statusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
   label: { color: KlippColors.slate, fontSize: 13, fontWeight: '700' },
   body: { color: KlippColors.muted, fontSize: 14, lineHeight: 21 },
   input: { minHeight: 46, borderWidth: 1, borderColor: '#CBD5E1', borderRadius: 12, paddingHorizontal: 13, color: KlippColors.navy, backgroundColor: KlippColors.white, fontSize: 15 },

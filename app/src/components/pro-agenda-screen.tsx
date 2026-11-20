@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
-import { ActivityIndicator, AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AppState, Modal, Platform, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
+import { KlippBadge, KlippButton, KlippCard, KlippScreenState } from '@/components/design-system';
 import { KlippColors } from '@/lib/brand';
 import { supabase } from '../../lib/supabase';
 import { formatBusinessDate, formatDop } from '@/lib/format';
@@ -374,7 +375,7 @@ export function ProAgendaScreen() {
     }
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando agenda...</Text></View>;
+  if (loading) return <KlippScreenState kind="loading" title="Cargando agenda" description="Estamos actualizando tus servicios y disponibilidad." />;
 
   return (
     <>
@@ -400,7 +401,7 @@ export function ProAgendaScreen() {
       </Modal>
       <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />}>
       <BrandScreenHeader role="pro" eyebrow="ESPACIO PROFESIONAL" title="Mi agenda" subtitle="Servicios confirmados y en curso." />
-      <View style={styles.presenceCard}>
+      <KlippCard style={styles.presenceCard}>
         <View style={styles.presenceCopy}>
           <View style={styles.presenceStatusRow}>
             <View style={[styles.presenceDot, isOnline ? styles.presenceDotOnline : styles.presenceDotOffline]} />
@@ -408,23 +409,32 @@ export function ProAgendaScreen() {
           </View>
           <Text style={styles.body}>{isOnline ? 'Klipp puede enviarte solicitudes inmediatas mientras tu ubicación siga activa. Si dejas vencer una solicitud sin responder, pasarás automáticamente a OFFLINE.' : 'Conéctate cuando quieras recibir solicitudes inmediatas. Tus reservas programadas no cambian.'}</Text>
         </View>
-        <Pressable accessibilityRole="switch" accessibilityState={{ checked: isOnline }} disabled={presenceBusy} onPress={() => void togglePresence()} style={[styles.presenceButton, isOnline && styles.presenceButtonOnline, presenceBusy && styles.disabled]}>
-          <Text style={styles.presenceButtonText}>{presenceBusy ? 'Actualizando…' : isOnline ? 'Desconectarme' : 'Conectarme'}</Text>
-        </Pressable>
-      </View>
+        <KlippButton
+          label={isOnline ? 'Desconectarme' : 'Conectarme'}
+          onPress={() => void togglePresence()}
+          variant={isOnline ? 'secondary' : 'primary'}
+          size="medium"
+          disabled={presenceBusy}
+          loading={presenceBusy}
+        />
+      </KlippCard>
       {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
       {!error && bookings.length === 0 && (
-        <View style={styles.empty}>
-          <Text style={styles.cardTitle}>No tienes servicios próximos</Text>
-          <Text style={styles.body}>Las reservas aceptadas aparecerán aquí.</Text>
-        </View>
+        <KlippCard style={styles.empty}>
+          <KlippScreenState kind="empty" title="No tienes servicios próximos" description="Las reservas aceptadas aparecerán aquí." />
+        </KlippCard>
       )}
       {bookings.map((booking) => {
         const step = nextStep[booking.status];
         return (
-          <View key={booking.id} style={styles.card}>
-            <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio de limpieza'}</Text>
-            <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
+          <KlippCard key={booking.id} style={styles.card}>
+            <View style={styles.bookingHeader}>
+              <View style={styles.bookingTitleCopy}>
+                <Text style={styles.cardTitle}>{booking.service_types?.name ?? 'Servicio'}</Text>
+                <Text style={styles.body}>{booking.pricing_tiers?.label ?? `${booking.est_minutes} min`}</Text>
+              </View>
+              <KlippBadge label={booking.status === 'awaiting_payment' ? 'Pago pendiente' : booking.status === 'scheduled' ? 'Programada' : booking.status === 'en_route' ? 'En camino' : booking.status === 'arrived' ? 'En el lugar' : 'En servicio'} tone={booking.status === 'awaiting_payment' ? 'warning' : booking.status === 'in_progress' ? 'success' : 'info'} />
+            </View>
             <Text style={styles.body}>Fecha: {formatBusinessDate(booking.scheduled_start)}</Text>
             <Text style={styles.body}>Ubicación: {booking.address_text || booking.addresses?.label || booking.addresses?.street || 'No disponible'}</Text>
             {(booking.landmark_notes || booking.addresses?.references_text) && <Text style={styles.body}>Referencia: {booking.landmark_notes || booking.addresses?.references_text}</Text>}
@@ -432,9 +442,7 @@ export function ProAgendaScreen() {
             {booking.status === 'en_route' && <Text style={styles.locationNotice}>Compartiendo ubicación en vivo con el cliente.</Text>}
             {booking.status === 'en_route' && (
               <>
-                <Pressable accessibilityRole="button" onPress={() => void toggleChat(booking.id)} style={({ pressed }) => [styles.chatButton, pressed && styles.disabled]}>
-                  <Text style={styles.chatButtonText}>{chatBookingId === booking.id ? 'Cerrar chat con cliente' : 'Mensaje del cliente'}</Text>
-                </Pressable>
+                <KlippButton label={chatBookingId === booking.id ? 'Cerrar chat con cliente' : 'Mensaje del cliente'} onPress={() => void toggleChat(booking.id)} variant="outline" size="medium" />
                 {chatBookingId === booking.id && (
                   <View style={styles.chatPanel}>
                     {chatMessages.map((message) => (
@@ -451,17 +459,15 @@ export function ProAgendaScreen() {
                       style={styles.messageInput}
                       value={messageDraft}
                     />
-                    <Pressable accessibilityRole="button" onPress={() => void sendMessage(booking.id)} style={({ pressed }) => [styles.chatButton, pressed && styles.disabled]}>
-                      <Text style={styles.chatButtonText}>Enviar mensaje</Text>
-                    </Pressable>
+                    <KlippButton label="Enviar mensaje" onPress={() => void sendMessage(booking.id)} size="medium" />
                   </View>
                 )}
               </>
             )}
             {booking.status === 'awaiting_payment' && <Text style={styles.paymentNotice}>Pendiente de pago del cliente. No te desplaces ni inicies el servicio hasta que Klipp confirme la reserva.</Text>}
             <Text style={styles.payout}>{booking.status === 'awaiting_payment' ? 'Pago estimado al profesional:' : 'Pago al profesional:'} {formatDop(booking.pro_payout_dop)}</Text>
-            {step && <Pressable accessibilityRole="button" disabled={busyId === booking.id || reassignmentLockedIds.includes(booking.id)} onPress={() => void advance(booking)} style={[styles.button, busyId === booking.id && styles.disabled]}><Text style={styles.buttonText}>{busyId === booking.id ? 'Actualizando...' : step.label}</Text></Pressable>}
-          </View>
+            {step && <KlippButton label={step.label} onPress={() => void advance(booking)} disabled={busyId === booking.id || reassignmentLockedIds.includes(booking.id)} loading={busyId === booking.id} />}
+          </KlippCard>
         );
       })}
       </ScrollView>
@@ -482,6 +488,8 @@ const styles = StyleSheet.create({
   modalPrimaryText: { color: KlippColors.white, fontSize: 14, fontWeight: '800' },
   presenceCard: { marginHorizontal: 16, padding: 16, borderWidth: 1, borderColor: KlippColors.border, borderRadius: 20, backgroundColor: KlippColors.white, gap: 14 },
   presenceCopy: { gap: 7 },
+  bookingHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
+  bookingTitleCopy: { flex: 1, gap: 4 },
   presenceStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   presenceDot: { width: 11, height: 11, borderRadius: 6 },
   presenceDotOnline: { backgroundColor: '#15966f' },

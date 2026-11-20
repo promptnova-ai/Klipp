@@ -1,11 +1,15 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { parseBearerToken } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-notification-cron-secret",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function parseBearerToken(authorization: string | null): string | null {
+  const match = authorization?.match(/^Bearer\s+(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -17,6 +21,24 @@ function jsonResponse(body: unknown, status = 200) {
 type ClaimedDelivery = { queue_id: string; notification_id: string; attempts: number };
 type ExpoTicket = { status: "ok" | "error"; id?: string; message?: string; details?: { error?: string } };
 type TicketMapItem = { id: string; token: string };
+const PRIVATE_LOCATION_KEYS = new Set([
+  "address", "addresstext", "street", "references", "referencestext",
+  "landmark", "landmarknotes", "location", "coordinates", "geolocation",
+  "latitude", "longitude", "lat", "lng", "clientlat", "clientlng",
+  "clientlocation", "formattedaddress", "fulladdress", "addressline",
+  "placeid", "postalcode", "unitnumber",
+]);
+
+function sanitizePrivateLocationFields(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizePrivateLocationFields);
+  if (value === null || typeof value !== "object") return value;
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>)
+      .filter(([key]) => !PRIVATE_LOCATION_KEYS.has(key.toLowerCase().replace(/[_-]/g, "")))
+      .map(([key, nested]) => [key, sanitizePrivateLocationFields(nested)]),
+  );
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -40,9 +62,18 @@ Deno.serve(async (req) => {
   }
   if (!isServiceRole && !isScheduledCall) return jsonResponse({ error: "Not authorized" }, 401);
 
-  const summary = { autoDispatchRoundsStarted: 0, remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
+  const summary = { unpaidCheckoutsExpired: 0, reassignmentRequestsExpired: 0, autoDispatchRoundsStarted: 0, remindersProcessed: 0, etaRoutesCalculated: 0, etaDelayNotifications: 0, claimed: 0, submitted: 0, skippedWithoutDevice: 0, retried: 0, failed: 0, receiptsChecked: 0, invalidTokensRemoved: 0 };
 
   try {
+    // Expire unpaid checkouts and pending reassignment offers before opening new dispatch rounds.
+    const { data: expiredCheckouts, error: checkoutExpiryError } = await admin.rpc("expire_unpaid_booking_checkouts");
+    if (checkoutExpiryError) throw checkoutExpiryError;
+    summary.unpaidCheckoutsExpired = typeof expiredCheckouts === "number" ? expiredCheckouts : 0;
+
+    const { data: expiredReassignments, error: reassignmentExpiryError } = await admin.rpc("expire_booking_reassignment_requests");
+    if (reassignmentExpiryError) throw reassignmentExpiryError;
+    summary.reassignmentRequestsExpired = typeof expiredReassignments === "number" ? expiredReassignments : 0;
+
     const { data: dispatchRounds, error: dispatchRoundsError } = await admin.rpc("process_scheduled_booking_dispatch");
     if (dispatchRoundsError) {
       console.error("Scheduled booking dispatch failed", dispatchRoundsError);
@@ -259,7 +290,7 @@ Deno.serve(async (req) => {
         sound: "default",
         title: notification.title,
         body: notification.body,
-        data: { ...(notification.data ?? {}), notificationId: notification.id },
+        data: { ...((notification.type === "booking_request" ? sanitizePrivateLocationFields(notification.data ?? {}) : notification.data ?? {}) as Record<string, unknown>), notificationId: notification.id },
         priority: "high",
         channelId: notification.type === "booking_request" ? "klipp-requests" : "klipp-updates",
       }));

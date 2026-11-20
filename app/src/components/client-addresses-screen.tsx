@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import * as Location from 'expo-location';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { useAuth } from '@/components/auth-provider';
 import { BrandScreenHeader } from '@/components/brand-screen-header';
 import { LocationPicker } from '@/components/location-picker';
 import { KlippColors } from '@/lib/brand';
+import { KlippButton, KlippCard, KlippField, KlippScreenState } from '@/design-system';
 import { supabase } from '../../lib/supabase';
 import type { Address } from '@/lib/types';
 
@@ -113,29 +114,28 @@ export function ClientAddressesScreen() {
     setSaving(false);
   }
 
-  if (loading) return <View style={styles.centered}><ActivityIndicator color="#16766c" /><Text style={styles.body}>Cargando direcciones...</Text></View>;
+  if (loading) return <KlippScreenState kind="loading" title="Cargando direcciones" description="Estamos consultando tus ubicaciones guardadas." mode="light" />;
 
   return (
     <ScrollView contentContainerStyle={styles.page} refreshControl={<RefreshControl onRefresh={() => void refresh()} refreshing={refreshing} tintColor="#16766c" />} keyboardShouldPersistTaps="handled">
       <BrandScreenHeader eyebrow="TU CUENTA" title="Mis direcciones" subtitle="Guarda ubicaciones con GPS para tus próximos servicios." />
-      {addresses.length === 0 && <Text style={styles.body}>Todavía no has guardado una dirección.</Text>}
+      {addresses.length === 0 && <KlippScreenState kind="empty" title="Aún no tienes direcciones" description="Guarda tu casa o trabajo para agilizar tus próximas reservas." mode="light" />}
       {addresses.map((address) => (
-        <View key={address.id} style={styles.addressCard}>
+        <KlippCard key={address.id} mode="light" style={styles.addressCard}>
           <Text style={styles.cardTitle}>{address.label || 'Dirección'}</Text>
           {!!address.street && <Text style={styles.body}>{address.street}</Text>}
           {!!address.references_text && <Text style={styles.body}>Referencias: {address.references_text}</Text>}
-        </View>
+        </KlippCard>
       ))}
 
-      <View style={styles.form}>
+      <KlippCard mode="light" style={styles.form}>
         <Text style={styles.sectionTitle}>Añadir dirección</Text>
-        <Text style={styles.label}>Nombre para identificarla</Text>
-        <TextInput onChangeText={setLabel} placeholder="Casa, trabajo..." placeholderTextColor="#85918b" style={styles.input} value={label} />
+        <KlippField label="Nombre para identificarla" onChangeText={setLabel} placeholder="Casa, trabajo..." value={label} mode="light" />
         <Text style={styles.label}>Ubicación del servicio</Text>
         {coordinate ? (
           <>
             <LocationPicker coordinate={coordinate} onChange={setCoordinate} />
-            <TextInput onChangeText={setStreet} placeholder="Dirección aproximada" placeholderTextColor="#85918b" style={styles.input} value={street} />
+            <KlippField label="Dirección aproximada" onChangeText={setStreet} placeholder="Calle, sector y ciudad" value={street} mode="light" />
             <Pressable accessibilityRole="button" onPress={() => void locateCurrentPosition()} style={styles.locationButton}>
               <Text style={styles.locationButtonText}>Usar mi ubicación actual</Text>
             </Pressable>
@@ -145,14 +145,11 @@ export function ClientAddressesScreen() {
             <Text style={styles.locationButtonText}>Compartir ubicación para continuar</Text>
           </Pressable>
         )}
-        <Text style={styles.label}>Indicaciones / Punto de referencia</Text>
-        <TextInput multiline onChangeText={setReferences} placeholder="Puntos de referencia para llegar" placeholderTextColor="#85918b" style={[styles.input, styles.multiline]} value={references} />
+        <KlippField label="Indicaciones / punto de referencia" helper="Añade detalles que ayuden al profesional a encontrar la entrada." multiline numberOfLines={3} onChangeText={setReferences} placeholder="Ej. portón negro, frente al colmado..." style={styles.multiline} value={references} mode="light" />
         {error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
         {notice && <Text accessibilityRole="status" style={styles.success}>{notice}</Text>}
-        <Pressable accessibilityRole="button" disabled={saving} onPress={() => void saveAddress()} style={[styles.button, saving && styles.disabled]}>
-          <Text style={styles.buttonText}>{saving ? 'Guardando...' : 'Guardar dirección'}</Text>
-        </Pressable>
-      </View>
+        <KlippButton label="Guardar dirección" onPress={() => void saveAddress()} loading={saving} disabled={!coordinate || !references.trim()} mode="light" />
+      </KlippCard>
     </ScrollView>
   );
 }
