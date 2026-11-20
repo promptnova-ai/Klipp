@@ -17,7 +17,7 @@ function redactSensitiveText(value: string): string {
   return value
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, "[correo omitido]")
     .replace(/\b\d{3}-?\d{7}-?\d\b/g, "[documento omitido]")
-    .replace(/\b(?:c[oó]digo|otp|clave)\s*[:#-]?\s*\d{4,8}\b/gi, "[código omitido]")
+    .replace(/\b(?:c[oó]digo|otp|clave)\s*[:#-]?\s*\d{4,8}\b/gi, "[código omitido]")\n    .replace(/\\b(?:c[eé]dula|cedula|pasaporte)\\s*[:#-]?\\s*[A-Z0-9-]{6,20}\\b/gi, "[documento omitido]")
     .replace(/\b(?:calle|avenida|av\.?|residencial|urbanizaci[oó]n|apartamento|apto\.?|edificio|torre)\s+[^,.;\n]{1,80}/gi, "[dirección omitida]")
     .replace(/(?<!\d)\+?\d[\d\s().-]{7,}\d(?!\d)/g, "[teléfono o dato numérico omitido]")
     .replace(/\b(?:\d[ -]*?){13,19}\b/g, "[dato de pago omitido]")
