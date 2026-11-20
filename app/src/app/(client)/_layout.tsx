@@ -27,7 +27,7 @@ export default function ClientLayout() {
           {primaryTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
           {workflowTabs.map((item) => <TabTrigger key={item.name} name={item.name} href={item.href} />)}
         </TabList>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined} style={{ flex: 1 }}>
           <SafeAreaView edges={['top', 'left', 'right']} style={{ flex: 1 }}>
             <TabSlot detachInactiveScreens={false} style={width >= 768 ? { paddingTop: 88 } : undefined} />
           </SafeAreaView>
